@@ -1,28 +1,30 @@
+import { useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import {
   Box,
   VStack,
   HStack,
   Text,
-  NumberInput,
-  NumberInputField,
-  Switch,
-  Select,
-  FormControl,
-  FormLabel,
   Card,
   CardBody,
   CardHeader,
   Heading,
-  Tooltip,
-  Icon,
+  FormControl,
+  FormLabel,
+  Select,
+  NumberInput,
+  NumberInputField,
   Alert,
   AlertIcon,
+  Switch,
   Tabs,
   TabList,
   TabPanels,
   Tab,
   TabPanel,
+  Icon,
+  Tooltip,
+  Divider,
 } from '@chakra-ui/react'
 import { InfoIcon } from '@chakra-ui/icons'
 import { updateControlConfig } from '../../store/slices/configSlice'
@@ -31,9 +33,30 @@ import { ControlMode, InputMode, getControlModeName, getInputModeName } from '..
 const ControlConfigStep = () => {
   const dispatch = useDispatch()
   const { controlConfig } = useSelector(state => state.config)
+  
+  // State for RPM conversion
+  const [velLimitRpm, setVelLimitRpm] = useState(controlConfig.vel_limit * 60 / (2 * Math.PI))
+  const [velRampRateRpmPerS, setVelRampRateRpmPerS] = useState(controlConfig.vel_ramp_rate * 60 / (2 * Math.PI))
 
-  const handleConfigChange = (field, value) => {
-    dispatch(updateControlConfig({ [field]: value }))
+  const handleConfigChange = (key, value) => {
+    // Convert RPM values to rad/s before storing
+    if (key === 'vel_limit_rpm') {
+      const radPerS = value * 2 * Math.PI / 60
+      setVelLimitRpm(value)
+      dispatch(updateControlConfig({ vel_limit: radPerS }))
+    } else if (key === 'vel_ramp_rate_rpm') {
+      const radPerS2 = value * 2 * Math.PI / 60
+      setVelRampRateRpmPerS(value)
+      dispatch(updateControlConfig({ vel_ramp_rate: radPerS2 }))
+    } else {
+      dispatch(updateControlConfig({ [key]: value }))
+    }
+  }
+
+  // Update RPM states when config changes externally
+  const updateRpmFromConfig = () => {
+    setVelLimitRpm(controlConfig.vel_limit * 60 / (2 * Math.PI))
+    setVelRampRateRpmPerS(controlConfig.vel_ramp_rate * 60 / (2 * Math.PI))
   }
 
   const isPositionControl = controlConfig.control_mode === ControlMode.POSITION_CONTROL
@@ -138,11 +161,11 @@ const ControlConfigStep = () => {
                       <HStack>
                         <NumberInput
                           value={controlConfig.pos_gain}
-                          onChange={(_, value) => handleConfigChange('pos_gain', value)}
+                          onChange={(value) => handleConfigChange('pos_gain', parseFloat(value) || 0)}
                           min={0}
                           max={100}
                           step={0.1}
-                          precision={1}
+                          precision={2}
                         >
                           <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
                         </NumberInput>
@@ -162,11 +185,11 @@ const ControlConfigStep = () => {
                       <HStack>
                         <NumberInput
                           value={controlConfig.vel_gain}
-                          onChange={(_, value) => handleConfigChange('vel_gain', value)}
+                          onChange={(value) => handleConfigChange('vel_gain', parseFloat(value) || 0)}
                           min={0}
                           max={1}
-                          step={0.01}
-                          precision={3}
+                          step={0.001}
+                          precision={4}
                         >
                           <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
                         </NumberInput>
@@ -184,11 +207,11 @@ const ControlConfigStep = () => {
                       <HStack>
                         <NumberInput
                           value={controlConfig.vel_integrator_gain}
-                          onChange={(_, value) => handleConfigChange('vel_integrator_gain', value)}
+                          onChange={(value) => handleConfigChange('vel_integrator_gain', parseFloat(value) || 0)}
                           min={0}
                           max={10}
-                          step={0.01}
-                          precision={3}
+                          step={0.001}
+                          precision={4}
                         >
                           <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
                         </NumberInput>
@@ -219,17 +242,20 @@ const ControlConfigStep = () => {
                       </HStack>
                       <HStack>
                         <NumberInput
-                          value={controlConfig.vel_limit}
-                          onChange={(_, value) => handleConfigChange('vel_limit', value)}
-                          min={0.1}
-                          max={50}
-                          step={0.1}
+                          value={velLimitRpm}
+                          onChange={(value) => handleConfigChange('vel_limit_rpm', parseFloat(value) || 0)}
+                          min={1}
+                          max={3000}
+                          step={10}
                           precision={1}
                         >
                           <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
                         </NumberInput>
-                        <Text color="gray.300" minW="50px">rad/s</Text>
+                        <Text color="gray.300" minW="50px">RPM</Text>
                       </HStack>
+                      <Text fontSize="xs" color="gray.500" mt={1}>
+                        {(controlConfig.vel_limit).toFixed(2)} rad/s
+                      </Text>
                     </FormControl>
 
                     <FormControl flex="1">
@@ -241,11 +267,11 @@ const ControlConfigStep = () => {
                       </HStack>
                       <NumberInput
                         value={controlConfig.vel_limit_tolerance}
-                        onChange={(_, value) => handleConfigChange('vel_limit_tolerance', value)}
+                        onChange={(value) => handleConfigChange('vel_limit_tolerance', parseFloat(value) || 0)}
                         min={1.0}
                         max={2.0}
                         step={0.1}
-                        precision={1}
+                        precision={2}
                       >
                         <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
                       </NumberInput>
@@ -262,17 +288,20 @@ const ControlConfigStep = () => {
                       </HStack>
                       <HStack>
                         <NumberInput
-                          value={controlConfig.vel_ramp_rate}
-                          onChange={(_, value) => handleConfigChange('vel_ramp_rate', value)}
-                          min={0.1}
-                          max={100}
-                          step={0.1}
+                          value={velRampRateRpmPerS}
+                          onChange={(value) => handleConfigChange('vel_ramp_rate_rpm', parseFloat(value) || 0)}
+                          min={10}
+                          max={6000}
+                          step={50}
                           precision={1}
                         >
                           <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
                         </NumberInput>
-                        <Text color="gray.300" minW="60px">rad/s²</Text>
+                        <Text color="gray.300" minW="60px">RPM/s</Text>
                       </HStack>
+                      <Text fontSize="xs" color="gray.500" mt={1}>
+                        {(controlConfig.vel_ramp_rate).toFixed(2)} rad/s²
+                      </Text>
                     </FormControl>
 
                     <FormControl flex="1">
@@ -285,11 +314,11 @@ const ControlConfigStep = () => {
                       <HStack>
                         <NumberInput
                           value={controlConfig.torque_ramp_rate}
-                          onChange={(_, value) => handleConfigChange('torque_ramp_rate', value)}
+                          onChange={(value) => handleConfigChange('torque_ramp_rate', parseFloat(value) || 0)}
                           min={0.001}
                           max={1}
                           step={0.001}
-                          precision={3}
+                          precision={4}
                         >
                           <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
                         </NumberInput>
@@ -337,11 +366,11 @@ const ControlConfigStep = () => {
                       <HStack>
                         <NumberInput
                           value={controlConfig.inertia}
-                          onChange={(_, value) => handleConfigChange('inertia', value)}
+                          onChange={(value) => handleConfigChange('inertia', parseFloat(value) || 0)}
                           min={0}
                           max={1}
                           step={0.001}
-                          precision={4}
+                          precision={6}
                         >
                           <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
                         </NumberInput>
@@ -359,15 +388,15 @@ const ControlConfigStep = () => {
                       <HStack>
                         <NumberInput
                           value={controlConfig.input_filter_bandwidth}
-                          onChange={(_, value) => handleConfigChange('input_filter_bandwidth', value)}
+                          onChange={(value) => handleConfigChange('input_filter_bandwidth', parseFloat(value) || 0)}
                           min={0.1}
                           max={100}
                           step={0.1}
-                          precision={1}
+                          precision={2}
                         >
                           <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
                         </NumberInput>
-                        <Text color="gray.300" minW="30px">Hz</Text>
+                        <Text color="gray.300" minW="40px">Hz</Text>
                       </HStack>
                     </FormControl>
                   </HStack>
@@ -380,10 +409,10 @@ const ControlConfigStep = () => {
 
       <Card bg="gray.700" variant="elevated">
         <CardHeader>
-          <Heading size="md" color="white">Control Configuration Summary</Heading>
+          <Heading size="md" color="white">Configuration Summary</Heading>
         </CardHeader>
         <CardBody>
-          <VStack spacing={2} align="stretch">
+          <VStack spacing={3} align="stretch">
             <HStack justify="space-between">
               <Text color="gray.300">Control Mode:</Text>
               <Text fontWeight="bold" color="white">
@@ -399,7 +428,7 @@ const ControlConfigStep = () => {
             <HStack justify="space-between">
               <Text color="gray.300">Max Velocity:</Text>
               <Text fontWeight="bold" color="odrive.300">
-                {controlConfig.vel_limit} rad/s
+                {velLimitRpm.toFixed(1)} RPM ({controlConfig.vel_limit.toFixed(2)} rad/s)
               </Text>
             </HStack>
             {isPositionControl && (
@@ -414,6 +443,12 @@ const ControlConfigStep = () => {
               <Text color="gray.300">Velocity Gain:</Text>
               <Text fontWeight="bold" color="odrive.300">
                 {controlConfig.vel_gain} A/(rad/s)
+              </Text>
+            </HStack>
+            <HStack justify="space-between">
+              <Text color="gray.300">Velocity Integrator Gain:</Text>
+              <Text fontWeight="bold" color="odrive.300">
+                {controlConfig.vel_integrator_gain} A/(rad/s)/s
               </Text>
             </HStack>
           </VStack>

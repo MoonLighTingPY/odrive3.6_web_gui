@@ -131,8 +131,15 @@ const configSlice = createSlice({
           state.controlConfig[key] = value
         } else if (typeof value === 'boolean') {
           state.controlConfig[key] = value
-        } else if (typeof value === 'string' && value.trim() !== '' && !isNaN(parseFloat(value))) {
-          state.controlConfig[key] = parseFloat(value)
+        } else if (typeof value === 'string' && value.trim() !== '') {
+          // Handle string inputs for numeric fields
+          const numValue = parseFloat(value)
+          if (!isNaN(numValue)) {
+            state.controlConfig[key] = numValue
+          } else {
+            // For non-numeric strings (like control mode names), keep as string
+            state.controlConfig[key] = value
+          }
         }
       })
     },
