@@ -26,8 +26,14 @@ class ODriveManager:
     def __init__(self):
         self.odrives = {}
         self.current_device = None
+        self.current_device_serial = None
         self.telemetry_data = {}
         self.is_scanning = False
+        self.connection_lost = False
+        self.is_rebooting = False
+        self.reboot_start_time = None
+        self.reconnection_attempts = 0
+        self.max_reconnection_attempts = 10
 
     def scan_for_devices(self) -> List[Dict[str, Any]]:
         """Scan for ODrive devices"""
@@ -82,7 +88,12 @@ class ODriveManager:
             
             if odrv:
                 self.current_device = odrv
+                self.current_device_serial = device_info['serial']
                 self.odrives[device_info['serial']] = odrv
+                self.connection_lost = False
+                self.is_rebooting = False
+                self.reboot_start_time = None
+                self.reconnection_attempts = 0
                 logger.info(f"Connected to ODrive: {device_info['serial']}")
                 return True
             else:
@@ -98,16 +109,103 @@ class ODriveManager:
         try:
             if self.current_device:
                 self.current_device = None
+                self.current_device_serial = None
+                self.connection_lost = False
+                self.is_rebooting = False
+                self.reboot_start_time = None
+                self.reconnection_attempts = 0
                 logger.info("Disconnected from ODrive")
             return True
         except Exception as e:
             logger.error(f"Error disconnecting: {e}")
             return False
 
+    def check_connection(self) -> bool:
+        """Check if device is still connected"""
+        if not self.current_device:
+            return False
+        
+        # If we're in a reboot state, don't try to check connection yet
+        if self.is_rebooting:
+            if self.reboot_start_time and (time.time() - self.reboot_start_time) < 10:
+                return False  # Wait at least 10 seconds after reboot command
+            
+        try:
+            # Try to read a simple property to check connection
+            _ = self.current_device.vbus_voltage
+            self.connection_lost = False
+            if self.is_rebooting:
+                self.is_rebooting = False
+                self.reboot_start_time = None
+                self.reconnection_attempts = 0
+                logger.info("Device has successfully reconnected after reboot")
+            return True
+        except Exception as e:
+            if not self.connection_lost:
+                logger.warning(f"Device connection lost: {e}")
+                self.connection_lost = True
+            return False
+
+    def try_reconnect(self) -> bool:
+        """Try to reconnect to the same device"""
+        if not self.current_device_serial or not self.connection_lost:
+            return False
+        
+        # If we're rebooting, wait longer between attempts and limit total attempts
+        if self.is_rebooting:
+            if self.reboot_start_time and (time.time() - self.reboot_start_time) < 5:
+                return False  # Don't try to reconnect for first 5 seconds after reboot
+            
+            if self.reconnection_attempts >= self.max_reconnection_attempts:
+                logger.warning(f"Max reconnection attempts reached for rebooting device")
+                return False
+        
+        self.reconnection_attempts += 1
+        
+        try:
+            logger.info(f"Attempting to reconnect to device {self.current_device_serial} (attempt {self.reconnection_attempts})")
+            
+            # Use shorter timeout for reconnection attempts
+            timeout = 3 if self.is_rebooting else 5
+            odrv = odrive.find_any(timeout=timeout)
+            
+            if odrv:
+                # Check if this is the same device
+                device_serial = hex(odrv.serial_number) if hasattr(odrv, 'serial_number') else None
+                if device_serial == self.current_device_serial:
+                    self.current_device = odrv
+                    self.connection_lost = False
+                    self.reconnection_attempts = 0
+                    logger.info(f"Reconnected to ODrive: {self.current_device_serial}")
+                    
+                    if self.is_rebooting:
+                        self.is_rebooting = False
+                        self.reboot_start_time = None
+                        logger.info("Device reconnected successfully after reboot")
+                    
+                    return True
+                else:
+                    logger.warning(f"Found different device: {device_serial}, expected: {self.current_device_serial}")
+                    
+        except Exception as e:
+            # Reduce log noise during reboot by only logging every few attempts
+            if not self.is_rebooting or self.reconnection_attempts % 3 == 0:
+                logger.error(f"Error during reconnection attempt {self.reconnection_attempts}: {e}")
+            
+        return False
+
     def get_device_state(self) -> Dict[str, Any]:
         """Get current device state"""
         if not self.current_device:
             return {}
+        
+        # Check connection and try to reconnect if needed
+        if not self.check_connection():
+            if self.try_reconnect():
+                # Successfully reconnected, proceed
+                pass
+            else:
+                return {}
         
         try:
             state = {
@@ -145,27 +243,138 @@ class ODriveManager:
             }
             return state
         except Exception as e:
-            logger.error(f"Error getting device state: {e}")
+            if not self.is_rebooting:  # Reduce log noise during reboot
+                logger.error(f"Error getting device state: {e}")
+            self.connection_lost = True
             return {}
+
+    def _normalize_command(self, command: str) -> str:
+        """Normalize command to use device reference instead of hardcoded names"""
+        # Replace any common ODrive variable names with 'device'
+        command = command.replace('odrv0.', 'device.')
+        command = command.replace('odrv1.', 'device.')
+        command = command.replace('dev0.', 'device.')
+        command = command.replace('dev1.', 'device.')
+        command = command.replace('my_drive.', 'device.')
+        command = command.replace('odrive.', 'device.')
+        
+        # Handle function calls without dot notation
+        if command.startswith('odrv0'):
+            command = command.replace('odrv0', 'device', 1)
+        elif command.startswith('odrv1'):
+            command = command.replace('odrv1', 'device', 1)
+        elif command.startswith('dev0'):
+            command = command.replace('dev0', 'device', 1)
+        elif command.startswith('dev1'):
+            command = command.replace('dev1', 'device', 1)
+        elif command.startswith('my_drive'):
+            command = command.replace('my_drive', 'device', 1)
+        elif command.startswith('odrive'):
+            command = command.replace('odrive', 'device', 1)
+            
+        return command
+
+    def _sanitize_value(self, value_str: str):
+        """Sanitize and convert value string to appropriate Python type"""
+        value_str = str(value_str).strip()
+        
+        # Handle undefined/null values
+        if value_str.lower() in ['undefined', 'null', 'none', '']:
+            return None
+            
+        # Handle boolean values
+        if value_str in ['True', 'true', 'TRUE']:
+            return True
+        elif value_str in ['False', 'false', 'FALSE']:
+            return False
+        
+        # Handle numeric values
+        try:
+            # Try integer first
+            if '.' not in value_str and 'e' not in value_str.lower():
+                return int(value_str)
+            else:
+                return float(value_str)
+        except ValueError:
+            # If all else fails, return as string
+            return value_str
 
     def execute_command(self, command: str) -> Dict[str, Any]:
         """Execute a command on the ODrive"""
         if not self.current_device:
             return {'error': 'No device connected'}
         
+        # Check connection and try to reconnect if needed
+        if not self.check_connection():
+            if not self.try_reconnect():
+                return {'error': 'Device disconnected and could not reconnect'}
+        
         try:
-            # Replace odrv0 with actual device reference
-            command = command.replace('odrv0', 'self.current_device')
+            # Normalize the command to use 'device' reference
+            normalized_command = self._normalize_command(command)
             
-            # Handle boolean values properly
-            command = command.replace('True', 'True').replace('False', 'False')
+            # Create a local context with the current device
+            local_context = {
+                'device': self.current_device,
+                'True': True,
+                'False': False,
+                # Also add common ODrive variable names pointing to the same device
+                'odrv0': self.current_device,
+                'odrv1': self.current_device,
+                'dev0': self.current_device,
+                'dev1': self.current_device,
+                'my_drive': self.current_device,
+                'odrive': self.current_device,
+            }
             
-            # Execute the command
-            result = eval(command)
+            logger.info(f"Executing command: {command} -> {normalized_command}")
             
-            return {'result': str(result) if result is not None else 'Command executed successfully'}
+            # Check if this is an assignment or function call
+            if '=' in normalized_command:
+                # Handle assignments
+                parts = normalized_command.split('=', 1)
+                if len(parts) == 2:
+                    path = parts[0].strip()
+                    value_str = parts[1].strip()
+                    
+                    # Skip commands with undefined values
+                    if value_str.lower() in ['undefined', 'null', 'none']:
+                        logger.warning(f"Skipping command with undefined value: {command}")
+                        return {'result': f'Skipped {path} (undefined value)'}
+                    
+                    try:
+                        # Sanitize and convert the value
+                        value = self._sanitize_value(value_str)
+                        
+                        if value is None:
+                            logger.warning(f"Skipping command with null value: {command}")
+                            return {'result': f'Skipped {path} (null value)'}
+                        
+                        # Execute the assignment
+                        exec(f"{path} = {repr(value)}", {}, local_context)
+                        return {'result': f'Set {path} = {value}'}
+                    except Exception as e:
+                        logger.error(f"Error in assignment execution: {e}")
+                        return {'error': str(e)}
+            else:
+                # Handle function calls
+                try:
+                    result = eval(normalized_command, {}, local_context)
+                    return {'result': str(result) if result is not None else 'Command executed successfully'}
+                except Exception as e:
+                    # If eval fails, try exec for commands that don't return values
+                    try:
+                        exec(normalized_command, {}, local_context)
+                        return {'result': 'Command executed successfully'}
+                    except Exception as e2:
+                        logger.error(f"Error in command execution: {e2}")
+                        return {'error': str(e2)}
+                
         except Exception as e:
             logger.error(f"Error executing command '{command}': {e}")
+            # Check if this was a connection error
+            if "disconnected" in str(e).lower() or "connection" in str(e).lower():
+                self.connection_lost = True
             return {'error': str(e)}
 
     def set_property(self, path: str, value: Any) -> Dict[str, Any]:
@@ -173,16 +382,34 @@ class ODriveManager:
         if not self.current_device:
             return {'error': 'No device connected'}
         
+        # Check connection and try to reconnect if needed
+        if not self.check_connection():
+            if not self.try_reconnect():
+                return {'error': 'Device disconnected and could not reconnect'}
+        
         try:
-            # Convert path to actual object reference
-            path = path.replace('odrv0', 'self.current_device')
+            # Normalize the path
+            normalized_path = self._normalize_command(path)
+            
+            # Create a local context with the current device
+            local_context = {
+                'device': self.current_device,
+                'odrv0': self.current_device,
+                'odrv1': self.current_device,
+                'dev0': self.current_device,
+                'dev1': self.current_device,
+                'my_drive': self.current_device,
+                'odrive': self.current_device,
+            }
             
             # Set the property
-            exec(f"{path} = {repr(value)}")
+            exec(f"{normalized_path} = {repr(value)}", {}, local_context)
             
-            return {'result': 'Property set successfully'}
+            return {'result': f'Set {normalized_path} = {value}'}
         except Exception as e:
             logger.error(f"Error setting property '{path}' to '{value}': {e}")
+            if "disconnected" in str(e).lower() or "connection" in str(e).lower():
+                self.connection_lost = True
             return {'error': str(e)}
 
 # Initialize ODrive manager
@@ -282,6 +509,7 @@ def apply_config():
     try:
         commands = request.json.get('commands', [])
         results = []
+        skipped_commands = []
         
         for command in commands:
             result = odrive_manager.execute_command(command)
@@ -293,10 +521,17 @@ def apply_config():
                     'details': result,
                     'executed_commands': results
                 }), 400
+            elif 'Skipped' in result.get('result', ''):
+                skipped_commands.append(command)
+        
+        response_message = 'All commands executed successfully'
+        if skipped_commands:
+            response_message += f'. Skipped {len(skipped_commands)} commands with undefined values.'
         
         return jsonify({
-            'message': 'All commands executed successfully',
-            'results': results
+            'message': response_message,
+            'results': results,
+            'skipped_commands': skipped_commands
         })
     except Exception as e:
         logger.error(f"Error in apply_config: {e}")
@@ -306,13 +541,31 @@ def apply_config():
 def erase_config():
     """Erase configuration and reboot"""
     try:
-        result = odrive_manager.execute_command('self.current_device.erase_configuration()')
-        if 'error' not in result:
-            # Reboot the device
-            odrive_manager.execute_command('self.current_device.reboot()')
-            return jsonify({'message': 'Configuration erased and device rebooted'})
-        else:
+        # First, erase the configuration
+        result = odrive_manager.execute_command('device.erase_configuration()')
+        if 'error' in result:
             return jsonify(result), 400
+            
+        # Wait a moment for the command to take effect
+        time.sleep(0.5)
+        
+        # Mark as rebooting before sending reboot command
+        odrive_manager.is_rebooting = True
+        odrive_manager.reboot_start_time = time.time()
+        odrive_manager.connection_lost = True
+        odrive_manager.reconnection_attempts = 0
+        
+        # Then reboot - this will cause the device to disconnect
+        try:
+            odrive_manager.execute_command('device.reboot()')
+        except:
+            # Reboot command may fail as device disconnects immediately
+            pass
+        
+        return jsonify({
+            'message': 'Configuration erased and device rebooted. Device will reconnect automatically.',
+            'reconnect_required': True
+        })
     except Exception as e:
         logger.error(f"Error in erase_config: {e}")
         return jsonify({'error': str(e)}), 500
@@ -322,13 +575,30 @@ def save_and_reboot():
     """Save configuration and reboot"""
     try:
         # Save configuration
-        result = odrive_manager.execute_command('self.current_device.save_configuration()')
-        if 'error' not in result:
-            # Reboot the device
-            odrive_manager.execute_command('self.current_device.reboot()')
-            return jsonify({'message': 'Configuration saved and device rebooted'})
-        else:
+        result = odrive_manager.execute_command('device.save_configuration()')
+        if 'error' in result:
             return jsonify(result), 400
+            
+        # Wait a moment for the save to complete
+        time.sleep(0.5)
+        
+        # Mark as rebooting before sending reboot command
+        odrive_manager.is_rebooting = True
+        odrive_manager.reboot_start_time = time.time()
+        odrive_manager.connection_lost = True
+        odrive_manager.reconnection_attempts = 0
+        
+        # Reboot the device - this will cause disconnection
+        try:
+            odrive_manager.execute_command('device.reboot()')
+        except:
+            # Reboot command may fail as device disconnects immediately
+            pass
+        
+        return jsonify({
+            'message': 'Configuration saved and device rebooted. Device will reconnect automatically.',
+            'reconnect_required': True
+        })
     except Exception as e:
         logger.error(f"Error in save_and_reboot: {e}")
         return jsonify({'error': str(e)}), 500
@@ -337,7 +607,7 @@ def save_and_reboot():
 def calibrate():
     """Start calibration sequence"""
     try:
-        result = odrive_manager.execute_command('self.current_device.axis0.requested_state = 3')  # FULL_CALIBRATION_SEQUENCE
+        result = odrive_manager.execute_command('device.axis0.requested_state = 3')  # FULL_CALIBRATION_SEQUENCE
         if 'error' not in result:
             return jsonify({'message': 'Calibration started'})
         else:
@@ -350,13 +620,27 @@ def calibrate():
 def save_config():
     """Save configuration to non-volatile memory"""
     try:
-        result = odrive_manager.execute_command('self.current_device.save_configuration()')
+        result = odrive_manager.execute_command('device.save_configuration()')
         if 'error' not in result:
             return jsonify({'message': 'Configuration saved to non-volatile memory'})
         else:
             return jsonify(result), 400
     except Exception as e:
         logger.error(f"Error in save_config: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/odrive/connection_status', methods=['GET'])
+def connection_status():
+    """Get connection status"""
+    try:
+        is_connected = odrive_manager.check_connection()
+        return jsonify({
+            'connected': is_connected,
+            'connection_lost': odrive_manager.connection_lost,
+            'device_serial': odrive_manager.current_device_serial
+        })
+    except Exception as e:
+        logger.error(f"Error in connection_status: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/health', methods=['GET'])

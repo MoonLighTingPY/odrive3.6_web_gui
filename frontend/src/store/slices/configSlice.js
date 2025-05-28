@@ -4,55 +4,46 @@ const initialState = {
   // Power Configuration
   powerConfig: {
     dc_bus_overvoltage_trip_level: 56.0,
-    dc_bus_undervoltage_trip_level: 8.0,
+    dc_bus_undervoltage_trip_level: 10.0,
     dc_max_positive_current: 10.0,
-    dc_max_negative_current: -3.0,
-    brake_resistor_enabled: false,
+    dc_max_negative_current: -10.0,
     brake_resistance: 2.0,
+    brake_resistor_enabled: false,
   },
   
   // Motor Configuration
   motorConfig: {
     motor_type: 0, // HIGH_CURRENT
     pole_pairs: 7,
-    motor_kv: 100,
+    motor_kv: 230,
     current_lim: 10.0,
-    current_lim_margin: 8.0,
-    torque_lim: 30.0,
     calibration_current: 10.0,
-    resistance_calib_max_voltage: 2.0,
-    phase_inductance: 0.0,
-    phase_resistance: 0.0,
-    direction: 1,
+    resistance_calib_max_voltage: 4.0,
     lock_in_spin_current: 10.0,
-    // Gimbal motor specific
-    phase_resistance_override: 0.0,
+    phase_resistance: 0.0,
+    phase_inductance: 0.0,
   },
   
   // Encoder Configuration
   encoderConfig: {
     encoder_type: 1, // INCREMENTAL
     cpr: 4000,
-    bandwidth: 1000,
+    bandwidth: 1000.0,
     use_index: false,
-    use_separate_commutation_encoder: false,
     calib_range: 0.02,
-    calib_scan_distance: 16.0,
+    calib_scan_distance: 16384.0,
     calib_scan_omega: 12.566,
-    // Hall encoder
-    hall_polarity: 0,
-    // SPI encoder
-    abs_spi_cs_gpio_pin: 1,
+    use_separate_encoder: false,
   },
   
   // Control Configuration
   controlConfig: {
-    control_mode: 2, // VELOCITY_CONTROL
-    input_mode: 1, // VEL_RAMP
-    pos_gain: 20.0,
-    vel_gain: 0.16,
-    vel_integrator_gain: 0.32,
-    vel_limit: 10.0,
+    control_mode: 3, // POSITION_CONTROL
+    input_mode: 1, // PASSTHROUGH
+    vel_limit: 20.0,
+    pos_gain: 1.0,
+    vel_gain: 0.228,
+    vel_integrator_gain: 0.228,
     vel_limit_tolerance: 1.2,
     vel_ramp_rate: 10.0,
     torque_ramp_rate: 0.01,
@@ -85,6 +76,7 @@ const initialState = {
     watchdog_timeout: 0.0,
     enable_step_dir: false,
     step_dir_always_on: false,
+    enable_sensorless: false,
   },
 }
 
@@ -93,19 +85,69 @@ const configSlice = createSlice({
   initialState,
   reducers: {
     updatePowerConfig: (state, action) => {
-      state.powerConfig = { ...state.powerConfig, ...action.payload }
+      // Ensure numeric values are properly set
+      Object.keys(action.payload).forEach(key => {
+        const value = action.payload[key]
+        if (typeof value === 'number' && !isNaN(value)) {
+          state.powerConfig[key] = value
+        } else if (typeof value === 'boolean') {
+          state.powerConfig[key] = value
+        } else if (typeof value === 'string' && value.trim() !== '' && !isNaN(parseFloat(value))) {
+          state.powerConfig[key] = parseFloat(value)
+        }
+      })
     },
     updateMotorConfig: (state, action) => {
-      state.motorConfig = { ...state.motorConfig, ...action.payload }
+      // Ensure numeric values are properly set
+      Object.keys(action.payload).forEach(key => {
+        const value = action.payload[key]
+        if (typeof value === 'number' && !isNaN(value)) {
+          state.motorConfig[key] = value
+        } else if (typeof value === 'boolean') {
+          state.motorConfig[key] = value
+        } else if (typeof value === 'string' && value.trim() !== '' && !isNaN(parseFloat(value))) {
+          state.motorConfig[key] = parseFloat(value)
+        }
+      })
     },
     updateEncoderConfig: (state, action) => {
-      state.encoderConfig = { ...state.encoderConfig, ...action.payload }
+      // Ensure numeric values are properly set
+      Object.keys(action.payload).forEach(key => {
+        const value = action.payload[key]
+        if (typeof value === 'number' && !isNaN(value)) {
+          state.encoderConfig[key] = value
+        } else if (typeof value === 'boolean') {
+          state.encoderConfig[key] = value
+        } else if (typeof value === 'string' && value.trim() !== '' && !isNaN(parseFloat(value))) {
+          state.encoderConfig[key] = parseFloat(value)
+        }
+      })
     },
     updateControlConfig: (state, action) => {
-      state.controlConfig = { ...state.controlConfig, ...action.payload }
+      // Ensure numeric values are properly set
+      Object.keys(action.payload).forEach(key => {
+        const value = action.payload[key]
+        if (typeof value === 'number' && !isNaN(value)) {
+          state.controlConfig[key] = value
+        } else if (typeof value === 'boolean') {
+          state.controlConfig[key] = value
+        } else if (typeof value === 'string' && value.trim() !== '' && !isNaN(parseFloat(value))) {
+          state.controlConfig[key] = parseFloat(value)
+        }
+      })
     },
     updateInterfaceConfig: (state, action) => {
-      state.interfaceConfig = { ...state.interfaceConfig, ...action.payload }
+      // Ensure numeric values are properly set
+      Object.keys(action.payload).forEach(key => {
+        const value = action.payload[key]
+        if (typeof value === 'number' && !isNaN(value)) {
+          state.interfaceConfig[key] = value
+        } else if (typeof value === 'boolean') {
+          state.interfaceConfig[key] = value
+        } else if (typeof value === 'string' && value.trim() !== '' && !isNaN(parseFloat(value))) {
+          state.interfaceConfig[key] = parseFloat(value)
+        }
+      })
     },
     resetConfig: (state) => {
       return initialState

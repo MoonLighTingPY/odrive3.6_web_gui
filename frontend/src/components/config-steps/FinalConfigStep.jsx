@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
+import { useSelector } from 'react-redux'
 import {
   Box,
   VStack,
@@ -13,111 +13,124 @@ import {
   Alert,
   AlertIcon,
   Collapse,
-  Code,
+  useDisclosure,
   Modal,
   ModalOverlay,
   ModalContent,
   ModalHeader,
-  ModalBody,
   ModalFooter,
+  ModalBody,
   ModalCloseButton,
-  useDisclosure,
   useToast,
+  Code,
   Divider,
-  IconButton,
 } from '@chakra-ui/react'
 import { ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons'
 
 const FinalConfigStep = () => {
-  const dispatch = useDispatch()
   const toast = useToast()
+  const { isOpen: isCommandsOpen, onToggle: onCommandsToggle } = useDisclosure()
   const { isOpen: isConfirmOpen, onOpen: onConfirmOpen, onClose: onConfirmClose } = useDisclosure()
-  const [showCommands, setShowCommands] = useState(false)
-  const [pendingAction, setPendingAction] = useState('')
+  
   const [isLoading, setIsLoading] = useState(false)
-
+  const [pendingAction, setPendingAction] = useState(null)
+  
   const { powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig } = useSelector(state => state.config)
   const { isConnected } = useSelector(state => state.device)
+
+  // Helper function to safely format numbers and handle undefined values
+  const safeValue = (value, defaultValue = 0) => {
+    if (value === undefined || value === null || isNaN(value)) {
+      return defaultValue
+    }
+    return value
+  }
+
+  // Helper function to format boolean values
+  const safeBool = (value, defaultValue = false) => {
+    if (value === undefined || value === null) {
+      return defaultValue
+    }
+    return Boolean(value)
+  }
 
   // Generate commands using useMemo to prevent infinite re-renders
   const generatedCommands = useMemo(() => {
     const commands = []
 
     // Power configuration commands (ODrive v0.5.6 syntax)
-    commands.push(`odrv0.config.dc_bus_overvoltage_trip_level = ${powerConfig.dc_bus_overvoltage_trip_level}`)
-    commands.push(`odrv0.config.dc_bus_undervoltage_trip_level = ${powerConfig.dc_bus_undervoltage_trip_level}`)
-    commands.push(`odrv0.config.dc_max_positive_current = ${powerConfig.dc_max_positive_current}`)
-    commands.push(`odrv0.config.dc_max_negative_current = ${powerConfig.dc_max_negative_current}`)
-    commands.push(`odrv0.config.brake_resistance = ${powerConfig.brake_resistance}`)
-    commands.push(`odrv0.config.enable_brake_resistor = ${powerConfig.brake_resistor_enabled ? 'True' : 'False'}`)
+    commands.push(`odrv0.config.dc_bus_overvoltage_trip_level = ${safeValue(powerConfig.dc_bus_overvoltage_trip_level, 56)}`)
+    commands.push(`odrv0.config.dc_bus_undervoltage_trip_level = ${safeValue(powerConfig.dc_bus_undervoltage_trip_level, 10)}`)
+    commands.push(`odrv0.config.dc_max_positive_current = ${safeValue(powerConfig.dc_max_positive_current, 10)}`)
+    commands.push(`odrv0.config.dc_max_negative_current = ${safeValue(powerConfig.dc_max_negative_current, -10)}`)
+    commands.push(`odrv0.config.brake_resistance = ${safeValue(powerConfig.brake_resistance, 2)}`)
+    commands.push(`odrv0.config.enable_brake_resistor = ${safeBool(powerConfig.brake_resistor_enabled) ? 'True' : 'False'}`)
 
     // Motor configuration commands
-    commands.push(`odrv0.axis0.motor.config.motor_type = ${motorConfig.motor_type}`)
-    commands.push(`odrv0.axis0.motor.config.pole_pairs = ${motorConfig.pole_pairs}`)
-    commands.push(`odrv0.axis0.motor.config.torque_constant = ${(60 / (2 * Math.PI * motorConfig.motor_kv)).toFixed(6)}`)
-    commands.push(`odrv0.axis0.motor.config.current_lim = ${motorConfig.current_lim}`)
-    commands.push(`odrv0.axis0.motor.config.calibration_current = ${motorConfig.calibration_current}`)
-    commands.push(`odrv0.axis0.motor.config.resistance_calib_max_voltage = ${motorConfig.resistance_calib_max_voltage}`)
+    commands.push(`odrv0.axis0.motor.config.motor_type = ${safeValue(motorConfig.motor_type, 0)}`)
+    commands.push(`odrv0.axis0.motor.config.pole_pairs = ${safeValue(motorConfig.pole_pairs, 7)}`)
+    
+    // Calculate torque constant safely
+    const motorKv = safeValue(motorConfig.motor_kv, 230)
+    const torqueConstant = motorKv > 0 ? (60 / (2 * Math.PI * motorKv)) : 0.04
+    commands.push(`odrv0.axis0.motor.config.torque_constant = ${torqueConstant.toFixed(6)}`)
+    
+    commands.push(`odrv0.axis0.motor.config.current_lim = ${safeValue(motorConfig.current_lim, 10)}`)
+    commands.push(`odrv0.axis0.motor.config.calibration_current = ${safeValue(motorConfig.calibration_current, 10)}`)
+    commands.push(`odrv0.axis0.motor.config.resistance_calib_max_voltage = ${safeValue(motorConfig.resistance_calib_max_voltage, 4)}`)
     
     // Add lock-in spin current if it exists in motorConfig
-    if (motorConfig.lock_in_spin_current !== undefined) {
-      commands.push(`odrv0.axis0.config.calibration_lockin.current = ${motorConfig.lock_in_spin_current}`)
-    }
+    const lockInCurrent = safeValue(motorConfig.lock_in_spin_current, 10)
+    commands.push(`odrv0.axis0.config.calibration_lockin.current = ${lockInCurrent}`)
 
-    if (motorConfig.motor_type === 1) { // GIMBAL motor type (corrected enum value)
-      if (motorConfig.phase_resistance !== undefined) {
-        commands.push(`odrv0.axis0.motor.config.phase_resistance = ${motorConfig.phase_resistance}`)
-      }
-      if (motorConfig.phase_inductance !== undefined) {
-        commands.push(`odrv0.axis0.motor.config.phase_inductance = ${motorConfig.phase_inductance}`)
-      }
+    if (safeValue(motorConfig.motor_type, 0) === 1) { // GIMBAL motor type
+      commands.push(`odrv0.axis0.motor.config.phase_resistance = ${safeValue(motorConfig.phase_resistance, 0)}`)
+      commands.push(`odrv0.axis0.motor.config.phase_inductance = ${safeValue(motorConfig.phase_inductance, 0)}`)
     }
 
     // Encoder configuration commands
-    commands.push(`odrv0.axis0.encoder.config.mode = ${encoderConfig.encoder_type}`)
-    if (encoderConfig.encoder_type === 1) { // INCREMENTAL
-      commands.push(`odrv0.axis0.encoder.config.cpr = ${encoderConfig.cpr}`)
-      commands.push(`odrv0.axis0.encoder.config.bandwidth = ${encoderConfig.bandwidth}`)
-      commands.push(`odrv0.axis0.encoder.config.use_index = ${encoderConfig.use_index ? 'True' : 'False'}`)
-      commands.push(`odrv0.axis0.encoder.config.calib_range = ${encoderConfig.calib_range}`)
-      commands.push(`odrv0.axis0.encoder.config.calib_scan_distance = ${encoderConfig.calib_scan_distance}`)
-      commands.push(`odrv0.axis0.encoder.config.calib_scan_omega = ${encoderConfig.calib_scan_omega}`)
+    commands.push(`odrv0.axis0.encoder.config.mode = ${safeValue(encoderConfig.encoder_type, 1)}`)
+    if (safeValue(encoderConfig.encoder_type, 1) === 1) { // INCREMENTAL
+      commands.push(`odrv0.axis0.encoder.config.cpr = ${safeValue(encoderConfig.cpr, 4000)}`)
+      commands.push(`odrv0.axis0.encoder.config.bandwidth = ${safeValue(encoderConfig.bandwidth, 1000)}`)
+      commands.push(`odrv0.axis0.encoder.config.use_index = ${safeBool(encoderConfig.use_index) ? 'True' : 'False'}`)
+      commands.push(`odrv0.axis0.encoder.config.calib_range = ${safeValue(encoderConfig.calib_range, 0.02)}`)
+      commands.push(`odrv0.axis0.encoder.config.calib_scan_distance = ${safeValue(encoderConfig.calib_scan_distance, 16384)}`)
+      commands.push(`odrv0.axis0.encoder.config.calib_scan_omega = ${safeValue(encoderConfig.calib_scan_omega, 12.566)}`)
     }
 
     // Control configuration commands
-    commands.push(`odrv0.axis0.controller.config.control_mode = ${controlConfig.control_mode}`)
-    commands.push(`odrv0.axis0.controller.config.input_mode = ${controlConfig.input_mode}`)
-    commands.push(`odrv0.axis0.controller.config.vel_limit = ${controlConfig.vel_limit}`)
-    commands.push(`odrv0.axis0.controller.config.pos_gain = ${controlConfig.pos_gain}`)
-    commands.push(`odrv0.axis0.controller.config.vel_gain = ${controlConfig.vel_gain}`)
-    commands.push(`odrv0.axis0.controller.config.vel_integrator_gain = ${controlConfig.vel_integrator_gain}`)
-    commands.push(`odrv0.axis0.controller.config.vel_limit_tolerance = ${controlConfig.vel_limit_tolerance}`)
-    commands.push(`odrv0.axis0.controller.config.vel_ramp_rate = ${controlConfig.vel_ramp_rate}`)
-    commands.push(`odrv0.axis0.controller.config.torque_ramp_rate = ${controlConfig.torque_ramp_rate}`)
-    commands.push(`odrv0.axis0.controller.config.circular_setpoints = ${controlConfig.circular_setpoints ? 'True' : 'False'}`)
-    commands.push(`odrv0.axis0.controller.config.inertia = ${controlConfig.inertia}`)
-    commands.push(`odrv0.axis0.controller.config.input_filter_bandwidth = ${controlConfig.input_filter_bandwidth}`)
+    commands.push(`odrv0.axis0.controller.config.control_mode = ${safeValue(controlConfig.control_mode, 3)}`)
+    commands.push(`odrv0.axis0.controller.config.input_mode = ${safeValue(controlConfig.input_mode, 1)}`)
+    commands.push(`odrv0.axis0.controller.config.vel_limit = ${safeValue(controlConfig.vel_limit, 20)}`)
+    commands.push(`odrv0.axis0.controller.config.pos_gain = ${safeValue(controlConfig.pos_gain, 1)}`)
+    commands.push(`odrv0.axis0.controller.config.vel_gain = ${safeValue(controlConfig.vel_gain, 0.228)}`)
+    commands.push(`odrv0.axis0.controller.config.vel_integrator_gain = ${safeValue(controlConfig.vel_integrator_gain, 0.228)}`)
+    commands.push(`odrv0.axis0.controller.config.vel_limit_tolerance = ${safeValue(controlConfig.vel_limit_tolerance, 1.2)}`)
+    commands.push(`odrv0.axis0.controller.config.vel_ramp_rate = ${safeValue(controlConfig.vel_ramp_rate, 10)}`)
+    commands.push(`odrv0.axis0.controller.config.torque_ramp_rate = ${safeValue(controlConfig.torque_ramp_rate, 0.01)}`)
+    commands.push(`odrv0.axis0.controller.config.circular_setpoints = ${safeBool(controlConfig.circular_setpoints) ? 'True' : 'False'}`)
+    commands.push(`odrv0.axis0.controller.config.inertia = ${safeValue(controlConfig.inertia, 0)}`)
+    commands.push(`odrv0.axis0.controller.config.input_filter_bandwidth = ${safeValue(controlConfig.input_filter_bandwidth, 2)}`)
 
     // Interface configuration commands
-    if (interfaceConfig.enable_can) {
-      commands.push(`odrv0.axis0.config.can_node_id = ${interfaceConfig.can_node_id}`)
-      commands.push(`odrv0.can.config.baud_rate = ${interfaceConfig.can_baudrate}`)
+    if (safeBool(interfaceConfig.enable_can)) {
+      commands.push(`odrv0.axis0.config.can_node_id = ${safeValue(interfaceConfig.can_node_id, 0)}`)
+      commands.push(`odrv0.can.config.baud_rate = ${safeValue(interfaceConfig.can_baudrate, 250000)}`)
     }
     
-    if (interfaceConfig.enable_uart) {
-      commands.push(`odrv0.config.uart_baudrate = ${interfaceConfig.uart_baudrate}`)
+    if (safeBool(interfaceConfig.enable_uart)) {
+      commands.push(`odrv0.config.uart_baudrate = ${safeValue(interfaceConfig.uart_baudrate, 115200)}`)
     }
 
-    if (interfaceConfig.enable_watchdog) {
-      commands.push(`odrv0.axis0.config.watchdog_timeout = ${interfaceConfig.watchdog_timeout}`)
+    if (safeBool(interfaceConfig.enable_watchdog)) {
+      commands.push(`odrv0.axis0.config.watchdog_timeout = ${safeValue(interfaceConfig.watchdog_timeout, 0)}`)
     }
 
     // GPIO configuration
     for (let i = 1; i <= 4; i++) {
-      const gpioMode = interfaceConfig[`gpio${i}_mode`]
-      if (gpioMode !== undefined) {
-        commands.push(`odrv0.config.gpio${i}_mode = ${gpioMode}`)
-      }
+      const gpioMode = safeValue(interfaceConfig[`gpio${i}_mode`], 0)
+      commands.push(`odrv0.config.gpio${i}_mode = ${gpioMode}`)
     }
 
     return commands
@@ -264,44 +277,49 @@ const FinalConfigStep = () => {
             </Button>
 
             <Box>
-              <HStack spacing={4}>
+              <HStack justify="space-between" mb={2}>
+                <Text fontWeight="bold" color="white">Configuration Commands Preview</Text>
                 <Button
-                  colorScheme="blue"
-                  size="lg"
-                  flex="1"
-                  onClick={() => handleAction('apply')}
-                  isDisabled={!isConnected}
-                  isLoading={isLoading && pendingAction === 'apply'}
+                  size="sm"
+                  variant="ghost"
+                  onClick={onCommandsToggle}
+                  rightIcon={isCommandsOpen ? <ChevronUpIcon /> : <ChevronDownIcon />}
+                  color="gray.300"
                 >
-                  ⚙️ Apply New Configuration
+                  {isCommandsOpen ? 'Hide' : 'Show'} Commands ({generatedCommands.length})
                 </Button>
-                
-                <IconButton
-                  icon={showCommands ? <ChevronUpIcon /> : <ChevronDownIcon />}
-                  onClick={() => setShowCommands(!showCommands)}
-                  variant="outline"
-                  colorScheme="blue"
-                  aria-label="Toggle command preview"
-                />
               </HStack>
-
-              <Collapse in={showCommands} animateOpacity>
-                <Box mt={4} p={4} bg="gray.900" borderRadius="md" border="1px solid" borderColor="gray.600">
-                  <Text fontSize="sm" fontWeight="bold" color="white" mb={2}>
-                    Commands to be executed:
-                  </Text>
-                  <Box maxH="300px" overflowY="auto">
-                    {generatedCommands.map((command, index) => (
-                      <Code key={index} display="block" p={1} mb={1} fontSize="xs" bg="gray.800" color="green.300">
-                        {command}
-                      </Code>
-                    ))}
-                  </Box>
+              
+              <Collapse in={isCommandsOpen}>
+                <Box
+                  bg="gray.900"
+                  p={4}
+                  borderRadius="md"
+                  maxH="300px"
+                  overflowY="auto"
+                  border="1px solid"
+                  borderColor="gray.600"
+                >
+                  {generatedCommands.map((command, index) => (
+                    <Code key={index} display="block" whiteSpace="pre" color="green.300" bg="transparent" p={1}>
+                      {command}
+                    </Code>
+                  ))}
                 </Box>
               </Collapse>
             </Box>
 
-            <Divider borderColor="gray.600" />
+            <Button
+              colorScheme="blue"
+              size="lg"
+              onClick={() => handleAction('apply')}
+              isDisabled={!isConnected}
+              isLoading={isLoading && pendingAction === 'apply'}
+            >
+              ⚙️ Apply New Configuration
+            </Button>
+
+            <Divider />
 
             <Button
               colorScheme="green"
@@ -315,6 +333,7 @@ const FinalConfigStep = () => {
 
             <Button
               colorScheme="orange"
+              variant="outline"
               size="lg"
               onClick={() => handleAction('calibrate')}
               isDisabled={!isConnected}
@@ -355,10 +374,10 @@ const FinalConfigStep = () => {
                 <strong>Apply vs Save:</strong> Apply sends commands temporarily. Save makes them permanent across reboots.
               </Text>
             </Alert>
-            <Alert status="warning" variant="left-accent">
+            <Alert status="info" variant="left-accent">
               <AlertIcon />
               <Text>
-                <strong>Safety:</strong> Ensure motor is mechanically secured before calibration. Motor will spin during calibration.
+                <strong>Reboot Behavior:</strong> Device will disconnect briefly during reboot and reconnect automatically.
               </Text>
             </Alert>
           </VStack>
@@ -366,45 +385,30 @@ const FinalConfigStep = () => {
       </Card>
 
       {/* Confirmation Modal */}
-      <Modal isOpen={isConfirmOpen} onClose={onConfirmClose} size="lg">
+      <Modal isOpen={isConfirmOpen} onClose={onConfirmClose} isCentered>
         <ModalOverlay />
-        <ModalContent bg="gray.800" border="1px solid" borderColor="gray.600">
+        <ModalContent bg="gray.800" borderColor="gray.600">
           <ModalHeader color="white">
             {getActionDetails(pendingAction).title}
           </ModalHeader>
-          <ModalCloseButton color="gray.300" />
+          <ModalCloseButton color="white" />
           <ModalBody>
-            <VStack spacing={4} align="stretch">
-              <Text color="gray.300">
-                {getActionDetails(pendingAction).description}
-              </Text>
-              
-              {pendingAction === 'apply' && (
-                <Box p={3} bg="gray.900" borderRadius="md" maxH="200px" overflowY="auto">
-                  <Text fontSize="sm" fontWeight="bold" color="white" mb={2}>
-                    Commands to execute:
-                  </Text>
-                  {generatedCommands.map((command, index) => (
-                    <Code key={index} display="block" p={1} mb={1} fontSize="xs" bg="gray.800" color="green.300">
-                      {command}
-                    </Code>
-                  ))}
-                </Box>
-              )}
-
-              {pendingAction === 'calibrate' && (
-                <Alert status="warning">
-                  <AlertIcon />
-                  <Box>
-                    <Text fontWeight="bold">Warning:</Text>
-                    <Text>The motor will spin during calibration. Ensure it is mechanically secure and safe to operate.</Text>
-                  </Box>
-                </Alert>
-              )}
-            </VStack>
+            <Text color="gray.300" mb={4}>
+              {getActionDetails(pendingAction).description}
+            </Text>
+            {pendingAction === 'apply' && (
+              <Box>
+                <Text color="white" fontWeight="bold" mb={2}>
+                  Commands to execute: {generatedCommands.length}
+                </Text>
+                <Text color="gray.400" fontSize="sm">
+                  This will send all configuration commands shown in the preview above.
+                </Text>
+              </Box>
+            )}
           </ModalBody>
           <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onConfirmClose} color="gray.300">
+            <Button variant="ghost" mr={3} onClick={onConfirmClose}>
               Cancel
             </Button>
             <Button

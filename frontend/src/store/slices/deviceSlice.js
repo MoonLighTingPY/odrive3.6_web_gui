@@ -1,20 +1,17 @@
 import { createSlice } from '@reduxjs/toolkit'
 
 const initialState = {
-  // Device connection state
-  isScanning: false,
   availableDevices: [],
   connectedDevice: null,
   isConnected: false,
+  isScanning: false,
   connectionError: null,
-  
-  // Device state
   odriveState: {},
-  lastUpdateTime: null,
-  
-  // Telemetry
-  telemetryEnabled: false,
-  telemetryRate: 100, // ms
+  lastUpdateTime: 0,
+  telemetryEnabled: true,
+  telemetryRate: 10, // Hz
+  connectionLost: false,
+  reconnecting: false,
 }
 
 const deviceSlice = createSlice({
@@ -30,19 +27,33 @@ const deviceSlice = createSlice({
     setConnectedDevice: (state, action) => {
       state.connectedDevice = action.payload
       state.isConnected = !!action.payload
-      if (!action.payload) {
-        state.odriveState = {}
-        state.connectionError = null
-      }
+      state.connectionError = null
+      state.connectionLost = false
+      state.reconnecting = false
     },
     setConnectionError: (state, action) => {
       state.connectionError = action.payload
       state.isConnected = false
       state.connectedDevice = null
     },
+    setConnectionLost: (state, action) => {
+      state.connectionLost = action.payload
+      if (action.payload) {
+        state.isConnected = false
+      }
+    },
+    setReconnecting: (state, action) => {
+      state.reconnecting = action.payload
+    },
     updateOdriveState: (state, action) => {
       state.odriveState = action.payload
       state.lastUpdateTime = Date.now()
+      // If we successfully got state, connection is restored
+      if (Object.keys(action.payload).length > 0 && state.connectionLost) {
+        state.connectionLost = false
+        state.reconnecting = false
+        state.isConnected = true
+      }
     },
     updateDeviceProperty: (state, action) => {
       const { path, value } = action.payload
@@ -72,6 +83,8 @@ const deviceSlice = createSlice({
       state.connectedDevice = null
       state.isConnected = false
       state.connectionError = null
+      state.connectionLost = false
+      state.reconnecting = false
     },
   },
 })
@@ -81,6 +94,8 @@ export const {
   setAvailableDevices,
   setConnectedDevice,
   setConnectionError,
+  setConnectionLost,
+  setReconnecting,
   updateOdriveState,
   updateDeviceProperty,
   setTelemetryEnabled,
