@@ -119,12 +119,12 @@ const DashboardTab = ({ isConnected, odriveState }) => {
               )}
             </HStack>
           </HStack>
-          <Text fontSize="xs" color="gray.600" mb={1}>
+          <Text fontSize="xs" color="gray.0" mb={1}>
             {description}
           </Text>
           <Text 
             fontSize="xs" 
-            color="blue.500" 
+            color="blue.300" 
             cursor="pointer"
             _hover={{ textDecoration: 'underline' }}
             onClick={() => handleErrorClick(errorCode, errorType)}
@@ -207,7 +207,7 @@ const DashboardTab = ({ isConnected, odriveState }) => {
             <CardHeader>
               <HStack>
                 <Icon as={WarningIcon} color="red.300" />
-                <Heading size="md" color="red.300">System Errors - Click for Help</Heading>
+                <Heading size="md" color="red.0">System Errors - Click for Help</Heading>
               </HStack>
             </CardHeader>
             <CardBody>
