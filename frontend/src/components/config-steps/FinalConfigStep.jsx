@@ -24,8 +24,14 @@ import {
   useToast,
   Code,
   Divider,
+  Input,
+  IconButton,
+  Tooltip,
+  Switch,
+  FormControl,
+  FormLabel,
 } from '@chakra-ui/react'
-import { ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons'
+import { ChevronDownIcon, ChevronUpIcon, EditIcon, CheckIcon, CloseIcon, DeleteIcon } from '@chakra-ui/icons'
 
 const FinalConfigStep = () => {
   const toast = useToast()
@@ -34,6 +40,11 @@ const FinalConfigStep = () => {
   
   const [isLoading, setIsLoading] = useState(false)
   const [pendingAction, setPendingAction] = useState(null)
+  const [editingIndex, setEditingIndex] = useState(-1)
+  const [editingCommand, setEditingCommand] = useState('')
+  const [customCommands, setCustomCommands] = useState({})
+  const [disabledCommands, setDisabledCommands] = useState(new Set())
+  const [enableCommandEditing, setEnableCommandEditing] = useState(false)
   
   const { powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig } = useSelector(state => state.config)
   const { isConnected } = useSelector(state => state.device)
@@ -54,8 +65,8 @@ const FinalConfigStep = () => {
     return Boolean(value)
   }
 
-  // Generate commands using useMemo to prevent infinite re-renders
-  const generatedCommands = useMemo(() => {
+  // Generate base commands using useMemo to prevent infinite re-renders
+  const baseGeneratedCommands = useMemo(() => {
     const commands = []
 
     // Power configuration commands (ODrive v0.5.6 syntax)
@@ -143,6 +154,14 @@ const FinalConfigStep = () => {
     return commands
   }, [powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig])
 
+  // Final commands list with custom edits applied
+  const finalCommands = useMemo(() => {
+    return baseGeneratedCommands.map((command, index) => {
+      // Return custom command if edited, otherwise return original
+      return customCommands[index] || command
+    }).filter((_, index) => !disabledCommands.has(index))
+  }, [baseGeneratedCommands, customCommands, disabledCommands])
+
   const executeAction = async (action) => {
     if (!isConnected) {
       toast({
@@ -165,7 +184,7 @@ const FinalConfigStep = () => {
           break
         case 'apply':
           endpoint = '/api/odrive/apply_config'
-          payload = { commands: generatedCommands }
+          payload = { commands: finalCommands }
           break
         case 'save_and_reboot':
           endpoint = '/api/odrive/save_and_reboot'
@@ -213,6 +232,57 @@ const FinalConfigStep = () => {
     onConfirmOpen()
   }
 
+  const startEditing = (index) => {
+    setEditingIndex(index)
+    setEditingCommand(customCommands[index] || baseGeneratedCommands[index])
+  }
+
+  const saveEdit = () => {
+    if (editingCommand.trim()) {
+      setCustomCommands(prev => ({
+        ...prev,
+        [editingIndex]: editingCommand.trim()
+      }))
+    }
+    setEditingIndex(-1)
+    setEditingCommand('')
+  }
+
+  const cancelEdit = () => {
+    setEditingIndex(-1)
+    setEditingCommand('')
+  }
+
+  const resetCommand = (index) => {
+    setCustomCommands(prev => {
+      const newCustom = { ...prev }
+      delete newCustom[index]
+      return newCustom
+    })
+  }
+
+  const toggleCommand = (index) => {
+    setDisabledCommands(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(index)) {
+        newSet.delete(index)
+      } else {
+        newSet.add(index)
+      }
+      return newSet
+    })
+  }
+
+  const addCustomCommand = () => {
+    const newIndex = baseGeneratedCommands.length
+    setCustomCommands(prev => ({
+      ...prev,
+      [newIndex]: '# Add your custom command here'
+    }))
+    setEditingIndex(newIndex)
+    setEditingCommand('# Add your custom command here')
+  }
+
   const getActionDetails = (action) => {
     const details = {
       erase: {
@@ -248,6 +318,8 @@ const FinalConfigStep = () => {
     }
     return details[action] || {}
   }
+
+  const enabledCommandCount = baseGeneratedCommands.length - disabledCommands.size + Object.keys(customCommands).filter(key => parseInt(key) >= baseGeneratedCommands.length).length
 
   return (
     <VStack spacing={6} align="stretch" maxW="800px">
@@ -285,16 +357,32 @@ const FinalConfigStep = () => {
 
             <Box>
               <HStack justify="space-between" mb={2}>
-                <Text fontWeight="bold" color="white">Configuration Commands Preview</Text>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={onCommandsToggle}
-                  rightIcon={isCommandsOpen ? <ChevronUpIcon /> : <ChevronDownIcon />}
-                  color="gray.300"
-                >
-                  {isCommandsOpen ? 'Hide' : 'Show'} Commands ({generatedCommands.length})
-                </Button>
+                <Text fontWeight="bold" color="white">
+                  Configuration Commands Preview ({enabledCommandCount} commands)
+                </Text>
+                <HStack>
+                  <FormControl display="flex" alignItems="center">
+                    <FormLabel htmlFor="enable-editing" mb="0" color="gray.300" fontSize="sm">
+                      Enable Editing
+                    </FormLabel>
+                    <Switch
+                      id="enable-editing"
+                      size="sm"
+                      colorScheme="odrive"
+                      isChecked={enableCommandEditing}
+                      onChange={(e) => setEnableCommandEditing(e.target.checked)}
+                    />
+                  </FormControl>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={onCommandsToggle}
+                    rightIcon={isCommandsOpen ? <ChevronUpIcon /> : <ChevronDownIcon />}
+                    color="gray.300"
+                  >
+                    {isCommandsOpen ? 'Hide' : 'Show'} Commands
+                  </Button>
+                </HStack>
               </HStack>
               
               <Collapse in={isCommandsOpen}>
@@ -302,16 +390,209 @@ const FinalConfigStep = () => {
                   bg="gray.900"
                   p={4}
                   borderRadius="md"
-                  maxH="300px"
+                  maxH="400px"
                   overflowY="auto"
                   border="1px solid"
                   borderColor="gray.600"
                 >
-                  {generatedCommands.map((command, index) => (
-                    <Code key={index} display="block" whiteSpace="pre" color="green.300" bg="transparent" p={1}>
-                      {command}
-                    </Code>
-                  ))}
+                  <VStack spacing={2} align="stretch">
+                    {baseGeneratedCommands.map((command, index) => {
+                      const isEditing = editingIndex === index
+                      const isCustom = customCommands[index] !== undefined
+                      const isDisabled = disabledCommands.has(index)
+                      const displayCommand = customCommands[index] || command
+
+                      return (
+                        <HStack key={index} spacing={2} opacity={isDisabled ? 0.5 : 1}>
+                          {enableCommandEditing && (
+                            <Tooltip label={isDisabled ? "Enable command" : "Disable command"}>
+                              <IconButton
+                                size="xs"
+                                variant="ghost"
+                                icon={<input type="checkbox" checked={!isDisabled} onChange={() => toggleCommand(index)} style={{ accentColor: '#00d4aa' }} />}
+                                aria-label="Toggle command"
+                              />
+                            </Tooltip>
+                          )}
+                          
+                          {isEditing ? (
+                            <HStack flex={1} spacing={1}>
+                              <Input
+                                size="sm"
+                                value={editingCommand}
+                                onChange={(e) => setEditingCommand(e.target.value)}
+                                bg="gray.800"
+                                border="1px solid"
+                                borderColor="blue.400"
+                                color="white"
+                                fontFamily="mono"
+                                fontSize="sm"
+                              />
+                              <IconButton
+                                size="xs"
+                                colorScheme="green"
+                                icon={<CheckIcon />}
+                                onClick={saveEdit}
+                                aria-label="Save edit"
+                              />
+                              <IconButton
+                                size="xs"
+                                colorScheme="red"
+                                icon={<CloseIcon />}
+                                onClick={cancelEdit}
+                                aria-label="Cancel edit"
+                              />
+                            </HStack>
+                          ) : (
+                            <Code
+                              display="block"
+                              whiteSpace="pre"
+                              color={isCustom ? "yellow.300" : "green.300"}
+                              bg="transparent"
+                              p={1}
+                              fontSize="sm"
+                              flex={1}
+                              textDecoration={isDisabled ? "line-through" : "none"}
+                            >
+                              {displayCommand}
+                            </Code>
+                          )}
+                          
+                          {enableCommandEditing && !isEditing && (
+                            <HStack spacing={1}>
+                              <Tooltip label="Edit command">
+                                <IconButton
+                                  size="xs"
+                                  variant="ghost"
+                                  icon={<EditIcon />}
+                                  onClick={() => startEditing(index)}
+                                  aria-label="Edit command"
+                                  color="gray.400"
+                                />
+                              </Tooltip>
+                              {isCustom && (
+                                <Tooltip label="Reset to original">
+                                  <IconButton
+                                    size="xs"
+                                    variant="ghost"
+                                    icon={<DeleteIcon />}
+                                    onClick={() => resetCommand(index)}
+                                    aria-label="Reset command"
+                                    color="gray.400"
+                                  />
+                                </Tooltip>
+                              )}
+                            </HStack>
+                          )}
+                        </HStack>
+                      )
+                    })}
+                    
+                    {/* Custom commands */}
+                    {Object.keys(customCommands)
+                      .filter(key => parseInt(key) >= baseGeneratedCommands.length)
+                      .map(key => {
+                        const index = parseInt(key)
+                        const isEditing = editingIndex === index
+                        const isDisabled = disabledCommands.has(index)
+
+                        return (
+                          <HStack key={index} spacing={2} opacity={isDisabled ? 0.5 : 1}>
+                            {enableCommandEditing && (
+                              <Tooltip label={isDisabled ? "Enable command" : "Disable command"}>
+                                <IconButton
+                                  size="xs"
+                                  variant="ghost"
+                                  icon={<input type="checkbox" checked={!isDisabled} onChange={() => toggleCommand(index)} style={{ accentColor: '#00d4aa' }} />}
+                                  aria-label="Toggle command"
+                                />
+                              </Tooltip>
+                            )}
+                            
+                            {isEditing ? (
+                              <HStack flex={1} spacing={1}>
+                                <Input
+                                  size="sm"
+                                  value={editingCommand}
+                                  onChange={(e) => setEditingCommand(e.target.value)}
+                                  bg="gray.800"
+                                  border="1px solid"
+                                  borderColor="blue.400"
+                                  color="white"
+                                  fontFamily="mono"
+                                  fontSize="sm"
+                                />
+                                <IconButton
+                                  size="xs"
+                                  colorScheme="green"
+                                  icon={<CheckIcon />}
+                                  onClick={saveEdit}
+                                  aria-label="Save edit"
+                                />
+                                <IconButton
+                                  size="xs"
+                                  colorScheme="red"
+                                  icon={<CloseIcon />}
+                                  onClick={cancelEdit}
+                                  aria-label="Cancel edit"
+                                />
+                              </HStack>
+                            ) : (
+                              <Code
+                                display="block"
+                                whiteSpace="pre"
+                                color="cyan.300"
+                                bg="transparent"
+                                p={1}
+                                fontSize="sm"
+                                flex={1}
+                                textDecoration={isDisabled ? "line-through" : "none"}
+                              >
+                                {customCommands[index]}
+                              </Code>
+                            )}
+                            
+                            {enableCommandEditing && !isEditing && (
+                              <HStack spacing={1}>
+                                <Tooltip label="Edit command">
+                                  <IconButton
+                                    size="xs"
+                                    variant="ghost"
+                                    icon={<EditIcon />}
+                                    onClick={() => startEditing(index)}
+                                    aria-label="Edit command"
+                                    color="gray.400"
+                                  />
+                                </Tooltip>
+                                <Tooltip label="Delete custom command">
+                                  <IconButton
+                                    size="xs"
+                                    variant="ghost"
+                                    icon={<DeleteIcon />}
+                                    onClick={() => resetCommand(index)}
+                                    aria-label="Delete command"
+                                    color="gray.400"
+                                  />
+                                </Tooltip>
+                              </HStack>
+                            )}
+                          </HStack>
+                        )
+                      })}
+                    
+                    {enableCommandEditing && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        colorScheme="blue"
+                        onClick={addCustomCommand}
+                        leftIcon={<EditIcon />}
+                        mt={2}
+                      >
+                        Add Custom Command
+                      </Button>
+                    )}
+                  </VStack>
                 </Box>
               </Collapse>
             </Box>
@@ -384,6 +665,12 @@ const FinalConfigStep = () => {
             <Alert status="info" variant="left-accent">
               <AlertIcon />
               <Text>
+                <strong>Command Editing:</strong> Toggle "Enable Editing" to modify, disable, or add custom commands before applying.
+              </Text>
+            </Alert>
+            <Alert status="info" variant="left-accent">
+              <AlertIcon />
+              <Text>
                 <strong>ODrive v0.5.6 Notes:</strong> UART configuration is handled via GPIO pin modes. Some newer firmware features may not be available.
               </Text>
             </Alert>
@@ -412,11 +699,16 @@ const FinalConfigStep = () => {
             {pendingAction === 'apply' && (
               <Box>
                 <Text color="white" fontWeight="bold" mb={2}>
-                  Commands to execute: {generatedCommands.length}
+                  Commands to execute: {enabledCommandCount}
                 </Text>
                 <Text color="gray.400" fontSize="sm">
-                  This will send all configuration commands shown in the preview above.
+                  This will send all enabled configuration commands shown in the preview above.
                 </Text>
+                {Object.keys(customCommands).length > 0 && (
+                  <Text color="yellow.400" fontSize="sm" mt={2}>
+                    ⚠️ Includes {Object.keys(customCommands).length} custom/modified commands
+                  </Text>
+                )}
               </Box>
             )}
           </ModalBody>
