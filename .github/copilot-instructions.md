@@ -6,3 +6,4 @@ The goal is to create a GUI for odrivetool that allows users to interact with th
 It should have same functionality as the official ODrive GUI, that is only available for never versions of the firmware.
 The gui is intended to be used with the ODrive firmware version 3.6-56V, which is a specific version of the ODrive firmware.
 The gui is web-based and uses react.js for the frontend and python for the backend.
+The production build should be done using pyinstaller, so the GUI can be run as a standalone application.
