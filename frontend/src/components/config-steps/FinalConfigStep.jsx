@@ -113,24 +113,31 @@ const FinalConfigStep = () => {
     commands.push(`odrv0.axis0.controller.config.inertia = ${safeValue(controlConfig.inertia, 0)}`)
     commands.push(`odrv0.axis0.controller.config.input_filter_bandwidth = ${safeValue(controlConfig.input_filter_bandwidth, 2)}`)
 
-    // Interface configuration commands
+    // Interface configuration commands (ODrive v0.5.6 specific)
+    
+    // CAN configuration (v0.5.6 syntax)
     if (safeBool(interfaceConfig.enable_can)) {
-      commands.push(`odrv0.axis0.config.can_node_id = ${safeValue(interfaceConfig.can_node_id, 0)}`)
-      commands.push(`odrv0.can.config.baud_rate = ${safeValue(interfaceConfig.can_baudrate, 250000)}`)
+      commands.push(`odrv0.axis0.config.can.node_id = ${safeValue(interfaceConfig.can_node_id, 0)}`)
+      // Note: CAN baudrate is typically set via DIP switches or other methods in v0.5.6
     }
     
-    if (safeBool(interfaceConfig.enable_uart)) {
-      commands.push(`odrv0.config.uart_baudrate = ${safeValue(interfaceConfig.uart_baudrate, 115200)}`)
-    }
-
+    // UART configuration is done via GPIO pins in v0.5.6, not a global baudrate setting
+    // Skip UART baudrate configuration as it's not available in this firmware version
+    
+    // Watchdog configuration
     if (safeBool(interfaceConfig.enable_watchdog)) {
       commands.push(`odrv0.axis0.config.watchdog_timeout = ${safeValue(interfaceConfig.watchdog_timeout, 0)}`)
     }
 
-    // GPIO configuration
+    // GPIO configuration (v0.5.6 syntax)
     for (let i = 1; i <= 4; i++) {
       const gpioMode = safeValue(interfaceConfig[`gpio${i}_mode`], 0)
       commands.push(`odrv0.config.gpio${i}_mode = ${gpioMode}`)
+    }
+
+    // Step/Direction interface (if enabled)
+    if (safeBool(interfaceConfig.enable_step_dir)) {
+      commands.push(`odrv0.axis0.config.step_dir_always_on = ${safeBool(interfaceConfig.step_dir_always_on) ? 'True' : 'False'}`)
     }
 
     return commands
@@ -372,6 +379,12 @@ const FinalConfigStep = () => {
               <AlertIcon />
               <Text>
                 <strong>Apply vs Save:</strong> Apply sends commands temporarily. Save makes them permanent across reboots.
+              </Text>
+            </Alert>
+            <Alert status="info" variant="left-accent">
+              <AlertIcon />
+              <Text>
+                <strong>ODrive v0.5.6 Notes:</strong> UART configuration is handled via GPIO pin modes. Some newer firmware features may not be available.
               </Text>
             </Alert>
             <Alert status="info" variant="left-accent">
