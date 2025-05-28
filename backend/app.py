@@ -304,10 +304,11 @@ class ODriveManager:
         if not self.current_device:
             return {'error': 'No device connected'}
         
-        # Check connection and try to reconnect if needed
-        if not self.check_connection():
-            if not self.try_reconnect():
-                return {'error': 'Device disconnected and could not reconnect'}
+        # Check connection and try to reconnect if needed (but not during reboot)
+        if not self.is_rebooting:
+            if not self.check_connection():
+                if not self.try_reconnect():
+                    return {'error': 'Device disconnected and could not reconnect'}
         
         try:
             # Normalize the command to use 'device' reference
@@ -328,6 +329,14 @@ class ODriveManager:
             }
             
             logger.info(f"Executing command: {command} -> {normalized_command}")
+            
+            # Special handling for reboot-related commands
+            if 'erase_configuration' in normalized_command or 'reboot' in normalized_command:
+                # Mark as rebooting before executing
+                self.is_rebooting = True
+                self.reboot_start_time = time.time()
+                self.connection_lost = True
+                self.reconnection_attempts = 0
             
             # Check if this is an assignment or function call
             if '=' in normalized_command:
@@ -360,17 +369,37 @@ class ODriveManager:
                 # Handle function calls
                 try:
                     result = eval(normalized_command, {}, local_context)
+                    
+                    # If this was a reboot command and it succeeded, expect disconnection
+                    if 'erase_configuration' in normalized_command or 'reboot' in normalized_command:
+                        return {'result': 'Command executed successfully - device will reboot'}
+                    
                     return {'result': str(result) if result is not None else 'Command executed successfully'}
                 except Exception as e:
                     # If eval fails, try exec for commands that don't return values
                     try:
                         exec(normalized_command, {}, local_context)
+                        
+                        # If this was a reboot command and it succeeded, expect disconnection
+                        if 'erase_configuration' in normalized_command or 'reboot' in normalized_command:
+                            return {'result': 'Command executed successfully - device will reboot'}
+                        
                         return {'result': 'Command executed successfully'}
                     except Exception as e2:
+                        # For reboot commands, disconnection errors are expected
+                        if ('erase_configuration' in normalized_command or 'reboot' in normalized_command) and 'disconnected' in str(e2).lower():
+                            logger.info(f"Reboot command executed, device disconnected as expected: {e2}")
+                            return {'result': 'Command executed successfully - device rebooted'}
+                        
                         logger.error(f"Error in command execution: {e2}")
                         return {'error': str(e2)}
                 
         except Exception as e:
+            # For reboot commands, disconnection errors are expected
+            if ('erase_configuration' in command or 'reboot' in command) and 'disconnected' in str(e).lower():
+                logger.info(f"Reboot command executed, device disconnected as expected: {e}")
+                return {'result': 'Command executed successfully - device rebooted'}
+            
             logger.error(f"Error executing command '{command}': {e}")
             # Check if this was a connection error
             if "disconnected" in str(e).lower() or "connection" in str(e).lower():
@@ -541,26 +570,32 @@ def apply_config():
 def erase_config():
     """Erase configuration and reboot"""
     try:
-        # First, erase the configuration
-        result = odrive_manager.execute_command('device.erase_configuration()')
-        if 'error' in result:
-            return jsonify(result), 400
-            
-        # Wait a moment for the command to take effect
-        time.sleep(0.5)
-        
-        # Mark as rebooting before sending reboot command
+        # Mark as rebooting before sending erase command since it will disconnect immediately
         odrive_manager.is_rebooting = True
         odrive_manager.reboot_start_time = time.time()
         odrive_manager.connection_lost = True
         odrive_manager.reconnection_attempts = 0
         
-        # Then reboot - this will cause the device to disconnect
+        # Execute erase configuration - this will disconnect the device immediately
         try:
-            odrive_manager.execute_command('device.reboot()')
+            # Direct call without going through execute_command to avoid reconnection attempts
+            if odrive_manager.current_device:
+                odrive_manager.current_device.erase_configuration()
+                logger.info("Erase configuration command sent successfully")
+        except Exception as e:
+            # Expected to fail as device disconnects immediately
+            logger.info(f"Erase command completed, device disconnected as expected: {e}")
+        
+        # Wait a moment before attempting reboot (if device is still responsive)
+        time.sleep(1.0)
+        
+        # Try to send reboot command, but don't worry if it fails
+        try:
+            if odrive_manager.current_device:
+                odrive_manager.current_device.reboot()
         except:
-            # Reboot command may fail as device disconnects immediately
-            pass
+            # Expected to fail as device may already be rebooting
+            logger.info("Reboot command sent or device already rebooting")
         
         return jsonify({
             'message': 'Configuration erased and device rebooted. Device will reconnect automatically.',
@@ -574,13 +609,19 @@ def erase_config():
 def save_and_reboot():
     """Save configuration and reboot"""
     try:
-        # Save configuration
-        result = odrive_manager.execute_command('device.save_configuration()')
-        if 'error' in result:
-            return jsonify(result), 400
+        # Save configuration first
+        try:
+            if odrive_manager.current_device:
+                odrive_manager.current_device.save_configuration()
+                logger.info("Save configuration command sent successfully")
+            else:
+                return jsonify({'error': 'No device connected'}), 400
+        except Exception as e:
+            logger.error(f"Error saving configuration: {e}")
+            return jsonify({'error': f'Failed to save configuration: {str(e)}'}), 400
             
         # Wait a moment for the save to complete
-        time.sleep(0.5)
+        time.sleep(1.0)
         
         # Mark as rebooting before sending reboot command
         odrive_manager.is_rebooting = True
@@ -590,10 +631,12 @@ def save_and_reboot():
         
         # Reboot the device - this will cause disconnection
         try:
-            odrive_manager.execute_command('device.reboot()')
-        except:
-            # Reboot command may fail as device disconnects immediately
-            pass
+            if odrive_manager.current_device:
+                odrive_manager.current_device.reboot()
+                logger.info("Reboot command sent successfully")
+        except Exception as e:
+            # Expected to fail as device disconnects immediately
+            logger.info(f"Reboot command completed, device disconnected as expected: {e}")
         
         return jsonify({
             'message': 'Configuration saved and device rebooted. Device will reconnect automatically.',
