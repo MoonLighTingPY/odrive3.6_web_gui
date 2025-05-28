@@ -1,0 +1,162 @@
+.device-list {
+  padding: 20px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.device-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.device-list-header h3 {
+  margin: 0;
+  color: #ffffff;
+}
+
+.scan-button {
+  padding: 8px 16px;
+  background-color: #0d7377;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.scan-button:hover:not(:disabled) {
+  background-color: #14a085;
+}
+
+.scan-button:disabled {
+  background-color: #555;
+  cursor: not-allowed;
+}
+
+.devices {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.no-devices {
+  text-align: center;
+  color: #888;
+  padding: 40px 0;
+}
+
+.device {
+  background-color: #404040;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.device:hover {
+  background-color: #4a4a4a;
+}
+
+.device.connected {
+  background-color: #0d7377;
+  border: 1px solid #14a085;
+}
+
+.device-info {
+  flex: 1;
+}
+
+.device-name {
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+.device-serial {
+  font-size: 0.8em;
+  color: #ccc;
+  margin-bottom: 2px;
+}
+
+.device-fw {
+  font-size: 0.8em;
+  color: #aaa;
+}
+
+.connect-button, .disconnect-button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.connect-button {
+  background-color: #28a745;
+  color: white;
+}
+
+.connect-button:hover {
+  background-color: #218838;
+}
+
+.disconnect-button {
+  background-color: #dc3545;
+  color: white;
+}
+
+.disconnect-button:hover {
+  background-color: #c82333;
+}
+
+.device-status {
+  margin-top: 30px;
+  padding: 20px;
+  background-color: #333;
+  border-radius: 8px;
+}
+
+.device-status h4 {
+  margin: 0 0 15px 0;
+  color: #fff;
+}
+
+.status-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.status-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #555;
+}
+
+.status-item:last-child {
+  border-bottom: none;
+}
+
+.status-item.error {
+  color: #ff6b6b;
+}
+
+.status-item .label {
+  font-size: 0.9em;
+  color: #ccc;
+}
+
+.status-item .value {
+  font-weight: bold;
+  color: #fff;
+}
+
+.status-item.error .value {
+  color: #ff6b6b;
+}
