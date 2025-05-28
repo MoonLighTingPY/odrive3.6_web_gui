@@ -28,41 +28,52 @@ class ODriveManager:
         self.current_device = None
         self.telemetry_data = {}
         self.is_scanning = False
-    
+
     def scan_for_devices(self) -> List[Dict[str, Any]]:
-        """Scan for connected ODrive devices"""
-        self.is_scanning = True
+        """Scan for ODrive devices"""
         devices = []
-        
         try:
-            # Find all connected ODrives
-            odrv_list = odrive.find_any(timeout=5)
+            self.is_scanning = True
+            logger.info("Scanning for ODrive devices...")
             
-            if isinstance(odrv_list, list):
-                for i, odrv in enumerate(odrv_list):
-                    if odrv:
-                        devices.append({
-                            'path': f'ODrive_{i}',
-                            'serial': hex(odrv.serial_number) if hasattr(odrv, 'serial_number') else f'Unknown_{i}',
+            # Find all connected ODrives
+            odrives = odrive.find_any(timeout=5)
+            if odrives:
+                # Handle single device or list of devices
+                if not isinstance(odrives, list):
+                    odrives = [odrives]
+                
+                for i, odrv in enumerate(odrives):
+                    try:
+                        device_info = {
+                            'path': f'USB:{i}',
+                            'serial': hex(odrv.serial_number) if hasattr(odrv, 'serial_number') else f'unknown_{i}',
                             'fw_version': getattr(odrv, 'fw_version_string', 'v0.5.6'),
+                            'hw_version': getattr(odrv, 'hw_version_string', 'v3.6-56V'),
+                            'index': i
+                        }
+                        devices.append(device_info)
+                        logger.info(f"Found ODrive: {device_info}")
+                    except Exception as e:
+                        logger.error(f"Error getting device info for ODrive {i}: {e}")
+                        # Add a basic entry even if we can't get details
+                        devices.append({
+                            'path': f'USB:{i}',
+                            'serial': f'unknown_{i}',
+                            'fw_version': 'v0.5.6',
+                            'hw_version': 'v3.6-56V',
                             'index': i
                         })
             else:
-                # Single device found
-                if odrv_list:
-                    devices.append({
-                        'path': 'ODrive_0',
-                        'serial': hex(odrv_list.serial_number) if hasattr(odrv_list, 'serial_number') else 'Unknown_0',
-                        'fw_version': getattr(odrv_list, 'fw_version_string', 'v0.5.6'),
-                        'index': 0
-                    })
-                    
+                logger.info("No ODrive devices found")
+                
         except Exception as e:
-            logger.error(f"Error scanning for devices: {e}")
-        
-        self.is_scanning = False
+            logger.error(f"Error during device scan: {e}")
+        finally:
+            self.is_scanning = False
+            
         return devices
-    
+
     def connect_to_device(self, device_info: Dict[str, Any]) -> bool:
         """Connect to a specific ODrive device"""
         try:
@@ -92,7 +103,7 @@ class ODriveManager:
         except Exception as e:
             logger.error(f"Error disconnecting: {e}")
             return False
-    
+
     def get_device_state(self) -> Dict[str, Any]:
         """Get current device state"""
         if not self.current_device:
@@ -136,7 +147,7 @@ class ODriveManager:
         except Exception as e:
             logger.error(f"Error getting device state: {e}")
             return {}
-    
+
     def execute_command(self, command: str) -> Dict[str, Any]:
         """Execute a command on the ODrive"""
         if not self.current_device:
@@ -146,6 +157,9 @@ class ODriveManager:
             # Replace odrv0 with actual device reference
             command = command.replace('odrv0', 'self.current_device')
             
+            # Handle boolean values properly
+            command = command.replace('True', 'True').replace('False', 'False')
+            
             # Execute the command
             result = eval(command)
             
@@ -153,7 +167,7 @@ class ODriveManager:
         except Exception as e:
             logger.error(f"Error executing command '{command}': {e}")
             return {'error': str(e)}
-    
+
     def set_property(self, path: str, value: Any) -> Dict[str, Any]:
         """Set a property on the ODrive"""
         if not self.current_device:
@@ -271,7 +285,7 @@ def apply_config():
         
         for command in commands:
             result = odrive_manager.execute_command(command)
-            results.append(result)
+            results.append({'command': command, 'result': result})
             
             if 'error' in result:
                 return jsonify({
@@ -292,10 +306,10 @@ def apply_config():
 def erase_config():
     """Erase configuration and reboot"""
     try:
-        result = odrive_manager.execute_command('odrv0.erase_configuration()')
+        result = odrive_manager.execute_command('self.current_device.erase_configuration()')
         if 'error' not in result:
             # Reboot the device
-            odrive_manager.execute_command('odrv0.reboot()')
+            odrive_manager.execute_command('self.current_device.reboot()')
             return jsonify({'message': 'Configuration erased and device rebooted'})
         else:
             return jsonify(result), 400
@@ -308,10 +322,10 @@ def save_and_reboot():
     """Save configuration and reboot"""
     try:
         # Save configuration
-        result = odrive_manager.execute_command('odrv0.save_configuration()')
+        result = odrive_manager.execute_command('self.current_device.save_configuration()')
         if 'error' not in result:
             # Reboot the device
-            odrive_manager.execute_command('odrv0.reboot()')
+            odrive_manager.execute_command('self.current_device.reboot()')
             return jsonify({'message': 'Configuration saved and device rebooted'})
         else:
             return jsonify(result), 400
@@ -323,7 +337,7 @@ def save_and_reboot():
 def calibrate():
     """Start calibration sequence"""
     try:
-        result = odrive_manager.execute_command('odrv0.axis0.requested_state = 3')  # FULL_CALIBRATION_SEQUENCE
+        result = odrive_manager.execute_command('self.current_device.axis0.requested_state = 3')  # FULL_CALIBRATION_SEQUENCE
         if 'error' not in result:
             return jsonify({'message': 'Calibration started'})
         else:
@@ -336,7 +350,7 @@ def calibrate():
 def save_config():
     """Save configuration to non-volatile memory"""
     try:
-        result = odrive_manager.execute_command('odrv0.save_configuration()')
+        result = odrive_manager.execute_command('self.current_device.save_configuration()')
         if 'error' not in result:
             return jsonify({'message': 'Configuration saved to non-volatile memory'})
         else:
@@ -348,11 +362,7 @@ def save_config():
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
-    return jsonify({
-        'status': 'healthy',
-        'connected_device': odrive_manager.current_device is not None,
-        'timestamp': time.time()
-    })
+    return jsonify({'status': 'ok', 'version': '0.5.6'})
 
 if __name__ == '__main__':
     logger.info("Starting ODrive GUI Backend v0.5.6")

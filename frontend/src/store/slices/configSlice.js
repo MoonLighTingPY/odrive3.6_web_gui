@@ -67,17 +67,14 @@ const initialState = {
   // Interface Configuration
   interfaceConfig: {
     // CAN
-    enable_can: false,
     can_node_id: 0,
     can_node_id_extended: false,
     can_baudrate: 250000,
     can_heartbeat_rate_ms: 100,
+    enable_can: false,
     // UART
-    enable_uart: false,
     uart_baudrate: 115200,
-    // Step/Dir
-    enable_step_dir: false,
-    step_dir_always_on: false,
+    enable_uart: false,
     // GPIO
     gpio1_mode: 0, // GpioMode.DIGITAL
     gpio2_mode: 0,
@@ -86,12 +83,9 @@ const initialState = {
     // Watchdog
     enable_watchdog: false,
     watchdog_timeout: 0.0,
-    // Sensorless
-    enable_sensorless: false,
+    enable_step_dir: false,
+    step_dir_always_on: false,
   },
-
-  // Generated commands for apply step
-  pendingCommands: [],
 }
 
 const configSlice = createSlice({
@@ -113,9 +107,6 @@ const configSlice = createSlice({
     updateInterfaceConfig: (state, action) => {
       state.interfaceConfig = { ...state.interfaceConfig, ...action.payload }
     },
-    setPendingCommands: (state, action) => {
-      state.pendingCommands = action.payload
-    },
     resetConfig: (state) => {
       return initialState
     },
@@ -128,7 +119,6 @@ export const {
   updateEncoderConfig,
   updateControlConfig,
   updateInterfaceConfig,
-  setPendingCommands,
   resetConfig,
 } = configSlice.actions
 
