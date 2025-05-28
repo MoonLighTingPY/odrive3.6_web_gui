@@ -132,6 +132,7 @@ class ODriveManager:
             
         try:
             # Try to read a simple property to check connection
+            # Use a lightweight property that's always available
             _ = self.current_device.vbus_voltage
             self.connection_lost = False
             if self.is_rebooting:
@@ -165,8 +166,12 @@ class ODriveManager:
         try:
             logger.info(f"Attempting to reconnect to device {self.current_device_serial} (attempt {self.reconnection_attempts})")
             
-            # Use shorter timeout for reconnection attempts
-            timeout = 3 if self.is_rebooting else 5
+            # Use shorter timeout for reconnection attempts, but longer for save operations
+            if self.is_rebooting:
+                timeout = 3
+            else:
+                timeout = 8  # Longer timeout for non-reboot reconnections
+                
             odrv = odrive.find_any(timeout=timeout)
             
             if odrv:
@@ -609,34 +614,62 @@ def erase_config():
 def save_and_reboot():
     """Save configuration and reboot"""
     try:
+        # Mark as potentially rebooting state before attempting save
+        odrive_manager.is_rebooting = False  # Start as false, will set to true after save
+        
         # Save configuration first
+        save_successful = False
         try:
             if odrive_manager.current_device:
+                # Try to save configuration
                 odrive_manager.current_device.save_configuration()
                 logger.info("Save configuration command sent successfully")
+                save_successful = True
             else:
                 return jsonify({'error': 'No device connected'}), 400
         except Exception as e:
-            logger.error(f"Error saving configuration: {e}")
-            return jsonify({'error': f'Failed to save configuration: {str(e)}'}), 400
+            # Check if this is a disconnection during save
+            if "disconnected" in str(e).lower():
+                logger.warning(f"Device disconnected during save operation: {e}")
+                # Device might have disconnected during save, but save might still have succeeded
+                # Mark connection as lost and try to reconnect to verify
+                odrive_manager.connection_lost = True
+                
+                # Wait a moment for potential reconnection
+                time.sleep(2.0)
+                
+                # Try to reconnect and check if save was successful
+                if odrive_manager.try_reconnect():
+                    logger.info("Reconnected after save operation, assuming save was successful")
+                    save_successful = True
+                else:
+                    logger.error(f"Could not reconnect after save operation: {e}")
+                    return jsonify({'error': f'Failed to save configuration: {str(e)}'}), 400
+            else:
+                logger.error(f"Error saving configuration: {e}")
+                return jsonify({'error': f'Failed to save configuration: {str(e)}'}), 400
+        
+        if save_successful:
+            # Wait a moment for the save to complete
+            time.sleep(1.0)
             
-        # Wait a moment for the save to complete
-        time.sleep(1.0)
-        
-        # Mark as rebooting before sending reboot command
-        odrive_manager.is_rebooting = True
-        odrive_manager.reboot_start_time = time.time()
-        odrive_manager.connection_lost = True
-        odrive_manager.reconnection_attempts = 0
-        
-        # Reboot the device - this will cause disconnection
-        try:
-            if odrive_manager.current_device:
-                odrive_manager.current_device.reboot()
-                logger.info("Reboot command sent successfully")
-        except Exception as e:
-            # Expected to fail as device disconnects immediately
-            logger.info(f"Reboot command completed, device disconnected as expected: {e}")
+            # Mark as rebooting before sending reboot command
+            odrive_manager.is_rebooting = True
+            odrive_manager.reboot_start_time = time.time()
+            odrive_manager.connection_lost = True
+            odrive_manager.reconnection_attempts = 0
+            
+            # Reboot the device - this will cause disconnection
+            try:
+                if odrive_manager.current_device:
+                    odrive_manager.current_device.reboot()
+                    logger.info("Reboot command sent successfully")
+                else:
+                    # If device is not available, it might have already rebooted during save
+                    logger.info("Device not available for reboot command, may have already rebooted")
+            except Exception as e:
+                # Expected to fail as device disconnects immediately
+                logger.info(f"Reboot command completed, device disconnected as expected: {e}")
         
         return jsonify({
             'message': 'Configuration saved and device rebooted. Device will reconnect automatically.',
@@ -663,11 +696,43 @@ def calibrate():
 def save_config():
     """Save configuration to non-volatile memory"""
     try:
-        result = odrive_manager.execute_command('device.save_configuration()')
-        if 'error' not in result:
+        save_successful = False
+        
+        if not odrive_manager.current_device:
+            return jsonify({'error': 'No device connected'}), 400
+        
+        try:
+            # Try to save configuration
+            odrive_manager.current_device.save_configuration()
+            logger.info("Save configuration command sent successfully")
+            save_successful = True
+        except Exception as e:
+            # Check if this is a disconnection during save
+            if "disconnected" in str(e).lower():
+                logger.warning(f"Device disconnected during save operation: {e}")
+                # Device might have disconnected during save, but save might still have succeeded
+                # Mark connection as lost and try to reconnect to verify
+                odrive_manager.connection_lost = True
+                
+                # Wait a moment for potential reconnection
+                time.sleep(2.0)
+                
+                # Try to reconnect and check if save was successful
+                if odrive_manager.try_reconnect():
+                    logger.info("Reconnected after save operation, assuming save was successful")
+                    save_successful = True
+                else:
+                    logger.error(f"Could not reconnect after save operation: {e}")
+                    return jsonify({'error': f'Failed to save configuration: {str(e)}'}), 400
+            else:
+                logger.error(f"Error saving configuration: {e}")
+                return jsonify({'error': f'Failed to save configuration: {str(e)}'}), 400
+        
+        if save_successful:
             return jsonify({'message': 'Configuration saved to non-volatile memory'})
         else:
-            return jsonify(result), 400
+            return jsonify({'error': 'Save operation status unknown'}), 400
+            
     except Exception as e:
         logger.error(f"Error in save_config: {e}")
         return jsonify({'error': str(e)}), 500
