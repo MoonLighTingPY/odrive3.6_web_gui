@@ -1,117 +1,147 @@
 import { useState, useEffect } from 'react'
+import { useSelector, useDispatch } from 'react-redux'
+import {
+  Box,
+  Flex,
+  VStack,
+  HStack,
+  Tabs,
+  TabList,
+  TabPanels,
+  Tab,
+  TabPanel,
+  Heading,
+  Spacer,
+  Badge,
+  useToast,
+} from '@chakra-ui/react'
+
+import DeviceList from './components/DeviceList'
+import ConfigurationTab from './components/ConfigurationTab'
+import DashboardTab from './components/DashboardTab'
+import InspectorTab from './components/InspectorTab'
+
+import { updateOdriveState } from './store/slices/deviceSlice'
 import './App.css'
-import DeviceList from './components/DeviceList.jsx'
-import ConfigurationTab from './components/ConfigurationTab.jsx'
-import DashboardTab from './components/DashboardTab.jsx'
-import InspectorTab from './components/InspectorTab.jsx'
 
 function App() {
-  const [activeTab, setActiveTab] = useState('configuration')
-  const [connectedDevice, setConnectedDevice] = useState(null)
-  const [odriveState, setOdriveState] = useState({})
-  const [isConnected, setIsConnected] = useState(false)
+  const dispatch = useDispatch()
+  const toast = useToast()
+  const { isConnected, connectedDevice, odriveState } = useSelector(state => state.device)
+  const [activeTab, setActiveTab] = useState(0)
 
-  const tabs = [
-    { id: 'configuration', name: 'Configuration' },
-    { id: 'dashboard', name: 'Dashboard' },
-    { id: 'inspector', name: 'Inspector' }
-  ]
-
+  // Poll device state when connected
   useEffect(() => {
-    // Poll ODrive state when connected
-    if (isConnected) {
-      const interval = setInterval(async () => {
-        try {
-          const response = await fetch('/api/odrive/state')
-          if (response.ok) {
-            const state = await response.json()
-            setOdriveState(state)
-          }
-        } catch (error) {
-          console.error('Failed to fetch ODrive state:', error)
+    if (!isConnected) return
+
+    const pollDeviceState = async () => {
+      try {
+        const response = await fetch('/api/odrive/state')
+        if (response.ok) {
+          const state = await response.json()
+          dispatch(updateOdriveState(state))
         }
-      }, 1000)
-
-      return () => clearInterval(interval)
-    }
-  }, [isConnected])
-
-  const handleDeviceConnect = async (device) => {
-    try {
-      const response = await fetch('/api/odrive/connect', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ device })
-      })
-      
-      if (response.ok) {
-        setConnectedDevice(device)
-        setIsConnected(true)
+      } catch (error) {
+        console.error('Failed to poll device state:', error)
       }
-    } catch (error) {
-      console.error('Failed to connect to ODrive:', error)
     }
-  }
 
-  const handleDeviceDisconnect = async () => {
-    try {
-      await fetch('/api/odrive/disconnect', { method: 'POST' })
-      setConnectedDevice(null)
-      setIsConnected(false)
-      setOdriveState({})
-    } catch (error) {
-      console.error('Failed to disconnect from ODrive:', error)
-    }
-  }
+    // Poll every 500ms
+    const interval = setInterval(pollDeviceState, 500)
+    
+    // Initial poll
+    pollDeviceState()
+
+    return () => clearInterval(interval)
+  }, [isConnected, dispatch])
 
   return (
-    <div className="app">
-      <div className="sidebar">
-        <h2>ODrive GUI v0.5.6</h2>
-        <DeviceList 
-          connectedDevice={connectedDevice}
-          isConnected={isConnected}
-          onConnect={handleDeviceConnect}
-          onDisconnect={handleDeviceDisconnect}
-          odriveState={odriveState}
-        />
-      </div>
-      
-      <div className="main-content">
-        <nav className="tab-nav">
-          {tabs.map(tab => (
-            <button
-              key={tab.id}
-              className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
-              onClick={() => setActiveTab(tab.id)}
-            >
-              {tab.name}
-            </button>
-          ))}
-        </nav>
-        
-        <div className="tab-content">
-          {activeTab === 'configuration' && (
-            <ConfigurationTab 
-              isConnected={isConnected}
-              odriveState={odriveState}
-            />
-          )}
-          {activeTab === 'dashboard' && (
-            <DashboardTab 
-              isConnected={isConnected}
-              odriveState={odriveState}
-            />
-          )}
-          {activeTab === 'inspector' && (
-            <InspectorTab 
-              isConnected={isConnected}
-              odriveState={odriveState}
-            />
-          )}
-        </div>
-      </div>
-    </div>
+    <Box bg="gray.900" minH="100vh" color="white">
+      <Flex h="100vh">
+        {/* Left Sidebar - Device List */}
+        <Box w="300px" bg="gray.800" borderRight="1px solid" borderColor="gray.600" p={4}>
+          <VStack spacing={4} align="stretch" h="100%">
+            <Heading size="md" color="odrive.300" textAlign="center">
+              ODrive GUI v0.5.6
+            </Heading>
+            
+            <DeviceList />
+            
+            {isConnected && connectedDevice && (
+              <Box mt={4} p={3} bg="gray.700" borderRadius="md">
+                <VStack spacing={2} align="stretch">
+                  <HStack justify="space-between">
+                    <Box fontSize="sm" color="gray.300">Status:</Box>
+                    <Badge colorScheme="green" variant="solid">Connected</Badge>
+                  </HStack>
+                  <HStack justify="space-between">
+                    <Box fontSize="sm" color="gray.300">Device:</Box>
+                    <Box fontSize="sm" color="white">{connectedDevice.path}</Box>
+                  </HStack>
+                  <HStack justify="space-between">
+                    <Box fontSize="sm" color="gray.300">Serial:</Box>
+                    <Box fontSize="sm" color="white" fontFamily="mono">
+                      {connectedDevice.serial}
+                    </Box>
+                  </HStack>
+                  <HStack justify="space-between">
+                    <Box fontSize="sm" color="gray.300">Firmware:</Box>
+                    <Box fontSize="sm" color="odrive.300">{connectedDevice.fw_version}</Box>
+                  </HStack>
+                </VStack>
+              </Box>
+            )}
+          </VStack>
+        </Box>
+
+        {/* Main Content Area */}
+        <Box flex="1" bg="gray.900">
+          <Tabs 
+            index={activeTab} 
+            onChange={setActiveTab}
+            variant="enclosed" 
+            colorScheme="odrive"
+            h="100%"
+            display="flex"
+            flexDirection="column"
+          >
+            <TabList bg="gray.800" borderBottom="1px solid" borderColor="gray.600" px={6}>
+              <Tab color="gray.300" _selected={{ color: 'odrive.300', borderBottomColor: 'odrive.300' }}>
+                Configuration
+              </Tab>
+              <Tab color="gray.300" _selected={{ color: 'odrive.300', borderBottomColor: 'odrive.300' }}>
+                Dashboard
+              </Tab>
+              <Tab color="gray.300" _selected={{ color: 'odrive.300', borderBottomColor: 'odrive.300' }}>
+                Inspector
+              </Tab>
+              <Spacer />
+              <HStack spacing={4} pr={4}>
+                {isConnected && (
+                  <Badge colorScheme="green" variant="outline" fontSize="xs">
+                    Connected to {connectedDevice?.path}
+                  </Badge>
+                )}
+              </HStack>
+            </TabList>
+
+            <TabPanels flex="1" bg="gray.900">
+              <TabPanel p={0} h="100%">
+                <ConfigurationTab isConnected={isConnected} />
+              </TabPanel>
+              
+              <TabPanel p={0} h="100%">
+                <DashboardTab isConnected={isConnected} odriveState={odriveState} />
+              </TabPanel>
+              
+              <TabPanel p={0} h="100%">
+                <InspectorTab isConnected={isConnected} odriveState={odriveState} />
+              </TabPanel>
+            </TabPanels>
+          </Tabs>
+        </Box>
+      </Flex>
+    </Box>
   )
 }
 

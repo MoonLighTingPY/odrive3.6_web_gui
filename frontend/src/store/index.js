@@ -1,27 +1,29 @@
-import { configureStore, combineReducers } from '@reduxjs/toolkit'
+import { configureStore } from '@reduxjs/toolkit'
 import { persistStore, persistReducer } from 'redux-persist'
 import storage from 'redux-persist/lib/storage'
-import uiReducer from './slices/uiSlice'
-import deviceReducer from './slices/deviceSlice'
-import configReducer from './slices/configSlice'
+import { combineReducers } from '@reduxjs/toolkit'
 
-const rootReducer = combineReducers({
-  ui: uiReducer,
-  device: deviceReducer,
-  config: configReducer,
-})
+import configSlice from './slices/configSlice'
+import deviceSlice from './slices/deviceSlice'
+import uiSlice from './slices/uiSlice'
 
 const persistConfig = {
-  key: 'odrive_gui_v056',
+  key: 'root',
   storage,
-  whitelist: ['ui', 'config'], // Don't persist device state
+  whitelist: ['config'] // Only persist config, not device state
 }
+
+const rootReducer = combineReducers({
+  config: configSlice,
+  device: deviceSlice,
+  ui: uiSlice,
+})
 
 const persistedReducer = persistReducer(persistConfig, rootReducer)
 
 export const store = configureStore({
   reducer: persistedReducer,
-  middleware: getDefaultMiddleware =>
+  middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
         ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],

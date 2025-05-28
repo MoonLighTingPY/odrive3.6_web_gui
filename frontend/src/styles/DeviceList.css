@@ -160,3 +160,88 @@
 .status-item.error .value {
   color: #ff6b6b;
 }
+
+.device-list {
+  background: linear-gradient(180deg, #2d3748 0%, #1a202c 100%);
+}
+
+.device-list .device-card {
+  transition: all 0.2s ease-in-out;
+  border: 1px solid #4a5568;
+}
+
+.device-list .device-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border-color: #63b3ed;
+}
+
+.device-list .device-card.connected {
+  border-color: #68d391;
+  box-shadow: 0 0 0 1px rgba(104, 211, 145, 0.3);
+}
+
+.device-list .status-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.device-list .scan-button {
+  transition: all 0.15s ease;
+}
+
+.device-list .scan-button:hover {
+  transform: scale(1.05);
+}
+
+.device-list .connect-button {
+  min-width: 80px;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.device-list .device-info {
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+}
+
+.device-list .status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.device-list .status-indicator.online {
+  background: #48bb78;
+  box-shadow: 0 0 6px rgba(72, 187, 120, 0.6);
+}
+
+.device-list .status-indicator.offline {
+  background: #a0aec0;
+}
+
+.device-list .scrollable-area {
+  scrollbar-width: thin;
+  scrollbar-color: #4a5568 #2d3748;
+}
+
+.device-list .scrollable-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.device-list .scrollable-area::-webkit-scrollbar-track {
+  background: #2d3748;
+  border-radius: 3px;
+}
+
+.device-list .scrollable-area::-webkit-scrollbar-thumb {
+  background: #4a5568;
+  border-radius: 3px;
+}
+
+.device-list .scrollable-area::-webkit-scrollbar-thumb:hover {
+  background: #63b3ed;
+}

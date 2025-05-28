@@ -1,74 +1,96 @@
 import { createSlice } from '@reduxjs/toolkit'
 
 const initialState = {
-  // Step 1: Power Configuration
+  // Power Configuration
   powerConfig: {
     dc_bus_overvoltage_trip_level: 56.0,
-    dc_bus_undervoltage_trip_level: 10.0,
+    dc_bus_undervoltage_trip_level: 8.0,
     dc_max_positive_current: 10.0,
-    dc_max_negative_current: -10.0,
+    dc_max_negative_current: -3.0,
+    brake_resistor_enabled: false,
     brake_resistance: 2.0,
-    enable_brake_resistor: true,
   },
   
-  // Step 2: Motor Configuration
+  // Motor Configuration
   motorConfig: {
     motor_type: 0, // HIGH_CURRENT
     pole_pairs: 7,
-    motor_kv: 270,
+    motor_kv: 100,
     current_lim: 10.0,
+    current_lim_margin: 8.0,
+    torque_lim: 30.0,
     calibration_current: 10.0,
-    resistance_calib_max_voltage: 4.0,
-    lock_in_spin_current: 10.0,
-    phase_resistance: 0.0, // Only for gimbal motors
+    resistance_calib_max_voltage: 2.0,
     phase_inductance: 0.0,
+    phase_resistance: 0.0,
+    direction: 1,
+    lock_in_spin_current: 10.0,
+    // Gimbal motor specific
+    phase_resistance_override: 0.0,
   },
   
-  // Step 3: Encoder Configuration
+  // Encoder Configuration
   encoderConfig: {
-    encoder_type: 0, // INCREMENTAL
+    encoder_type: 1, // INCREMENTAL
     cpr: 4000,
-    use_index: true,
     bandwidth: 1000,
-    calib_range: 0.019635,
+    use_index: false,
     use_separate_commutation_encoder: false,
+    calib_range: 0.02,
+    calib_scan_distance: 16.0,
+    calib_scan_omega: 12.566,
+    // Hall encoder
     hall_polarity: 0,
+    // SPI encoder
     abs_spi_cs_gpio_pin: 1,
   },
   
-  // Step 4: Control Configuration
+  // Control Configuration
   controlConfig: {
-    control_mode: 3, // POSITION_CONTROL
-    input_mode: 1, // PASSTHROUGH
-    vel_limit: 20.0,
+    control_mode: 2, // VELOCITY_CONTROL
+    input_mode: 1, // VEL_RAMP
     pos_gain: 20.0,
-    vel_gain: 0.1667,
-    vel_integrator_gain: 0.3333,
-    vel_ramp_rate: 10000.0,
+    vel_gain: 0.16,
+    vel_integrator_gain: 0.32,
+    vel_limit: 10.0,
+    vel_limit_tolerance: 1.2,
+    vel_ramp_rate: 10.0,
+    torque_ramp_rate: 0.01,
+    circular_setpoints: false,
     inertia: 0.0,
-    traj_vel_limit: 20.0,
-    traj_accel_limit: 5000.0,
-    traj_decel_limit: 5000.0,
+    axis_to_mirror: 255,
+    mirror_ratio: 1.0,
+    load_encoder_axis: 0,
+    input_filter_bandwidth: 2.0,
   },
   
-  // Step 5: Interface Configuration
+  // Interface Configuration
   interfaceConfig: {
+    // CAN
     enable_can: false,
     can_node_id: 0,
+    can_node_id_extended: false,
     can_baudrate: 250000,
+    can_heartbeat_rate_ms: 100,
+    // UART
     enable_uart: false,
     uart_baudrate: 115200,
+    // Step/Dir
     enable_step_dir: false,
-    enable_sensorless: false,
-    enable_watchdog: false,
-    watchdog_timeout: 1.0,
-    gpio1_mode: 0,
+    step_dir_always_on: false,
+    // GPIO
+    gpio1_mode: 0, // GpioMode.DIGITAL
     gpio2_mode: 0,
     gpio3_mode: 0,
     gpio4_mode: 0,
+    // Watchdog
+    enable_watchdog: false,
+    watchdog_timeout: 0.0,
+    // Sensorless
+    enable_sensorless: false,
   },
-  
-  // Generated commands for preview
+
+  // Generated commands for apply step
   pendingCommands: [],
 }
 
@@ -76,37 +98,38 @@ const configSlice = createSlice({
   name: 'config',
   initialState,
   reducers: {
-    updatePowerConfig(state, action) {
+    updatePowerConfig: (state, action) => {
       state.powerConfig = { ...state.powerConfig, ...action.payload }
     },
-    updateMotorConfig(state, action) {
+    updateMotorConfig: (state, action) => {
       state.motorConfig = { ...state.motorConfig, ...action.payload }
     },
-    updateEncoderConfig(state, action) {
+    updateEncoderConfig: (state, action) => {
       state.encoderConfig = { ...state.encoderConfig, ...action.payload }
     },
-    updateControlConfig(state, action) {
+    updateControlConfig: (state, action) => {
       state.controlConfig = { ...state.controlConfig, ...action.payload }
     },
-    updateInterfaceConfig(state, action) {
+    updateInterfaceConfig: (state, action) => {
       state.interfaceConfig = { ...state.interfaceConfig, ...action.payload }
     },
-    setPendingCommands(state, action) {
+    setPendingCommands: (state, action) => {
       state.pendingCommands = action.payload
     },
-    resetConfig(state) {
+    resetConfig: (state) => {
       return initialState
     },
   },
 })
 
-export const { 
+export const {
   updatePowerConfig,
-  updateMotorConfig, 
+  updateMotorConfig,
   updateEncoderConfig,
   updateControlConfig,
   updateInterfaceConfig,
   setPendingCommands,
-  resetConfig
+  resetConfig,
 } = configSlice.actions
+
 export default configSlice.reducer

@@ -14,12 +14,12 @@ import {
   AlertIcon,
   Divider,
 } from '@chakra-ui/react'
-import { setDevices, setConnectedDevice, setOdriveState, setScanning } from '../store/slices/deviceSlice'
+import { setAvailableDevices, setConnectedDevice, updateOdriveState, setScanning } from '../store/slices/deviceSlice'
 import '../styles/DeviceList.css'
 
 const DeviceList = () => {
   const dispatch = useDispatch()
-  const { devices, connectedDevice, isConnected, isScanning, odriveState } = useSelector(state => state.device)
+  const { availableDevices, connectedDevice, isConnected, isScanning, odriveState } = useSelector(state => state.device)
 
   useEffect(() => {
     scanForDevices()
@@ -33,7 +33,7 @@ const DeviceList = () => {
           const response = await fetch('/api/odrive/state')
           if (response.ok) {
             const state = await response.json()
-            dispatch(setOdriveState(state))
+            dispatch(updateOdriveState(state))
           }
         } catch (error) {
           console.error('Failed to fetch ODrive state:', error)
@@ -50,7 +50,7 @@ const DeviceList = () => {
       const response = await fetch('/api/odrive/scan')
       if (response.ok) {
         const deviceList = await response.json()
-        dispatch(setDevices(deviceList))
+        dispatch(setAvailableDevices(deviceList))
       }
     } catch (error) {
       console.error('Failed to scan for devices:', error)
@@ -78,7 +78,7 @@ const DeviceList = () => {
     try {
       await fetch('/api/odrive/disconnect', { method: 'POST' })
       dispatch(setConnectedDevice(null))
-      dispatch(setOdriveState({}))
+      dispatch(updateOdriveState({}))
     } catch (error) {
       console.error('Failed to disconnect from ODrive:', error)
     }
@@ -112,14 +112,14 @@ const DeviceList = () => {
         </HStack>
 
         <Box flex="1" overflowY="auto">
-          {devices.length === 0 ? (
+          {availableDevices.length === 0 ? (
             <Alert status="info" variant="subtle">
               <AlertIcon />
               No ODrive devices found. Make sure your device is connected.
             </Alert>
           ) : (
             <VStack spacing={3}>
-              {devices.map((device, index) => (
+              {availableDevices.map((device, index) => (
                 <Card
                   key={index}
                   w="100%"

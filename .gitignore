@@ -26,3 +26,4 @@ dist-ssr
 #Back-end directories and files (in ../backend/)
 # Ignore venv for python
 .venv/
+__pycache__/

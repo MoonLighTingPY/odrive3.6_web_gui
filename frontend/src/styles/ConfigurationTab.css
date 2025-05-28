@@ -287,3 +287,125 @@
   color: #ccc;
   font-weight: 500;
 }
+
+.configuration-tab {
+  background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+  min-height: 100vh;
+}
+
+.configuration-tab .step-indicator {
+  position: relative;
+  margin-bottom: 2rem;
+}
+
+.configuration-tab .step-circle {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  transition: all 0.3s ease;
+  border: 2px solid #4a5568;
+  background: #2d3748;
+  color: #a0aec0;
+}
+
+.configuration-tab .step-circle.active {
+  background: #63b3ed;
+  border-color: #63b3ed;
+  color: white;
+  box-shadow: 0 0 0 4px rgba(99, 179, 237, 0.2);
+}
+
+.configuration-tab .step-circle.completed {
+  background: #48bb78;
+  border-color: #48bb78;
+  color: white;
+}
+
+.configuration-tab .step-connector {
+  position: absolute;
+  top: 20px;
+  left: 50px;
+  right: -50px;
+  height: 2px;
+  background: #4a5568;
+  z-index: -1;
+}
+
+.configuration-tab .step-connector.completed {
+  background: #48bb78;
+}
+
+.configuration-tab .config-card {
+  transition: all 0.2s ease-in-out;
+}
+
+.configuration-tab .config-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.configuration-tab .navigation-buttons {
+  position: sticky;
+  bottom: 0;
+  background: rgba(26, 32, 44, 0.9);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid #4a5568;
+  padding: 1rem;
+  margin-top: 2rem;
+}
+
+.configuration-tab .progress-bar {
+  background: rgba(74, 85, 104, 0.3);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.configuration-tab .progress-fill {
+  background: linear-gradient(90deg, #63b3ed, #4299e1);
+  height: 8px;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+.configuration-tab .form-section {
+  margin-bottom: 1.5rem;
+}
+
+.configuration-tab .form-section:last-child {
+  margin-bottom: 0;
+}
+
+.configuration-tab .tooltip-trigger {
+  cursor: help;
+  color: #a0aec0;
+  transition: color 0.2s ease;
+}
+
+.configuration-tab .tooltip-trigger:hover {
+  color: #63b3ed;
+}
+
+.configuration-tab .calculation-display {
+  background: rgba(99, 179, 237, 0.1);
+  border: 1px solid rgba(99, 179, 237, 0.3);
+  border-radius: 6px;
+  padding: 0.75rem;
+}
+
+.configuration-tab .warning-section {
+  background: rgba(237, 137, 54, 0.1);
+  border: 1px solid rgba(237, 137, 54, 0.3);
+  border-radius: 6px;
+  padding: 1rem;
+}
+
+.configuration-tab .danger-section {
+  background: rgba(245, 101, 101, 0.1);
+  border: 1px solid rgba(245, 101, 101, 0.3);
+  border-radius: 6px;
+  padding: 1rem;
+}

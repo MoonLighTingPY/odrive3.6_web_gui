@@ -1,49 +1,91 @@
 import { createSlice } from '@reduxjs/toolkit'
 
 const initialState = {
-  devices: [],
+  // Device connection state
+  isScanning: false,
+  availableDevices: [],
   connectedDevice: null,
   isConnected: false,
-  isScanning: false,
+  connectionError: null,
+  
+  // Device state
   odriveState: {},
+  lastUpdateTime: null,
+  
+  // Telemetry
+  telemetryEnabled: false,
+  telemetryRate: 100, // ms
 }
 
 const deviceSlice = createSlice({
   name: 'device',
   initialState,
   reducers: {
-    setDevices(state, action) {
-      state.devices = action.payload
-    },
-    setConnectedDevice(state, action) {
-      state.connectedDevice = action.payload
-      state.isConnected = !!action.payload
-    },
-    setOdriveState(state, action) {
-      state.odriveState = action.payload
-    },
-    setScanning(state, action) {
+    setScanning: (state, action) => {
       state.isScanning = action.payload
     },
-    updateDeviceProperty(state, action) {
-      const { path, value } = action.payload
-      // Update nested property in odriveState
-      const keys = path.split('.')
-      let current = state.odriveState
-      for (let i = 0; i < keys.length - 1; i++) {
-        if (!current[keys[i]]) current[keys[i]] = {}
-        current = current[keys[i]]
+    setAvailableDevices: (state, action) => {
+      state.availableDevices = action.payload
+    },
+    setConnectedDevice: (state, action) => {
+      state.connectedDevice = action.payload
+      state.isConnected = !!action.payload
+      if (!action.payload) {
+        state.odriveState = {}
+        state.connectionError = null
       }
-      current[keys[keys.length - 1]] = value
+    },
+    setConnectionError: (state, action) => {
+      state.connectionError = action.payload
+      state.isConnected = false
+      state.connectedDevice = null
+    },
+    updateOdriveState: (state, action) => {
+      state.odriveState = action.payload
+      state.lastUpdateTime = Date.now()
+    },
+    updateDeviceProperty: (state, action) => {
+      const { path, value } = action.payload
+      const pathParts = path.split('.')
+      let current = state.odriveState
+      
+      // Navigate to the parent object
+      for (let i = 0; i < pathParts.length - 1; i++) {
+        if (!current[pathParts[i]]) {
+          current[pathParts[i]] = {}
+        }
+        current = current[pathParts[i]]
+      }
+      
+      // Set the final property
+      current[pathParts[pathParts.length - 1]] = value
+      state.lastUpdateTime = Date.now()
+    },
+    setTelemetryEnabled: (state, action) => {
+      state.telemetryEnabled = action.payload
+    },
+    setTelemetryRate: (state, action) => {
+      state.telemetryRate = action.payload
+    },
+    clearDeviceState: (state) => {
+      state.odriveState = {}
+      state.connectedDevice = null
+      state.isConnected = false
+      state.connectionError = null
     },
   },
 })
 
-export const { 
-  setDevices, 
-  setConnectedDevice, 
-  setOdriveState, 
+export const {
   setScanning,
-  updateDeviceProperty 
+  setAvailableDevices,
+  setConnectedDevice,
+  setConnectionError,
+  updateOdriveState,
+  updateDeviceProperty,
+  setTelemetryEnabled,
+  setTelemetryRate,
+  clearDeviceState,
 } = deviceSlice.actions
+
 export default deviceSlice.reducer

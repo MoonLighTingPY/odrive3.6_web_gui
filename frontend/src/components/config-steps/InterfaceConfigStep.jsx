@@ -21,7 +21,7 @@ import {
 } from '@chakra-ui/react'
 import { InfoIcon } from '@chakra-ui/icons'
 import { updateInterfaceConfig } from '../../store/slices/configSlice'
-import { GPIOMode } from '../../utils/odriveEnums'
+import { GpioMode } from '../../utils/odriveEnums'
 
 const InterfaceConfigStep = () => {
   const dispatch = useDispatch()
@@ -290,17 +290,17 @@ const InterfaceConfigStep = () => {
                     (interfaceConfig.enable_can && (pin === 3 || pin === 4))
                   }
                 >
-                  <option value={GPIOMode.DIGITAL}>Digital</option>
-                  <option value={GPIOMode.DIGITAL_PULL_UP}>Digital Pull-up</option>
-                  <option value={GPIOMode.DIGITAL_PULL_DOWN}>Digital Pull-down</option>
-                  <option value={GPIOMode.ANALOG_IN}>Analog Input</option>
-                  <option value={GPIOMode.PWM}>PWM Output</option>
-                  <option value={GPIOMode.UART_A}>UART A</option>
-                  <option value={GPIOMode.UART_B}>UART B</option>
-                  <option value={GPIOMode.CAN_A}>CAN A</option>
-                  <option value={GPIOMode.CAN_B}>CAN B</option>
-                  <option value={GPIOMode.ENC0}>Encoder 0</option>
-                  <option value={GPIOMode.ENC1}>Encoder 1</option>
+                  <option value={GpioMode.DIGITAL}>Digital</option>
+                  <option value={GpioMode.DIGITAL_PULL_UP}>Digital Pull-up</option>
+                  <option value={GpioMode.DIGITAL_PULL_DOWN}>Digital Pull-down</option>
+                  <option value={GpioMode.ANALOG_IN}>Analog Input</option>
+                  <option value={GpioMode.PWM}>PWM Output</option>
+                  <option value={GpioMode.UART_A}>UART A</option>
+                  <option value={GpioMode.UART_B}>UART B</option>
+                  <option value={GpioMode.CAN_A}>CAN A</option>
+                  <option value={GpioMode.CAN_B}>CAN B</option>
+                  <option value={GpioMode.ENC0}>Encoder 0</option>
+                  <option value={GpioMode.ENC1}>Encoder 1</option>
                 </Select>
               </FormControl>
             ))}
