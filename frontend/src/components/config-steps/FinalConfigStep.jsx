@@ -30,6 +30,14 @@ import {
   Switch,
   FormControl,
   FormLabel,
+  Progress,
+  Badge,
+  Table,
+  Thead,
+  Tbody,
+  Tr,
+  Th,
+  Td,
 } from '@chakra-ui/react'
 import { ChevronDownIcon, ChevronUpIcon, EditIcon, CheckIcon, CloseIcon, DeleteIcon } from '@chakra-ui/icons'
 
@@ -37,6 +45,7 @@ const FinalConfigStep = () => {
   const toast = useToast()
   const { isOpen: isCommandsOpen, onToggle: onCommandsToggle } = useDisclosure()
   const { isOpen: isConfirmOpen, onOpen: onConfirmOpen, onClose: onConfirmClose } = useDisclosure()
+  const { isOpen: isVerificationOpen, onOpen: onVerificationOpen, onClose: onVerificationClose } = useDisclosure()
   
   const [isLoading, setIsLoading] = useState(false)
   const [pendingAction, setPendingAction] = useState(null)
@@ -45,6 +54,9 @@ const FinalConfigStep = () => {
   const [customCommands, setCustomCommands] = useState({})
   const [disabledCommands, setDisabledCommands] = useState(new Set())
   const [enableCommandEditing, setEnableCommandEditing] = useState(false)
+  const [verificationResults, setVerificationResults] = useState([])
+  const [verificationProgress, setVerificationProgress] = useState(0)
+  const [isVerifying, setIsVerifying] = useState(false)
   
   const { powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig } = useSelector(state => state.config)
   const { isConnected } = useSelector(state => state.device)
@@ -162,6 +174,169 @@ const FinalConfigStep = () => {
     }).filter((_, index) => !disabledCommands.has(index))
   }, [baseGeneratedCommands, customCommands, disabledCommands])
 
+  // Extract property path and expected value from command
+  const parseCommand = (command) => {
+    const match = command.match(/^(.+?)\s*=\s*(.+)$/)
+    if (match) {
+      let property = match[1].trim()
+      let expectedValue = match[2].trim()
+      
+      // Convert odrv0 syntax to device syntax for reading
+      property = property.replace(/^odrv0\./, 'device.')
+      
+      // Parse expected value - keep the original string format for better comparison
+      let parsedExpectedValue = expectedValue
+      if (expectedValue === 'True') {
+        parsedExpectedValue = true
+      } else if (expectedValue === 'False') {
+        parsedExpectedValue = false
+      } else if (!isNaN(parseFloat(expectedValue))) {
+        parsedExpectedValue = parseFloat(expectedValue)
+      }
+      
+      return { 
+        property, 
+        expectedValue: parsedExpectedValue,
+        originalExpectedValue: expectedValue // Keep original for display
+      }
+    }
+    return null
+  }
+
+  // Verify applied configuration
+  const verifyConfiguration = async (appliedCommands) => {
+    setIsVerifying(true)
+    setVerificationProgress(0)
+    setVerificationResults([])
+    
+    const results = []
+    const totalCommands = appliedCommands.length
+    
+    for (let i = 0; i < appliedCommands.length; i++) {
+      const command = appliedCommands[i]
+      const parsed = parseCommand(command)
+      
+      if (!parsed) {
+        results.push({
+          command,
+          status: 'skipped',
+          reason: 'Cannot parse command for verification'
+        })
+        setVerificationProgress(((i + 1) / totalCommands) * 100)
+        continue
+      }
+      
+      try {
+        // Read the actual value from the device
+        const response = await fetch('/api/odrive/command', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ command: parsed.property })
+        })
+        
+        if (response.ok) {
+          const result = await response.json()
+          let actualValue = result.result
+          
+          // Parse the actual value based on its type
+          if (typeof actualValue === 'string') {
+            if (actualValue === 'True') {
+              actualValue = true
+            } else if (actualValue === 'False') {
+              actualValue = false
+            } else if (!isNaN(parseFloat(actualValue))) {
+              actualValue = parseFloat(actualValue)
+            }
+          }
+          
+          // Compare values with proper type handling
+          let matches = false
+          let reason = ''
+          
+          if (typeof parsed.expectedValue === 'boolean' && typeof actualValue === 'boolean') {
+            matches = parsed.expectedValue === actualValue
+            reason = matches ? 'Boolean value matches' : `Expected ${parsed.expectedValue}, got ${actualValue}`
+          } else if (typeof parsed.expectedValue === 'number' && typeof actualValue === 'number') {
+            // Use tolerance for floating point numbers
+            const tolerance = Math.abs(parsed.expectedValue) * 0.001 // 0.1% tolerance
+            const minTolerance = 1e-6 // Minimum tolerance for very small numbers
+            matches = Math.abs(actualValue - parsed.expectedValue) <= Math.max(tolerance, minTolerance)
+            reason = matches ? 'Numeric value within tolerance' : `Expected ${parsed.expectedValue}, got ${actualValue} (diff: ${Math.abs(actualValue - parsed.expectedValue).toFixed(6)})`
+          } else if (typeof parsed.expectedValue === 'number' && typeof actualValue === 'boolean') {
+            // Handle case where we expect a number but get a boolean (should not match)
+            matches = false
+            reason = `Type mismatch: expected number ${parsed.expectedValue}, got boolean ${actualValue}`
+          } else if (typeof parsed.expectedValue === 'boolean' && typeof actualValue === 'number') {
+            // Handle case where we expect a boolean but get a number (should not match)
+            matches = false
+            reason = `Type mismatch: expected boolean ${parsed.expectedValue}, got number ${actualValue}`
+          } else {
+            // String comparison or other types
+            matches = String(parsed.expectedValue) === String(actualValue)
+            reason = matches ? 'String value matches' : `Expected "${parsed.expectedValue}", got "${actualValue}"`
+          }
+          
+          results.push({
+            command,
+            property: parsed.property,
+            expectedValue: parsed.expectedValue,
+            actualValue,
+            status: matches ? 'success' : 'mismatch',
+            reason
+          })
+        } else {
+          const error = await response.json()
+          results.push({
+            command,
+            property: parsed.property,
+            expectedValue: parsed.expectedValue,
+            actualValue: null,
+            status: 'error',
+            reason: `Failed to read: ${error.error || 'Unknown error'}`
+          })
+        }
+      } catch (error) {
+        results.push({
+          command,
+          property: parsed.property,
+          expectedValue: parsed.expectedValue,
+          actualValue: null,
+          status: 'error',
+          reason: `Network error: ${error.message}`
+        })
+      }
+      
+      setVerificationProgress(((i + 1) / totalCommands) * 100)
+      setVerificationResults([...results])
+      
+      // Small delay to prevent overwhelming the device
+      await new Promise(resolve => setTimeout(resolve, 50))
+    }
+    
+    setIsVerifying(false)
+    
+    // Show summary toast
+    const successCount = results.filter(r => r.status === 'success').length
+    const errorCount = results.filter(r => r.status === 'error').length
+    const mismatchCount = results.filter(r => r.status === 'mismatch').length
+    
+    if (errorCount === 0 && mismatchCount === 0) {
+      toast({
+        title: 'Verification Complete',
+        description: `All ${successCount} commands verified successfully!`,
+        status: 'success',
+        duration: 5000,
+      })
+    } else {
+      toast({
+        title: 'Verification Complete',
+        description: `${successCount} success, ${mismatchCount} mismatches, ${errorCount} errors`,
+        status: mismatchCount > 0 || errorCount > 0 ? 'warning' : 'info',
+        duration: 5000,
+      })
+    }
+  }
+
   const executeAction = async (action) => {
     if (!isConnected) {
       toast({
@@ -211,6 +386,13 @@ const FinalConfigStep = () => {
           status: 'success',
           duration: 3000,
         })
+        
+        // If this was an apply action, offer verification
+        if (action === 'apply') {
+          setTimeout(() => {
+            onVerificationOpen()
+          }, 1000) // Give device a moment to settle
+        }
       } else {
         const error = await response.json()
         throw new Error(error.message || 'Action failed')
@@ -317,6 +499,16 @@ const FinalConfigStep = () => {
       }
     }
     return details[action] || {}
+  }
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'success': return 'green'
+      case 'mismatch': return 'orange'
+      case 'error': return 'red'
+      case 'skipped': return 'gray'
+      default: return 'gray'
+    }
   }
 
   const enabledCommandCount = baseGeneratedCommands.length - disabledCommands.size + Object.keys(customCommands).filter(key => parseInt(key) >= baseGeneratedCommands.length).length
@@ -671,6 +863,12 @@ const FinalConfigStep = () => {
             <Alert status="info" variant="left-accent">
               <AlertIcon />
               <Text>
+                <strong>Verification:</strong> After applying configuration, you'll be prompted to verify that all values were set correctly.
+              </Text>
+            </Alert>
+            <Alert status="info" variant="left-accent">
+              <AlertIcon />
+              <Text>
                 <strong>ODrive v0.5.6 Notes:</strong> UART configuration is handled via GPIO pin modes. Some newer firmware features may not be available.
               </Text>
             </Alert>
@@ -709,6 +907,9 @@ const FinalConfigStep = () => {
                     ⚠️ Includes {Object.keys(customCommands).length} custom/modified commands
                   </Text>
                 )}
+                <Text color="blue.400" fontSize="sm" mt={2}>
+                  ℹ️ After applying, you'll be prompted to verify the configuration was set correctly.
+                </Text>
               </Box>
             )}
           </ModalBody>
@@ -723,6 +924,140 @@ const FinalConfigStep = () => {
             >
               {getActionDetails(pendingAction).confirmText}
             </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Verification Modal */}
+      <Modal isOpen={isVerificationOpen} onClose={onVerificationClose} isCentered size="xl">
+        <ModalOverlay />
+        <ModalContent bg="gray.800" borderColor="gray.600" maxW="900px">
+          <ModalHeader color="white">
+            Verify Applied Configuration
+          </ModalHeader>
+          <ModalCloseButton color="white" />
+          <ModalBody>
+            <VStack spacing={4} align="stretch">
+              <Text color="gray.300">
+                Would you like to verify that all configuration values were applied correctly? 
+                This will read back each property from the ODrive to confirm the settings match what was intended.
+              </Text>
+              
+              {isVerifying && (
+                <Box>
+                  <Text color="white" mb={2}>Verification Progress:</Text>
+                  <Progress value={verificationProgress} colorScheme="blue" size="lg" />
+                  <Text color="gray.400" fontSize="sm" mt={1}>
+                    {Math.round(verificationProgress)}% complete
+                  </Text>
+                </Box>
+              )}
+              
+              {verificationResults.length > 0 && (
+                <Box>
+                  <HStack justify="space-between" mb={2}>
+                    <Text color="white" fontWeight="bold">Verification Results:</Text>
+                    <HStack spacing={2}>
+                      <Badge colorScheme="green">
+                        {verificationResults.filter(r => r.status === 'success').length} Success
+                      </Badge>
+                      <Badge colorScheme="orange">
+                        {verificationResults.filter(r => r.status === 'mismatch').length} Mismatch
+                      </Badge>
+                      <Badge colorScheme="red">
+                        {verificationResults.filter(r => r.status === 'error').length} Error
+                      </Badge>
+                    </HStack>
+                  </HStack>
+                  
+                  <Box
+                    maxH="400px"
+                    overflowY="auto"
+                    border="1px solid"
+                    borderColor="gray.600"
+                    borderRadius="md"
+                  >
+                    <Table size="sm" variant="simple">
+                      <Thead bg="gray.700">
+                        <Tr>
+                          <Th color="gray.300" borderColor="gray.600">Status</Th>
+                          <Th color="gray.300" borderColor="gray.600">Command</Th>
+                          <Th color="gray.300" borderColor="gray.600">Expected (Type)</Th>
+                          <Th color="gray.300" borderColor="gray.600">Actual (Type)</Th>
+                          <Th color="gray.300" borderColor="gray.600">Details</Th>
+                        </Tr>
+                      </Thead>
+                      <Tbody>
+                        {verificationResults.map((result, index) => (
+                          <Tr key={index}>
+                            <Td borderColor="gray.600">
+                              <Badge colorScheme={getStatusColor(result.status)} variant="solid">
+                                {result.status.toUpperCase()}
+                              </Badge>
+                            </Td>
+                            <Td borderColor="gray.600">
+                              <Code fontSize="xs" bg="transparent" color="gray.300">
+                                {result.command.length > 40 ? result.command.substring(0, 40) + '...' : result.command}
+                              </Code>
+                            </Td>
+                            <Td borderColor="gray.600" color="white" fontSize="sm">
+                              <VStack spacing={0} align="start">
+                                <Text>
+                                  {result.expectedValue !== null && result.expectedValue !== undefined
+                                    ? (typeof result.expectedValue === 'boolean' 
+                                       ? (result.expectedValue ? 'true' : 'false')
+                                       : typeof result.expectedValue === 'number' 
+                                       ? result.expectedValue.toString() 
+                                       : String(result.expectedValue))
+                                    : 'N/A'}
+                                </Text>
+                                <Text fontSize="xs" color="gray.500">
+                                  ({typeof result.expectedValue})
+                                </Text>
+                              </VStack>
+                            </Td>
+                            <Td borderColor="gray.600" color="white" fontSize="sm">
+                              <VStack spacing={0} align="start">
+                                <Text>
+                                  {result.actualValue !== null && result.actualValue !== undefined
+                                    ? (typeof result.actualValue === 'boolean' 
+                                       ? (result.actualValue ? 'true' : 'false')
+                                       : typeof result.actualValue === 'number' 
+                                       ? result.actualValue.toString() 
+                                       : String(result.actualValue))
+                                    : 'N/A'}
+                                </Text>
+                                <Text fontSize="xs" color="gray.500">
+                                  ({typeof result.actualValue})
+                                </Text>
+                              </VStack>
+                            </Td>
+                            <Td borderColor="gray.600" color="gray.400" fontSize="xs">
+                              {result.reason}
+                            </Td>
+                          </Tr>
+                        ))}
+                      </Tbody>
+                    </Table>
+                  </Box>
+                </Box>
+              )}
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onVerificationClose} isDisabled={isVerifying}>
+              {verificationResults.length > 0 ? 'Close' : 'Skip Verification'}
+            </Button>
+            {verificationResults.length === 0 && (
+              <Button
+                colorScheme="blue"
+                onClick={() => verifyConfiguration(finalCommands)}
+                isLoading={isVerifying}
+                loadingText="Verifying..."
+              >
+                Start Verification
+              </Button>
+            )}
           </ModalFooter>
         </ModalContent>
       </Modal>
