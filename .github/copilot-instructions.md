@@ -24,5 +24,4 @@ and for last step 6: 1. "erase old configuration and reboot" button 2. "apply ne
 gonna be executed (minimize and open), 3. "save to non volatile memory and reboot" button, 4. "cailbrate" button, 5. "save to non-volatile memory" button. that's all for configuration tab.
 there should also be dashboard and inspector tabs, but lets do it later, lets just make them empty for now. also,
 somewhere on the left it should list the odrive dvices, and their state (they hold the values somewhere on their registers).
-also a button there to connect/disconnect to odrive. i think that's all for beginning. dont stop, write as much as you can, 
-we need to do this project. fully, no placeholders/skips, do everything now.
+also a button there to connect/disconnect to odrive. i think that's all for beginning. fully, no placeholders/skips

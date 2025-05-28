@@ -344,7 +344,7 @@ const ControlConfigStep = () => {
                           precision={4}
                         >
                           <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
-                        </NumberInputField>
+                        </NumberInput>
                         <Text color="gray.300" minW="60px">kg⋅m²</Text>
                       </HStack>
                     </FormControl>
