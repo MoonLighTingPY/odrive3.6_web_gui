@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+#Back-end directories and files (in ../backend/)
+# Ignore venv for python
+.venv/
