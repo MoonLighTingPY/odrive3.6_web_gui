@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useSelector } from 'react-redux'
 import {
   Box,
@@ -14,43 +14,29 @@ import {
   AlertIcon,
   Collapse,
   useDisclosure,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalFooter,
-  ModalBody,
-  ModalCloseButton,
   useToast,
-  Code,
   Divider,
-  Input,
-  IconButton,
-  Tooltip,
   Switch,
   FormControl,
   FormLabel,
-  Progress,
-  Badge,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
 } from '@chakra-ui/react'
-import { ChevronDownIcon, ChevronUpIcon, EditIcon, CheckIcon, CloseIcon, DeleteIcon } from '@chakra-ui/icons'
+import { ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons'
+
+// Import our new components
+import CommandList from '../CommandList'
+import CalibrationModal from '../CalibrationModal'
+import VerificationModal from '../VerificationModal'
+import ConfirmationModal from '../ConfirmationModal'
 
 const FinalConfigStep = () => {
   const toast = useToast()
   const { isOpen: isCommandsOpen, onToggle: onCommandsToggle } = useDisclosure()
   const { isOpen: isConfirmOpen, onOpen: onConfirmOpen, onClose: onConfirmClose } = useDisclosure()
   const { isOpen: isVerificationOpen, onOpen: onVerificationOpen, onClose: onVerificationClose } = useDisclosure()
+  const { isOpen: isCalibrationOpen, onOpen: onCalibrationOpen, onClose: onCalibrationClose } = useDisclosure()
   
   const [isLoading, setIsLoading] = useState(false)
   const [pendingAction, setPendingAction] = useState(null)
-  const [editingIndex, setEditingIndex] = useState(-1)
-  const [editingCommand, setEditingCommand] = useState('')
   const [customCommands, setCustomCommands] = useState({})
   const [disabledCommands, setDisabledCommands] = useState(new Set())
   const [enableCommandEditing, setEnableCommandEditing] = useState(false)
@@ -58,8 +44,91 @@ const FinalConfigStep = () => {
   const [verificationProgress, setVerificationProgress] = useState(0)
   const [isVerifying, setIsVerifying] = useState(false)
   
+  // Calibration state
+  const [calibrationStatus, setCalibrationStatus] = useState(null)
+  const [calibrationProgress, setCalibrationProgress] = useState(0)
+  const [isCalibrating, setIsCalibrating] = useState(false)
+  const [calibrationPhase, setCalibrationPhase] = useState('idle')
+  const [calibrationSequence, setCalibrationSequence] = useState([])
+  
   const { powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig } = useSelector(state => state.config)
   const { isConnected } = useSelector(state => state.device)
+
+  // Poll calibration status when calibrating
+  useEffect(() => {
+    let interval = null
+    if (isCalibrating) {
+      interval = setInterval(async () => {
+        try {
+          const response = await fetch('/api/odrive/calibration_status')
+          if (response.ok) {
+            const status = await response.json()
+            setCalibrationStatus(status)
+            setCalibrationProgress(status.progress_percentage || 0)
+            setCalibrationPhase(status.calibration_phase || 'idle')
+            
+            // Auto-continue calibration sequence if needed
+            if (status.auto_continue_action && status.calibration_phase === 'ready_for_offset') {
+              toast({
+                title: 'Auto-continuing calibration',
+                description: 'Encoder polarity complete, starting offset calibration...',
+                status: 'info',
+                duration: 3000,
+              })
+              
+              // Wait a moment, then continue to offset calibration
+              setTimeout(async () => {
+                try {
+                  const continueResponse = await fetch('/api/odrive/auto_continue_calibration', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ step: 'encoder_offset' })
+                  })
+                  
+                  if (continueResponse.ok) {
+                    const result = await continueResponse.json()
+                    toast({
+                      title: 'Calibration continued',
+                      description: result.message,
+                      status: 'success',
+                      duration: 3000,
+                    })
+                  }
+                } catch (error) {
+                  console.error('Failed to auto-continue calibration:', error)
+                }
+              }, 1000)
+            }
+            
+            // Check if calibration is complete or failed
+            if (status.calibration_phase === 'complete') {
+              setIsCalibrating(false)
+              setCalibrationProgress(100)
+              toast({
+                title: 'Calibration Complete!',
+                description: 'Motor and encoder calibration completed successfully.',
+                status: 'success',
+                duration: 5000,
+              })
+            } else if (status.calibration_phase === 'idle' && 
+                      (status.axis_error !== 0 || status.motor_error !== 0 || status.encoder_error !== 0)) {
+              setIsCalibrating(false)
+              toast({
+                title: 'Calibration Failed',
+                description: 'Calibration encountered errors. Check device status.',
+                status: 'error',
+                duration: 5000,
+              })
+            }
+          }
+        } catch (error) {
+          console.error('Failed to fetch calibration status:', error)
+        }
+      }, 1000) // Poll every second
+      
+      return () => clearInterval(interval)
+    }
+  }, [isCalibrating, toast])
 
   // Helper function to safely format numbers and handle undefined values
   const safeValue = (value, defaultValue = 0) => {
@@ -141,11 +210,7 @@ const FinalConfigStep = () => {
     // CAN configuration (v0.5.6 syntax)
     if (safeBool(interfaceConfig.enable_can)) {
       commands.push(`odrv0.axis0.config.can.node_id = ${safeValue(interfaceConfig.can_node_id, 0)}`)
-      // Note: CAN baudrate is typically set via DIP switches or other methods in v0.5.6
     }
-    
-    // UART configuration is done via GPIO pins in v0.5.6, not a global baudrate setting
-    // Skip UART baudrate configuration as it's not available in this firmware version
     
     // Watchdog configuration
     if (safeBool(interfaceConfig.enable_watchdog)) {
@@ -366,6 +431,15 @@ const FinalConfigStep = () => {
           break
         case 'calibrate':
           endpoint = '/api/odrive/calibrate'
+          payload = { type: 'full' } // Full calibration: Motor -> Encoder Polarity -> Encoder Offset
+          break
+        case 'calibrate_motor':
+          endpoint = '/api/odrive/calibrate'
+          payload = { type: 'motor' }
+          break
+        case 'calibrate_encoder':
+          endpoint = '/api/odrive/calibrate'
+          payload = { type: 'encoder_sequence' } // Encoder sequence: Polarity -> Offset
           break
         case 'save':
           endpoint = '/api/odrive/save_config'
@@ -386,6 +460,15 @@ const FinalConfigStep = () => {
           status: 'success',
           duration: 3000,
         })
+        
+        // If this was a calibration action, start monitoring
+        if (action.includes('calibrate')) {
+          setIsCalibrating(true)
+          setCalibrationProgress(0)
+          setCalibrationPhase('starting')
+          setCalibrationSequence(result.sequence || [])
+          onCalibrationOpen()
+        }
         
         // If this was an apply action, offer verification
         if (action === 'apply') {
@@ -414,36 +497,20 @@ const FinalConfigStep = () => {
     onConfirmOpen()
   }
 
-  const startEditing = (index) => {
-    setEditingIndex(index)
-    setEditingCommand(customCommands[index] || baseGeneratedCommands[index])
-  }
-
-  const saveEdit = () => {
-    if (editingCommand.trim()) {
-      setCustomCommands(prev => ({
-        ...prev,
-        [editingIndex]: editingCommand.trim()
-      }))
-    }
-    setEditingIndex(-1)
-    setEditingCommand('')
-  }
-
-  const cancelEdit = () => {
-    setEditingIndex(-1)
-    setEditingCommand('')
-  }
-
-  const resetCommand = (index) => {
+  // Handler functions for child components
+  const handleCustomCommandChange = (index, value) => {
     setCustomCommands(prev => {
       const newCustom = { ...prev }
-      delete newCustom[index]
+      if (value === null) {
+        delete newCustom[index]
+      } else {
+        newCustom[index] = value
+      }
       return newCustom
     })
   }
 
-  const toggleCommand = (index) => {
+  const handleCommandToggle = (index) => {
     setDisabledCommands(prev => {
       const newSet = new Set(prev)
       if (newSet.has(index)) {
@@ -455,14 +522,12 @@ const FinalConfigStep = () => {
     })
   }
 
-  const addCustomCommand = () => {
+  const handleAddCustomCommand = () => {
     const newIndex = baseGeneratedCommands.length
     setCustomCommands(prev => ({
       ...prev,
       [newIndex]: '# Add your custom command here'
     }))
-    setEditingIndex(newIndex)
-    setEditingCommand('# Add your custom command here')
   }
 
   const getActionDetails = (action) => {
@@ -486,10 +551,22 @@ const FinalConfigStep = () => {
         confirmText: 'Save and reboot'
       },
       calibrate: {
-        title: 'Calibrate Motor and Encoder',
-        description: 'This will perform motor resistance, inductance, and encoder offset calibration.',
+        title: 'Full Calibration Sequence',
+        description: 'This will perform motor calibration, encoder polarity calibration, then encoder offset calibration in the correct order for ODrive v0.5.6.',
         color: 'orange',
-        confirmText: 'Start calibration'
+        confirmText: 'Start full calibration'
+      },
+      calibrate_motor: {
+        title: 'Motor Calibration Only',
+        description: 'This will only perform motor resistance and inductance calibration.',
+        color: 'orange',
+        confirmText: 'Start motor calibration'
+      },
+      calibrate_encoder: {
+        title: 'Encoder Calibration Sequence',
+        description: 'This will perform encoder polarity calibration first, then encoder offset calibration. Motor must already be calibrated.',
+        color: 'orange',
+        confirmText: 'Start encoder calibration'
       },
       save: {
         title: 'Save to Non-Volatile Memory',
@@ -508,6 +585,20 @@ const FinalConfigStep = () => {
       case 'error': return 'red'
       case 'skipped': return 'gray'
       default: return 'gray'
+    }
+  }
+
+  const getCalibrationPhaseDescription = (phase) => {
+    switch (phase) {
+      case 'motor_calibration': return 'Measuring motor resistance and inductance...'
+      case 'encoder_polarity': return 'Finding encoder direction/polarity...'
+      case 'encoder_offset': return 'Calibrating encoder offset...'
+      case 'full_calibration': return 'Running full calibration sequence...'
+      case 'ready_for_polarity': return 'Ready to start encoder polarity calibration...'
+      case 'ready_for_offset': return 'Ready to start encoder offset calibration...'
+      case 'complete': return 'Calibration completed successfully!'
+      case 'idle': return 'Calibration not running'
+      default: return 'Unknown calibration state'
     }
   }
 
@@ -587,204 +678,15 @@ const FinalConfigStep = () => {
                   border="1px solid"
                   borderColor="gray.600"
                 >
-                  <VStack spacing={2} align="stretch">
-                    {baseGeneratedCommands.map((command, index) => {
-                      const isEditing = editingIndex === index
-                      const isCustom = customCommands[index] !== undefined
-                      const isDisabled = disabledCommands.has(index)
-                      const displayCommand = customCommands[index] || command
-
-                      return (
-                        <HStack key={index} spacing={2} opacity={isDisabled ? 0.5 : 1}>
-                          {enableCommandEditing && (
-                            <Tooltip label={isDisabled ? "Enable command" : "Disable command"}>
-                              <IconButton
-                                size="xs"
-                                variant="ghost"
-                                icon={<input type="checkbox" checked={!isDisabled} onChange={() => toggleCommand(index)} style={{ accentColor: '#00d4aa' }} />}
-                                aria-label="Toggle command"
-                              />
-                            </Tooltip>
-                          )}
-                          
-                          {isEditing ? (
-                            <HStack flex={1} spacing={1}>
-                              <Input
-                                size="sm"
-                                value={editingCommand}
-                                onChange={(e) => setEditingCommand(e.target.value)}
-                                bg="gray.800"
-                                border="1px solid"
-                                borderColor="blue.400"
-                                color="white"
-                                fontFamily="mono"
-                                fontSize="sm"
-                              />
-                              <IconButton
-                                size="xs"
-                                colorScheme="green"
-                                icon={<CheckIcon />}
-                                onClick={saveEdit}
-                                aria-label="Save edit"
-                              />
-                              <IconButton
-                                size="xs"
-                                colorScheme="red"
-                                icon={<CloseIcon />}
-                                onClick={cancelEdit}
-                                aria-label="Cancel edit"
-                              />
-                            </HStack>
-                          ) : (
-                            <Code
-                              display="block"
-                              whiteSpace="pre"
-                              color={isCustom ? "yellow.300" : "green.300"}
-                              bg="transparent"
-                              p={1}
-                              fontSize="sm"
-                              flex={1}
-                              textDecoration={isDisabled ? "line-through" : "none"}
-                            >
-                              {displayCommand}
-                            </Code>
-                          )}
-                          
-                          {enableCommandEditing && !isEditing && (
-                            <HStack spacing={1}>
-                              <Tooltip label="Edit command">
-                                <IconButton
-                                  size="xs"
-                                  variant="ghost"
-                                  icon={<EditIcon />}
-                                  onClick={() => startEditing(index)}
-                                  aria-label="Edit command"
-                                  color="gray.400"
-                                />
-                              </Tooltip>
-                              {isCustom && (
-                                <Tooltip label="Reset to original">
-                                  <IconButton
-                                    size="xs"
-                                    variant="ghost"
-                                    icon={<DeleteIcon />}
-                                    onClick={() => resetCommand(index)}
-                                    aria-label="Reset command"
-                                    color="gray.400"
-                                  />
-                                </Tooltip>
-                              )}
-                            </HStack>
-                          )}
-                        </HStack>
-                      )
-                    })}
-                    
-                    {/* Custom commands */}
-                    {Object.keys(customCommands)
-                      .filter(key => parseInt(key) >= baseGeneratedCommands.length)
-                      .map(key => {
-                        const index = parseInt(key)
-                        const isEditing = editingIndex === index
-                        const isDisabled = disabledCommands.has(index)
-
-                        return (
-                          <HStack key={index} spacing={2} opacity={isDisabled ? 0.5 : 1}>
-                            {enableCommandEditing && (
-                              <Tooltip label={isDisabled ? "Enable command" : "Disable command"}>
-                                <IconButton
-                                  size="xs"
-                                  variant="ghost"
-                                  icon={<input type="checkbox" checked={!isDisabled} onChange={() => toggleCommand(index)} style={{ accentColor: '#00d4aa' }} />}
-                                  aria-label="Toggle command"
-                                />
-                              </Tooltip>
-                            )}
-                            
-                            {isEditing ? (
-                              <HStack flex={1} spacing={1}>
-                                <Input
-                                  size="sm"
-                                  value={editingCommand}
-                                  onChange={(e) => setEditingCommand(e.target.value)}
-                                  bg="gray.800"
-                                  border="1px solid"
-                                  borderColor="blue.400"
-                                  color="white"
-                                  fontFamily="mono"
-                                  fontSize="sm"
-                                />
-                                <IconButton
-                                  size="xs"
-                                  colorScheme="green"
-                                  icon={<CheckIcon />}
-                                  onClick={saveEdit}
-                                  aria-label="Save edit"
-                                />
-                                <IconButton
-                                  size="xs"
-                                  colorScheme="red"
-                                  icon={<CloseIcon />}
-                                  onClick={cancelEdit}
-                                  aria-label="Cancel edit"
-                                />
-                              </HStack>
-                            ) : (
-                              <Code
-                                display="block"
-                                whiteSpace="pre"
-                                color="cyan.300"
-                                bg="transparent"
-                                p={1}
-                                fontSize="sm"
-                                flex={1}
-                                textDecoration={isDisabled ? "line-through" : "none"}
-                              >
-                                {customCommands[index]}
-                              </Code>
-                            )}
-                            
-                            {enableCommandEditing && !isEditing && (
-                              <HStack spacing={1}>
-                                <Tooltip label="Edit command">
-                                  <IconButton
-                                    size="xs"
-                                    variant="ghost"
-                                    icon={<EditIcon />}
-                                    onClick={() => startEditing(index)}
-                                    aria-label="Edit command"
-                                    color="gray.400"
-                                  />
-                                </Tooltip>
-                                <Tooltip label="Delete custom command">
-                                  <IconButton
-                                    size="xs"
-                                    variant="ghost"
-                                    icon={<DeleteIcon />}
-                                    onClick={() => resetCommand(index)}
-                                    aria-label="Delete command"
-                                    color="gray.400"
-                                  />
-                                </Tooltip>
-                              </HStack>
-                            )}
-                          </HStack>
-                        )
-                      })}
-                    
-                    {enableCommandEditing && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        colorScheme="blue"
-                        onClick={addCustomCommand}
-                        leftIcon={<EditIcon />}
-                        mt={2}
-                      >
-                        Add Custom Command
-                      </Button>
-                    )}
-                  </VStack>
+                  <CommandList
+                    commands={baseGeneratedCommands}
+                    customCommands={customCommands}
+                    disabledCommands={disabledCommands}
+                    enableEditing={enableCommandEditing}
+                    onCustomCommandChange={handleCustomCommandChange}
+                    onCommandToggle={handleCommandToggle}
+                    onAddCustomCommand={handleAddCustomCommand}
+                  />
                 </Box>
               </Collapse>
             </Box>
@@ -801,6 +703,45 @@ const FinalConfigStep = () => {
 
             <Divider />
 
+            <Text fontWeight="bold" color="white" textAlign="center">
+              Calibration Options (Proper Sequence for ODrive v0.5.6)
+            </Text>
+
+            <Button
+              colorScheme="orange"
+              size="lg"
+              onClick={() => handleAction('calibrate')}
+              isDisabled={!isConnected}
+              isLoading={isLoading && pendingAction === 'calibrate'}
+            >
+              🎯 Full Calibration (Motor → Encoder Polarity → Encoder Offset)
+            </Button>
+
+            <HStack spacing={4}>
+              <Button
+                colorScheme="orange"
+                variant="outline"
+                flex={1}
+                onClick={() => handleAction('calibrate_motor')}
+                isDisabled={!isConnected}
+                isLoading={isLoading && pendingAction === 'calibrate_motor'}
+              >
+                🔧 Motor Only
+              </Button>
+              <Button
+                colorScheme="orange"
+                variant="outline"
+                flex={1}
+                onClick={() => handleAction('calibrate_encoder')}
+                isDisabled={!isConnected}
+                isLoading={isLoading && pendingAction === 'calibrate_encoder'}
+              >
+                📐 Encoder Only (Polarity → Offset)
+              </Button>
+            </HStack>
+
+            <Divider />
+
             <Button
               colorScheme="green"
               size="lg"
@@ -809,17 +750,6 @@ const FinalConfigStep = () => {
               isLoading={isLoading && pendingAction === 'save_and_reboot'}
             >
               💾 Save to Non-Volatile Memory and Reboot
-            </Button>
-
-            <Button
-              colorScheme="orange"
-              variant="outline"
-              size="lg"
-              onClick={() => handleAction('calibrate')}
-              isDisabled={!isConnected}
-              isLoading={isLoading && pendingAction === 'calibrate'}
-            >
-              🎯 Calibrate Motor and Encoder
             </Button>
 
             <Button
@@ -838,14 +768,21 @@ const FinalConfigStep = () => {
 
       <Card bg="gray.700" variant="elevated">
         <CardHeader>
-          <Heading size="md" color="white">Important Notes</Heading>
+          <Heading size="md" color="white">Important Notes for ODrive v0.5.6</Heading>
         </CardHeader>
         <CardBody>
           <VStack spacing={3} align="stretch">
             <Alert status="warning" variant="left-accent">
               <AlertIcon />
               <Text>
-                <strong>Calibration:</strong> Must be performed after applying motor and encoder configuration for the first time.
+                <strong>Calibration Order:</strong> For proper operation, encoder calibration MUST be done in the correct order: 
+                Polarity (direction finding) FIRST, then Offset calibration.
+              </Text>
+            </Alert>
+            <Alert status="info" variant="left-accent">
+              <AlertIcon />
+              <Text>
+                <strong>Full Calibration:</strong> Recommended for first-time setup. Automatically runs Motor → Encoder Polarity → Encoder Offset in sequence.
               </Text>
             </Alert>
             <Alert status="info" variant="left-accent">
@@ -869,198 +806,45 @@ const FinalConfigStep = () => {
             <Alert status="info" variant="left-accent">
               <AlertIcon />
               <Text>
-                <strong>ODrive v0.5.6 Notes:</strong> UART configuration is handled via GPIO pin modes. Some newer firmware features may not be available.
-              </Text>
-            </Alert>
-            <Alert status="info" variant="left-accent">
-              <AlertIcon />
-              <Text>
-                <strong>Reboot Behavior:</strong> Device will disconnect briefly during reboot and reconnect automatically.
+                <strong>Auto-Continue:</strong> Encoder sequence will automatically continue from polarity to offset calibration.
               </Text>
             </Alert>
           </VStack>
         </CardBody>
       </Card>
 
-      {/* Confirmation Modal */}
-      <Modal isOpen={isConfirmOpen} onClose={onConfirmClose} isCentered>
-        <ModalOverlay />
-        <ModalContent bg="gray.800" borderColor="gray.600">
-          <ModalHeader color="white">
-            {getActionDetails(pendingAction).title}
-          </ModalHeader>
-          <ModalCloseButton color="white" />
-          <ModalBody>
-            <Text color="gray.300" mb={4}>
-              {getActionDetails(pendingAction).description}
-            </Text>
-            {pendingAction === 'apply' && (
-              <Box>
-                <Text color="white" fontWeight="bold" mb={2}>
-                  Commands to execute: {enabledCommandCount}
-                </Text>
-                <Text color="gray.400" fontSize="sm">
-                  This will send all enabled configuration commands shown in the preview above.
-                </Text>
-                {Object.keys(customCommands).length > 0 && (
-                  <Text color="yellow.400" fontSize="sm" mt={2}>
-                    ⚠️ Includes {Object.keys(customCommands).length} custom/modified commands
-                  </Text>
-                )}
-                <Text color="blue.400" fontSize="sm" mt={2}>
-                  ℹ️ After applying, you'll be prompted to verify the configuration was set correctly.
-                </Text>
-              </Box>
-            )}
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onConfirmClose}>
-              Cancel
-            </Button>
-            <Button
-              colorScheme={getActionDetails(pendingAction).color}
-              onClick={() => executeAction(pendingAction)}
-              isLoading={isLoading}
-            >
-              {getActionDetails(pendingAction).confirmText}
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      {/* Use the new modal components */}
+      <CalibrationModal
+        isOpen={isCalibrationOpen}
+        onClose={onCalibrationClose}
+        isCalibrating={isCalibrating}
+        calibrationProgress={calibrationProgress}
+        calibrationPhase={calibrationPhase}
+        calibrationSequence={calibrationSequence}
+        calibrationStatus={calibrationStatus}
+        getCalibrationPhaseDescription={getCalibrationPhaseDescription}
+      />
 
-      {/* Verification Modal */}
-      <Modal isOpen={isVerificationOpen} onClose={onVerificationClose} isCentered size="xl">
-        <ModalOverlay />
-        <ModalContent bg="gray.800" borderColor="gray.600" maxW="900px">
-          <ModalHeader color="white">
-            Verify Applied Configuration
-          </ModalHeader>
-          <ModalCloseButton color="white" />
-          <ModalBody>
-            <VStack spacing={4} align="stretch">
-              <Text color="gray.300">
-                Would you like to verify that all configuration values were applied correctly? 
-                This will read back each property from the ODrive to confirm the settings match what was intended.
-              </Text>
-              
-              {isVerifying && (
-                <Box>
-                  <Text color="white" mb={2}>Verification Progress:</Text>
-                  <Progress value={verificationProgress} colorScheme="blue" size="lg" />
-                  <Text color="gray.400" fontSize="sm" mt={1}>
-                    {Math.round(verificationProgress)}% complete
-                  </Text>
-                </Box>
-              )}
-              
-              {verificationResults.length > 0 && (
-                <Box>
-                  <HStack justify="space-between" mb={2}>
-                    <Text color="white" fontWeight="bold">Verification Results:</Text>
-                    <HStack spacing={2}>
-                      <Badge colorScheme="green">
-                        {verificationResults.filter(r => r.status === 'success').length} Success
-                      </Badge>
-                      <Badge colorScheme="orange">
-                        {verificationResults.filter(r => r.status === 'mismatch').length} Mismatch
-                      </Badge>
-                      <Badge colorScheme="red">
-                        {verificationResults.filter(r => r.status === 'error').length} Error
-                      </Badge>
-                    </HStack>
-                  </HStack>
-                  
-                  <Box
-                    maxH="400px"
-                    overflowY="auto"
-                    border="1px solid"
-                    borderColor="gray.600"
-                    borderRadius="md"
-                  >
-                    <Table size="sm" variant="simple">
-                      <Thead bg="gray.700">
-                        <Tr>
-                          <Th color="gray.300" borderColor="gray.600">Status</Th>
-                          <Th color="gray.300" borderColor="gray.600">Command</Th>
-                          <Th color="gray.300" borderColor="gray.600">Expected (Type)</Th>
-                          <Th color="gray.300" borderColor="gray.600">Actual (Type)</Th>
-                          <Th color="gray.300" borderColor="gray.600">Details</Th>
-                        </Tr>
-                      </Thead>
-                      <Tbody>
-                        {verificationResults.map((result, index) => (
-                          <Tr key={index}>
-                            <Td borderColor="gray.600">
-                              <Badge colorScheme={getStatusColor(result.status)} variant="solid">
-                                {result.status.toUpperCase()}
-                              </Badge>
-                            </Td>
-                            <Td borderColor="gray.600">
-                              <Code fontSize="xs" bg="transparent" color="gray.300">
-                                {result.command.length > 40 ? result.command.substring(0, 40) + '...' : result.command}
-                              </Code>
-                            </Td>
-                            <Td borderColor="gray.600" color="white" fontSize="sm">
-                              <VStack spacing={0} align="start">
-                                <Text>
-                                  {result.expectedValue !== null && result.expectedValue !== undefined
-                                    ? (typeof result.expectedValue === 'boolean' 
-                                       ? (result.expectedValue ? 'true' : 'false')
-                                       : typeof result.expectedValue === 'number' 
-                                       ? result.expectedValue.toString() 
-                                       : String(result.expectedValue))
-                                    : 'N/A'}
-                                </Text>
-                                <Text fontSize="xs" color="gray.500">
-                                  ({typeof result.expectedValue})
-                                </Text>
-                              </VStack>
-                            </Td>
-                            <Td borderColor="gray.600" color="white" fontSize="sm">
-                              <VStack spacing={0} align="start">
-                                <Text>
-                                  {result.actualValue !== null && result.actualValue !== undefined
-                                    ? (typeof result.actualValue === 'boolean' 
-                                       ? (result.actualValue ? 'true' : 'false')
-                                       : typeof result.actualValue === 'number' 
-                                       ? result.actualValue.toString() 
-                                       : String(result.actualValue))
-                                    : 'N/A'}
-                                </Text>
-                                <Text fontSize="xs" color="gray.500">
-                                  ({typeof result.actualValue})
-                                </Text>
-                              </VStack>
-                            </Td>
-                            <Td borderColor="gray.600" color="gray.400" fontSize="xs">
-                              {result.reason}
-                            </Td>
-                          </Tr>
-                        ))}
-                      </Tbody>
-                    </Table>
-                  </Box>
-                </Box>
-              )}
-            </VStack>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onVerificationClose} isDisabled={isVerifying}>
-              {verificationResults.length > 0 ? 'Close' : 'Skip Verification'}
-            </Button>
-            {verificationResults.length === 0 && (
-              <Button
-                colorScheme="blue"
-                onClick={() => verifyConfiguration(finalCommands)}
-                isLoading={isVerifying}
-                loadingText="Verifying..."
-              >
-                Start Verification
-              </Button>
-            )}
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      <ConfirmationModal
+        isOpen={isConfirmOpen}
+        onClose={onConfirmClose}
+        pendingAction={pendingAction}
+        getActionDetails={getActionDetails}
+        onConfirm={() => executeAction(pendingAction)}
+        isLoading={isLoading}
+        enabledCommandCount={enabledCommandCount}
+        customCommandCount={Object.keys(customCommands).length}
+      />
+
+      <VerificationModal
+        isOpen={isVerificationOpen}
+        onClose={onVerificationClose}
+        isVerifying={isVerifying}
+        verificationProgress={verificationProgress}
+        verificationResults={verificationResults}
+        onStartVerification={() => verifyConfiguration(finalCommands)}
+        getStatusColor={getStatusColor}
+      />
     </VStack>
   )
 }

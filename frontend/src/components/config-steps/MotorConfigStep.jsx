@@ -30,9 +30,9 @@ const MotorConfigStep = () => {
     dispatch(updateMotorConfig({ [field]: value }))
   }
 
-  // Calculate motor constants
+  // Calculate torque constant from Kv
   const calculateKt = () => {
-    if (motorConfig.motor_kv > 0) {
+    if (motorConfig.motor_kv && motorConfig.motor_kv > 0) {
       return (60 / (2 * Math.PI * motorConfig.motor_kv)) // Kt = 60/(2π * Kv)
     }
     return 0
@@ -91,8 +91,6 @@ const MotorConfigStep = () => {
                 <NumberInput
                   value={motorConfig.pole_pairs}
                   onChange={(_, value) => handleConfigChange('pole_pairs', value)}
-                  min={1}
-                  max={50}
                   step={1}
                 >
                   <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
@@ -112,8 +110,6 @@ const MotorConfigStep = () => {
                   <NumberInput
                     value={motorConfig.motor_kv}
                     onChange={(_, value) => handleConfigChange('motor_kv', value)}
-                    min={1}
-                    max={5000}
                     step={1}
                   >
                     <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
@@ -133,8 +129,6 @@ const MotorConfigStep = () => {
                   <NumberInput
                     value={motorConfig.current_lim}
                     onChange={(_, value) => handleConfigChange('current_lim', value)}
-                    min={0.1}
-                    max={60}
                     step={0.1}
                     precision={1}
                   >
@@ -166,8 +160,6 @@ const MotorConfigStep = () => {
                   <NumberInput
                     value={motorConfig.calibration_current}
                     onChange={(_, value) => handleConfigChange('calibration_current', value)}
-                    min={0.5}
-                    max={30}
                     step={0.1}
                     precision={1}
                   >
@@ -188,8 +180,6 @@ const MotorConfigStep = () => {
                   <NumberInput
                     value={motorConfig.resistance_calib_max_voltage}
                     onChange={(_, value) => handleConfigChange('resistance_calib_max_voltage', value)}
-                    min={1}
-                    max={24}
                     step={0.1}
                     precision={1}
                   >
@@ -211,8 +201,6 @@ const MotorConfigStep = () => {
                 <NumberInput
                   value={motorConfig.lock_in_spin_current}
                   onChange={(_, value) => handleConfigChange('lock_in_spin_current', value)}
-                  min={0.5}
-                  max={15}
                   step={0.1}
                   precision={1}
                 >
@@ -248,8 +236,6 @@ const MotorConfigStep = () => {
                     <NumberInput
                       value={motorConfig.phase_resistance}
                       onChange={(_, value) => handleConfigChange('phase_resistance', value)}
-                      min={0}
-                      max={100}
                       step={0.01}
                       precision={3}
                     >
@@ -270,8 +256,6 @@ const MotorConfigStep = () => {
                     <NumberInput
                       value={motorConfig.phase_inductance}
                       onChange={(_, value) => handleConfigChange('phase_inductance', value)}
-                      min={0}
-                      max={0.01}
                       step={0.000001}
                       precision={6}
                     >
@@ -288,20 +272,38 @@ const MotorConfigStep = () => {
 
       <Card bg="gray.700" variant="elevated">
         <CardHeader>
-          <Heading size="md" color="white">Calculated Values</Heading>
+          <Heading size="md" color="white">Motor Summary & Calculations</Heading>
         </CardHeader>
         <CardBody>
-          <VStack spacing={3}>
-            <HStack justify="space-between" w="100%">
-              <Text color="gray.300">Torque Constant (Kt):</Text>
+          <VStack spacing={2} align="stretch">
+            <HStack justify="space-between">
+              <Text color="gray.300">Motor Type:</Text>
+              <Text fontWeight="bold" color="white">
+                {getMotorTypeName(motorConfig.motor_type)}
+              </Text>
+            </HStack>
+            <HStack justify="space-between">
+              <Text color="gray.300">Pole Pairs:</Text>
+              <Text fontWeight="bold" color="white">{motorConfig.pole_pairs}</Text>
+            </HStack>
+            <HStack justify="space-between">
+              <Text color="gray.300">Motor Kv:</Text>
+              <Text fontWeight="bold" color="white">{motorConfig.motor_kv} RPM/V</Text>
+            </HStack>
+            <HStack justify="space-between">
+              <Text color="gray.300">Calculated Kt:</Text>
               <Text fontWeight="bold" color="odrive.300">
                 {calculateKt().toFixed(4)} Nm/A
               </Text>
             </HStack>
-            <HStack justify="space-between" w="100%">
-              <Text color="gray.300">Max Torque at Current Limit:</Text>
+            <HStack justify="space-between">
+              <Text color="gray.300">Current Limit:</Text>
+              <Text fontWeight="bold" color="odrive.300">{motorConfig.current_lim} A</Text>
+            </HStack>
+            <HStack justify="space-between">
+              <Text color="gray.300">Max Torque:</Text>
               <Text fontWeight="bold" color="odrive.300">
-                {calculateMaxTorque().toFixed(2)} Nm
+                {calculateMaxTorque().toFixed(3)} Nm
               </Text>
             </HStack>
           </VStack>

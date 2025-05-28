@@ -774,15 +774,200 @@ def save_config():
 
 @app.route('/api/odrive/calibrate', methods=['POST'])
 def calibrate():
-    """Start calibration sequence"""
+    """Start proper calibration sequence for ODrive v0.5.6"""
     try:
-        result = odrive_manager.execute_command('device.axis0.requested_state = 3')  # FULL_CALIBRATION_SEQUENCE
+        data = request.get_json() or {}
+        calibration_type = data.get('type', 'full')  # 'full', 'motor', 'encoder_polarity', 'encoder_offset', 'encoder_sequence'
+        
+        if calibration_type == 'full':
+            # Full calibration sequence: Motor -> Encoder Polarity -> Encoder Offset
+            result = odrive_manager.execute_command('device.axis0.requested_state = 3')  # FULL_CALIBRATION_SEQUENCE
+            if 'error' not in result:
+                return jsonify({
+                    'message': 'Full calibration started (Motor -> Encoder Polarity -> Encoder Offset)',
+                    'sequence': ['motor', 'encoder_polarity', 'encoder_offset'],
+                    'next_state': 'full_calibration'
+                })
+        elif calibration_type == 'motor':
+            # Motor calibration only
+            result = odrive_manager.execute_command('device.axis0.requested_state = 4')  # MOTOR_CALIBRATION
+            if 'error' not in result:
+                return jsonify({
+                    'message': 'Motor calibration started',
+                    'sequence': ['motor'],
+                    'next_state': 'motor_calibration'
+                })
+        elif calibration_type == 'encoder_polarity':
+            # Encoder polarity calibration (direction finding) FIRST
+            result = odrive_manager.execute_command('device.axis0.requested_state = 10')  # ENCODER_DIR_FIND
+            if 'error' not in result:
+                return jsonify({
+                    'message': 'Encoder polarity calibration started',
+                    'sequence': ['encoder_polarity'],
+                    'next_state': 'encoder_dir_find'
+                })
+        elif calibration_type == 'encoder_offset':
+            # Encoder offset calibration (should be done AFTER polarity)
+            result = odrive_manager.execute_command('device.axis0.requested_state = 7')  # ENCODER_OFFSET_CALIBRATION
+            if 'error' not in result:
+                return jsonify({
+                    'message': 'Encoder offset calibration started',
+                    'sequence': ['encoder_offset'],
+                    'next_state': 'encoder_offset_calibration'
+                })
+        elif calibration_type == 'encoder_sequence':
+            # Encoder calibrations only: Polarity FIRST, then Offset
+            result = odrive_manager.execute_command('device.axis0.requested_state = 10')  # Start with ENCODER_DIR_FIND
+            if 'error' not in result:
+                return jsonify({
+                    'message': 'Encoder calibration sequence started (Polarity -> Offset)',
+                    'sequence': ['encoder_polarity', 'encoder_offset'],
+                    'next_state': 'encoder_dir_find',
+                    'auto_continue': True  # Flag to indicate we should auto-continue to offset calibration
+                })
+        else:
+            return jsonify({'error': 'Invalid calibration type'}), 400
+            
+        if 'error' in result:
+            return jsonify(result), 400
+            
+    except Exception as e:
+        logger.error(f"Error in calibrate: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/odrive/calibration_status', methods=['GET'])
+def calibration_status():
+    """Get detailed calibration status with automatic sequence progression"""
+    try:
+        # Get current axis state
+        axis_state_result = odrive_manager.execute_command('device.axis0.current_state')
+        if 'error' in axis_state_result:
+            return jsonify(axis_state_result), 400
+            
+        axis_state = axis_state_result.get('value', 0)
+        
+        # Get calibration flags
+        motor_calibrated_result = odrive_manager.execute_command('device.axis0.motor.is_calibrated')
+        encoder_ready_result = odrive_manager.execute_command('device.axis0.encoder.is_ready')
+        
+        motor_calibrated = motor_calibrated_result.get('value', False) if 'error' not in motor_calibrated_result else False
+        encoder_ready = encoder_ready_result.get('value', False) if 'error' not in encoder_ready_result else False
+        
+        # Get encoder polarity calibration status (ODrive v0.5.6 specific)
+        encoder_direction_result = odrive_manager.execute_command('device.axis0.encoder.config.direction')
+        encoder_polarity_calibrated = encoder_direction_result.get('value', 0) != 0 if 'error' not in encoder_direction_result else False
+        
+        # Get any errors
+        axis_error_result = odrive_manager.execute_command('device.axis0.error')
+        motor_error_result = odrive_manager.execute_command('device.axis0.motor.error')
+        encoder_error_result = odrive_manager.execute_command('device.axis0.encoder.error')
+        
+        axis_error = axis_error_result.get('value', 0) if 'error' not in axis_error_result else 0
+        motor_error = motor_error_result.get('value', 0) if 'error' not in motor_error_result else 0
+        encoder_error = encoder_error_result.get('value', 0) if 'error' not in encoder_error_result else 0
+        
+        # Determine calibration phase based on axis state
+        calibration_phase = 'idle'
+        progress_percentage = 0
+        auto_continue_action = None
+        
+        if axis_state == 4:
+            calibration_phase = 'motor_calibration'
+            progress_percentage = 25
+        elif axis_state == 10:
+            calibration_phase = 'encoder_polarity'
+            progress_percentage = 50
+        elif axis_state == 7:
+            calibration_phase = 'encoder_offset'
+            progress_percentage = 75
+        elif axis_state == 3:
+            calibration_phase = 'full_calibration'
+            progress_percentage = 33
+        elif axis_state == 1 and motor_calibrated and encoder_polarity_calibrated and encoder_ready:
+            calibration_phase = 'complete'
+            progress_percentage = 100
+        elif axis_state == 1:
+            # Check if we need to auto-continue encoder sequence
+            if motor_calibrated and encoder_polarity_calibrated and not encoder_ready:
+                # Polarity done, need to start offset calibration
+                auto_continue_action = 'encoder_offset'
+                calibration_phase = 'ready_for_offset'
+                progress_percentage = 60
+            elif motor_calibrated and not encoder_polarity_calibrated:
+                # Motor done, need to start encoder polarity
+                auto_continue_action = 'encoder_polarity'
+                calibration_phase = 'ready_for_polarity'
+                progress_percentage = 30
+            else:
+                calibration_phase = 'idle'
+        
+        return jsonify({
+            'axis_state': axis_state,
+            'calibration_phase': calibration_phase,
+            'progress_percentage': progress_percentage,
+            'motor_calibrated': motor_calibrated,
+            'encoder_polarity_calibrated': encoder_polarity_calibrated,
+            'encoder_ready': encoder_ready,
+            'axis_error': axis_error,
+            'motor_error': motor_error,
+            'encoder_error': encoder_error,
+            'auto_continue_action': auto_continue_action,
+            'errors': {
+                'axis': axis_error,
+                'motor': motor_error,
+                'encoder': encoder_error
+            }
+        })
+        
+    except Exception as e:
+        logger.error(f"Error in calibration_status: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/odrive/auto_continue_calibration', methods=['POST'])
+def auto_continue_calibration():
+    """Auto-continue calibration sequence (polarity -> offset)"""
+    try:
+        data = request.get_json() or {}
+        next_step = data.get('step', '')
+        
+        if next_step == 'encoder_polarity':
+            # Start encoder polarity calibration
+            result = odrive_manager.execute_command('device.axis0.requested_state = 10')  # ENCODER_DIR_FIND
+            if 'error' not in result:
+                return jsonify({
+                    'message': 'Auto-continuing to encoder polarity calibration',
+                    'next_state': 'encoder_dir_find'
+                })
+        elif next_step == 'encoder_offset':
+            # Start encoder offset calibration
+            result = odrive_manager.execute_command('device.axis0.requested_state = 7')  # ENCODER_OFFSET_CALIBRATION
+            if 'error' not in result:
+                return jsonify({
+                    'message': 'Auto-continuing to encoder offset calibration',
+                    'next_state': 'encoder_offset_calibration'
+                })
+        else:
+            return jsonify({'error': 'Invalid auto-continue step'}), 400
+            
+        if 'error' in result:
+            return jsonify(result), 400
+            
+    except Exception as e:
+        logger.error(f"Error in auto_continue_calibration: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/odrive/encoder_direction_find', methods=['POST'])
+def encoder_direction_find():
+    """Specifically run encoder direction finding (polarity calibration)"""
+    try:
+        result = odrive_manager.execute_command('device.axis0.requested_state = 10')  # ENCODER_DIR_FIND
         if 'error' not in result:
-            return jsonify({'message': 'Calibration started'})
+            return jsonify({'message': 'Encoder direction finding started'})
         else:
             return jsonify(result), 400
     except Exception as e:
-        logger.error(f"Error in calibrate: {e}")
+        logger.error(f"Error in encoder_direction_find: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/odrive/connection_status', methods=['GET'])

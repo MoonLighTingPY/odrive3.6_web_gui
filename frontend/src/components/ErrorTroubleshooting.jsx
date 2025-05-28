@@ -135,9 +135,13 @@ const ErrorTroubleshooting = ({ isOpen, onClose, errorCode, errorType = 'encoder
                 <AlertIcon />
                 <Box>
                   <Text fontWeight="bold" mb={2}>Quick Fix for CPR Mismatch:</Text>
+                  <Text fontSize="sm" mb={2}>
+                    For Hall encoders: This error should not occur since Hall sensors don't use CPR. 
+                    Check that encoder mode is set to 0 (Hall) not 1 (Incremental).
+                  </Text>
                   <Text fontSize="sm">
-                    If you have 7 pole pairs, try these CPR values: 2800, 4200, 5600, 7000, 8400.
-                    Higher values provide better resolution but require more processing power.
+                    For Incremental encoders with 7 pole pairs: try CPR values like 28, 35, 56, 70, 140, 280, 2800, 4200, 5600, 7000, 8400.
+                    Any multiple of your pole pairs should work.
                   </Text>
                 </Box>
               </Alert>

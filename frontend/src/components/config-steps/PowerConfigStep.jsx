@@ -6,9 +6,9 @@ import {
   Text,
   NumberInput,
   NumberInputField,
-  Switch,
   FormControl,
   FormLabel,
+  Switch,
   Card,
   CardBody,
   CardHeader,
@@ -17,7 +17,6 @@ import {
   Icon,
   Alert,
   AlertIcon,
-  Badge,
 } from '@chakra-ui/react'
 import { InfoIcon } from '@chakra-ui/icons'
 import { updatePowerConfig } from '../../store/slices/configSlice'
@@ -34,7 +33,7 @@ const PowerConfigStep = () => {
     <VStack spacing={6} align="stretch" maxW="800px">
       <Box>
         <Heading size="lg" color="white" mb={2}>
-          Power Supply Configuration
+          Power Configuration
         </Heading>
         <Text color="gray.300" mb={6}>
           Configure DC bus voltage limits and current limits for safe operation. 
@@ -66,8 +65,6 @@ const PowerConfigStep = () => {
                   <NumberInput
                     value={powerConfig.dc_bus_overvoltage_trip_level}
                     onChange={(_, value) => handleConfigChange('dc_bus_overvoltage_trip_level', value)}
-                    min={24}
-                    max={56}
                     step={0.1}
                     precision={1}
                   >
@@ -88,8 +85,6 @@ const PowerConfigStep = () => {
                   <NumberInput
                     value={powerConfig.dc_bus_undervoltage_trip_level}
                     onChange={(_, value) => handleConfigChange('dc_bus_undervoltage_trip_level', value)}
-                    min={8}
-                    max={24}
                     step={0.1}
                     precision={1}
                   >
@@ -126,8 +121,6 @@ const PowerConfigStep = () => {
                   <NumberInput
                     value={powerConfig.dc_max_positive_current}
                     onChange={(_, value) => handleConfigChange('dc_max_positive_current', value)}
-                    min={1}
-                    max={20}
                     step={0.1}
                     precision={1}
                   >
@@ -148,8 +141,6 @@ const PowerConfigStep = () => {
                   <NumberInput
                     value={powerConfig.dc_max_negative_current}
                     onChange={(_, value) => handleConfigChange('dc_max_negative_current', value)}
-                    min={-10}
-                    max={0}
                     step={0.1}
                     precision={1}
                   >
@@ -173,7 +164,7 @@ const PowerConfigStep = () => {
               <HStack justify="space-between">
                 <HStack>
                   <FormLabel color="white" mb={0}>Enable Brake Resistor</FormLabel>
-                  <Tooltip label="Enable if you have a brake resistor connected. This allows safe dissipation of regenerative energy.">
+                  <Tooltip label="Enable if you have a brake resistor connected to dissipate regenerative energy.">
                     <Icon as={InfoIcon} color="gray.400" />
                   </Tooltip>
                 </HStack>
@@ -197,8 +188,6 @@ const PowerConfigStep = () => {
                   <NumberInput
                     value={powerConfig.brake_resistance}
                     onChange={(_, value) => handleConfigChange('brake_resistance', value)}
-                    min={0.5}
-                    max={10}
                     step={0.1}
                     precision={1}
                   >
@@ -214,32 +203,38 @@ const PowerConfigStep = () => {
 
       <Card bg="gray.700" variant="elevated">
         <CardHeader>
-          <Heading size="md" color="white">Configuration Summary</Heading>
+          <Heading size="md" color="white">Power Configuration Summary</Heading>
         </CardHeader>
         <CardBody>
           <VStack spacing={2} align="stretch">
             <HStack justify="space-between">
-              <Text color="gray.300">Operating Voltage Range:</Text>
+              <Text color="gray.300">Overvoltage Trip:</Text>
               <Text fontWeight="bold" color="white">
-                {powerConfig.dc_bus_undervoltage_trip_level}V - {powerConfig.dc_bus_overvoltage_trip_level}V
+                {powerConfig.dc_bus_overvoltage_trip_level} V
               </Text>
             </HStack>
             <HStack justify="space-between">
-              <Text color="gray.300">Current Range:</Text>
+              <Text color="gray.300">Undervoltage Trip:</Text>
               <Text fontWeight="bold" color="white">
-                {powerConfig.dc_max_negative_current}A to +{powerConfig.dc_max_positive_current}A
+                {powerConfig.dc_bus_undervoltage_trip_level} V
+              </Text>
+            </HStack>
+            <HStack justify="space-between">
+              <Text color="gray.300">Max Positive Current:</Text>
+              <Text fontWeight="bold" color="odrive.300">
+                {powerConfig.dc_max_positive_current} A
+              </Text>
+            </HStack>
+            <HStack justify="space-between">
+              <Text color="gray.300">Max Negative Current:</Text>
+              <Text fontWeight="bold" color="odrive.300">
+                {powerConfig.dc_max_negative_current} A
               </Text>
             </HStack>
             <HStack justify="space-between">
               <Text color="gray.300">Brake Resistor:</Text>
-              <Badge colorScheme={powerConfig.brake_resistor_enabled ? "green" : "gray"} variant="solid">
-                {powerConfig.brake_resistor_enabled ? `Enabled (${powerConfig.brake_resistance}Ω)` : 'Disabled'}
-              </Badge>
-            </HStack>
-            <HStack justify="space-between">
-              <Text color="gray.300">Max Power (Est.):</Text>
-              <Text fontWeight="bold" color="odrive.300">
-                {(powerConfig.dc_bus_overvoltage_trip_level * powerConfig.dc_max_positive_current).toFixed(0)}W
+              <Text fontWeight="bold" color={powerConfig.brake_resistor_enabled ? "green.300" : "gray.300"}>
+                {powerConfig.brake_resistor_enabled ? `${powerConfig.brake_resistance} Ω` : "Disabled"}
               </Text>
             </HStack>
           </VStack>
