@@ -20,13 +20,22 @@ import {
   Alert,
   AlertIcon,
   Divider,
+  Tooltip,
+  Icon,
+  useDisclosure,
 } from '@chakra-ui/react'
+import { InfoIcon, WarningIcon } from '@chakra-ui/icons'
 import { getAxisStateName } from '../utils/odriveEnums'
+import { getErrorDescription, getErrorColor, isErrorCritical } from '../utils/odriveErrors'
+import ErrorTroubleshooting from './ErrorTroubleshooting'
 import '../styles/DashboardTab.css'
 
 const DashboardTab = ({ isConnected, odriveState }) => {
   const [realTimeData, setRealTimeData] = useState({})
+  const [selectedError, setSelectedError] = useState({ code: null, type: null })
   const { connectedDevice } = useSelector(state => state.device)
+  
+  const { isOpen: isTroubleshootingOpen, onOpen: onTroubleshootingOpen, onClose: onTroubleshootingClose } = useDisclosure()
 
   useEffect(() => {
     if (isConnected) {
@@ -70,6 +79,61 @@ const DashboardTab = ({ isConnected, odriveState }) => {
     if (state === 1) return 'blue' // IDLE
     if (state >= 2 && state <= 7) return 'yellow' // Calibration states
     return 'red' // Error or undefined
+  }
+
+  // Helper function to open troubleshooting modal
+  const handleErrorClick = (errorCode, errorType) => {
+    setSelectedError({ code: errorCode, type: errorType })
+    onTroubleshootingOpen()
+  }
+
+  // Helper function to render error cards with clickable elements
+  const renderErrorCard = (title, errorCode, errorType, color = 'red') => {
+    if (!errorCode || errorCode === 0) return null
+
+    const description = getErrorDescription(errorCode, errorType)
+    const isCritical = isErrorCritical(errorCode, errorType)
+
+    return (
+      <Alert status={isCritical ? "error" : "warning"} variant="left-accent">
+        <AlertIcon />
+        <Box flex="1">
+          <HStack justify="space-between" mb={1}>
+            <Text fontWeight="bold" fontSize="sm">
+              {title}
+            </Text>
+            <HStack>
+              <Badge 
+                colorScheme={color} 
+                fontSize="xs"
+                cursor="pointer"
+                _hover={{ opacity: 0.8 }}
+                onClick={() => handleErrorClick(errorCode, errorType)}
+              >
+                0x{errorCode.toString(16).toUpperCase()}
+              </Badge>
+              {isCritical && (
+                <Tooltip label="Critical error - immediate attention required">
+                  <Icon as={WarningIcon} color="red.500" boxSize={3} />
+                </Tooltip>
+              )}
+            </HStack>
+          </HStack>
+          <Text fontSize="xs" color="gray.600" mb={1}>
+            {description}
+          </Text>
+          <Text 
+            fontSize="xs" 
+            color="blue.500" 
+            cursor="pointer"
+            _hover={{ textDecoration: 'underline' }}
+            onClick={() => handleErrorClick(errorCode, errorType)}
+          >
+            Click for troubleshooting help →
+          </Text>
+        </Box>
+      </Alert>
+    )
   }
 
   return (
@@ -116,16 +180,47 @@ const DashboardTab = ({ isConnected, odriveState }) => {
               </Stat>
               <Stat>
                 <StatLabel color="gray.300">Errors</StatLabel>
-                <StatNumber color={odriveState.axis0?.error ? "red.300" : "green.300"} fontSize="md">
+                <StatNumber 
+                  color={odriveState.axis0?.error ? "red.300" : "green.300"} 
+                  fontSize="md"
+                  cursor={odriveState.axis0?.error ? "pointer" : "default"}
+                  _hover={odriveState.axis0?.error ? { opacity: 0.8 } : {}}
+                  onClick={odriveState.axis0?.error ? () => handleErrorClick(odriveState.axis0.error, 'axis') : undefined}
+                >
                   {odriveState.axis0?.error ? `0x${odriveState.axis0.error.toString(16).toUpperCase()}` : 'None'}
                 </StatNumber>
                 <StatHelpText color="gray.400">
-                  Axis Error Code
+                  {odriveState.axis0?.error ? "Click for help" : "Axis Error Code"}
                 </StatHelpText>
               </Stat>
             </SimpleGrid>
           </CardBody>
         </Card>
+
+        {/* Error Status Section */}
+        {(odriveState.axis0?.error || 
+          odriveState.axis0?.motor?.error || 
+          odriveState.axis0?.encoder?.error || 
+          odriveState.axis0?.controller?.error ||
+          odriveState.axis0?.sensorless_estimator?.error) && (
+          <Card bg="red.900" variant="elevated">
+            <CardHeader>
+              <HStack>
+                <Icon as={WarningIcon} color="red.300" />
+                <Heading size="md" color="red.300">System Errors - Click for Help</Heading>
+              </HStack>
+            </CardHeader>
+            <CardBody>
+              <VStack spacing={3} align="stretch">
+                {renderErrorCard("Axis Error", odriveState.axis0?.error, 'axis', 'red')}
+                {renderErrorCard("Motor Error", odriveState.axis0?.motor?.error, 'motor', 'orange')}
+                {renderErrorCard("Encoder Error", odriveState.axis0?.encoder?.error, 'encoder', 'yellow')}
+                {renderErrorCard("Controller Error", odriveState.axis0?.controller?.error, 'controller', 'purple')}
+                {renderErrorCard("Sensorless Error", odriveState.axis0?.sensorless_estimator?.error, 'sensorless', 'blue')}
+              </VStack>
+            </CardBody>
+          </Card>
+        )}
 
         {/* Power & Thermal */}
         <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={6}>
@@ -283,6 +378,14 @@ const DashboardTab = ({ isConnected, odriveState }) => {
           </CardBody>
         </Card>
       </VStack>
+
+      {/* Error Troubleshooting Modal */}
+      <ErrorTroubleshooting
+        isOpen={isTroubleshootingOpen}
+        onClose={onTroubleshootingClose}
+        errorCode={selectedError.code}
+        errorType={selectedError.type}
+      />
     </Box>
   )
 }

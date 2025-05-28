@@ -5,45 +5,50 @@ import {
   VStack,
   HStack,
   Text,
-  Button,
   Card,
   CardBody,
-  Badge,
-  Spinner,
+  Button,
   Alert,
   AlertIcon,
+  Badge,
   Divider,
+  Spinner,
   useToast,
+  Tooltip,
+  Icon,
+  useDisclosure,
 } from '@chakra-ui/react'
+import { InfoIcon } from '@chakra-ui/icons'
 import { 
   setAvailableDevices, 
   setConnectedDevice, 
-  updateOdriveState, 
-  setScanning,
-  setConnectionLost,
-  setReconnecting 
+  updateOdriveState,
+  setConnectionLost
 } from '../store/slices/deviceSlice'
+import { getErrorDescription, getErrorColor, isErrorCritical } from '../utils/odriveErrors'
+import ErrorTroubleshooting from './ErrorTroubleshooting'
 import '../styles/DeviceList.css'
 
 const DeviceList = () => {
   const dispatch = useDispatch()
   const toast = useToast()
+  const [isScanning, setIsScanning] = useState(false)
+  const [selectedError, setSelectedError] = useState({ code: null, type: null })
+  
+  const { isOpen: isTroubleshootingOpen, onOpen: onTroubleshootingOpen, onClose: onTroubleshootingClose } = useDisclosure()
+  
   const { 
     availableDevices, 
     connectedDevice, 
     isConnected, 
-    isScanning, 
     odriveState,
-    connectionLost,
-    reconnecting 
+    connectionLost 
   } = useSelector(state => state.device)
 
   useEffect(() => {
     scanForDevices()
-  }, [])
-
-  useEffect(() => {
-    // Poll ODrive state when connected
+    
+    // Poll for device state updates when connected
     if (isConnected || connectionLost) {
       const interval = setInterval(async () => {
         try {
@@ -74,34 +79,48 @@ const DeviceList = () => {
           }
         } catch (error) {
           console.error('Failed to fetch ODrive state:', error)
-          if (isConnected && !connectionLost) {
+          if (!connectionLost && isConnected) {
             dispatch(setConnectionLost(true))
+            toast({
+              title: 'Connection lost',
+              description: 'ODrive device disconnected. Attempting to reconnect...',
+              status: 'warning',
+              duration: 5000,
+            })
           }
         }
-      }, 1000)
+      }, 1000) // Poll every second
 
       return () => clearInterval(interval)
     }
   }, [isConnected, connectionLost, dispatch, toast])
 
   const scanForDevices = async () => {
-    dispatch(setScanning(true))
+    setIsScanning(true)
     try {
       const response = await fetch('/api/odrive/scan')
       if (response.ok) {
-        const deviceList = await response.json()
-        dispatch(setAvailableDevices(deviceList))
+        const devices = await response.json()
+        dispatch(setAvailableDevices(devices))
+      } else {
+        toast({
+          title: 'Scan failed',
+          description: 'Failed to scan for ODrive devices',
+          status: 'error',
+          duration: 3000,
+        })
       }
     } catch (error) {
       console.error('Failed to scan for devices:', error)
       toast({
         title: 'Scan failed',
-        description: 'Failed to scan for ODrive devices.',
+        description: 'Network error while scanning for devices',
         status: 'error',
         duration: 3000,
       })
+    } finally {
+      setIsScanning(false)
     }
-    dispatch(setScanning(false))
   }
 
   const handleConnect = async (device) => {
@@ -166,6 +185,66 @@ const DeviceList = () => {
     return 'red' // Error or undefined
   }
 
+  // Helper function to open troubleshooting modal
+  const handleErrorClick = (errorCode, errorType) => {
+    setSelectedError({ code: errorCode, type: errorType })
+    onTroubleshootingOpen()
+  }
+
+  // Helper function to render error information with clickable badges
+  const renderErrorInfo = (errorCode, errorType = 'axis') => {
+    if (!errorCode || errorCode === 0) {
+      return (
+        <HStack justify="space-between">
+          <Text fontSize="sm" color="gray.300">Error:</Text>
+          <Text fontSize="sm" fontWeight="bold" color="green.300">None</Text>
+        </HStack>
+      )
+    }
+
+    const description = getErrorDescription(errorCode, errorType)
+    const colorScheme = getErrorColor(errorCode, errorType)
+    const isCritical = isErrorCritical(errorCode, errorType)
+
+    return (
+      <VStack spacing={1} align="stretch">
+        <HStack justify="space-between">
+          <Text fontSize="sm" color="gray.300">Error:</Text>
+          <HStack>
+            <Badge 
+              colorScheme={colorScheme} 
+              variant="solid" 
+              fontSize="xs"
+              cursor="pointer"
+              _hover={{ opacity: 0.8 }}
+              onClick={() => handleErrorClick(errorCode, errorType)}
+            >
+              0x{errorCode.toString(16).toUpperCase()}
+            </Badge>
+            {isCritical && (
+              <Tooltip label="Critical error - immediate attention required">
+                <Icon as={InfoIcon} color="red.400" boxSize={3} />
+              </Tooltip>
+            )}
+          </HStack>
+        </HStack>
+        <Text fontSize="xs" color={`${colorScheme}.300`} textAlign="right" maxW="200px">
+          {description}
+        </Text>
+        <Text 
+          fontSize="xs" 
+          color="blue.300" 
+          textAlign="right" 
+          cursor="pointer"
+          _hover={{ textDecoration: 'underline' }}
+          onClick={() => handleErrorClick(errorCode, errorType)}
+        >
+          Click for troubleshooting →
+        </Text>
+      </VStack>
+    )
+  }
+
   return (
     <Box className="device-list" p={4} h="100%">
       <VStack spacing={4} align="stretch" h="100%">
@@ -203,6 +282,7 @@ const DeviceList = () => {
                 <Card
                   key={index}
                   w="100%"
+                  className="device-card"
                   bg={isConnected && connectedDevice?.serial === device.serial ? 'odrive.700' : 'gray.700'}
                   variant="elevated"
                 >
@@ -286,19 +366,58 @@ const DeviceList = () => {
                     {odriveState.axis0?.encoder?.pos_estimate?.toFixed(2) || '0.00'}
                   </Text>
                 </HStack>
-                {odriveState.axis0?.error && odriveState.axis0.error !== 0 && (
-                  <HStack justify="space-between">
-                    <Text fontSize="sm" color="red.300">Error:</Text>
-                    <Text fontSize="sm" fontWeight="bold" color="red.300">
-                      0x{odriveState.axis0.error.toString(16).toUpperCase()}
-                    </Text>
-                  </HStack>
+
+                {/* Axis Error */}
+                {renderErrorInfo(odriveState.axis0?.error, 'axis')}
+
+                {/* Motor Error */}
+                {odriveState.axis0?.motor?.error && odriveState.axis0.motor.error !== 0 && (
+                  <>
+                    <Divider my={2} />
+                    <Text fontSize="sm" fontWeight="bold" color="orange.300">Motor Errors:</Text>
+                    {renderErrorInfo(odriveState.axis0.motor.error, 'motor')}
+                  </>
+                )}
+
+                {/* Encoder Error */}
+                {odriveState.axis0?.encoder?.error && odriveState.axis0.encoder.error !== 0 && (
+                  <>
+                    <Divider my={2} />
+                    <Text fontSize="sm" fontWeight="bold" color="orange.300">Encoder Errors:</Text>
+                    {renderErrorInfo(odriveState.axis0.encoder.error, 'encoder')}
+                  </>
+                )}
+
+                {/* Controller Error */}
+                {odriveState.axis0?.controller?.error && odriveState.axis0.controller.error !== 0 && (
+                  <>
+                    <Divider my={2} />
+                    <Text fontSize="sm" fontWeight="bold" color="orange.300">Controller Errors:</Text>
+                    {renderErrorInfo(odriveState.axis0.controller.error, 'controller')}
+                  </>
+                )}
+
+                {/* Sensorless Estimator Error */}
+                {odriveState.axis0?.sensorless_estimator?.error && odriveState.axis0.sensorless_estimator.error !== 0 && (
+                  <>
+                    <Divider my={2} />
+                    <Text fontSize="sm" fontWeight="bold" color="orange.300">Sensorless Errors:</Text>
+                    {renderErrorInfo(odriveState.axis0.sensorless_estimator.error, 'sensorless')}
+                  </>
                 )}
               </VStack>
             </Box>
           </>
         )}
       </VStack>
+
+      {/* Error Troubleshooting Modal */}
+      <ErrorTroubleshooting
+        isOpen={isTroubleshootingOpen}
+        onClose={onTroubleshootingClose}
+        errorCode={selectedError.code}
+        errorType={selectedError.type}
+      />
     </Box>
   )
 }
