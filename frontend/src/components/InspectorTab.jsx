@@ -1,379 +1,257 @@
 import { useState, useEffect } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
+import { useSelector } from 'react-redux'
 import {
-  Box,
   VStack,
   HStack,
   Text,
-  Input,
-  Button,
+  Box,
+  Grid,
+  GridItem,
   Card,
   CardBody,
   CardHeader,
   Heading,
   Alert,
   AlertIcon,
+  Button,
+  useToast,
+  Badge,
+  Spinner,
   Tabs,
   TabList,
   TabPanels,
   Tab,
   TabPanel,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
-  Code,
-  Badge,
-  useToast,
-  Textarea,
-  NumberInput,
-  NumberInputField,
 } from '@chakra-ui/react'
-import { updateDeviceProperty } from '../store/slices/deviceSlice'
-import '../styles/InspectorTab.css'
+import { RefreshCw } from 'lucide-react'
+import PropertyTree from './inspector/PropertyTree'
+import StatusOverview from './inspector/StatusOverview'
+import ErrorDisplay from './inspector/ErrorDisplay'
+import LiveMonitor from './inspector/LiveMonitor'
+import LiveDataView from './inspector/LiveDataView'
+import CommandConsole from './inspector/CommandConsole'
 
-const InspectorTab = ({ isConnected, odriveState }) => {
-  const dispatch = useDispatch()
+const InspectorTab = () => {
   const toast = useToast()
-  const [commandInput, setCommandInput] = useState('')
-  const [commandHistory, setCommandHistory] = useState([])
-  const [selectedProperty, setSelectedProperty] = useState('')
-  const [propertyValue, setPropertyValue] = useState('')
+  const { isConnected, odriveState } = useSelector(state => state.device)
+  const [localOdriveState, setLocalOdriveState] = useState({})
+  const [isLoading, setIsLoading] = useState(false)
+  const [lastUpdate, setLastUpdate] = useState(null)
   const [searchFilter, setSearchFilter] = useState('')
+  const [autoRefresh, setAutoRefresh] = useState(false)
+  const [refreshRate, setRefreshRate] = useState(1000) // ms
+  const [activeInspectorTab, setActiveInspectorTab] = useState(0)
 
-  const sendCommand = async () => {
-    if (!commandInput.trim()) return
+  // Use Redux state as primary source, fallback to local state
+  const currentOdriveState = Object.keys(odriveState).length > 0 ? odriveState : localOdriveState
 
+  // Auto-refresh when enabled
+  useEffect(() => {
+    let interval = null
+    if (autoRefresh && isConnected) {
+      interval = setInterval(() => {
+        refreshAllData()
+      }, refreshRate)
+    }
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [autoRefresh, isConnected, refreshRate])
+
+  const refreshAllData = async () => {
+    if (!isConnected) return
+
+    setIsLoading(true)
     try {
-      const response = await fetch('/api/odrive/command', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ command: commandInput })
-      })
-
-      const result = await response.json()
-      
-      const newEntry = {
-        command: commandInput,
-        result: result.result || result.error,
-        success: response.ok,
-        timestamp: new Date().toLocaleTimeString()
-      }
-
-      setCommandHistory(prev => [newEntry, ...prev.slice(0, 49)]) // Keep last 50 entries
-      setCommandInput('')
-
+      const response = await fetch('/api/odrive/state')
       if (response.ok) {
-        toast({
-          title: 'Command executed successfully',
-          status: 'success',
-          duration: 2000,
-        })
+        const data = await response.json()
+        setLocalOdriveState(data)
+        setLastUpdate(new Date())
       } else {
-        toast({
-          title: 'Command failed',
-          description: result.error,
-          status: 'error',
-          duration: 3000,
-        })
+        throw new Error('Failed to read properties')
       }
     } catch (error) {
       toast({
-        title: 'Error sending command',
-        description: error.message,
+        title: 'Error',
+        description: `Failed to refresh data: ${error.message}`,
         status: 'error',
         duration: 3000,
       })
     }
+    setIsLoading(false)
   }
 
   const updateProperty = async (path, value) => {
+    if (!isConnected) return
+
     try {
-      const response = await fetch('/api/odrive/set_property', {
+      const command = `odrv0.${path} = ${value}`
+      const response = await fetch('/api/odrive/command', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path, value })
+        body: JSON.stringify({ command })
       })
 
       if (response.ok) {
-        dispatch(updateDeviceProperty({ path, value }))
         toast({
-          title: 'Property updated',
+          title: 'Success',
+          description: `Updated ${path} = ${value}`,
           status: 'success',
           duration: 2000,
         })
+        // Refresh data to show the change
+        setTimeout(() => refreshAllData(), 100)
       } else {
         const error = await response.json()
-        toast({
-          title: 'Failed to update property',
-          description: error.message,
-          status: 'error',
-          duration: 3000,
-        })
+        throw new Error(error.error || 'Update failed')
       }
     } catch (error) {
       toast({
-        title: 'Error updating property',
-        description: error.message,
+        title: 'Error',
+        description: `Failed to update ${path}: ${error.message}`,
         status: 'error',
-        duration: 3000,
+        duration: 5000,
       })
     }
   }
 
-  const flattenObject = (obj, prefix = '') => {
-    let result = []
-    for (let key in obj) {
-      if (obj.hasOwnProperty(key)) {
-        const newKey = prefix ? `${prefix}.${key}` : key
-        if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
-          result = result.concat(flattenObject(obj[key], newKey))
-        } else {
-          result.push({
-            path: newKey,
-            value: obj[key],
-            type: typeof obj[key]
-          })
-        }
-      }
-    }
-    return result
-  }
-
-  const filteredProperties = flattenObject(odriveState).filter(prop =>
-    prop.path.toLowerCase().includes(searchFilter.toLowerCase())
-  )
-
-  if (!isConnected) {
-    return (
-      <Box className="inspector-tab" p={8} textAlign="center">
-        <Alert status="info" variant="subtle" borderRadius="md">
-          <AlertIcon />
-          Connect to an ODrive device to inspect properties and send commands.
-        </Alert>
-      </Box>
-    )
-  }
-
   return (
-    <Box className="inspector-tab" p={6} h="100%">
-      <VStack spacing={6} align="stretch" h="100%">
-        <Heading size="lg" color="white">ODrive Inspector</Heading>
+    <VStack spacing={6} align="stretch" p={6} h="100%">
+      <Box>
+        <Heading size="lg" color="white" mb={2}>
+          ODrive Inspector
+        </Heading>
+        <Text color="gray.300" mb={4}>
+          Real-time monitoring, debugging, and control of all ODrive properties and states
+        </Text>
+      </Box>
 
-        <Tabs variant="enclosed" colorScheme="odrive" flex="1">
-          <TabList>
-            <Tab>Command Console</Tab>
-            <Tab>Property Inspector</Tab>
-            <Tab>Live Data</Tab>
-          </TabList>
+      {!isConnected && (
+        <Alert status="warning">
+          <AlertIcon />
+          ODrive not connected. Please connect to a device to inspect properties.
+        </Alert>
+      )}
 
-          <TabPanels flex="1">
-            {/* Command Console */}
-            <TabPanel h="100%">
-              <VStack spacing={4} align="stretch" h="100%">
-                <Card bg="gray.800" variant="elevated">
-                  <CardHeader>
-                    <Heading size="md" color="white">Send Command</Heading>
-                  </CardHeader>
-                  <CardBody>
-                    <HStack>
-                      <Input
-                        value={commandInput}
-                        onChange={(e) => setCommandInput(e.target.value)}
-                        placeholder="Enter ODrive command (e.g., odrv0.axis0.requested_state = 1)"
-                        bg="gray.700"
-                        border="1px solid"
-                        borderColor="gray.600"
-                        color="white"
-                        onKeyPress={(e) => e.key === 'Enter' && sendCommand()}
-                      />
-                      <Button colorScheme="odrive" onClick={sendCommand} isDisabled={!commandInput.trim()}>
-                        Send
-                      </Button>
-                    </HStack>
-                  </CardBody>
-                </Card>
+      {/* Control Panel */}
+      <Card bg="gray.800" variant="elevated">
+        <CardBody>
+          <HStack justify="space-between" wrap="wrap" spacing={4}>
+            <HStack spacing={4}>
+              <Button
+                leftIcon={isLoading ? <Spinner size="sm" /> : <RefreshCw size={16} />}
+                onClick={refreshAllData}
+                isDisabled={!isConnected}
+                isLoading={isLoading}
+                colorScheme="blue"
+              >
+                Refresh All
+              </Button>
+              
+              <HStack>
+                <Text color="gray.300" fontSize="sm">Auto-refresh:</Text>
+                <Button
+                  size="sm"
+                  variant={autoRefresh ? "solid" : "outline"}
+                  colorScheme="green"
+                  onClick={() => setAutoRefresh(!autoRefresh)}
+                  isDisabled={!isConnected}
+                >
+                  {autoRefresh ? 'ON' : 'OFF'}
+                </Button>
+              </HStack>
+            </HStack>
 
-                <Card bg="gray.800" variant="elevated" flex="1">
-                  <CardHeader>
-                    <Heading size="md" color="white">Command History</Heading>
-                  </CardHeader>
-                  <CardBody>
-                    <Box maxH="400px" overflowY="auto">
-                      {commandHistory.length === 0 ? (
-                        <Text color="gray.400" textAlign="center">No commands executed yet</Text>
-                      ) : (
-                        <VStack spacing={2} align="stretch">
-                          {commandHistory.map((entry, index) => (
-                            <Box key={index} p={3} bg="gray.900" borderRadius="md">
-                              <HStack justify="space-between" mb={1}>
-                                <Code colorScheme="blue" fontSize="sm">{entry.command}</Code>
-                                <Badge colorScheme={entry.success ? "green" : "red"} fontSize="xs">
-                                  {entry.timestamp}
-                                </Badge>
-                              </HStack>
-                              <Text 
-                                fontSize="sm" 
-                                color={entry.success ? "green.300" : "red.300"}
-                                fontFamily="mono"
-                              >
-                                {String(entry.result)}
-                              </Text>
-                            </Box>
-                          ))}
-                        </VStack>
-                      )}
-                    </Box>
-                  </CardBody>
-                </Card>
-              </VStack>
-            </TabPanel>
+            <HStack spacing={4}>
+              {lastUpdate && (
+                <Text color="gray.400" fontSize="sm">
+                  Last updated: {lastUpdate.toLocaleTimeString()}
+                </Text>
+              )}
+              <Badge colorScheme={isConnected ? 'green' : 'red'}>
+                {isConnected ? 'Connected' : 'Disconnected'}
+              </Badge>
+            </HStack>
+          </HStack>
+        </CardBody>
+      </Card>
 
-            {/* Property Inspector */}
-            <TabPanel h="100%">
-              <VStack spacing={4} align="stretch" h="100%">
-                <Card bg="gray.800" variant="elevated">
-                  <CardHeader>
-                    <Heading size="md" color="white">Search Properties</Heading>
-                  </CardHeader>
-                  <CardBody>
-                    <Input
-                      value={searchFilter}
-                      onChange={(e) => setSearchFilter(e.target.value)}
-                      placeholder="Filter properties (e.g., axis0.motor, config, error)"
-                      bg="gray.700"
-                      border="1px solid"
-                      borderColor="gray.600"
-                      color="white"
-                    />
-                  </CardBody>
-                </Card>
+      {/* Inspector Tabs */}
+      <Card bg="gray.800" variant="elevated" flex="1">
+        <CardBody p={0} h="100%">
+          <Tabs 
+            index={activeInspectorTab} 
+            onChange={setActiveInspectorTab}
+            variant="enclosed" 
+            colorScheme="blue"
+            h="100%"
+            display="flex"
+            flexDirection="column"
+          >
+            <TabList bg="gray.700" borderColor="gray.600">
+              <Tab color="gray.300" _selected={{ color: 'blue.300', borderBottomColor: 'blue.300' }}>
+                Property Tree
+              </Tab>
+              <Tab color="gray.300" _selected={{ color: 'blue.300', borderBottomColor: 'blue.300' }}>
+                System Status
+              </Tab>
+              <Tab color="gray.300" _selected={{ color: 'blue.300', borderBottomColor: 'blue.300' }}>
+                Live Monitor
+              </Tab>
+              <Tab color="gray.300" _selected={{ color: 'blue.300', borderBottomColor: 'blue.300' }}>
+                Data Logger
+              </Tab>
+              <Tab color="gray.300" _selected={{ color: 'blue.300', borderBottomColor: 'blue.300' }}>
+                Command Console
+              </Tab>
+            </TabList>
 
-                <Card bg="gray.800" variant="elevated" flex="1">
-                  <CardHeader>
-                    <Heading size="md" color="white">Properties ({filteredProperties.length})</Heading>
-                  </CardHeader>
-                  <CardBody>
-                    <Box maxH="500px" overflowY="auto">
-                      <Table size="sm" variant="simple">
-                        <Thead position="sticky" top={0} bg="gray.800">
-                          <Tr>
-                            <Th color="gray.300" borderColor="gray.600">Property Path</Th>
-                            <Th color="gray.300" borderColor="gray.600">Value</Th>
-                            <Th color="gray.300" borderColor="gray.600">Type</Th>
-                            <Th color="gray.300" borderColor="gray.600">Actions</Th>
-                          </Tr>
-                        </Thead>
-                        <Tbody>
-                          {filteredProperties.map((prop, index) => (
-                            <Tr key={index}>
-                              <Td color="odrive.300" fontSize="sm" fontFamily="mono" borderColor="gray.600">
-                                {prop.path}
-                              </Td>
-                              <Td color="white" fontSize="sm" borderColor="gray.600">
-                                {typeof prop.value === 'boolean' 
-                                  ? prop.value.toString() 
-                                  : typeof prop.value === 'number'
-                                    ? prop.value.toFixed(4)
-                                    : String(prop.value)
-                                }
-                              </Td>
-                              <Td color="gray.400" fontSize="xs" borderColor="gray.600">
-                                <Badge colorScheme="gray" variant="outline">{prop.type}</Badge>
-                              </Td>
-                              <Td borderColor="gray.600">
-                                <Button
-                                  size="xs"
-                                  colorScheme="blue"
-                                  variant="outline"
-                                  onClick={() => {
-                                    setSelectedProperty(prop.path)
-                                    setPropertyValue(String(prop.value))
-                                  }}
-                                >
-                                  Edit
-                                </Button>
-                              </Td>
-                            </Tr>
-                          ))}
-                        </Tbody>
-                      </Table>
-                    </Box>
-                  </CardBody>
-                </Card>
-
-                {selectedProperty && (
-                  <Card bg="gray.800" variant="elevated">
-                    <CardHeader>
-                      <Heading size="sm" color="white">Edit Property: {selectedProperty}</Heading>
-                    </CardHeader>
-                    <CardBody>
-                      <HStack>
-                        <Input
-                          value={propertyValue}
-                          onChange={(e) => setPropertyValue(e.target.value)}
-                          bg="gray.700"
-                          border="1px solid"
-                          borderColor="gray.600"
-                          color="white"
-                        />
-                        <Button
-                          colorScheme="green"
-                          onClick={() => {
-                            const numValue = parseFloat(propertyValue)
-                            const finalValue = isNaN(numValue) ? propertyValue : numValue
-                            updateProperty(selectedProperty, finalValue)
-                            setSelectedProperty('')
-                            setPropertyValue('')
-                          }}
-                        >
-                          Update
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => {
-                            setSelectedProperty('')
-                            setPropertyValue('')
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                      </HStack>
-                    </CardBody>
-                  </Card>
-                )}
-              </VStack>
-            </TabPanel>
-
-            {/* Live Data */}
-            <TabPanel h="100%">
-              <Card bg="gray.800" variant="elevated" h="100%">
-                <CardHeader>
-                  <Heading size="md" color="white">Live ODrive State</Heading>
-                </CardHeader>
-                <CardBody>
-                  <Box maxH="600px" overflowY="auto">
-                    <Textarea
-                      value={JSON.stringify(odriveState, null, 2)}
-                      readOnly
-                      bg="gray.900"
-                      border="1px solid"
-                      borderColor="gray.600"
-                      color="green.300"
-                      fontFamily="mono"
-                      fontSize="sm"
-                      minH="500px"
-                    />
-                  </Box>
-                </CardBody>
-              </Card>
-            </TabPanel>
-          </TabPanels>
-        </Tabs>
-      </VStack>
-    </Box>
+            <TabPanels flex="1" h="100%">
+              <TabPanel p={4} h="100%">
+                <PropertyTree
+                  odriveState={currentOdriveState}
+                  searchFilter={searchFilter}
+                  setSearchFilter={setSearchFilter}
+                  updateProperty={updateProperty}
+                  isConnected={isConnected}
+                />
+              </TabPanel>
+              
+              <TabPanel p={4} h="100%">
+                <Grid templateColumns="1fr 1fr" gap={6} h="100%">
+                  <GridItem>
+                    <StatusOverview odriveState={currentOdriveState} />
+                  </GridItem>
+                  <GridItem>
+                    <ErrorDisplay odriveState={currentOdriveState} />
+                  </GridItem>
+                </Grid>
+              </TabPanel>
+              
+              <TabPanel p={4} h="100%">
+                <LiveMonitor 
+                  odriveState={currentOdriveState} 
+                  refreshRate={refreshRate}
+                  setRefreshRate={setRefreshRate}
+                />
+              </TabPanel>
+              
+              <TabPanel p={4} h="100%">
+                <LiveDataView 
+                  odriveState={currentOdriveState}
+                  isConnected={isConnected}
+                />
+              </TabPanel>
+              
+              <TabPanel p={4} h="100%">
+                <CommandConsole isConnected={isConnected} />
+              </TabPanel>
+            </TabPanels>
+          </Tabs>
+        </CardBody>
+      </Card>
+    </VStack>
   )
 }
 
