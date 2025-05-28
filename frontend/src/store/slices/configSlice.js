@@ -1,6 +1,11 @@
 import { createSlice } from '@reduxjs/toolkit'
 
 const initialState = {
+  // UI Preferences
+  uiPreferences: {
+    useRpmUnits: true, // Global setting for RPM vs rad/s
+  },
+
   // Power Configuration
   powerConfig: {
     dc_bus_overvoltage_trip_level: 56.0,
@@ -84,47 +89,65 @@ const configSlice = createSlice({
   name: 'config',
   initialState,
   reducers: {
+    updateUiPreferences: (state, action) => {
+      // Ensure uiPreferences exists
+      if (!state.uiPreferences) {
+        state.uiPreferences = { useRpmUnits: true }
+      }
+      state.uiPreferences = { ...state.uiPreferences, ...action.payload }
+    },
     updatePowerConfig: (state, action) => {
-      // Ensure numeric values are properly set
       Object.keys(action.payload).forEach(key => {
         const value = action.payload[key]
         if (typeof value === 'number' && !isNaN(value)) {
           state.powerConfig[key] = value
         } else if (typeof value === 'boolean') {
           state.powerConfig[key] = value
-        } else if (typeof value === 'string' && value.trim() !== '' && !isNaN(parseFloat(value))) {
-          state.powerConfig[key] = parseFloat(value)
+        } else if (typeof value === 'string' && value.trim() !== '') {
+          const numValue = parseFloat(value)
+          if (!isNaN(numValue)) {
+            state.powerConfig[key] = numValue
+          } else {
+            state.powerConfig[key] = value
+          }
         }
       })
     },
     updateMotorConfig: (state, action) => {
-      // Ensure numeric values are properly set
       Object.keys(action.payload).forEach(key => {
         const value = action.payload[key]
         if (typeof value === 'number' && !isNaN(value)) {
           state.motorConfig[key] = value
         } else if (typeof value === 'boolean') {
           state.motorConfig[key] = value
-        } else if (typeof value === 'string' && value.trim() !== '' && !isNaN(parseFloat(value))) {
-          state.motorConfig[key] = parseFloat(value)
+        } else if (typeof value === 'string' && value.trim() !== '') {
+          const numValue = parseFloat(value)
+          if (!isNaN(numValue)) {
+            state.motorConfig[key] = numValue
+          } else {
+            state.motorConfig[key] = value
+          }
         }
       })
     },
     updateEncoderConfig: (state, action) => {
-      // Ensure numeric values are properly set
       Object.keys(action.payload).forEach(key => {
         const value = action.payload[key]
         if (typeof value === 'number' && !isNaN(value)) {
           state.encoderConfig[key] = value
         } else if (typeof value === 'boolean') {
           state.encoderConfig[key] = value
-        } else if (typeof value === 'string' && value.trim() !== '' && !isNaN(parseFloat(value))) {
-          state.encoderConfig[key] = parseFloat(value)
+        } else if (typeof value === 'string' && value.trim() !== '') {
+          const numValue = parseFloat(value)
+          if (!isNaN(numValue)) {
+            state.encoderConfig[key] = numValue
+          } else {
+            state.encoderConfig[key] = value
+          }
         }
       })
     },
     updateControlConfig: (state, action) => {
-      // Ensure numeric values are properly set
       Object.keys(action.payload).forEach(key => {
         const value = action.payload[key]
         if (typeof value === 'number' && !isNaN(value)) {
@@ -132,27 +155,29 @@ const configSlice = createSlice({
         } else if (typeof value === 'boolean') {
           state.controlConfig[key] = value
         } else if (typeof value === 'string' && value.trim() !== '') {
-          // Handle string inputs for numeric fields
           const numValue = parseFloat(value)
           if (!isNaN(numValue)) {
             state.controlConfig[key] = numValue
           } else {
-            // For non-numeric strings (like control mode names), keep as string
             state.controlConfig[key] = value
           }
         }
       })
     },
     updateInterfaceConfig: (state, action) => {
-      // Ensure numeric values are properly set
       Object.keys(action.payload).forEach(key => {
         const value = action.payload[key]
         if (typeof value === 'number' && !isNaN(value)) {
           state.interfaceConfig[key] = value
         } else if (typeof value === 'boolean') {
           state.interfaceConfig[key] = value
-        } else if (typeof value === 'string' && value.trim() !== '' && !isNaN(parseFloat(value))) {
-          state.interfaceConfig[key] = parseFloat(value)
+        } else if (typeof value === 'string' && value.trim() !== '') {
+          const numValue = parseFloat(value)
+          if (!isNaN(numValue)) {
+            state.interfaceConfig[key] = numValue
+          } else {
+            state.interfaceConfig[key] = value
+          }
         }
       })
     },
@@ -163,6 +188,7 @@ const configSlice = createSlice({
 })
 
 export const {
+  updateUiPreferences,
   updatePowerConfig,
   updateMotorConfig,
   updateEncoderConfig,
