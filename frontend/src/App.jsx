@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import './App.css'
-import DeviceList from './components/DeviceList'
-import ConfigurationTab from './components/ConfigurationTab'
+import DeviceList from './components/DeviceList.jsx'
+import ConfigurationTab from './components/ConfigurationTab.jsx'
 import DashboardTab from './components/DashboardTab.jsx'
-import InspectorTab from './components/InspectorTab'
+import InspectorTab from './components/InspectorTab.jsx'
 
 function App() {
   const [activeTab, setActiveTab] = useState('configuration')
