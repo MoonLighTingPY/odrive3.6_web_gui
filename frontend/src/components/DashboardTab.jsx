@@ -26,7 +26,7 @@ import {
 } from '@chakra-ui/react'
 import { InfoIcon, WarningIcon } from '@chakra-ui/icons'
 import { getAxisStateName } from '../utils/odriveEnums'
-import { getErrorDescription, getErrorColor, isErrorCritical } from '../utils/odriveErrors'
+import { getErrorDescription, isErrorCritical } from '../utils/odriveErrors'
 import ErrorTroubleshooting from './ErrorTroubleshooting'
 import '../styles/DashboardTab.css'
 
@@ -137,8 +137,8 @@ const DashboardTab = ({ isConnected, odriveState }) => {
   }
 
   return (
-    <Box className="dashboard-tab" p={6} h="100%" overflowY="auto">
-      <VStack spacing={6} align="stretch">
+    <Box className="dashboard-tab" h="100%" overflow="hidden">
+      <VStack spacing={6} align="stretch" h="100%" overflow="auto" p={6}>
         {/* Device Info */}
         <Card bg="gray.800" variant="elevated">
           <CardHeader>
@@ -223,7 +223,7 @@ const DashboardTab = ({ isConnected, odriveState }) => {
         )}
 
         {/* Power & Thermal */}
-        <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={6}>
+        <SimpleGrid columns={{ base: 1, lg: 3 }} spacing={6}>
           <Card bg="gray.800" variant="elevated">
             <CardHeader>
               <Heading size="md" color="white">Power & Voltage</Heading>
@@ -290,10 +290,7 @@ const DashboardTab = ({ isConnected, odriveState }) => {
               </VStack>
             </CardBody>
           </Card>
-        </SimpleGrid>
-
-        {/* Encoder Data */}
-        <Card bg="gray.800" variant="elevated">
+          <Card bg="gray.800" variant="elevated">
           <CardHeader>
             <Heading size="md" color="white">Encoder Feedback</Heading>
           </CardHeader>
@@ -323,6 +320,10 @@ const DashboardTab = ({ isConnected, odriveState }) => {
             </SimpleGrid>
           </CardBody>
         </Card>
+        </SimpleGrid>
+
+        {/* Encoder Data */}
+        
 
         {/* Control Actions */}
         <Card bg="gray.800" variant="elevated">
