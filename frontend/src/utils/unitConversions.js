@@ -1,60 +1,75 @@
 // Unit conversion utilities for ODrive v0.5.6
+// ODrive v0.5.6 uses turns/s internally for all velocity calculations
 
-// Convert between rad/s and RPM
-export const radToRpm = (radPerSec) => radPerSec * 60 / (2 * Math.PI)
-export const rpmToRad = (rpm) => rpm * 2 * Math.PI / 60
+// Convert between turns/s and RPM
+export const turnsToRpm = (turnsPerSec) => turnsPerSec * 60
+export const rpmToTurns = (rpm) => rpm / 60
 
-// Convert velocity gains between rad/s and RPM units
-// When converting gain from A/(rad/s) to A/(RPM), we need to multiply by the conversion factor
-// because 1 RPM = (2π/60) rad/s, so A/(rad/s) = A/(RPM) * (2π/60)
-// Therefore: A/(RPM) = A/(rad/s) * (60/(2π))
-export const velGainRadToRpm = (gainRad) => gainRad * 60 / (2 * Math.PI)
-export const velGainRpmToRad = (gainRpm) => gainRpm * (2 * Math.PI) / 60
+// Legacy function names for backward compatibility
+export const radToRpm = (turnsPerSec) => turnsPerSec * 60  // Actually turns/s to RPM
+export const rpmToRad = (rpm) => rpm / 60  // Actually RPM to turns/s
+
+// Convert velocity gains between turns/s and RPM units
+// ODrive v0.5.6 stores gains as A/(turns/s) internally
+// When displaying in RPM units: A/(RPM) = A/(turns/s) * 60
+// When converting back: A/(turns/s) = A/(RPM) / 60
+export const velGainTurnsToRpm = (gainTurns) => gainTurns * 60
+export const velGainRpmToTurns = (gainRpm) => gainRpm / 60
+
+// Legacy function names for backward compatibility
+export const velGainRadToRpm = (gainTurns) => gainTurns * 60  // Actually turns to RPM
+export const velGainRpmToRad = (gainRpm) => gainRpm / 60  // Actually RPM to turns
 
 // Format display values with appropriate precision
 export const formatVelocity = (value, useRpm = true, precision = 2) => {
   if (useRpm) {
-    return `${radToRpm(value).toFixed(precision)} RPM`
+    return `${turnsToRpm(value).toFixed(precision)} RPM`
   } else {
-    return `${value.toFixed(precision)} rad/s`
+    return `${value.toFixed(precision)} turns/s`
   }
 }
 
 export const formatAcceleration = (value, useRpm = true, precision = 2) => {
   if (useRpm) {
-    return `${radToRpm(value).toFixed(precision)} RPM/s`
+    return `${turnsToRpm(value).toFixed(precision)} RPM/s`
   } else {
-    return `${value.toFixed(precision)} rad/s²`
+    return `${value.toFixed(precision)} turns/s²`
   }
 }
 
 export const formatVelGain = (value, useRpm = true, precision = 3) => {
   if (useRpm) {
-    return `${velGainRadToRpm(value).toFixed(precision)} A/(RPM)`
+    return `${velGainTurnsToRpm(value).toFixed(precision)} A/(RPM)`
   } else {
-    return `${value.toFixed(precision)} A/(rad/s)`
+    return `${value.toFixed(precision + 3)} A/(turns/s)`  // More precision for small numbers
   }
 }
 
 export const formatVelIntGain = (value, useRpm = true, precision = 3) => {
   if (useRpm) {
-    return `${velGainRadToRpm(value).toFixed(precision)} A⋅s/(RPM)`
+    return `${velGainTurnsToRpm(value).toFixed(precision)} A⋅s/(RPM)`
   } else {
-    return `${value.toFixed(precision)} A⋅s/(rad/s)`
+    return `${value.toFixed(precision + 3)} A⋅s/(turns/s)`  // More precision for small numbers
   }
 }
 
-// Additional helper functions for better clarity
-export const convertVelGainToRpm = (gainRadPerS) => {
-  // Convert A/(rad/s) to A/(RPM)
-  // Since 1 RPM = (2π/60) rad/s
-  // A gain of X A/(rad/s) equals X * (60/(2π)) A/(RPM)
-  return gainRadPerS * 60 / (2 * Math.PI)
+// ODrive v0.5.6 specific conversions - more explicit naming
+export const odriveVelToRpm = (odriveVel) => {
+  // ODrive v0.5.6 uses turns/s internally
+  return odriveVel * 60
 }
 
-export const convertVelGainToRad = (gainRpm) => {
-  // Convert A/(RPM) to A/(rad/s)
-  // Since 1 RPM = (2π/60) rad/s
-  // A gain of X A/(RPM) equals X * (2π/60) A/(rad/s)
-  return gainRpm * (2 * Math.PI) / 60
+export const rpmToOdriveVel = (rpm) => {
+  // Convert RPM to ODrive v0.5.6 turns/s
+  return rpm / 60
+}
+
+export const odriveVelGainToRpm = (odriveGain) => {
+  // Convert ODrive gain from A/(turns/s) to A/(RPM)
+  return odriveGain * 60
+}
+
+export const rpmVelGainToOdrive = (rpmGain) => {
+  // Convert gain from A/(RPM) to ODrive A/(turns/s)
+  return rpmGain / 60
 }

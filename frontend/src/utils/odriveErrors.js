@@ -1,47 +1,89 @@
-// ODrive v0.5.6 Error Codes and Descriptions
-// Based on ODrive firmware v0.5.6 documentation
+// ODrive v0.5.6 Error Codes - Updated to match official firmware definitions
 
+// ODrive System Errors
+export const ODriveError = {
+  NONE: 0x00000000,
+  CONTROL_ITERATION_MISSED: 0x00000001,
+  DC_BUS_UNDER_VOLTAGE: 0x00000002,
+  DC_BUS_OVER_VOLTAGE: 0x00000004,
+  DC_BUS_OVER_REGEN_CURRENT: 0x00000008,
+  DC_BUS_OVER_CURRENT: 0x00000010,
+  BRAKE_DEADTIME_VIOLATION: 0x00000020,
+  BRAKE_DUTY_CYCLE_NAN: 0x00000040,
+  INVALID_BRAKE_RESISTANCE: 0x00000080,
+}
+
+// Axis Errors - Fixed to match official values
 export const AxisError = {
   NONE: 0x00000000,
   INVALID_STATE: 0x00000001,
-  DC_BUS_UNDER_VOLTAGE: 0x00000002,
-  DC_BUS_OVER_VOLTAGE: 0x00000004,
-  CURRENT_MEASUREMENT_TIMEOUT: 0x00000008,
-  BRAKE_RESISTOR_DISARMED: 0x00000010,
-  MOTOR_DISARMED: 0x00000020,
+  // Note: 0x00000002-0x00000020 missing in official firmware
   MOTOR_FAILED: 0x00000040,
   SENSORLESS_ESTIMATOR_FAILED: 0x00000080,
   ENCODER_FAILED: 0x00000100,
   CONTROLLER_FAILED: 0x00000200,
-  POS_CTRL_DURING_SENSORLESS: 0x00000400,
+  // Note: 0x00000400 missing
   WATCHDOG_TIMER_EXPIRED: 0x00000800,
   MIN_ENDSTOP_PRESSED: 0x00001000,
   MAX_ENDSTOP_PRESSED: 0x00002000,
   ESTOP_REQUESTED: 0x00004000,
-  HOMING_WITHOUT_ENDSTOP: 0x00008000,
-  OVER_TEMP: 0x00010000,
-  UNKNOWN_POSITION: 0x00020000,
+  // Note: 0x00008000-0x00010000 missing
+  HOMING_WITHOUT_ENDSTOP: 0x00020000,
+  OVER_TEMP: 0x00040000,
+  UNKNOWN_POSITION: 0x00080000,
 }
 
+// Motor Errors - Updated with all official error codes
 export const MotorError = {
   NONE: 0x00000000,
   PHASE_RESISTANCE_OUT_OF_RANGE: 0x00000001,
   PHASE_INDUCTANCE_OUT_OF_RANGE: 0x00000002,
-  ADC_FAILED: 0x00000004,
+  // 0x00000004 missing
   DRV_FAULT: 0x00000008,
   CONTROL_DEADLINE_MISSED: 0x00000010,
-  NOT_IMPLEMENTED_MOTOR_TYPE: 0x00000020,
-  BRAKE_CURRENT_OUT_OF_RANGE: 0x00000040,
+  // 0x00000020, 0x00000040 missing
   MODULATION_MAGNITUDE: 0x00000080,
-  BRAKE_DEADTIME_VIOLATION: 0x00000100,
-  UNEXPECTED_TIMER_CALLBACK: 0x00000200,
+  // 0x00000100, 0x00000200 missing
   CURRENT_SENSE_SATURATION: 0x00000400,
-  CURRENT_LIMIT_VIOLATION: 0x00000800,
-  BRAKE_DUTY_CYCLE_NAN: 0x00001000,
-  DC_BUS_OVER_REGEN_CURRENT: 0x00002000,
-  DC_BUS_OVER_CURRENT: 0x00004000,
+  // 0x00000800 missing
+  CURRENT_LIMIT_VIOLATION: 0x00001000,
+  // 0x00002000-0x00008000 missing
+  MODULATION_IS_NAN: 0x00010000,
+  MOTOR_THERMISTOR_OVER_TEMP: 0x00020000,
+  FET_THERMISTOR_OVER_TEMP: 0x00040000,
+  TIMER_UPDATE_MISSED: 0x00080000,
+  CURRENT_MEASUREMENT_UNAVAILABLE: 0x00100000,
+  CONTROLLER_FAILED: 0x00200000,
+  I_BUS_OUT_OF_RANGE: 0x00400000,
+  BRAKE_RESISTOR_DISARMED: 0x00800000,
+  SYSTEM_LEVEL: 0x01000000,
+  BAD_TIMING: 0x02000000,
+  UNKNOWN_PHASE_ESTIMATE: 0x04000000,
+  UNKNOWN_PHASE_VEL: 0x08000000,
+  UNKNOWN_TORQUE: 0x10000000,
+  UNKNOWN_CURRENT_COMMAND: 0x20000000,
+  UNKNOWN_CURRENT_MEASUREMENT: 0x40000000,
+  UNKNOWN_VBUS_VOLTAGE: 0x80000000,
+  UNKNOWN_VOLTAGE_COMMAND: 0x100000000,
+  UNKNOWN_GAINS: 0x200000000,
+  CONTROLLER_INITIALIZING: 0x400000000,
+  UNBALANCED_PHASES: 0x800000000,
 }
 
+// Controller Errors
+export const ControllerError = {
+  NONE: 0x00000000,
+  OVERSPEED: 0x00000001,
+  INVALID_INPUT_MODE: 0x00000002,
+  UNSTABLE_GAIN: 0x00000004,
+  INVALID_MIRROR_AXIS: 0x00000008,
+  INVALID_LOAD_ENCODER: 0x00000010,
+  INVALID_ESTIMATE: 0x00000020,
+  INVALID_CIRCULAR_RANGE: 0x00000040,
+  SPINOUT_DETECTED: 0x00000080,
+}
+
+// Encoder Errors
 export const EncoderError = {
   NONE: 0x00000000,
   UNSTABLE_GAIN: 0x00000001,
@@ -56,38 +98,27 @@ export const EncoderError = {
   HALL_NOT_CALIBRATED_YET: 0x00000200,
 }
 
-export const ControllerError = {
-  NONE: 0x00000000,
-  OVERSPEED: 0x00000001,
-  INVALID_INPUT_MODE: 0x00000002,
-  UNSTABLE_GAIN: 0x00000004,
-  INVALID_MIRROR_AXIS: 0x00000008,
-  INVALID_LOAD_ENCODER: 0x00000010,
-  INVALID_ESTIMATE: 0x00000020,
-  INVALID_CIRCULAR_RANGE: 0x00000040,
-  SPINOUT_DETECTED: 0x00000080,
-}
-
+// Sensorless Estimator Errors - Fixed name
 export const SensorlessEstimatorError = {
   NONE: 0x00000000,
   UNSTABLE_GAIN: 0x00000001,
-  UNKNOWN_CURRENT_COMMAND: 0x00000002,
+  UNKNOWN_CURRENT_MEASUREMENT: 0x00000002,  // Fixed: was UNKNOWN_CURRENT_COMMAND
 }
 
-// Error description mappings
+// CAN Errors
+export const CanError = {
+  NONE: 0x00000000,
+  DUPLICATE_CAN_IDS: 0x00000001,
+}
+
+// Error description mappings - Updated for new error codes
 const axisErrorDescriptions = {
   [AxisError.NONE]: "No error",
   [AxisError.INVALID_STATE]: "Invalid state transition requested",
-  [AxisError.DC_BUS_UNDER_VOLTAGE]: "DC bus voltage below minimum threshold",
-  [AxisError.DC_BUS_OVER_VOLTAGE]: "DC bus voltage above maximum threshold",
-  [AxisError.CURRENT_MEASUREMENT_TIMEOUT]: "Current measurement circuit failed",
-  [AxisError.BRAKE_RESISTOR_DISARMED]: "Brake resistor is disabled but required",
-  [AxisError.MOTOR_DISARMED]: "Motor is disarmed due to error condition",
   [AxisError.MOTOR_FAILED]: "Motor subsystem failure detected",
   [AxisError.SENSORLESS_ESTIMATOR_FAILED]: "Sensorless position estimator failed",
   [AxisError.ENCODER_FAILED]: "Encoder subsystem failure detected",
   [AxisError.CONTROLLER_FAILED]: "Control loop subsystem failure",
-  [AxisError.POS_CTRL_DURING_SENSORLESS]: "Position control not available in sensorless mode",
   [AxisError.WATCHDOG_TIMER_EXPIRED]: "Safety watchdog timer expired",
   [AxisError.MIN_ENDSTOP_PRESSED]: "Minimum endstop limit switch activated",
   [AxisError.MAX_ENDSTOP_PRESSED]: "Maximum endstop limit switch activated",
@@ -101,19 +132,31 @@ const motorErrorDescriptions = {
   [MotorError.NONE]: "No error",
   [MotorError.PHASE_RESISTANCE_OUT_OF_RANGE]: "Measured phase resistance outside expected range",
   [MotorError.PHASE_INDUCTANCE_OUT_OF_RANGE]: "Measured phase inductance outside expected range",
-  [MotorError.ADC_FAILED]: "Current measurement ADC failure",
   [MotorError.DRV_FAULT]: "Gate driver fault detected",
   [MotorError.CONTROL_DEADLINE_MISSED]: "Motor control loop timing violation",
-  [MotorError.NOT_IMPLEMENTED_MOTOR_TYPE]: "Selected motor type not implemented",
-  [MotorError.BRAKE_CURRENT_OUT_OF_RANGE]: "Brake current measurement out of range",
   [MotorError.MODULATION_MAGNITUDE]: "PWM modulation magnitude error",
-  [MotorError.BRAKE_DEADTIME_VIOLATION]: "Brake timing deadtime violation",
-  [MotorError.UNEXPECTED_TIMER_CALLBACK]: "Unexpected timer interrupt",
   [MotorError.CURRENT_SENSE_SATURATION]: "Current sense amplifier saturated",
   [MotorError.CURRENT_LIMIT_VIOLATION]: "Motor current exceeded safety limit",
-  [MotorError.BRAKE_DUTY_CYCLE_NAN]: "Brake duty cycle calculation error",
-  [MotorError.DC_BUS_OVER_REGEN_CURRENT]: "Regenerative current exceeded DC bus limit",
-  [MotorError.DC_BUS_OVER_CURRENT]: "Motor current exceeded DC bus limit",
+  [MotorError.MODULATION_IS_NAN]: "PWM modulation calculation error (NaN)",
+  [MotorError.MOTOR_THERMISTOR_OVER_TEMP]: "Motor temperature exceeded limit",
+  [MotorError.FET_THERMISTOR_OVER_TEMP]: "FET temperature exceeded limit",
+  [MotorError.TIMER_UPDATE_MISSED]: "Motor timer update missed",
+  [MotorError.CURRENT_MEASUREMENT_UNAVAILABLE]: "Current measurement not available",
+  [MotorError.CONTROLLER_FAILED]: "Motor controller subsystem failed",
+  [MotorError.I_BUS_OUT_OF_RANGE]: "DC bus current out of range",
+  [MotorError.BRAKE_RESISTOR_DISARMED]: "Brake resistor is disabled but required",
+  [MotorError.SYSTEM_LEVEL]: "System level motor error",
+  [MotorError.BAD_TIMING]: "Motor timing error",
+  [MotorError.UNKNOWN_PHASE_ESTIMATE]: "Motor phase estimate unknown",
+  [MotorError.UNKNOWN_PHASE_VEL]: "Motor phase velocity unknown",
+  [MotorError.UNKNOWN_TORQUE]: "Motor torque estimate unknown",
+  [MotorError.UNKNOWN_CURRENT_COMMAND]: "Motor current command unknown",
+  [MotorError.UNKNOWN_CURRENT_MEASUREMENT]: "Motor current measurement unknown",
+  [MotorError.UNKNOWN_VBUS_VOLTAGE]: "DC bus voltage unknown",
+  [MotorError.UNKNOWN_VOLTAGE_COMMAND]: "Motor voltage command unknown",
+  [MotorError.UNKNOWN_GAINS]: "Motor control gains unknown",
+  [MotorError.CONTROLLER_INITIALIZING]: "Motor controller initializing",
+  [MotorError.UNBALANCED_PHASES]: "Motor phases are unbalanced",
 }
 
 const encoderErrorDescriptions = {
@@ -145,53 +188,7 @@ const controllerErrorDescriptions = {
 const sensorlessErrorDescriptions = {
   [SensorlessEstimatorError.NONE]: "No error",
   [SensorlessEstimatorError.UNSTABLE_GAIN]: "Sensorless estimator gain is unstable",
-  [SensorlessEstimatorError.UNKNOWN_CURRENT_COMMAND]: "Unknown current command in sensorless mode",
-}
-
-// Troubleshooting guides for specific errors
-const errorTroubleshootingGuides = {
-  [EncoderError.CPR_POLEPAIRS_MISMATCH]: {
-    title: "CPR/Pole Pairs Mismatch",
-    description: "The encoder resolution (CPR) is incompatible with the motor pole pairs",
-    causes: [
-      "CPR is not evenly divisible by pole pairs",
-      "CPR value is too low for the motor",
-      "Incorrect pole pair count configured"
-    ],
-    solutions: [
-      "Ensure CPR is at least 4x the pole pairs (recommended: 8x or higher)",
-      "For 7 pole pairs: use CPR of 2800, 4200, 5600, etc.",
-      "Verify motor pole pair count with manufacturer specs",
-      "Consider using a higher resolution encoder"
-    ],
-    commands: [
-      "Check: odrv0.axis0.motor.config.pole_pairs",
-      "Check: odrv0.axis0.encoder.config.cpr",
-      "Set CPR: odrv0.axis0.encoder.config.cpr = [value]"
-    ]
-  },
-  [AxisError.ENCODER_FAILED]: {
-    title: "Encoder Subsystem Failure",
-    description: "The encoder is not responding or configured incorrectly",
-    causes: [
-      "Incorrect encoder wiring (A+, A-, B+, B-, Z+, Z-)",
-      "Wrong encoder type selected",
-      "Encoder power supply issues (3.3V/5V)",
-      "Damaged encoder or cables"
-    ],
-    solutions: [
-      "Verify encoder wiring matches ODrive pinout",
-      "Check encoder power supply voltage",
-      "Ensure correct encoder mode is selected",
-      "Test encoder with oscilloscope if available",
-      "Try different encoder type settings"
-    ],
-    commands: [
-      "Check: odrv0.axis0.encoder.config.mode",
-      "Check: odrv0.axis0.encoder.error",
-      "Clear errors: odrv0.clear_errors()"
-    ]
-  }
+  [SensorlessEstimatorError.UNKNOWN_CURRENT_MEASUREMENT]: "Current measurement unknown in sensorless mode",
 }
 
 // Helper function to get error description for any error code
@@ -236,29 +233,14 @@ export const getErrorDescription = (errorCode, errorType = 'axis') => {
   return errorMessages.join('; ')
 }
 
-// Helper function to get troubleshooting guide for specific errors
-export const getErrorTroubleshootingGuide = (errorCode, errorType = 'axis') => {
-  if (!errorCode || errorCode === 0) return null
-
-  // Check for specific troubleshooting guides
-  for (const [errorFlag, guide] of Object.entries(errorTroubleshootingGuides)) {
-    const flag = parseInt(errorFlag)
-    if ((errorCode & flag) === flag) {
-      return guide
-    }
-  }
-
-  return null
-}
-
-// Helper function to check if an error is critical (requires immediate attention)
+// Helper function to check if an error is critical
 export const isErrorCritical = (errorCode, errorType = 'axis') => {
   if (!errorCode || errorCode === 0) return false
 
   const criticalAxisErrors = [
-    AxisError.DC_BUS_OVER_VOLTAGE,
-    AxisError.CURRENT_MEASUREMENT_TIMEOUT,
     AxisError.MOTOR_FAILED,
+    AxisError.ENCODER_FAILED,
+    AxisError.CONTROLLER_FAILED,
     AxisError.OVER_TEMP,
     AxisError.ESTOP_REQUESTED,
   ]
@@ -266,12 +248,14 @@ export const isErrorCritical = (errorCode, errorType = 'axis') => {
   const criticalMotorErrors = [
     MotorError.DRV_FAULT,
     MotorError.CURRENT_LIMIT_VIOLATION,
-    MotorError.DC_BUS_OVER_CURRENT,
-    MotorError.DC_BUS_OVER_REGEN_CURRENT,
+    MotorError.MOTOR_THERMISTOR_OVER_TEMP,
+    MotorError.FET_THERMISTOR_OVER_TEMP,
+    MotorError.CURRENT_SENSE_SATURATION,
   ]
 
   const criticalEncoderErrors = [
-    EncoderError.CPR_POLEPAIRS_MISMATCH, // This prevents motor operation
+    EncoderError.CPR_POLEPAIRS_MISMATCH,
+    EncoderError.NO_RESPONSE,
   ]
 
   if (errorType === 'axis') {
@@ -290,6 +274,325 @@ export const getErrorColor = (errorCode, errorType = 'axis') => {
   if (!errorCode || errorCode === 0) return 'green'
   if (isErrorCritical(errorCode, errorType)) return 'red'
   return 'orange'
+}
+
+// Troubleshooting guides for specific errors
+const troubleshootingGuides = {
+  // Encoder Errors
+  [EncoderError.CPR_POLEPAIRS_MISMATCH]: {
+    title: "Encoder CPR / Pole Pairs Mismatch",
+    description: "The encoder counts per revolution (CPR) setting doesn't match the motor pole pairs configuration. This can cause position estimation errors and poor performance.",
+    causes: [
+      "Incorrect CPR value configured for your encoder",
+      "Wrong motor pole pairs setting",
+      "Encoder mode set incorrectly (Hall vs Incremental)",
+      "Using default values instead of actual hardware specifications"
+    ],
+    solutions: [
+      "Verify your encoder's actual CPR from datasheet",
+      "Ensure CPR is evenly divisible by motor pole pairs",
+      "For 7 pole pair motors: try CPR values like 28, 35, 56, 140, 280, 2800, 4200",
+      "Check encoder mode: Hall sensors (mode 1) vs Incremental (mode 0)",
+      "Recalibrate encoder after correcting CPR value"
+    ],
+    commands: [
+      "odrv0.axis0.encoder.config.cpr",
+      "odrv0.axis0.motor.config.pole_pairs",
+      "odrv0.axis0.encoder.config.mode",
+      "odrv0.axis0.encoder.error",
+      "odrv0.axis0.clear_errors()"
+    ]
+  },
+
+  [EncoderError.NO_RESPONSE]: {
+    title: "No Encoder Response",
+    description: "The ODrive is not receiving any signals from the encoder. This indicates a hardware connection issue or encoder failure.",
+    causes: [
+      "Loose or disconnected encoder wiring",
+      "Incorrect encoder pinout/wiring",
+      "Failed encoder hardware",
+      "Wrong encoder mode selected",
+      "Insufficient power supply to encoder"
+    ],
+    solutions: [
+      "Check all encoder connections (A, B, Z channels)",
+      "Verify encoder power supply (3.3V or 5V as required)",
+      "Test encoder with multimeter or oscilloscope",
+      "Ensure correct encoder mode in configuration",
+      "Try different encoder or swap with known working one"
+    ],
+    commands: [
+      "odrv0.axis0.encoder.config.mode",
+      "odrv0.axis0.encoder.shadow_count",
+      "odrv0.axis0.encoder.count_in_cpr",
+      "odrv0.axis0.encoder.error",
+      "odrv0.axis0.clear_errors()"
+    ]
+  },
+
+  [EncoderError.ILLEGAL_HALL_STATE]: {
+    title: "Illegal Hall Sensor State",
+    description: "The Hall sensor is reporting an invalid state combination. Hall sensors should only report states 1-6, not 0 or 7.",
+    causes: [
+      "Damaged or failed Hall sensor",
+      "Incorrect Hall sensor wiring",
+      "Hall sensors not properly aligned",
+      "Electrical noise affecting Hall signals",
+      "Wrong encoder mode (should be Hall mode)"
+    ],
+    solutions: [
+      "Check Hall sensor wiring and connections",
+      "Verify encoder mode is set to Hall (mode 1)",
+      "Test individual Hall sensors with multimeter",
+      "Check for proper Hall sensor alignment with magnets",
+      "Add filtering capacitors to reduce electrical noise"
+    ],
+    commands: [
+      "odrv0.axis0.encoder.config.mode",
+      "odrv0.axis0.encoder.hall_state",
+      "odrv0.axis0.encoder.error",
+      "odrv0.axis0.clear_errors()"
+    ]
+  },
+
+  // Motor Errors
+  [MotorError.PHASE_RESISTANCE_OUT_OF_RANGE]: {
+    title: "Motor Phase Resistance Out of Range",
+    description: "The measured motor phase resistance is outside the expected range during calibration.",
+    causes: [
+      "Loose motor connections",
+      "Incorrect motor type configuration",
+      "Motor phase windings damaged",
+      "Wrong current limit settings",
+      "Poor electrical connections"
+    ],
+    solutions: [
+      "Check all motor phase connections (A, B, C)",
+      "Verify motor type setting (High Current vs Gimbal)",
+      "Measure motor resistance with multimeter",
+      "Ensure current limit is appropriate for motor",
+      "Clean and tighten all electrical connections"
+    ],
+    commands: [
+      "odrv0.axis0.motor.config.motor_type",
+      "odrv0.axis0.motor.config.phase_resistance",
+      "odrv0.axis0.motor.config.current_lim",
+      "odrv0.axis0.motor.error",
+      "odrv0.axis0.clear_errors()"
+    ]
+  },
+
+  [MotorError.DRV_FAULT]: {
+    title: "Gate Driver Fault",
+    description: "The gate driver has detected a fault condition. This is a critical hardware protection feature.",
+    causes: [
+      "Motor short circuit",
+      "Overcurrent condition",
+      "Overvoltage on motor phases",
+      "Gate driver overheating",
+      "Hardware failure in power stage"
+    ],
+    solutions: [
+      "Check for motor short circuits",
+      "Reduce current limits",
+      "Allow ODrive to cool down",
+      "Check power supply voltage levels",
+      "Replace ODrive if hardware failure suspected"
+    ],
+    commands: [
+      "odrv0.axis0.motor.config.current_lim",
+      "odrv0.vbus_voltage",
+      "odrv0.axis0.motor.error",
+      "odrv0.axis0.clear_errors()"
+    ]
+  },
+
+  [MotorError.CURRENT_LIMIT_VIOLATION]: {
+    title: "Motor Current Limit Exceeded",
+    description: "The motor current has exceeded the configured safety limit.",
+    causes: [
+      "Current limit set too low",
+      "Motor stalled or blocked",
+      "Excessive load on motor",
+      "Controller gains too aggressive",
+      "Mechanical binding in system"
+    ],
+    solutions: [
+      "Increase current limit if motor can handle it",
+      "Check for mechanical obstructions",
+      "Reduce controller gains (vel_gain, pos_gain)",
+      "Verify motor specifications",
+      "Check motor and load for binding"
+    ],
+    commands: [
+      "odrv0.axis0.motor.config.current_lim",
+      "odrv0.axis0.controller.config.vel_gain",
+      "odrv0.axis0.controller.config.pos_gain",
+      "odrv0.axis0.motor.current_control.Iq_measured",
+      "odrv0.axis0.clear_errors()"
+    ]
+  },
+
+  // Controller Errors
+  [ControllerError.OVERSPEED]: {
+    title: "Motor Overspeed",
+    description: "The motor velocity has exceeded the configured velocity limit.",
+    causes: [
+      "Velocity limit set too low",
+      "Controller instability causing oscillation",
+      "External forces driving motor faster",
+      "Incorrect velocity feedback",
+      "Control gains too high"
+    ],
+    solutions: [
+      "Increase velocity limit if safe to do so",
+      "Reduce controller gains to improve stability",
+      "Check for external forces on motor",
+      "Verify encoder feedback is correct",
+      "Add velocity ramping to smooth commands"
+    ],
+    commands: [
+      "odrv0.axis0.controller.config.vel_limit",
+      "odrv0.axis0.controller.config.vel_gain",
+      "odrv0.axis0.encoder.vel_estimate",
+      "odrv0.axis0.controller.error",
+      "odrv0.axis0.clear_errors()"
+    ]
+  },
+
+  [ControllerError.UNSTABLE_GAIN]: {
+    title: "Unstable Control Gains",
+    description: "The controller gains are causing system instability, resulting in oscillations or runaway behavior.",
+    causes: [
+      "Control gains set too high",
+      "Poor system identification",
+      "Mechanical resonance in system",
+      "Incorrect motor parameters",
+      "Insufficient filtering"
+    ],
+    solutions: [
+      "Reduce velocity and position gains",
+      "Perform proper system identification",
+      "Add mechanical damping to system",
+      "Verify motor inertia and resistance values",
+      "Increase input filter bandwidth"
+    ],
+    commands: [
+      "odrv0.axis0.controller.config.vel_gain",
+      "odrv0.axis0.controller.config.pos_gain",
+      "odrv0.axis0.controller.config.input_filter_bandwidth",
+      "odrv0.axis0.motor.config.phase_resistance",
+      "odrv0.axis0.clear_errors()"
+    ]
+  },
+
+  // Axis Errors
+  [AxisError.MOTOR_FAILED]: {
+    title: "Motor Subsystem Failed",
+    description: "The motor subsystem has encountered a failure. Check motor error codes for specific details.",
+    causes: [
+      "Motor hardware failure",
+      "Motor calibration failed",
+      "Power stage failure",
+      "Temperature protection triggered",
+      "Critical motor error occurred"
+    ],
+    solutions: [
+      "Check motor error flags for specific issues",
+      "Verify motor connections and wiring",
+      "Ensure adequate cooling",
+      "Recalibrate motor if possible",
+      "Replace motor if hardware failure"
+    ],
+    commands: [
+      "odrv0.axis0.motor.error",
+      "odrv0.axis0.motor.is_calibrated",
+      "odrv0.axis0.requested_state = 4",  // Motor calibration
+      "odrv0.axis0.error",
+      "odrv0.axis0.clear_errors()"
+    ]
+  },
+
+  [AxisError.ENCODER_FAILED]: {
+    title: "Encoder Subsystem Failed",
+    description: "The encoder subsystem has encountered a failure. Check encoder error codes for specific details.",
+    causes: [
+      "Encoder hardware failure",
+      "Encoder calibration failed",
+      "Connection issues",
+      "Configuration problems",
+      "Critical encoder error occurred"
+    ],
+    solutions: [
+      "Check encoder error flags for specific issues",
+      "Verify encoder connections and wiring",
+      "Recalibrate encoder if possible",
+      "Check encoder configuration settings",
+      "Replace encoder if hardware failure"
+    ],
+    commands: [
+      "odrv0.axis0.encoder.error",
+      "odrv0.axis0.encoder.is_ready",
+      "odrv0.axis0.requested_state = 7",  // Encoder calibration
+      "odrv0.axis0.error",
+      "odrv0.axis0.clear_errors()"
+    ]
+  }
+}
+
+// Helper function to get troubleshooting guide for specific error
+export const getErrorTroubleshootingGuide = (errorCode, errorType = 'encoder') => {
+  if (!errorCode || errorCode === 0) return null
+
+  // Find the specific error flag that matches
+  let errorEnum, guides
+  switch (errorType) {
+    case 'encoder':
+      errorEnum = EncoderError
+      break
+    case 'motor':
+      errorEnum = MotorError
+      break
+    case 'controller':
+      errorEnum = ControllerError
+      break
+    case 'axis':
+      errorEnum = AxisError
+      break
+    default:
+      return null
+  }
+
+  // Check if we have a guide for this specific error
+  for (const [flagValue, guide] of Object.entries(troubleshootingGuides)) {
+    const flag = parseInt(flagValue)
+    if ((errorCode & flag) === flag) {
+      return guide
+    }
+  }
+
+  // Return generic troubleshooting info if no specific guide found
+  return {
+    title: `${errorType.charAt(0).toUpperCase() + errorType.slice(1)} Error`,
+    description: getErrorDescription(errorCode, errorType),
+    causes: [
+      "Hardware connection issues",
+      "Configuration problems",
+      "Calibration required",
+      "Environmental factors"
+    ],
+    solutions: [
+      "Check all connections and wiring",
+      "Verify configuration settings",
+      "Clear errors and recalibrate",
+      "Consult ODrive documentation"
+    ],
+    commands: [
+      `odrv0.axis0.${errorType}.error`,
+      "odrv0.axis0.clear_errors()",
+      "odrv0.axis0.requested_state = 1"  // Return to idle
+    ]
+  }
 }
 
 // Helper function to validate encoder configuration

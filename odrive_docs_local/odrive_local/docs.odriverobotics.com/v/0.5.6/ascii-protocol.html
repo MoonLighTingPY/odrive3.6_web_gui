@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+
+<!-- Mirrored from docs.odriverobotics.com/v/0.5.6/ascii-protocol.html by HTTrack Website Copier/3.x [XR&CO'2014], Fri, 30 May 2025 19:31:26 GMT -->
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ASCII Protocol &mdash; ODrive Documentation 0.5.6 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments0de2.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/themeadc2.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton3129.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="_static/tabs4c26.css?v=a5c4661c" />
+      <link rel="stylesheet" type="text/css" href="_static/sphinx-dropdownd0cc.css?v=995e94df" />
+      <link rel="stylesheet" type="text/css" href="_static/panels-bootstrap.mine1eb.css?v=21c0b90a" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery3b25.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compatfa9a.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_optionse544.js?v=722679d6"></script>
+        <script src="_static/doctools56c1.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight7f57.js?v=dc90522c"></script>
+        <script src="_static/clipboard.min4664.js?v=a7894cd8"></script>
+        <script src="_static/copybutton7689.js?v=f281be69"></script>
+        <script src="../../docsInject.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="CAN Protocol" href="can-protocol.html" />
+    <link rel="prev" title="Native Protocol" href="native-protocol.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index-2.html" class="icon icon-home">
+            ODrive Documentation
+          </a>
+              <div class="version">
+                0.5.6
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="https://docs.odriverobotics.com/v/0.5.6/search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">General</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="odrivetool.html"><code class="code docutils literal notranslate"><span class="pre">odrivetool</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="control-modes.html">Control Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Parameters &amp; Commands</a></li>
+<li class="toctree-l1"><a class="reference internal" href="encoders.html">Encoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="control.html">Control Structure and Tuning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="specifications.html">Specifications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ground-loops.html">Ground Loops</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="hoverboard.html">Hoverboard Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migration.html">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="can-guide.html">CAN Guide</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y/edit#gid=0">Motor Guide</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.google.com/spreadsheets/d/1OBDwYrBb5zUPZLrhL98ezZbg94tUsZcdTuwiVNgVqpU/edit#gid=0">Encoder Guide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Interfaces and Protocols</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="protocol.html">ODrive Communication Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pinout.html">Pinout</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usb.html">USB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="uart.html">UART Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="native-protocol.html">Native Protocol</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">ASCII Protocol</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#sending-commands">Sending Commands</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#command-format">Command Format</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#command-reference">Command Reference</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#motor-trajectory">Motor Trajectory</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#motor-position">Motor Position</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#motor-velocity">Motor Velocity</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#motor-current">Motor Current</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#request-feedback">Request Feedback</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#update-motor-watchdog">Update Motor Watchdog</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#parameter-reading-writing">Parameter Reading/Writing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#system-commands">System Commands</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="can-protocol.html">CAN Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="step-direction.html">Step &amp; Direction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rc-pwm.html">RC PWM input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analog-input.html">Analog Input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="endstops.html">Endstops and Homing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="thermistors.html">Thermistors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">ODrive Device API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fibre_types/com_odriverobotics_ODrive.html">ODrive Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For ODrive Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="developer-guide.html">ODrive Firmware Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuring-vscode.html">Configuring Visual Studio Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuring-eclipse.html">Setting up Eclipse development environment</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">CHANGELOG</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">CHANGELOG</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index-2.html">ODrive Documentation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content style-external-links">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index-2.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">ASCII Protocol</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/ascii-protocol.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="ascii-protocol">
+<span id="id1"></span><h1>ASCII Protocol<a class="headerlink" href="#ascii-protocol" title="Link to this heading"></a></h1>
+<nav class="contents local" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#sending-commands" id="id2">Sending Commands</a></p></li>
+<li><p><a class="reference internal" href="#command-format" id="id3">Command Format</a></p></li>
+<li><p><a class="reference internal" href="#command-reference" id="id4">Command Reference</a></p></li>
+<li><p><a class="reference internal" href="#parameter-reading-writing" id="id5">Parameter Reading/Writing</a></p></li>
+<li><p><a class="reference internal" href="#system-commands" id="id6">System Commands</a></p></li>
+</ul>
+</nav>
+<section id="sending-commands">
+<h2><a class="toc-backref" href="#id2" role="doc-backlink">Sending Commands</a><a class="headerlink" href="#sending-commands" title="Link to this heading"></a></h2>
+<blockquote>
+<div><ul class="simple">
+<li><dl class="simple">
+<dt><strong>Via USB:</strong></dt><dd><ul>
+<li><p><strong>Windows:</strong> Use <a class="reference external" href="https://www.chiark.greenend.org.uk/~sgtatham/putty/">PuTTY</a> to manually send commands or open the COM port using your favorite programming language</p></li>
+<li><p><strong>Linux/macOS:</strong> Run <code class="code docutils literal notranslate"><span class="pre">/dev/tty*</span></code> to list all serial ports. The ODrive will show up as <code class="code docutils literal notranslate"><span class="pre">/dev/ttyACM0</span></code> (or similar) on Linux and <code class="code docutils literal notranslate"><span class="pre">/dev/tty.usbmodem[...]</span></code> on macOS.
+Once you know the name, you can use <code class="code docutils literal notranslate"><span class="pre">screen</span> <span class="pre">/dev/ttyACM0</span></code> (with the correct name) to send commands manually or open the device using your favorite programming language.
+Serial ports on Unix can be opened, written to and read from like a normal file.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+<li><dl class="simple">
+<dt><strong>Via UART:</strong> Connect the ODrive’s TX (GPIO1) to your host’s RX. Connect your ODrive’s RX (GPIO2) to your host’s TX. See <a class="reference internal" href="uart.html#uart-doc"><span class="std std-ref">UART</span></a> for more info.</dt><dd><ul>
+<li><p><strong>Arduino:</strong> You can use the <a class="reference external" href="https://github.com/madcowswe/ODrive/tree/master/Arduino/ODriveArduino">ODrive Arduino library</a> to talk to the ODrive.</p></li>
+<li><p><strong>Windows/Linux/macOS:</strong> You can use an FTDI USB-UART cable to connect to the ODrive.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div></blockquote>
+<p>The ODrive does not echo commands. That means that when you type commands into a program like <code class="code docutils literal notranslate"><span class="pre">screen</span></code>, the characters you type won’t show up in the console.</p>
+<div class="admonition-arduino admonition">
+<p class="admonition-title">Arduino</p>
+<p>There is an Arduino library that gives some examples on how to use the ASCII protocol to communicate with the ODrive.
+Check it out <cite>here &lt;../Arduino/ODriveArduino&gt;</cite>.</p>
+</div>
+</section>
+<section id="command-format">
+<h2><a class="toc-backref" href="#id3" role="doc-backlink">Command Format</a><a class="headerlink" href="#command-format" title="Link to this heading"></a></h2>
+<p>The ASCII protocol is human-readable and line-oriented, with each line having the following format:</p>
+<p>Format: <code class="code docutils literal notranslate"><span class="pre">command</span> <span class="pre">*42</span> <span class="pre">;</span> <span class="pre">comment</span> <span class="pre">[new</span> <span class="pre">line</span> <span class="pre">character]</span></code></p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">*42</span></code> stands for a GCode compatible checksum and can be omitted. If and only if a checksum is provided, the device will also include a checksum in the response, if any.
+If the checksum is provided but is not valid, the line is ignored. The checksum is calculated as the bitwise xor of all characters before the asterisk (<cite>*</cite>).
+Example of a valid checksum: <code class="code docutils literal notranslate"><span class="pre">r</span> <span class="pre">vbus_voltage</span> <span class="pre">*93</span></code>.</p></li>
+<li><p>comments are supported for GCode compatibility</p></li>
+<li><p>the command is interpreted once the new-line character is encountered</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="command-reference">
+<span id="acsii-cmd-ref"></span><h2><a class="toc-backref" href="#id4" role="doc-backlink">Command Reference</a><a class="headerlink" href="#command-reference" title="Link to this heading"></a></h2>
+<section id="motor-trajectory">
+<span id="motor-traj-cmd"></span><h3>Motor Trajectory<a class="headerlink" href="#motor-trajectory" title="Link to this heading"></a></h3>
+<p>Format: <code class="code docutils literal notranslate"><span class="pre">t</span> <span class="pre">motor</span> <span class="pre">destination</span></code></p>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">t</span></code> for trajectory.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">motor</span></code> is the motor number, <code class="code docutils literal notranslate"><span class="pre">0</span></code> or <code class="code docutils literal notranslate"><span class="pre">1</span></code>.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">destination</span></code> is the goal position, in [turns].</p></li>
+</ul>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">t</span> <span class="mi">0</span> <span class="o">-</span><span class="mi">2</span>
+</pre></div>
+</div>
+<p>For general moving around of the axis, this is the recommended command.</p>
+<p>This command updates the watchdog timer for the motor.</p>
+</section>
+<section id="motor-position">
+<h3>Motor Position<a class="headerlink" href="#motor-position" title="Link to this heading"></a></h3>
+<p>For basic use where you send one setpoint at at a time, use the <code class="code docutils literal notranslate"><span class="pre">q</span></code> command.</p>
+<p>Format: <code class="code docutils literal notranslate"><span class="pre">q</span> <span class="pre">motor</span> <span class="pre">position</span> <span class="pre">velocity_lim</span> <span class="pre">torque_lim</span></code></p>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">q</span></code> for position.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">motor</span></code> is the motor number, <code class="code docutils literal notranslate"><span class="pre">0</span></code> or <code class="code docutils literal notranslate"><span class="pre">1</span></code>.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">position</span></code> is the desired position, in [turns].</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">velocity_lim</span></code> is the velocity limit, in [turns/s] (optional).</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">torque_lim</span></code> is the torque limit, in [Nm] (optional).</p></li>
+</ul>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">q</span> <span class="mi">0</span> <span class="o">-</span><span class="mi">2</span> <span class="mi">1</span> <span class="mf">0.1</span>
+</pre></div>
+</div>
+<p>If you have a realtime controller that is streaming setpoints and tracking a trajectory, use the <code class="code docutils literal notranslate"><span class="pre">p</span></code> command.</p>
+<p>Format: <code class="code docutils literal notranslate"><span class="pre">p</span> <span class="pre">motor</span> <span class="pre">position</span> <span class="pre">velocity_ff</span> <span class="pre">torque_ff</span></code></p>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">p</span></code> for position</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">motor</span></code> is the motor number, <code class="code docutils literal notranslate"><span class="pre">0</span></code> or <code class="code docutils literal notranslate"><span class="pre">1</span></code>.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">position</span></code> is the desired position, in [turns].</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">velocity_ff</span></code> is the velocity feed-forward term, in [turns/s] (optional).</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">torque_ff</span></code> is the torque feed-forward term, in [Nm] (optional).</p></li>
+</ul>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">p</span> <span class="mi">0</span> <span class="o">-</span><span class="mi">2</span> <span class="mi">0</span> <span class="mi">0</span>
+</pre></div>
+</div>
+<p>This command updates the watchdog timer for the motor.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you don’t know what feed-forward is or what it’s used for, simply omit it.</p>
+</div>
+</section>
+<section id="motor-velocity">
+<h3>Motor Velocity<a class="headerlink" href="#motor-velocity" title="Link to this heading"></a></h3>
+<p>Format: <code class="code docutils literal notranslate"><span class="pre">v</span> <span class="pre">motor</span> <span class="pre">velocity</span> <span class="pre">torque_ff</span></code></p>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">v</span></code> for velocity</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">motor</span></code> is the motor number, <code class="code docutils literal notranslate"><span class="pre">0</span></code> or <code class="code docutils literal notranslate"><span class="pre">1</span></code>.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">velocity</span></code> is the desired velocity in [turns/s].</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">torque_ff</span></code> is the torque feed-forward term, in [Nm] (optional).</p></li>
+</ul>
+<p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">v</span> <span class="mi">0</span> <span class="mi">1</span> <span class="mi">0</span>
+</pre></div>
+</div>
+<p>This command updates the watchdog timer for the motor.</p>
+</section>
+<section id="motor-current">
+<h3>Motor Current<a class="headerlink" href="#motor-current" title="Link to this heading"></a></h3>
+<p>Format: <code class="code docutils literal notranslate"><span class="pre">c</span> <span class="pre">motor</span> <span class="pre">torque</span></code></p>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">c</span></code> for torque</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">motor</span></code> is the motor number, <code class="code docutils literal notranslate"><span class="pre">0</span></code> or <code class="code docutils literal notranslate"><span class="pre">1</span></code>.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">torque</span></code> is the desired torque in [Nm].</p></li>
+</ul>
+<p>This command updates the watchdog timer for the motor.</p>
+</section>
+<section id="request-feedback">
+<h3>Request Feedback<a class="headerlink" href="#request-feedback" title="Link to this heading"></a></h3>
+<p>imput format: <code class="code docutils literal notranslate"><span class="pre">f</span> <span class="pre">motor</span></code></p>
+<p>response format: <code class="code docutils literal notranslate"><span class="pre">pos</span> <span class="pre">vel</span></code></p>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">f</span></code> for feedback.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">pos</span></code> is the encoder position in [turns] (float).</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">vel</span></code> is the encoder velocity in [turns/s] (float).</p></li>
+</ul>
+</section>
+<section id="update-motor-watchdog">
+<h3>Update Motor Watchdog<a class="headerlink" href="#update-motor-watchdog" title="Link to this heading"></a></h3>
+<p>Format: <code class="code docutils literal notranslate"><span class="pre">u</span> <span class="pre">motor</span></code></p>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">u</span></code> for /u/pdate.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">motor</span></code> is the motor number, <code class="code docutils literal notranslate"><span class="pre">0</span></code> or <code class="code docutils literal notranslate"><span class="pre">1</span></code>.</p></li>
+</ul>
+<p>This command updates the watchdog timer for the motor, without changing any
+setpoints.</p>
+</section>
+</section>
+<section id="parameter-reading-writing">
+<h2><a class="toc-backref" href="#id5" role="doc-backlink">Parameter Reading/Writing</a><a class="headerlink" href="#parameter-reading-writing" title="Link to this heading"></a></h2>
+<p>Not all parameters can be accessed via the ASCII protocol but at least all parameters with float and integer type are supported.</p>
+<blockquote>
+<div><ul>
+<li><p>Reading format: <code class="code docutils literal notranslate"><span class="pre">r</span> <span class="pre">[property]</span></code></p>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">property</span></code> name of the property, as seen in ODrive Tool</p></li>
+<li><p>response: text representation of the requested value</p></li>
+<li><p>Example: <code class="code docutils literal notranslate"><span class="pre">r</span> <span class="pre">vbus_voltage</span></code> =&gt; response: <code class="code docutils literal notranslate"><span class="pre">24.087744</span></code></p></li>
+</ul>
+</li>
+<li><p>Writing format: <code class="code docutils literal notranslate"><span class="pre">w</span> <span class="pre">[property]</span> <span class="pre">[value]</span></code></p>
+<ul>
+<li><p><code class="code docutils literal notranslate"><span class="pre">property</span></code> name of the property, as seen in ODrive Tool</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">value</span></code> text representation of the value to be written</p></li>
+<li><p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">w</span> <span class="n">axis0</span><span class="o">.</span><span class="n">controller</span><span class="o">.</span><span class="n">input_pos</span> <span class="o">-</span><span class="mf">123.456</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</li>
+</ul>
+</div></blockquote>
+</section>
+<section id="system-commands">
+<h2><a class="toc-backref" href="#id6" role="doc-backlink">System Commands</a><a class="headerlink" href="#system-commands" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">ss</span></code> - Save config</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">se</span></code> - Erase config</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">sr</span></code> - Reboot</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">sc</span></code> - Clear errors</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="native-protocol.html" class="btn btn-neutral float-left" title="Native Protocol" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="can-protocol.html" class="btn btn-neutral float-right" title="CAN Protocol" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, ODrive Robotics.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org/">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+    <!-- Theme Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-93396600-3"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'UA-93396600-3', {
+          'anonymize_ip': false,
+      });
+    </script> 
+
+</body>
+
+<!-- Mirrored from docs.odriverobotics.com/v/0.5.6/ascii-protocol.html by HTTrack Website Copier/3.x [XR&CO'2014], Fri, 30 May 2025 19:31:26 GMT -->
+</html>

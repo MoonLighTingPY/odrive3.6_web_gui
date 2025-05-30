@@ -26,6 +26,7 @@ import {
   Tooltip,
   Button,
   ButtonGroup,
+  Divider,
 } from '@chakra-ui/react'
 import { InfoIcon } from '@chakra-ui/icons'
 import { updateControlConfig, updateUiPreferences } from '../../store/slices/configSlice'
@@ -140,7 +141,7 @@ const ControlConfigStep = () => {
                   variant={!useRpm ? "solid" : "outline"}
                   onClick={() => handleUnitToggle(false)}
                 >
-                  rad/s
+                  turns/s
                 </Button>
               </ButtonGroup>
             </HStack>
@@ -218,9 +219,14 @@ const ControlConfigStep = () => {
                 <Heading size="md" color="white">PID Controller Gains</Heading>
               </CardHeader>
               <CardBody>
-                <Alert status="warning" mb={4}>
+                <Alert status="info" mb={4}>
                   <AlertIcon />
-                  Tuning PID gains requires careful adjustment. Start with conservative values and adjust gradually.
+                  <VStack align="start" spacing={1}>
+                    <Text fontWeight="bold">ODrive v0.5.6 Control Formulas:</Text>
+                    <Text fontSize="sm">Position: <code>vel_setpoint = pos_gain × pos_error</code></Text>
+                    <Text fontSize="sm">Velocity: <code>current_setpoint = vel_gain × vel_error + vel_integrator_gain × ∫vel_error</code></Text>
+                    <Text fontSize="sm">All units are in turns/s and amperes. Tuning requires careful adjustment.</Text>
+                  </VStack>
                 </Alert>
                 
                 <VStack spacing={4}>
@@ -228,7 +234,7 @@ const ControlConfigStep = () => {
                     <FormControl>
                       <HStack>
                         <FormLabel color="white" mb={0}>Position Gain</FormLabel>
-                        <Tooltip label="Proportional gain for position control. Higher values increase position stiffness but may cause oscillation.">
+                        <Tooltip label="Proportional gain for position control. Converts position error (turns) to velocity setpoint (turns/s). Higher values increase position stiffness but may cause oscillation.">
                           <Icon as={InfoIcon} color="gray.400" />
                         </Tooltip>
                       </HStack>
@@ -241,8 +247,11 @@ const ControlConfigStep = () => {
                         >
                           <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
                         </NumberInput>
-                        <Text color="gray.300" minW="80px">{useRpm ? "(RPM)/rad" : "(rad/s)/rad"}</Text>
+                        <Text color="gray.300" minW="100px">(turns/s)/turn</Text>
                       </HStack>
+                      <Text fontSize="xs" color="gray.500" mt={1}>
+                        Formula: vel_setpoint = pos_gain × (pos_setpoint - pos_estimate)
+                      </Text>
                     </FormControl>
                   )}
 
@@ -250,7 +259,7 @@ const ControlConfigStep = () => {
                     <FormControl flex="1">
                       <HStack>
                         <FormLabel color="white" mb={0}>Velocity Gain</FormLabel>
-                        <Tooltip label="Proportional gain for velocity control. Affects how aggressively the motor responds to velocity errors.">
+                        <Tooltip label="Proportional gain for velocity control. Converts velocity error (turns/s) to current setpoint (A). Affects how aggressively the motor responds to velocity errors.">
                           <Icon as={InfoIcon} color="gray.400" />
                         </Tooltip>
                       </HStack>
@@ -265,17 +274,20 @@ const ControlConfigStep = () => {
                         >
                           <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
                         </NumberInput>
-                        <Text color="gray.300" minW="70px">{useRpm ? "A/(RPM)" : "A/(rad/s)"}</Text>
+                        <Text color="gray.300" minW="90px">{useRpm ? "A/(RPM)" : "A/(turns/s)"}</Text>
                       </HStack>
                       <Text fontSize="xs" color="gray.500" mt={1}>
-                        Stored as: {controlConfig.vel_gain.toFixed(6)} A/(rad/s)
+                        Stored as: {controlConfig.vel_gain.toFixed(6)} A/(turns/s)
+                      </Text>
+                      <Text fontSize="xs" color="blue.300" mt={1}>
+                        Formula: I_proportional = vel_gain × vel_error
                       </Text>
                     </FormControl>
 
                     <FormControl flex="1">
                       <HStack>
                         <FormLabel color="white" mb={0}>Velocity Integrator Gain</FormLabel>
-                        <Tooltip label="Integral gain for velocity control. Helps eliminate steady-state velocity errors but can cause overshoot.">
+                        <Tooltip label="Integral gain for velocity control. Converts accumulated velocity error (turns/s×s) to current setpoint (A). Helps eliminate steady-state velocity errors but can cause overshoot.">
                           <Icon as={InfoIcon} color="gray.400" />
                         </Tooltip>
                       </HStack>
@@ -290,13 +302,30 @@ const ControlConfigStep = () => {
                         >
                           <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
                         </NumberInput>
-                        <Text color="gray.300" minW="90px">{useRpm ? "A⋅s/(RPM)" : "A⋅s/(rad/s)"}</Text>
+                        <Text color="gray.300" minW="110px">{useRpm ? "A⋅s/(RPM)" : "A⋅s/(turns/s)"}</Text>
                       </HStack>
                       <Text fontSize="xs" color="gray.500" mt={1}>
-                        Stored as: {controlConfig.vel_integrator_gain.toFixed(6)} A⋅s/(rad/s)
+                        Stored as: {controlConfig.vel_integrator_gain.toFixed(6)} A⋅s/(turns/s)
+                      </Text>
+                      <Text fontSize="xs" color="blue.300" mt={1}>
+                        Formula: I_integral = vel_integrator_gain × ∫vel_error dt
                       </Text>
                     </FormControl>
                   </HStack>
+                  
+                  <Divider />
+                  
+                  <Box bg="gray.900" p={3} borderRadius="md" w="100%">
+                    <Text fontSize="sm" fontWeight="bold" color="odrive.300" mb={2}>
+                      Complete Velocity Controller Formula:
+                    </Text>
+                    <Text fontSize="sm" color="gray.300" fontFamily="mono">
+                      current_setpoint = vel_gain × vel_error + vel_integrator_gain × ∫vel_error dt
+                    </Text>
+                    <Text fontSize="xs" color="gray.500" mt={2}>
+                      Where vel_error = vel_setpoint - vel_estimate (in turns/s)
+                    </Text>
+                  </Box>
                 </VStack>
               </CardBody>
             </Card>
@@ -329,10 +358,10 @@ const ControlConfigStep = () => {
                         >
                           <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
                         </NumberInput>
-                        <Text color="gray.300" minW="50px">{useRpm ? "RPM" : "rad/s"}</Text>
+                        <Text color="gray.300" minW="70px">{useRpm ? "RPM" : "turns/s"}</Text>
                       </HStack>
                       <Text fontSize="xs" color="gray.500" mt={1}>
-                        Stored as: {controlConfig.vel_limit.toFixed(2)} rad/s
+                        Stored as: {controlConfig.vel_limit.toFixed(2)} turns/s
                       </Text>
                     </FormControl>
 
@@ -373,10 +402,10 @@ const ControlConfigStep = () => {
                         >
                           <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
                         </NumberInput>
-                        <Text color="gray.300" minW="70px">{useRpm ? "RPM/s" : "rad/s²"}</Text>
+                        <Text color="gray.300" minW="80px">{useRpm ? "RPM/s" : "turns/s²"}</Text>
                       </HStack>
                       <Text fontSize="xs" color="gray.500" mt={1}>
-                        Stored as: {controlConfig.vel_ramp_rate.toFixed(2)} rad/s²
+                        Stored as: {controlConfig.vel_ramp_rate.toFixed(2)} turns/s²
                       </Text>
                     </FormControl>
 
@@ -498,33 +527,33 @@ const ControlConfigStep = () => {
             <HStack justify="space-between">
               <Text color="gray.300">Max Velocity:</Text>
               <Text fontWeight="bold" color="odrive.300">
-                {formatVelocity(controlConfig.vel_limit, useRpm)}
+                {useRpm ? `${(controlConfig.vel_limit * 60).toFixed(0)} RPM` : `${controlConfig.vel_limit.toFixed(2)} turns/s`}
               </Text>
             </HStack>
             <HStack justify="space-between">
               <Text color="gray.300">Max Acceleration:</Text>
               <Text fontWeight="bold" color="odrive.300">
-                {formatAcceleration(controlConfig.vel_ramp_rate, useRpm)}
+                {useRpm ? `${(controlConfig.vel_ramp_rate * 60).toFixed(0)} RPM/s` : `${controlConfig.vel_ramp_rate.toFixed(2)} turns/s²`}
               </Text>
             </HStack>
             {isPositionControl && (
               <HStack justify="space-between">
                 <Text color="gray.300">Position Gain:</Text>
                 <Text fontWeight="bold" color="odrive.300">
-                  {controlConfig.pos_gain.toFixed(3)} {useRpm ? "(RPM)/rad" : "(rad/s)/rad"}
+                  {controlConfig.pos_gain.toFixed(3)} (turns/s)/turn
                 </Text>
               </HStack>
             )}
             <HStack justify="space-between">
               <Text color="gray.300">Velocity Gain:</Text>
               <Text fontWeight="bold" color="odrive.300">
-                {formatVelGain(controlConfig.vel_gain, useRpm)}
+                {useRpm ? `${velGainRadToRpm(controlConfig.vel_gain).toFixed(3)} A/(RPM)` : `${controlConfig.vel_gain.toFixed(6)} A/(turns/s)`}
               </Text>
             </HStack>
             <HStack justify="space-between">
               <Text color="gray.300">Velocity Integrator Gain:</Text>
               <Text fontWeight="bold" color="odrive.300">
-                {formatVelIntGain(controlConfig.vel_integrator_gain, useRpm)}
+                {useRpm ? `${velGainRadToRpm(controlConfig.vel_integrator_gain).toFixed(3)} A⋅s/(RPM)` : `${controlConfig.vel_integrator_gain.toFixed(6)} A⋅s/(turns/s)`}
               </Text>
             </HStack>
           </VStack>

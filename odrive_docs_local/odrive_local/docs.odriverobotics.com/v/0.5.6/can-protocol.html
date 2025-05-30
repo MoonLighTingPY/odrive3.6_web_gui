@@ -1,0 +1,975 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+
+<!-- Mirrored from docs.odriverobotics.com/v/0.5.6/can-protocol.html by HTTrack Website Copier/3.x [XR&CO'2014], Fri, 30 May 2025 19:31:26 GMT -->
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CAN Protocol &mdash; ODrive Documentation 0.5.6 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments0de2.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/themeadc2.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton3129.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="_static/tabs4c26.css?v=a5c4661c" />
+      <link rel="stylesheet" type="text/css" href="_static/sphinx-dropdownd0cc.css?v=995e94df" />
+      <link rel="stylesheet" type="text/css" href="_static/panels-bootstrap.mine1eb.css?v=21c0b90a" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery3b25.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compatfa9a.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_optionse544.js?v=722679d6"></script>
+        <script src="_static/doctools56c1.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight7f57.js?v=dc90522c"></script>
+        <script src="_static/clipboard.min4664.js?v=a7894cd8"></script>
+        <script src="_static/copybutton7689.js?v=f281be69"></script>
+        <script src="../../docsInject.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Step/Direction" href="step-direction.html" />
+    <link rel="prev" title="ASCII Protocol" href="ascii-protocol.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index-2.html" class="icon icon-home">
+            ODrive Documentation
+          </a>
+              <div class="version">
+                0.5.6
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="https://docs.odriverobotics.com/v/0.5.6/search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">General</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="odrivetool.html"><code class="code docutils literal notranslate"><span class="pre">odrivetool</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="control-modes.html">Control Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Parameters &amp; Commands</a></li>
+<li class="toctree-l1"><a class="reference internal" href="encoders.html">Encoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="control.html">Control Structure and Tuning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="specifications.html">Specifications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ground-loops.html">Ground Loops</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="hoverboard.html">Hoverboard Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migration.html">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="can-guide.html">CAN Guide</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y/edit#gid=0">Motor Guide</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.google.com/spreadsheets/d/1OBDwYrBb5zUPZLrhL98ezZbg94tUsZcdTuwiVNgVqpU/edit#gid=0">Encoder Guide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Interfaces and Protocols</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="protocol.html">ODrive Communication Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pinout.html">Pinout</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usb.html">USB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="uart.html">UART Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="native-protocol.html">Native Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ascii-protocol.html">ASCII Protocol</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">CAN Protocol</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#configuring-odrive-for-can">Configuring ODrive for CAN</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#example-configuration">Example Configuration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#transport-protocol">Transport Protocol</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#can-frame">CAN Frame</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#messages">Messages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#cyclic-messages">Cyclic Messages</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#interoperability-with-canopen">Interoperability with CANopen</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="step-direction.html">Step &amp; Direction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rc-pwm.html">RC PWM input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analog-input.html">Analog Input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="endstops.html">Endstops and Homing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="thermistors.html">Thermistors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">ODrive Device API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fibre_types/com_odriverobotics_ODrive.html">ODrive Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For ODrive Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="developer-guide.html">ODrive Firmware Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuring-vscode.html">Configuring Visual Studio Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuring-eclipse.html">Setting up Eclipse development environment</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">CHANGELOG</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">CHANGELOG</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index-2.html">ODrive Documentation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content style-external-links">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index-2.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">CAN Protocol</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/can-protocol.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="can-protocol">
+<span id="id1"></span><h1>CAN Protocol<a class="headerlink" href="#can-protocol" title="Link to this heading"></a></h1>
+<nav class="contents local" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#configuring-odrive-for-can" id="id3">Configuring ODrive for CAN</a></p></li>
+<li><p><a class="reference internal" href="#transport-protocol" id="id4">Transport Protocol</a></p></li>
+</ul>
+</nav>
+<p>This document describes the CAN Protocol.  For examples of usage, check out our <a class="reference internal" href="can-guide.html#can-guide"><span class="std std-ref">CAN Guide!</span></a></p>
+<section id="configuring-odrive-for-can">
+<h2><a class="toc-backref" href="#id3" role="doc-backlink">Configuring ODrive for CAN</a><a class="headerlink" href="#configuring-odrive-for-can" title="Link to this heading"></a></h2>
+<p>Configuration of the CAN parameters should be done via USB before putting the device on the bus.</p>
+<p>To set the desired baud rate, use <code class="code docutils literal notranslate"><span class="pre">&lt;odrv&gt;.can.config.baud_rate</span> <span class="pre">=</span> <span class="pre">&lt;value&gt;</span></code>.</p>
+<p>Each axis looks like a separate node on the bus.
+Thus, they both have the two properties <code class="code docutils literal notranslate"><span class="pre">can_node_id</span></code> and <code class="code docutils literal notranslate"><span class="pre">can_node_id_extended</span></code>.
+The node ID can be from 0 to 63 (0x3F) inclusive, or, if extended CAN IDs are used, from 0 to 16777215 (0xFFFFFF).
+If you want to connect more than one ODrive on a CAN bus, you must set different node IDs for the second ODrive or they will conflict and crash the bus.</p>
+<section id="example-configuration">
+<h3>Example Configuration<a class="headerlink" href="#example-configuration" title="Link to this heading"></a></h3>
+<div class="highlight-iPython notranslate"><div class="highlight"><pre><span></span>odrv0.axis0.config.can.node_id = 3
+odrv0.axis1.config.can.node_id = 1
+odrv0.can.config.baud_rate = 500000
+odrv0.save_configuration()
+odrv0.reboot()
+</pre></div>
+</div>
+</section>
+</section>
+<section id="transport-protocol">
+<h2><a class="toc-backref" href="#id4" role="doc-backlink">Transport Protocol</a><a class="headerlink" href="#transport-protocol" title="Link to this heading"></a></h2>
+<p>We’ve implemented a very basic CAN protocol that we call “CAN Simple” to get users going with ODrive.
+This protocol is sufficiently abstracted that it is straightforward to add other protocols such as CANOpen, J1939, or Fibre over ISO-TP in the future.
+Unfortunately, implementing those protocols is a lot of work, and we wanted to give users a way to control ODrive’s basic functions via CAN sooner rather than later.</p>
+<section id="can-frame">
+<h3>CAN Frame<a class="headerlink" href="#can-frame" title="Link to this heading"></a></h3>
+<p>At its most basic, the CAN Simple frame looks like this:</p>
+<ul class="simple">
+<li><p>Upper 6 bits - Node ID - max 0x3F (or 0xFFFFFF when using extended CAN IDs)</p></li>
+<li><p>Lower 5 bits - Command ID - max 0x1F</p></li>
+</ul>
+<p>To understand how the Node ID and Command ID interact, let’s look at an example</p>
+<p>The 11-bit Arbitration ID is setup as follows:</p>
+<p><code class="code docutils literal notranslate"><span class="pre">can_id</span> <span class="pre">=</span> <span class="pre">axis_id</span> <span class="pre">&lt;&lt;</span> <span class="pre">5</span> <span class="pre">|</span> <span class="pre">cmd_id</span></code></p>
+<p>For example, an Axis ID of <code class="code docutils literal notranslate"><span class="pre">0x01</span></code> with a command of <code class="code docutils literal notranslate"><span class="pre">0x0C</span></code> would be result in <code class="code docutils literal notranslate"><span class="pre">0x2C</span></code>:</p>
+<p><code class="code docutils literal notranslate"><span class="pre">0x01</span> <span class="pre">&lt;&lt;</span> <span class="pre">5</span> <span class="pre">|</span> <span class="pre">0x0C</span> <span class="pre">=</span> <span class="pre">0x2C</span></code></p>
+</section>
+<section id="messages">
+<h3>Messages<a class="headerlink" href="#messages" title="Link to this heading"></a></h3>
+<p><a class="reference external" href="_static/can-protocol.csv">Download CAN Messages as csv</a>.</p>
+<table class="docutils align-default" id="id2">
+<caption><span class="caption-text">CAN Messages</span><a class="headerlink" href="#id2" title="Link to this table"></a></caption>
+<thead>
+<tr class="row-odd"><th class="head"><p>CMD ID</p></th>
+<th class="head"><p>Name</p></th>
+<th class="head"><p>Sender</p></th>
+<th class="head"><p>Signals</p></th>
+<th class="head"><p>Start byte</p></th>
+<th class="head"><p>Signal Type</p></th>
+<th class="head"><p>Bits</p></th>
+<th class="head"><p>Factor</p></th>
+<th class="head"><p>Offset</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0x000</p></td>
+<td><p>CANOpen NMT Message**</p></td>
+<td><p>Master</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-odd"><td><p>0x001</p></td>
+<td><p>ODrive Heartbeat Message</p></td>
+<td><p>Axis</p></td>
+<td><p>Axis Error</p>
+<p>Axis Current State</p>
+<p>Motor Error Flag</p>
+<p>Encoder Error Flag</p>
+<p>Controller Error Flag</p>
+<p>Trajectory Done Flag</p>
+</td>
+<td><p>0</p>
+<p>4</p>
+<p>5.0</p>
+<p>6.0</p>
+<p>7.0</p>
+<p>7.7</p>
+</td>
+<td><p>Unsigned Int</p>
+<p>Unsigned Int</p>
+<p>Unsigned Int</p>
+<p>Unsigned Int</p>
+<p>Unsigned Int</p>
+<p>Unsigned Int</p>
+</td>
+<td><p>32</p>
+<p>8</p>
+<p>1</p>
+<p>1</p>
+<p>1</p>
+<p>1</p>
+</td>
+<td><ul class="simple">
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-even"><td><p>0x002</p></td>
+<td><p>ODrive Estop Message</p></td>
+<td><p>Master</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-odd"><td><p>0x003</p></td>
+<td><p>Get Motor Error*</p></td>
+<td><p>Axis</p></td>
+<td><p>Motor Error</p></td>
+<td><p>0</p></td>
+<td><p>Unsigned Int</p></td>
+<td><p>64</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-even"><td><p>0x004</p></td>
+<td><p>Get Encoder Error*</p></td>
+<td><p>Axis</p></td>
+<td><p>Encoder Error</p></td>
+<td><p>0</p></td>
+<td><p>Unsigned Int</p></td>
+<td><p>32</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-odd"><td><p>0x005</p></td>
+<td><p>Get Sensorless Error*</p></td>
+<td><p>Axis</p></td>
+<td><p>Sensorless Error</p></td>
+<td><p>0</p></td>
+<td><p>Unsigned Int</p></td>
+<td><p>32</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-even"><td><p>0x006</p></td>
+<td><p>Set Axis Node ID</p></td>
+<td><p>Master</p></td>
+<td><p>Axis CAN Node ID</p></td>
+<td><p>0</p></td>
+<td><p>Unsigned Int</p></td>
+<td><p>32</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-odd"><td><p>0x007</p></td>
+<td><p>Set Axis Requested State</p></td>
+<td><p>Master</p></td>
+<td><p>Axis Requested State</p></td>
+<td><p>0</p></td>
+<td><p>Unsigned Int</p></td>
+<td><p>32</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-even"><td><p>0x008</p></td>
+<td><p>Set Axis Startup Config</p></td>
+<td><p>Master</p></td>
+<td><ul class="simple">
+<li><p>Not yet implemented -</p></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-odd"><td><p>0x009</p></td>
+<td><p>Get Encoder Estimates*</p></td>
+<td><p>Master</p></td>
+<td><p>Encoder Pos Estimate</p>
+<p>Encoder Vel Estimate</p>
+</td>
+<td><p>0</p>
+<p>4</p>
+</td>
+<td><p>IEEE 754 Float</p>
+<p>IEEE 754 Float</p>
+</td>
+<td><p>32</p>
+<p>32</p>
+</td>
+<td><p>1</p>
+<p>1</p>
+</td>
+<td><p>0</p>
+<p>0</p>
+</td>
+</tr>
+<tr class="row-even"><td><p>0x00A</p></td>
+<td><p>Get Encoder Count*</p></td>
+<td><p>Master</p></td>
+<td><p>Encoder Shadow Count</p>
+<p>Encoder Count in CPR</p>
+</td>
+<td><p>0</p>
+<p>4</p>
+</td>
+<td><p>Signed Int</p>
+<p>Signed Int</p>
+</td>
+<td><p>32</p>
+<p>32</p>
+</td>
+<td><p>1</p>
+<p>1</p>
+</td>
+<td><p>0</p>
+<p>0</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p>0x00B</p></td>
+<td><p>Set Controller Modes</p></td>
+<td><p>Master</p></td>
+<td><p>Control Mode</p>
+<p>Input Mode</p>
+</td>
+<td><p>0</p>
+<p>4</p>
+</td>
+<td><p>Signed Int</p>
+<p>Signed Int</p>
+</td>
+<td><p>32</p>
+<p>32</p>
+</td>
+<td><p>1</p>
+<p>1</p>
+</td>
+<td><p>0</p>
+<p>0</p>
+</td>
+</tr>
+<tr class="row-even"><td><p>0x00C</p></td>
+<td><p>Set Input Pos</p></td>
+<td><p>Master</p></td>
+<td><p>Input Pos</p>
+<p>Vel FF</p>
+<p>Torque FF</p>
+</td>
+<td><p>0</p>
+<p>4</p>
+<p>6</p>
+</td>
+<td><p>IEEE 754 Float</p>
+<p>Signed Int</p>
+<p>Signed Int</p>
+</td>
+<td><p>32</p>
+<p>16</p>
+<p>16</p>
+</td>
+<td><p>1</p>
+<p>0.001</p>
+<p>0.001</p>
+</td>
+<td><p>0</p>
+<p>0</p>
+<p>0</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p>0x00D</p></td>
+<td><p>Set Input Vel</p></td>
+<td><p>Master</p></td>
+<td><p>Input Vel</p>
+<p>Torque FF</p>
+</td>
+<td><p>0</p>
+<p>4</p>
+</td>
+<td><p>IEEE 754 Float</p>
+<p>IEEE 754 Float</p>
+</td>
+<td><p>32</p>
+<p>32</p>
+</td>
+<td><p>1</p>
+<p>1</p>
+</td>
+<td><p>0</p>
+<p>0</p>
+</td>
+</tr>
+<tr class="row-even"><td><p>0x00E</p></td>
+<td><p>Set Input Torque</p></td>
+<td><p>Master</p></td>
+<td><p>Input Torque</p></td>
+<td><p>0</p></td>
+<td><p>IEEE 754 Float</p></td>
+<td><p>32</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-odd"><td><p>0x00F</p></td>
+<td><p>Set Limits</p></td>
+<td><p>Master</p></td>
+<td><p>Velocity Limit</p>
+<p>Current Limit</p>
+</td>
+<td><p>0</p>
+<p>4</p>
+</td>
+<td><p>IEEE 754 Float</p>
+<p>IEEE 754 Float</p>
+</td>
+<td><p>32</p></td>
+<td><p>1</p>
+<p>1</p>
+</td>
+<td><p>0</p>
+<p>0</p>
+</td>
+</tr>
+<tr class="row-even"><td><p>0x010</p></td>
+<td><p>Start Anticogging</p></td>
+<td><p>Master</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-odd"><td><p>0x011</p></td>
+<td><p>Set Traj Vel Limit</p></td>
+<td><p>Master</p></td>
+<td><p>Traj Vel Limit</p></td>
+<td><p>0</p></td>
+<td><p>IEEE 754 Float</p></td>
+<td><p>32</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-even"><td><p>0x012</p></td>
+<td><p>Set Traj Accel Limits</p></td>
+<td><p>Master</p></td>
+<td><p>Traj Accel Limit</p>
+<p>Traj Decel Limit</p>
+</td>
+<td><p>0</p>
+<p>4</p>
+</td>
+<td><p>IEEE 754 Float</p>
+<p>IEEE 754 Float</p>
+</td>
+<td><p>32</p>
+<p>32</p>
+</td>
+<td><p>1</p>
+<p>1</p>
+</td>
+<td><p>0</p>
+<p>0</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p>0x013</p></td>
+<td><p>Set Traj Inertia</p></td>
+<td><p>Master</p></td>
+<td><p>Traj Inertia</p></td>
+<td><p>0</p></td>
+<td><p>IEEE 754 Float</p></td>
+<td><p>32</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-even"><td><p>0x014</p></td>
+<td><p>Get IQ*</p></td>
+<td><p>Axis</p></td>
+<td><p>Iq Setpoint</p>
+<p>Iq Measured</p>
+</td>
+<td><p>0</p>
+<p>4</p>
+</td>
+<td><p>IEEE 754 Float</p>
+<p>IEEE 754 Float</p>
+</td>
+<td><p>32</p>
+<p>32</p>
+</td>
+<td><p>1</p>
+<p>1</p>
+</td>
+<td><p>0</p>
+<p>0</p>
+</td>
+</tr>
+<tr class="row-odd"><td><p>0x015</p></td>
+<td><p>Get Sensorless Estimates*</p></td>
+<td><p>Master</p></td>
+<td><p>Sensorless Pos Estimate</p>
+<p>Sensorless Vel Estimate</p>
+</td>
+<td><p>0</p>
+<p>4</p>
+</td>
+<td><p>IEEE 754 Float</p>
+<p>IEEE 754 Float</p>
+</td>
+<td><p>32</p>
+<p>32</p>
+</td>
+<td><p>1</p>
+<p>1</p>
+</td>
+<td><p>0</p>
+<p>0</p>
+</td>
+</tr>
+<tr class="row-even"><td><p>0x016</p></td>
+<td><p>Reboot ODrive</p></td>
+<td><p>Master***</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-odd"><td><p>0x017</p></td>
+<td><p>Get Bus Voltage and Current</p></td>
+<td><p>Master***</p></td>
+<td><p>Bus Voltage</p>
+<p>Bus Current</p>
+</td>
+<td><p>0</p>
+<p>4</p>
+</td>
+<td><p>IEEE 754 Float</p>
+<p>IEEE 754 Float</p>
+</td>
+<td><p>32</p>
+<p>32</p>
+</td>
+<td><p>1</p>
+<p>1</p>
+</td>
+<td><p>0</p>
+<p>0</p>
+</td>
+</tr>
+<tr class="row-even"><td><p>0x018</p></td>
+<td><p>Clear Errors</p></td>
+<td><p>Master</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+<tr class="row-odd"><td><p>0x019</p></td>
+<td><p>Set Linear Count</p></td>
+<td><p>Master</p></td>
+<td><p>Position</p></td>
+<td><p>0</p></td>
+<td><p>Signed Int</p></td>
+<td><p>32</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-even"><td><p>0x01A</p></td>
+<td><p>Set Position Gain</p></td>
+<td><p>Master</p></td>
+<td><p>Pos Gain</p></td>
+<td><p>0</p></td>
+<td><p>IEEE 754 Float</p></td>
+<td><p>32</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-odd"><td><p>0x01B</p></td>
+<td><p>Set Vel Gains</p></td>
+<td><p>Master</p></td>
+<td><p>Vel Gain</p>
+<p>Vel Integrator Gain</p>
+</td>
+<td><p>0</p>
+<p>4</p>
+</td>
+<td><p>IEEE 754 Float</p>
+<p>IEEE 754 Float</p>
+</td>
+<td><p>32</p>
+<p>32</p>
+</td>
+<td><p>1</p>
+<p>1</p>
+</td>
+<td><p>0</p>
+<p>0</p>
+</td>
+</tr>
+<tr class="row-even"><td><p>0x01C</p></td>
+<td><p>Get ADC Voltage****</p></td>
+<td><p>Master***</p></td>
+<td><p>ADC Voltage</p></td>
+<td><p>0</p></td>
+<td><p>IEEE 754 Float</p></td>
+<td><p>32</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-odd"><td><p>0x01D</p></td>
+<td><p>Get Controller Error*</p></td>
+<td><p>Axis</p></td>
+<td><p>Controller Error</p></td>
+<td><p>0</p></td>
+<td><p>Unsigned Int</p></td>
+<td><p>32</p></td>
+<td><p>1</p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-even"><td><p>0x700</p></td>
+<td><p>CANOpen Heartbeat Message**</p></td>
+<td><p>Slave</p></td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+<td><ul class="simple">
+<li></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>All multibyte values are little endian (aka Intel format, aka least significant byte first).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<ul class="simple">
+<li><p>These messages are call &amp; response. The Master node sends a message with the RTR bit set, and the axis responds with the same ID and specified payload.</p></li>
+<li><p>These CANOpen messages are reserved to avoid bus collisions with CANOpen devices.  They are not used by CAN Simple.</p></li>
+<li><dl class="simple">
+<dt>These messages can be sent to either address on a given ODrive board.</dt><dd><ul>
+<li><p>You must send a valid GPIO pin number in the first byte to recieve coreect ADC voltage feedback. Since you’re both sending and receiving data the RTR bit must be set to false.</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+</div>
+</section>
+<section id="cyclic-messages">
+<h3>Cyclic Messages<a class="headerlink" href="#cyclic-messages" title="Link to this heading"></a></h3>
+<p>Cyclic messages are sent by ODrive on a timer without a request. As of firmware verion <cite>0.5.4</cite>, the Cyclic messsages are:</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 20.0%" />
+<col style="width: 20.0%" />
+<col style="width: 20.0%" />
+<col style="width: 40.0%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>ID</p></th>
+<th class="head"><p>Name</p></th>
+<th class="head"><p>Config Variable</p></th>
+<th class="head"><p>Default Rate (ms)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>0x01</p></td>
+<td><p>Heartbeat</p></td>
+<td><p><cite>heartbeat_rate_ms</cite></p></td>
+<td><p>100</p></td>
+</tr>
+<tr class="row-odd"><td><p>0x09</p></td>
+<td><p>Get Encoder Estimates</p></td>
+<td><p><cite>encoder_rate_ms</cite></p></td>
+<td><p>10</p></td>
+</tr>
+<tr class="row-even"><td><p>0x03</p></td>
+<td><p>Get Motor Error</p></td>
+<td><p><cite>motor_error_rate_ms</cite></p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-odd"><td><p>0x04</p></td>
+<td><p>Get Encoder Error</p></td>
+<td><p><cite>encoder_error_rate_ms</cite></p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-even"><td><p>0x1D</p></td>
+<td><p>Get Controller Error</p></td>
+<td><p><cite>controller_error_rate_ms</cite></p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-odd"><td><p>0x05</p></td>
+<td><p>Get Sensorless Error</p></td>
+<td><p><cite>sensorless_error_rate_ms</cite></p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-even"><td><p>0x0A</p></td>
+<td><p>Get Encoder Count</p></td>
+<td><p><cite>encoder_count_rate_ms</cite></p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-odd"><td><p>0x14</p></td>
+<td><p>Get Iq</p></td>
+<td><p><cite>iq_rate_ms</cite></p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-even"><td><p>0x15</p></td>
+<td><p>Get Sensorless Estimates</p></td>
+<td><p><cite>sensorless_rate_ms</cite></p></td>
+<td><p>0</p></td>
+</tr>
+<tr class="row-odd"><td><p>0x17</p></td>
+<td><p>Get Bus Voltage Current</p></td>
+<td><p><cite>bus_vi_rate_ms</cite></p></td>
+<td><p>0</p></td>
+</tr>
+</tbody>
+</table>
+<p>These can be configured for each axis, see e.g. <code class="code docutils literal notranslate"><span class="pre">axis.config.can</span></code>.</p>
+</section>
+<section id="interoperability-with-canopen">
+<h3>Interoperability with CANopen<a class="headerlink" href="#interoperability-with-canopen" title="Link to this heading"></a></h3>
+<p>You can deconflict with CANopen like this:</p>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">odrv0.axis0.config.can.node_id</span> <span class="pre">=</span> <span class="pre">0x010</span></code> - Reserves messages 0x200 through 0x21F</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">odrv0.axis1.config.can.node_id</span> <span class="pre">=</span> <span class="pre">0x018</span></code> - Reserves messages 0x300 through 0x31F</p></li>
+</ul>
+<p>It may not be obvious, but this allows for some compatibility with CANOpen.
+Although the address space 0x200 and 0x300 correspond to receive PDO base addresses, we can guarantee they will not conflict if all CANopen node IDs are &gt;= 32.  E.g.:</p>
+<ul class="simple">
+<li><p>CANopen nodeID = 35 = 0x23</p></li>
+<li><p>Receive PDO 0x200 + nodeID = 0x223, which does not conflict with the range [0x200 : 0x21F]</p></li>
+</ul>
+<p>Be careful that you don’t assign too many nodeIDs per PDO group.  Four CAN Simple nodes (32*4) is all of the available address space of a single PDO.
+If the bus is strictly ODrive CAN Simple nodes, a simple sequential Node ID assignment will work fine.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="ascii-protocol.html" class="btn btn-neutral float-left" title="ASCII Protocol" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="step-direction.html" class="btn btn-neutral float-right" title="Step/Direction" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, ODrive Robotics.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org/">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+    <!-- Theme Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-93396600-3"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'UA-93396600-3', {
+          'anonymize_ip': false,
+      });
+    </script> 
+
+</body>
+
+<!-- Mirrored from docs.odriverobotics.com/v/0.5.6/can-protocol.html by HTTrack Website Copier/3.x [XR&CO'2014], Fri, 30 May 2025 19:31:27 GMT -->
+</html>

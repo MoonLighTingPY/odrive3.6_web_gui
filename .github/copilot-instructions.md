@@ -1,4 +1,5 @@
 You are writing a GUI for ODriveFirmware_v3.6-56V.elf(0.5.6 in fact, but conventional name is v3.6). Documentation is available at https://docs.odriverobotics.com/v/0.5.6/getting-started.html.
+Also, there is local copy of the documentation available at odrive_docs_local/ downloaded using httrack.
 This is an old version of the ODrive firmware, so you should not use the latest version of the documentation.
 You should always use the documentation for version 0.5.6, which is available at https://docs.odriverobotics.com/v/0.5.6/getting-started.html.
 You should not use the latest version of the documentation, as it may contain features that are not available in this version of the firmware.
@@ -25,3 +26,7 @@ gonna be executed (minimize and open), 3. "save to non volatile memory and reboo
 there should also be dashboard and inspector tabs, but lets do it later, lets just make them empty for now. also,
 somewhere on the left it should list the odrive dvices, and their state (they hold the values somewhere on their registers).
 also a button there to connect/disconnect to odrive. i think that's all for beginning. fully, no placeholders/skips
+and no "we will do this later" stuff. just make it fully functional, with all the features described above.
+but, if you don't know how to implement something, just ask me, i will help you.
+if i ask you to fix someting, and there are just minor changes, just give me that part of the code that needs to be changed, not the whole file.
+but if there are major changes, then give me the whole file.

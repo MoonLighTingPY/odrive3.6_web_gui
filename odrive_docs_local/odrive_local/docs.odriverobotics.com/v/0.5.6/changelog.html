@@ -1,0 +1,1185 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+
+<!-- Mirrored from docs.odriverobotics.com/v/0.5.6/changelog.html by HTTrack Website Copier/3.x [XR&CO'2014], Fri, 30 May 2025 19:31:31 GMT -->
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CHANGELOG &mdash; ODrive Documentation 0.5.6 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments0de2.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/themeadc2.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton3129.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="_static/tabs4c26.css?v=a5c4661c" />
+      <link rel="stylesheet" type="text/css" href="_static/sphinx-dropdownd0cc.css?v=995e94df" />
+      <link rel="stylesheet" type="text/css" href="_static/panels-bootstrap.mine1eb.css?v=21c0b90a" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery3b25.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compatfa9a.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_optionse544.js?v=722679d6"></script>
+        <script src="_static/doctools56c1.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight7f57.js?v=dc90522c"></script>
+        <script src="_static/clipboard.min4664.js?v=a7894cd8"></script>
+        <script src="_static/copybutton7689.js?v=f281be69"></script>
+        <script src="../../docsInject.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Setting up Eclipse development environment" href="configuring-eclipse.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index-2.html" class="icon icon-home">
+            ODrive Documentation
+          </a>
+              <div class="version">
+                0.5.6
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="https://docs.odriverobotics.com/v/0.5.6/search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">General</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="odrivetool.html"><code class="code docutils literal notranslate"><span class="pre">odrivetool</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="control-modes.html">Control Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Parameters &amp; Commands</a></li>
+<li class="toctree-l1"><a class="reference internal" href="encoders.html">Encoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="control.html">Control Structure and Tuning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="specifications.html">Specifications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ground-loops.html">Ground Loops</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="hoverboard.html">Hoverboard Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migration.html">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="can-guide.html">CAN Guide</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y/edit#gid=0">Motor Guide</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.google.com/spreadsheets/d/1OBDwYrBb5zUPZLrhL98ezZbg94tUsZcdTuwiVNgVqpU/edit#gid=0">Encoder Guide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Interfaces and Protocols</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="protocol.html">ODrive Communication Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pinout.html">Pinout</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usb.html">USB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="uart.html">UART Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="native-protocol.html">Native Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ascii-protocol.html">ASCII Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="can-protocol.html">CAN Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="step-direction.html">Step &amp; Direction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rc-pwm.html">RC PWM input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analog-input.html">Analog Input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="endstops.html">Endstops and Homing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="thermistors.html">Thermistors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">ODrive Device API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fibre_types/com_odriverobotics_ODrive.html">ODrive Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For ODrive Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="developer-guide.html">ODrive Firmware Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuring-vscode.html">Configuring Visual Studio Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuring-eclipse.html">Setting up Eclipse development environment</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">CHANGELOG</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">CHANGELOG</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#id1">[0.5.6] - 2023-05-01</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#fixed">Fixed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#added">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#changed">Changed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id2">[0.5.5] - 2022-08-11</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id3">[0.5.4] - 2021-10-12</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id4">Fixed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id5">Added</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id6">[0.5.3] - 2021-09-03</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id7">Fixed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id8">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id9">Changed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id10">[0.5.2] - 2021-05-21</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id11">Fixed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id12">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id13">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#api-migration-notes">API Migration Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id14">[0.5.1] - 2020-09-27</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id15">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id16">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id17">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id18">[0.5.0] - 2020-08-03</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id19">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id20">Changed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id21">[0.4.12] - 2020-05-06</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id22">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id23">[0.4.11] - 2019-07-25</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id24">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id25">Changed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id26">[0.4.10] - 2019-04-24</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id27">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id28">[0.4.9] - 2019-04-23</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id29">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id30">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id31">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id32">[0.4.8] - 2019-02-25</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id33">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id34">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id35">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id36">[0.4.7] - 2018-11-28</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id37">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id38">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id39">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id40">[0.4.6] - 2018-10-07</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id41">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id42">[0.4.5] - 2018-10-06</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id43">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id44">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id45">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id46">[0.4.4] - 2018-09-18</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id47">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id48">[0.4.3] - 2018-08-30</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id49">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id50">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id51">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id52">[0.4.2] - 2018-08-04</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id53">Added</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id54">[0.4.1] - 2018-07-01</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id55">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id56">[0.4.0] - 2018-06-10</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id57">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id58">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id59">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id60">[0.3.6] - 2018-03-26</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id61">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id62">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id63">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id64">[0.3.5] - 2018-03-04</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id65">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id66">Changed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id67">[0.3.4] - 2018-02-13</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id68">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id69">[0.3.3] - 2018-02-12</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id70">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id71">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id72">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id73">[0.3.2] - 2018-02-02</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id74">Added</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id75">[0.3.1] - 2018-01-18</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id76">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id77">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id78">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id79">[0.3] - 2017-12-18</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id80">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id81">Changed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id82">[0.2.2] - 2017-11-17</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id83">Fixed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id84">Changed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id85">[0.2.1] - 2017-11-14</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id86">Fixed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id87">Changed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id88">[0.2.0] - 2017-11-12</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id89">Added</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id90">[0.1.0] - 2017-08-26</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id91">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id92">Changed</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index-2.html">ODrive Documentation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content style-external-links">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index-2.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">CHANGELOG</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/changelog.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="changelog">
+<span id="id1"></span><h1>CHANGELOG<a class="headerlink" href="#changelog" title="Link to this heading"></a></h1>
+<section id="id1">
+<h2>[0.5.6] - 2023-05-01<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
+<section id="fixed">
+<h3>Fixed<a class="headerlink" href="#fixed" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Fixed race condition in homing sequence that was causing strange behaviour.  Fixes <a class="reference external" href="https://github.com/odriverobotics/ODrive/issues/634">#634</a>]</p></li>
+<li><p>When using a load encoder, CAN will report the correct position and velocity.</p></li>
+<li><p>When using a load encoder, homing will reset the correct linear position.  Fixes <a class="reference external" href="https://github.com/odriverobotics/ODrive/issues/651">#651</a></p></li>
+<li><p>Implemented CAN controller error message, which was previously defined but not actually implemented.</p></li>
+<li><p>Get Vbus Voltage message updated to match ODrive Pro’s CANSimple implementation.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">vel_setpoint</span></code> and <code class="docutils literal notranslate"><span class="pre">torque_setpoint</span></code> will be clamped to <code class="docutils literal notranslate"><span class="pre">vel_limit</span></code> and the active torque limit.  Fixes <a class="reference external" href="https://github.com/odriverobotics/ODrive/issues/647">#647</a></p></li>
+</ul>
+</section>
+<section id="added">
+<h3>Added<a class="headerlink" href="#added" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Added public <code class="docutils literal notranslate"><span class="pre">controller.get_anticogging_value(uint32)</span></code> fibre function to index into the the cogging map.  Fixes <a class="reference external" href="https://github.com/odriverobotics/ODrive/issues/690">#690</a></p></li>
+<li><p>Added Get ADC Voltage message to CAN (0x1C).  Send the desired GPIO number in byte 1, and the ODrive will respond with the ADC voltage from that pin (if previously configured for analog)</p></li>
+<li><p>Added CAN heartbeat message flags for motor, controller, and encoder error.  If flag is true, fetch the corresponding error with the respective message.</p></li>
+<li><p>Added scoped enums, e.g. <code class="docutils literal notranslate"><span class="pre">CONTROL_MODE_POSITION_CONTROL</span></code> can be used as <code class="docutils literal notranslate"><span class="pre">ControlMode.POSITION_CONTROL</span></code></p></li>
+<li><p>Added more cyclic messages to can.  Use the <code class="docutils literal notranslate"><span class="pre">rate_ms</span></code> values in <code class="docutils literal notranslate"><span class="pre">&lt;odrv&gt;.&lt;axis&gt;.config.can</span></code> to set the cycle rate of the message in milliseconds.  Set a rate to 0 to disable sending.  The following variables are avaialble:</p></li>
+</ul>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head text-left"><p>Command ID</p></th>
+<th class="head text-left"><p>Rate Variable</p></th>
+<th class="head text-left"><p>Message Name</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td class="text-left"><p>0x01</p></td>
+<td class="text-left"><p><code class="docutils literal notranslate"><span class="pre">heartbeat_rate_ms</span></code></p></td>
+<td class="text-left"><p>Heartbeat</p></td>
+</tr>
+<tr class="row-odd"><td class="text-left"><p>0x09</p></td>
+<td class="text-left"><p><code class="docutils literal notranslate"><span class="pre">encoder_rate_ms</span></code></p></td>
+<td class="text-left"><p>Get Encoder Estimates</p></td>
+</tr>
+<tr class="row-even"><td class="text-left"><p>0x03</p></td>
+<td class="text-left"><p><code class="docutils literal notranslate"><span class="pre">motor_error_rate_ms</span></code></p></td>
+<td class="text-left"><p>Get Motor Error</p></td>
+</tr>
+<tr class="row-odd"><td class="text-left"><p>0x04</p></td>
+<td class="text-left"><p><code class="docutils literal notranslate"><span class="pre">encoder_error_rate_ms</span></code></p></td>
+<td class="text-left"><p>Get Encoder Error</p></td>
+</tr>
+<tr class="row-even"><td class="text-left"><p>0x1D</p></td>
+<td class="text-left"><p><code class="docutils literal notranslate"><span class="pre">controller_error_rate_ms</span></code></p></td>
+<td class="text-left"><p>Get Controller Error</p></td>
+</tr>
+<tr class="row-odd"><td class="text-left"><p>0x05</p></td>
+<td class="text-left"><p><code class="docutils literal notranslate"><span class="pre">sensorless_error_rate_ms</span></code></p></td>
+<td class="text-left"><p>Get Sensorless Error</p></td>
+</tr>
+<tr class="row-even"><td class="text-left"><p>0x0A</p></td>
+<td class="text-left"><p><code class="docutils literal notranslate"><span class="pre">encoder_count_rate_ms</span></code></p></td>
+<td class="text-left"><p>Get Encoder Count</p></td>
+</tr>
+<tr class="row-odd"><td class="text-left"><p>0x14</p></td>
+<td class="text-left"><p><code class="docutils literal notranslate"><span class="pre">iq_rate_ms</span></code></p></td>
+<td class="text-left"><p>Get Iq</p></td>
+</tr>
+<tr class="row-even"><td class="text-left"><p>0x15</p></td>
+<td class="text-left"><p><code class="docutils literal notranslate"><span class="pre">sensorless_rate_ms</span></code></p></td>
+<td class="text-left"><p>Get Sensorless Estimates</p></td>
+</tr>
+<tr class="row-odd"><td class="text-left"><p>0x17</p></td>
+<td class="text-left"><p><code class="docutils literal notranslate"><span class="pre">bus_vi_rate_ms</span></code></p></td>
+<td class="text-left"><p>Get Bus Voltage Current</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="changed">
+<h3>Changed<a class="headerlink" href="#changed" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Improved can_generate_dbc.py file and resultant .dbc.  Now supports 8 ODrive axes (0..7) natively</p></li>
+<li><p>Add units and value tables to every signal in odrive-cansimple.dbc</p></li>
+<li><p>Autogenerate odrive-cansimple.dbc on compile</p></li>
+</ul>
+</section>
+</section>
+<section id="id2">
+<h2>[0.5.5] - 2022-08-11<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>CANSimple messages which previously required the rtr bit to be set will now also respond if DLC = 0</p></li>
+<li><p>Ensure endstops update before being checked for errors, to prevent <a class="reference external" href="https://github.com/odriverobotics/ODrive/issues/625">#625</a></p></li>
+<li><p>Reset trajectory_done_ during homing to ensure a new trajectory is actually computed <a class="reference external" href="https://github.com/odriverobotics/ODrive/issues/634">#634</a></p></li>
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">input_xxx</span></code> as a DC offset in tuning mode</p></li>
+<li><p>Sync <code class="docutils literal notranslate"><span class="pre">steps_</span></code> with input pos.</p></li>
+<li><p>Trigger reset of input_pos and pos_setpoint to estimate when changing control mode into position control</p></li>
+</ul>
+</section>
+<section id="id3">
+<h2>[0.5.4] - 2021-10-12<a class="headerlink" href="#id3" title="Link to this heading"></a></h2>
+<section id="id4">
+<h3>Fixed<a class="headerlink" href="#id4" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Some ASCII protocol commands (e.g. <code class="docutils literal notranslate"><span class="pre">w</span> <span class="pre">axis0.requested_state</span> <span class="pre">4</span></code>) resulted in <code class="docutils literal notranslate"><span class="pre">not</span> <span class="pre">implemented</span></code> due to an issue with the CI compiler. A workaround was made to fix this.</p></li>
+<li><p>Fixed bad response of some ASCII procotol commands (e.g. <code class="docutils literal notranslate"><span class="pre">r</span> <span class="pre">axis0.error</span></code> returned <code class="docutils literal notranslate"><span class="pre">0d</span></code> instead of <code class="docutils literal notranslate"><span class="pre">0</span></code>).</p></li>
+</ul>
+</section>
+<section id="id5">
+<h3>Added<a class="headerlink" href="#id5" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Added <code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.controller.config.vel_integrator_limit</span></code></p></li>
+<li><p>Allow setting controller gains on CAN Simple</p></li>
+</ul>
+</section>
+</section>
+<section id="id6">
+<h2>[0.5.3] - 2021-09-03<a class="headerlink" href="#id6" title="Link to this heading"></a></h2>
+<section id="id7">
+<h3>Fixed<a class="headerlink" href="#id7" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>ASCII protocol commands with multiline responses (<code class="docutils literal notranslate"><span class="pre">i</span></code>, <code class="docutils literal notranslate"><span class="pre">h</span></code>) now return the expected response (in v0.5.2 the response was corrupted)</p></li>
+<li><p>odrivetool no longer shows the message <code class="docutils literal notranslate"><span class="pre">&lt;Task</span> <span class="pre">pending</span> <span class="pre">coro=...</span> <span class="pre">running</span> <span class="pre">at</span> <span class="pre">...&gt;</span></code> when closing</p></li>
+<li><p>Homing used to erroneously complete with <code class="docutils literal notranslate"><span class="pre">is_homed</span> <span class="pre">==</span> <span class="pre">True</span></code> even if it failed for some reason</p></li>
+<li><p>When entering closed loop control in trapezoidal trajectory mode the axis no longer snaps to the 0 position</p></li>
+<li><p>Fix python DFU firmware version prerelease status resolution to use correct attribute</p></li>
+<li><p>Fixed firmware compiled-in version number</p></li>
+</ul>
+</section>
+<section id="id8">
+<h3>Added<a class="headerlink" href="#id8" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">brake_resistor_current</span></code> added to interface for reading the commanded brake resistor current</p></li>
+</ul>
+</section>
+<section id="id9">
+<h3>Changed<a class="headerlink" href="#id9" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Removed <code class="docutils literal notranslate"><span class="pre">odrivetool</span> <span class="pre">generate-code</span></code>. This feature was broken in 0.5.2. Use <a class="reference external" href="https://github.com/odriverobotics/ODrive/blob/master/tools/fibre-tools/interface_generator.py"><code class="docutils literal notranslate"><span class="pre">interface_generator.py</span></code></a> instead (see Tupfile.lua for examples).</p></li>
+<li><p>Firmware boots on devices with unset OTP.</p></li>
+<li><p>Changed CAN heartbeat message to include “trajectory done” flag</p></li>
+</ul>
+</section>
+</section>
+<section id="id10">
+<h2>[0.5.2] - 2021-05-21<a class="headerlink" href="#id10" title="Link to this heading"></a></h2>
+<section id="id11">
+<h3>Fixed<a class="headerlink" href="#id11" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>spinout error is no longer sticky and doesn’t trigger on static torque loads due to I^2*R electrical power</p></li>
+<li><p>Step and direction mode resets position when entering closed loop just like <code class="docutils literal notranslate"><span class="pre">input_pos</span></code> does</p></li>
+<li><p>CAN baud rate setting is now correctly handled</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">odrivetool</span> <span class="pre">dfu</span></code> works properly when an ODrive is flashed with the <code class="docutils literal notranslate"><span class="pre">dfu</span></code> switch set to “dfu”.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">odrivetool</span> <span class="pre">dfu</span></code> now erases the entire flash memory before flashing firmware. This ensures that old configuration parameters are erased.</p></li>
+<li><p>ASCII and the Native Protocol do not run at the same time on a UART interface. See <code class="docutils literal notranslate"><span class="pre">odrv0.config.uart0_protocol</span></code> and the <code class="docutils literal notranslate"><span class="pre">STREAM_PROTOCOL_TYPE</span></code> enums for details.</p></li>
+</ul>
+</section>
+<section id="id12">
+<h3>Added<a class="headerlink" href="#id12" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">sc</span></code> command to ascii protocol to run <code class="docutils literal notranslate"><span class="pre">odrv.clear_errors()</span></code></p></li>
+<li><p>Added phase balance check to motor calibration and MOTOR_ERROR_UNBALANCED_PHASES to error enums</p></li>
+<li><p>Added polarity and phase offset calibration for hall effect encoders</p></li>
+<li><p><a class="reference internal" href="#docs/mechanical-brakes.md"><span class="xref myst">Mechanical brake support</span></a></p></li>
+<li><p>Added periodic sending of encoder position on CAN</p></li>
+<li><p>Support for UART1 on GPIO3 and GPIO4. UART0 (on GPIO1/2) and UART1 can currently not be enabled at the same time.</p></li>
+<li><p>Thermistors now have a 2nd order lowpass filter applied to reduce noise</p></li>
+<li><p>2-norm current clamping is used for AC induction motors</p></li>
+<li><p>Added spinout detection to detect incorrect encoder offset and CONTROLLER_ERROR_SPINOUT_DETECTED to error enums.</p></li>
+<li><p>Added AARCH64 support to libfibre</p></li>
+<li><p>Tuning input mode added to provide sinusoidal position, velocity, or torque stimulus. See INPUT_MODE_TUNING and the controller class for details.</p></li>
+<li><p>Added torque mirroring to INPUT_MODE_MIRROR</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mechanical_power_bandwidth</span></code>, <code class="docutils literal notranslate"><span class="pre">electrical_power_bandwidth</span></code>, <code class="docutils literal notranslate"><span class="pre">spinout_electrical_power_threshold</span></code>, <code class="docutils literal notranslate"><span class="pre">spinout_mechanical_power_threshold</span></code> added to <code class="docutils literal notranslate"><span class="pre">controller.config</span></code> for spinout detection.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mechanical_power</span></code> and <code class="docutils literal notranslate"><span class="pre">electrical_power</span></code> added to <code class="docutils literal notranslate"><span class="pre">controller</span></code>.</p></li>
+<li><p>Added autogenerated enums header file <a class="reference download internal" download="" href="_downloads/e6a0fd181b662855247fa773acf66f5e/ODriveEnums.h"><span class="xref download myst">ODriveEnums.h</span></a> for Arduino use. Created Jinja template and edited Makefile to autogenerate it. Reflected change in Dockerfile and added note in developer-guide markdown file for updating ODriveEnums.h alongside enums.py.</p></li>
+<li><p>Added GetPosition member function in ODriveArduino class to complement existing GetVelocity, SetVelocity, and SetPosition functions.</p></li>
+</ul>
+</section>
+<section id="id13">
+<h3>Changed<a class="headerlink" href="#id13" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Step/dir performance improved! Dual axis step rates up to 250kHz have been tested</p></li>
+<li><p>Apply_config is called for encoders after a successful direction find</p></li>
+<li><p>Full calibration sequence now includes hall polarity calibration if a hall effect encoder is used</p></li>
+<li><p>Modified encoder offset calibration to work correctly when calib_scan_distance is not a multiple of 4pi</p></li>
+<li><p>Moved thermistors from being a top level object to belonging to Motor objects. Also changed errors: thermistor errors rolled into motor errors</p></li>
+<li><p>Use DMA for DRV8301 setup</p></li>
+<li><p>Make NVM configuration code more dynamic so that the layout doesn’t have to be known at compile time.</p></li>
+<li><p>GPIO initialization logic was changed. GPIOs now need to be explicitly set to the mode corresponding to the feature that they are used by. See <code class="docutils literal notranslate"><span class="pre">&lt;odrv&gt;.config.gpioX_mode</span></code>.</p></li>
+<li><p>Previously, if two components used the same interrupt pin (e.g. step input for axis0 and axis1) then the one that was configured later would override the other one. Now this is no longer the case (the old component remains the owner of the pin).</p></li>
+<li><p>New control loop architecture:</p>
+<ol class="arabic simple">
+<li><p>TIM8 update interrupt handler (CNT = 0) runs at a high priority and invokes the system level function <code class="docutils literal notranslate"><span class="pre">sample_cb()</span></code> to sample all timing critical inputs (currently only encoder state).</p></li>
+<li><p>TIM8 update interrupt handler (CNT = 0) raises an NVIC flag to kick off a lower priority interrupt.</p></li>
+<li><p>The control loop interrupt handler checks if all ADC measurements are ready and informs both motor objects about the current measurements.</p></li>
+<li><p>The control loop interrupt handler invokes the system level function <code class="docutils literal notranslate"><span class="pre">control_loop_cb()</span></code> which updates all components (encoders, estimators, torque controllers, etc). The data paths between the components are configured by the Axis threads based on the requested state. This replaces the previous architecture where the components were updated inside the Axis threads in <code class="docutils literal notranslate"><span class="pre">Axis::run_control_loop()</span></code>.</p></li>
+<li><p>Meanwhile the TIM1 and TIM8 updates for CNT = 3500 will have fired. The control loop interrupt handler thus reads the new ADC measurements and informs both motor objects that a DC calibration event has happened.</p></li>
+<li><p>Finally, the control loop interrupt invokes <code class="docutils literal notranslate"><span class="pre">pwm_update_cb</span></code> on both motors to make them update their PWM timing registers.</p></li>
+</ol>
+</li>
+<li><p>Components that need low level control over PWM timings are implemented by inheriting from the <code class="docutils literal notranslate"><span class="pre">PhaseControlLaw</span></code> interface. Three components currently inherit this interface: <code class="docutils literal notranslate"><span class="pre">FieldOrientedController</span></code>, <code class="docutils literal notranslate"><span class="pre">ResistanceMeasurementControlLaw</span></code> and <code class="docutils literal notranslate"><span class="pre">InductanceMeasurementControlLaw</span></code>.</p></li>
+<li><p>The FOC algorithm is now found in foc.cpp and and is presumably capable of running at a different frequency than the main control tasks (not relevant for ODrive v3).</p></li>
+<li><p>ACIM estimator was consolidated into a separate component <code class="docutils literal notranslate"><span class="pre">&lt;odrv&gt;.acim_estimator</span></code>.</p></li>
+<li><p>The Automatic Output Enable (AOE) flag of TIM1/TIM8 is used to achieve glitch-free motor arming.</p></li>
+<li><p>Sensorless mode was merged into closed loop control mode. Use <code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.enable_sensorless_mode</span></code> to disable the use of an encoder.</p></li>
+<li><p>More informative profiling instrumentation was added.</p></li>
+<li><p>A system-level error property was introduced.</p></li>
+<li><p>Added <code class="docutils literal notranslate"><span class="pre">torque_mirror_ratio</span></code> and use it to feed-forward <code class="docutils literal notranslate"><span class="pre">controller_.torque_output</span></code> in <code class="docutils literal notranslate"><span class="pre">INPUT_MODE_MIRROR</span></code></p></li>
+<li><p>Accumulate integer steps in step/dir to avoid float precision errors</p></li>
+<li><p>Circular setpoint mode must be enabled when the step/dir interface is used.</p></li>
+<li><p>Replaced inline enum in ODriveArduino class by including new autogenerated ODriveEnums.h header file.</p></li>
+<li><p>Changed the example ODriveArduinoTest.ino file to reflect the new GetPosition member function. Also removed the scope resolution operator to access the enums as it can now be accessed from the global namespace.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">save_configuration()</span></code> reboots the board.</p></li>
+</ul>
+</section>
+<section id="api-migration-notes">
+<h3>API Migration Notes<a class="headerlink" href="#api-migration-notes" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">axis.config.turns_per_step</span></code> changed to <code class="docutils literal notranslate"><span class="pre">axis.controller.config.steps_per_circular_range</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">odrive.axis.fet_thermistor</span></code>, <code class="docutils literal notranslate"><span class="pre">odrive.axis.motor_thermistor</span></code> moved to <code class="docutils literal notranslate"><span class="pre">odrive.axis.motor</span></code> object</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">enable_uart</span></code> and <code class="docutils literal notranslate"><span class="pre">uart_baudrate</span></code> were renamed to <code class="docutils literal notranslate"><span class="pre">enable_uart0</span></code> and <code class="docutils literal notranslate"><span class="pre">uart0_baudrate</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">enable_i2c_instead_of_can</span></code> was replaced by the separate settings <code class="docutils literal notranslate"><span class="pre">enable_i2c0</span></code> and <code class="docutils literal notranslate"><span class="pre">enable_can0</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.motor.gate_driver</span></code> was moved to <code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.gate_driver</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.min_endstop.pullup</span></code> and <code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.max_endstop.pullup</span></code> were removed. Use <code class="docutils literal notranslate"><span class="pre">&lt;odrv&gt;.config.gpioX_mode</span> <span class="pre">=</span> <span class="pre">GPIO_MODE_DIGITAL</span> <span class="pre">/</span> <span class="pre">GPIO_MODE_DIGITAL_PULL_UP</span> <span class="pre">/</span> <span class="pre">GPIO_MODE_DIGITAL_PULL_DOWN</span></code> instead.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.config.can_node_id</span></code> was moved to <code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.config.can.node_id</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.config.can_node_id_extended</span></code> was moved to <code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.config.can.is_extended</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.config.can_heartbeat_rate_ms</span></code> was moved to <code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.config.can.heartbeat_rate_ms</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;odrv&gt;.get_oscilloscope_val()</span></code> was moved to <code class="docutils literal notranslate"><span class="pre">&lt;odrv&gt;.oscilloscope.get_val()</span></code>.</p></li>
+<li><p>Several error flags from <code class="docutils literal notranslate"><span class="pre">&lt;odrv&gt;.&lt;axis&gt;.error</span></code> were removed. Some were moved to <code class="docutils literal notranslate"><span class="pre">&lt;odrv&gt;.error</span></code> and some are no longer relevant because implementation details changed.</p></li>
+<li><p>Several error flags from <code class="docutils literal notranslate"><span class="pre">&lt;odrv&gt;.&lt;axis&gt;.motor.error</span></code> were removed. Some were moved to <code class="docutils literal notranslate"><span class="pre">&lt;odrv&gt;.error</span></code> and some are no longer relevant because implementation details changed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.lockin_state</span></code> was removed as the lockin implementation was replaced by a more general open loop control block (currently not exposed on the API).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">AXIS_STATE_SENSORLESS_CONTROL</span></code> was removed. Use <code class="docutils literal notranslate"><span class="pre">AXIS_STATE_CLOSED_LOOP_CONTROL</span></code> instead with <code class="docutils literal notranslate"><span class="pre">&lt;odrv&gt;.enable_sensorless_mode</span> <span class="pre">=</span> <span class="pre">True</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.config.startup_sensorless_control</span></code> was removed. Use <code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.config.startup_closed_loop_control</span></code> instead with <code class="docutils literal notranslate"><span class="pre">&lt;odrv&gt;.enable_sensorless_mode</span> <span class="pre">=</span> <span class="pre">True</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.clear_errors()</span></code> was replaced by the system-wide function <code class="docutils literal notranslate"><span class="pre">&lt;odrv&gt;.clear_errors()</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.armed_state</span></code> was replaced by <code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.is_armed</span></code>.</p></li>
+<li><p>Several properties in <code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.motor.current_control</span></code> were changed to read-only.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.motor.current_control.Ibus</span></code> was moved to <code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.motor.I_bus</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.motor.current_control.max_allowed_current</span></code> was moved to <code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.motor.max_allowed_current</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.motor.current_control.overcurrent_trip_level</span></code> was removed.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.motor.current_control.acim_rotor_flux</span></code> was moved to <code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.acim_estimator.rotor_flux</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.motor.current_control.async_phase_vel</span></code> was moved to <code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.acim_estimator.stator_phase_vel</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.motor.current_control.async_phase_offset</span></code> was moved to <code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.acim_estimator.phase</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.motor.timing_log</span></code> was removed in favor of <code class="docutils literal notranslate"><span class="pre">&lt;odrv&gt;.task_times</span></code> and <code class="docutils literal notranslate"><span class="pre">&lt;odrv&gt;.&lt;axis&gt;.task_times</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.motor.config.direction</span></code> was moved to <code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.encoder.config.direction</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.motor.config.acim_slip_velocity</span></code> was moved to <code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.acim_estimator.config.slip_velocity</span></code>.</p></li>
+<li><p>Several properties were changed to readonly.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.encoder.config.offset</span></code> was renamed to ``<axis>.encoder.config.phase_offset`</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;axis&gt;.encoder.config.offset_float</span></code> was renamed to ``<axis>.encoder.config.phase_offset_float`</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;odrv&gt;.config.brake_resistance</span> <span class="pre">==</span> <span class="pre">0.0</span></code> is no longer a valid way to disable the brake resistor. Use <code class="docutils literal notranslate"><span class="pre">&lt;odrv&gt;.config.enable_brake_resistor</span></code> instead. A reboot is necessary for this to take effect.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&lt;odrv&gt;.can.set_baud_rate()</span></code> was removed. The baudrate is now automatically updated when writing to <code class="docutils literal notranslate"><span class="pre">&lt;odrv&gt;.can.config.baud_rate</span></code>.</p></li>
+</ul>
+</section>
+</section>
+<section id="id14">
+<h2>[0.5.1] - 2020-09-27<a class="headerlink" href="#id14" title="Link to this heading"></a></h2>
+<section id="id15">
+<h3>Added<a class="headerlink" href="#id15" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Added motor <code class="docutils literal notranslate"><span class="pre">torque_constant</span></code>: units of torque are now [Nm] instead of just motor current.</p></li>
+<li><p>Added <code class="docutils literal notranslate"><span class="pre">motor.config.torque_lim</span></code>: limit for motor torque in [Nm].</p></li>
+<li><p><a class="reference internal" href="#docs/thermistors.md"><span class="xref myst">Motor thermistors support</span></a></p></li>
+<li><p>Enable/disable of thermistor thermal limits according <code class="docutils literal notranslate"><span class="pre">setting</span> <span class="pre">axis.&lt;thermistor&gt;.enabled</span></code>.</p></li>
+<li><p>Introduced <code class="docutils literal notranslate"><span class="pre">odrive-interface.yaml</span></code> as a root source for the ODrive’s API. <code class="docutils literal notranslate"><span class="pre">odrivetool</span></code> connects much faster as a side effect.</p></li>
+<li><p>Added torque_constant and torque_lim to motor config</p></li>
+</ul>
+</section>
+<section id="id16">
+<h3>Changed<a class="headerlink" href="#id16" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">input_pos</span></code>, <code class="docutils literal notranslate"><span class="pre">input_vel</span></code>, <code class="docutils literal notranslate"><span class="pre">pos_estimate_linear</span></code>, <code class="docutils literal notranslate"><span class="pre">pos_estimate_circular</span></code>, are now in units of [turns] or [turns/s] instead of [counts] or [counts/s]</strong></p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">pos_gain</span></code>, <code class="docutils literal notranslate"><span class="pre">vel_gain</span></code>, <code class="docutils literal notranslate"><span class="pre">vel_integrator_gain</span></code>, are now in units of [(turns/s) / turns], [Nm/(turns/s)], [Nm/(turns/s * s)] instead of [(counts/s) / counts], [A/(counts/s)], [A/((counts/s) * s)].</strong> <code class="docutils literal notranslate"><span class="pre">pos_gain</span></code> is not affected. Old values of <code class="docutils literal notranslate"><span class="pre">vel_gain</span></code> and <code class="docutils literal notranslate"><span class="pre">vel_integrator_gain</span></code> should be multiplied by <code class="docutils literal notranslate"><span class="pre">torque_constant</span> <span class="pre">*</span> <span class="pre">encoder</span> <span class="pre">cpr</span></code> to convert from the old units to the new units. <code class="docutils literal notranslate"><span class="pre">torque_constant</span></code> is approximately equal to 8.27 / (motor KV).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">axis.motor.thermal_current_lim</span></code> has been removed. Instead a new property is available <code class="docutils literal notranslate"><span class="pre">axis.motor.effective_current_lim</span></code> which contains the effective current limit including any thermal limits.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">axis.motor.get_inverter_temp()</span></code>, <code class="docutils literal notranslate"><span class="pre">axis.motor.inverter_temp_limit_lower</span></code> and <code class="docutils literal notranslate"><span class="pre">axis.motor.inverter_temp_limit_upper</span></code> have been moved to seperate fet thermistor object under <code class="docutils literal notranslate"><span class="pre">axis.fet_thermistor</span></code>. <code class="docutils literal notranslate"><span class="pre">get_inverter_temp()</span></code> function has been renamed to <code class="docutils literal notranslate"><span class="pre">temp</span></code> and is now a read-only property.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">axis.config.counts_per_step</span></code> is now <code class="docutils literal notranslate"><span class="pre">axis.config.turns_per_step</span></code></p></li>
+<li><p>Outputs of <code class="docutils literal notranslate"><span class="pre">axis.sensorless_estimator</span></code> are now in turns/s instead of electrical rad/s</p></li>
+<li><p>Fixed bug of high current during lockin-ramp caused by <code class="docutils literal notranslate"><span class="pre">motor::update()</span></code> expecting a torque command instead of current</p></li>
+<li><p>Fixed bug where commanded velocity was extremely high just after sensorless ramp when using <code class="docutils literal notranslate"><span class="pre">input_mode</span></code> INPUT_MODE_VEL_RAMP caused by <code class="docutils literal notranslate"><span class="pre">vel_setpoint</span></code> and <code class="docutils literal notranslate"><span class="pre">axis.config.sensorless_ramp.vel</span></code> being in different units</p></li>
+</ul>
+</section>
+<section id="id17">
+<h3>Fixed<a class="headerlink" href="#id17" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Fixed bug of high current during lockin-ramp caused by <code class="docutils literal notranslate"><span class="pre">motor::update()</span></code> expecting a torque command instead of current</p></li>
+<li><p>Fixed bug where commanded velocity was extremely high just after sensorless ramp when using <code class="docutils literal notranslate"><span class="pre">input_mode</span></code> INPUT_MODE_VEL_RAMP caused by <code class="docutils literal notranslate"><span class="pre">vel_setpoint</span></code> and <code class="docutils literal notranslate"><span class="pre">axis.config.sensorless_ramp.vel</span></code> being in different units</p></li>
+</ul>
+</section>
+</section>
+<section id="id18">
+<h2>[0.5.0] - 2020-08-03<a class="headerlink" href="#id18" title="Link to this heading"></a></h2>
+<section id="id19">
+<h3>Added<a class="headerlink" href="#id19" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>AC Induction Motor support.</p>
+<ul>
+<li><p>Tracking of rotor flux through rotor time constant</p></li>
+<li><p>Automatic d axis current for Maximum Torque Per Amp (MTPA)</p></li>
+</ul>
+</li>
+<li><p>ASCII “w” commands now execute write hooks.</p></li>
+<li><p>Simplified control interface (“Input Filter” branch)</p>
+<ul>
+<li><p>New input variables: <code class="docutils literal notranslate"><span class="pre">input_pos</span></code>, <code class="docutils literal notranslate"><span class="pre">input_vel</span></code>, and <code class="docutils literal notranslate"><span class="pre">input_current</span></code></p></li>
+<li><p>New setting <code class="docutils literal notranslate"><span class="pre">input_mode</span></code> to switch between different input behaviours</p>
+<ul>
+<li><p>Passthrough</p></li>
+<li><p>Velocity Ramp</p></li>
+<li><p>2nd Order Position Filter</p></li>
+<li><p>Trapezoidal Trajectory Planner</p></li>
+</ul>
+</li>
+<li><p>Removed <code class="docutils literal notranslate"><span class="pre">set_xxx_setpoint()</span></code> functions and made <code class="docutils literal notranslate"><span class="pre">xxx_setpoint</span></code> variables read-only</p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#docs/encoders.md"><span class="xref myst">Preliminary support for Absolute Encoders</span></a></p></li>
+<li><p><a class="reference internal" href="#docs/endstops.md"><span class="xref myst">Preliminary support for endstops and homing</span></a></p></li>
+<li><p><a class="reference internal" href="#can-protocol.md"><span class="xref myst">CAN Communication with CANSimple stack</span></a></p></li>
+<li><p>Gain scheduling for anti-hunt when close to 0 position error</p></li>
+<li><p>Velocity Limiting in Current Control mode according to <code class="docutils literal notranslate"><span class="pre">vel_limit</span></code> and <code class="docutils literal notranslate"><span class="pre">vel_gain</span></code></p></li>
+<li><p>Regen current limiting according to <code class="docutils literal notranslate"><span class="pre">max_regen_current</span></code>, in Amps</p></li>
+<li><p>DC Bus hard current limiting according to <code class="docutils literal notranslate"><span class="pre">dc_max_negative_current</span></code> and <code class="docutils literal notranslate"><span class="pre">dc_max_positive_current</span></code></p></li>
+<li><p>Brake resistor logic now attempts to clamp voltage according to <code class="docutils literal notranslate"><span class="pre">odrv.config.dc_bus_overvoltage_ramp_start</span></code> and <code class="docutils literal notranslate"><span class="pre">odrv.config.dc_bus_overvoltage_ramp_end</span></code></p></li>
+<li><p>Unit Testing with Doctest has been started for select algorithms, see <a class="reference internal" href="#Firmware/Tests/test_runner.cpp"><span class="xref myst">Firmware/Tests/test_runner.cpp</span></a></p></li>
+<li><p>Added support for Flylint VSCode Extension for static code analysis</p></li>
+<li><p>Using an STM32F405 .svd file allows CortexDebug to view registers during debugging</p></li>
+<li><p>Added scripts for building via docker.</p></li>
+<li><p>Added ability to change uart baudrate via fibre</p></li>
+</ul>
+</section>
+<section id="id20">
+<h3>Changed<a class="headerlink" href="#id20" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Changed ratiometric <code class="docutils literal notranslate"><span class="pre">motor.config.current_lim_tolerance</span></code> to absolute <code class="docutils literal notranslate"><span class="pre">motor.config.current_lim_margin</span></code></p></li>
+<li><p>Moved <code class="docutils literal notranslate"><span class="pre">controller.vel_ramp_enable</span></code> to INPUT_MODE_VEL_RAMP.</p></li>
+<li><p>Anticogging map is temporarily forced to 0.1 deg precision, but saves with the config</p></li>
+<li><p>Some Encoder settings have been made read-only</p></li>
+<li><p>Cleaned up VSCode C/C++ Configuration settings on Windows with recursive includePath</p></li>
+<li><p>Now compiling with C++17</p></li>
+<li><p>Fixed a firmware hang that could occur from unlikely but possible user input</p></li>
+<li><p>Added JSON caching to Fibre. This drastically reduces the time odrivetool needs to connect to an ODrive (except for the first time or after firmware updates).</p></li>
+<li><p>Fix IPython <code class="docutils literal notranslate"><span class="pre">RuntimeWarning</span></code> that would occur every time <code class="docutils literal notranslate"><span class="pre">odrivetool</span></code> was started.</p></li>
+<li><p>Reboot on <code class="docutils literal notranslate"><span class="pre">erase_configuration()</span></code>. This avoids unexpected behavior of a subsequent <code class="docutils literal notranslate"><span class="pre">save_configuration()</span></code> call, since the configuration is only erased from NVM, not from RAM.</p></li>
+<li><p>Change <code class="docutils literal notranslate"><span class="pre">motor.get_inverter_temp()</span></code> to use a property which was already being sampled at <code class="docutils literal notranslate"><span class="pre">motor.inverter_temp</span></code></p></li>
+<li><p>Fixed a numerical issue in the trajectory planner that could cause sudden jumps of the position setpoint</p></li>
+</ul>
+</section>
+</section>
+<section id="id21">
+<h2>[0.4.12] - 2020-05-06<a class="headerlink" href="#id21" title="Link to this heading"></a></h2>
+<section id="id22">
+<h3>Fixed<a class="headerlink" href="#id22" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Fixed a numerical issue in the trajectory planner that could cause sudden jumps of the position setpoint</p></li>
+</ul>
+</section>
+</section>
+<section id="id23">
+<h2>[0.4.11] - 2019-07-25<a class="headerlink" href="#id23" title="Link to this heading"></a></h2>
+<section id="id24">
+<h3>Added<a class="headerlink" href="#id24" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Separate lockin configs for sensorless, index search, and general.</p></li>
+<li><p>Check current limit violation: added <code class="docutils literal notranslate"><span class="pre">ERROR_CURRENT_UNSTABLE</span></code>, <code class="docutils literal notranslate"><span class="pre">motor.config.current_lim_tolerance</span></code>.</p></li>
+</ul>
+</section>
+<section id="id25">
+<h3>Changed<a class="headerlink" href="#id25" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Ascii command for reboot changed from <code class="docutils literal notranslate"><span class="pre">sb</span></code> to <code class="docutils literal notranslate"><span class="pre">sr</span></code>.</p></li>
+</ul>
+</section>
+</section>
+<section id="id26">
+<h2>[0.4.10] - 2019-04-24<a class="headerlink" href="#id26" title="Link to this heading"></a></h2>
+<section id="id27">
+<h3>Fixed<a class="headerlink" href="#id27" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Index search would trigger in the wrong place.</p></li>
+</ul>
+</section>
+</section>
+<section id="id28">
+<h2>[0.4.9] - 2019-04-23<a class="headerlink" href="#id28" title="Link to this heading"></a></h2>
+<section id="id29">
+<h3>Added<a class="headerlink" href="#id29" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>A release target for ODrive v3.6</p></li>
+<li><p>Communication watchdog feature.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">encoder.set_linear_count(count)</span></code> function.</p></li>
+<li><p>Configurable encoder offset calibration distance and speed:<code class="docutils literal notranslate"><span class="pre">calib_scan_distance</span></code> and <code class="docutils literal notranslate"><span class="pre">calib_scan_omega</span></code></p></li>
+<li><p>Encoder offset calibration debug variable <code class="docutils literal notranslate"><span class="pre">calib_scan_response</span></code></p></li>
+<li><p>Lock-in drive feature</p></li>
+<li><p>Script to enable using a hall signal as index edge.</p></li>
+</ul>
+</section>
+<section id="id30">
+<h3>Changed<a class="headerlink" href="#id30" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Moved <code class="docutils literal notranslate"><span class="pre">traptraj.A_per_css</span></code> to <code class="docutils literal notranslate"><span class="pre">controller.inertia</span></code></p></li>
+<li><p>Refactored velocity ramp mode into the new general input filtering structure</p></li>
+<li><p>Encoder index search now based on the new lock-in drive feature</p></li>
+</ul>
+</section>
+<section id="id31">
+<h3>Fixed<a class="headerlink" href="#id31" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Encoder index interrupts now disabled when not searching</p></li>
+</ul>
+</section>
+</section>
+<section id="id32">
+<h2>[0.4.8] - 2019-02-25<a class="headerlink" href="#id32" title="Link to this heading"></a></h2>
+<section id="id33">
+<h3>Added<a class="headerlink" href="#id33" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">dump_errors()</span></code> utility function in odrivetool to dump, decode and optionally clear errors.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">f</span></code> command to ascii protocol to get encoder position and velocity feedback.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">q</span></code> command to ascii protocol. It is like the old <code class="docutils literal notranslate"><span class="pre">p</span></code> command, but velocity and current mean limits, not feed-forward.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ss</span></code>, <code class="docutils literal notranslate"><span class="pre">se</span></code>, <code class="docutils literal notranslate"><span class="pre">sr</span></code> commands to ascii protocol, for save config, erase config and reboot.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">move_incremental</span></code> function for relative trajectory moves.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">encoder.config.ignore_illegal_hall_state</span></code> option.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">encoder.config.enable_phase_interpolation</span></code> option. Setting to false may reduce jerky pulsations at low speed when using hall sensor feedback.</p></li>
+<li><p>Analog input. Used the same way as the PWM input mappings.</p></li>
+<li><p>Voltage limit soft clamping instead of ERROR_MODULATION_MAGNITUDE in gimbal motor closed loop.</p></li>
+<li><p>Thermal current limit with linear derating.</p></li>
+</ul>
+</section>
+<section id="id34">
+<h3>Changed<a class="headerlink" href="#id34" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Unified lockin drive modes. Current for index searching and encoder offset calibration now moved to axis.lockin.current.</p></li>
+</ul>
+</section>
+<section id="id35">
+<h3>Fixed<a class="headerlink" href="#id35" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Added required 1.5 cycle phase shift between ADC and PWM, lack thereof caused unstable current controller at high eRPM.</p></li>
+</ul>
+</section>
+</section>
+<section id="id36">
+<h2>[0.4.7] - 2018-11-28<a class="headerlink" href="#id36" title="Link to this heading"></a></h2>
+<section id="id37">
+<h3>Added<a class="headerlink" href="#id37" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Overspeed fault</p></li>
+<li><p>Current sense saturation fault.</p></li>
+<li><p>Suppress startup transients by sampling encoder estimate into position setpoint when entering closed loop control.</p></li>
+<li><p>Make step dir gpio pins configurable.</p></li>
+<li><p>Configuration variable <code class="docutils literal notranslate"><span class="pre">encoder.config.zero_count_on_find_idx</span></code>, true by default. Set to false to leave the initial encoder count to be where the axis was at boot.</p></li>
+<li><p>Circular position setpoint mode: position setpoints wrapped [0, cpr). Useful for infinite incremental position control.</p></li>
+<li><p>Velocity setpoint ramping. Use velocity control mode, and set <code class="docutils literal notranslate"><span class="pre">controller.vel_ramp_enable</span></code> to true. This will ramp <code class="docutils literal notranslate"><span class="pre">controller.vel_setpoint</span></code> towards <code class="docutils literal notranslate"><span class="pre">controller.vel_ramp_target</span></code> at a ramp rate of <code class="docutils literal notranslate"><span class="pre">controller.config.vel_ramp_rate</span></code>.</p></li>
+</ul>
+</section>
+<section id="id38">
+<h3>Changed<a class="headerlink" href="#id38" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Increased switching frequency from around 8kHz to 24kHz. Control loops still run at 8kHz.</p></li>
+<li><p>Renamed <code class="docutils literal notranslate"><span class="pre">axis.enable_step_dir</span></code> to <code class="docutils literal notranslate"><span class="pre">axis.step_dir_active</span></code></p></li>
+<li><p>New process for working with STM32CubeMX.</p></li>
+</ul>
+</section>
+<section id="id39">
+<h3>Fixed<a class="headerlink" href="#id39" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Would get ERROR_CONTROL_DEADLINE_MISSED along with every ERROR_PHASE_RESISTANCE_OUT_OF_RANGE.</p></li>
+<li><p>ODrive tool can now run interactive nested scripts with “%run -i script.py”</p></li>
+</ul>
+</section>
+</section>
+<section id="id40">
+<h2>[0.4.6] - 2018-10-07<a class="headerlink" href="#id40" title="Link to this heading"></a></h2>
+<section id="id41">
+<h3>Fixed<a class="headerlink" href="#id41" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Broken printing of floats on ascii protocol</p></li>
+</ul>
+</section>
+</section>
+<section id="id42">
+<h2>[0.4.5] - 2018-10-06<a class="headerlink" href="#id42" title="Link to this heading"></a></h2>
+<section id="id43">
+<h3>Added<a class="headerlink" href="#id43" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Trapezoidal Trajectory Planner</strong></p></li>
+<li><p>Hook to execute protocol property written callback</p></li>
+<li><p>-Wdouble-promotion warning to compilation</p></li>
+</ul>
+</section>
+<section id="id44">
+<h3>Changed<a class="headerlink" href="#id44" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Make python tools compatible with python 2.7 (so it can be used with ROS)</p>
+<ul>
+<li><p>Threading API constructor can’t take the daemon parameter, so all thread creation had to be expanded out.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">TimeoutError</span></code> isn’t defined, but it makes for more readable code, so I defined it as an OSError subclass.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ModuleNotFoundError</span></code> is replaced by the older ImportError.</p></li>
+<li><p>Print function imported from future</p></li>
+</ul>
+</li>
+<li><p>Using new hooks to calculate:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">motor.config.current_control_bandwidth</span></code></p>
+<ul>
+<li><p>This deprecates <code class="docutils literal notranslate"><span class="pre">motor.set_current_control_bandwidth()</span></code></p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">encoder.config.bandwidth</span></code></p></li>
+</ul>
+</li>
+<li><p>Default value for <code class="docutils literal notranslate"><span class="pre">motor.resistance_calib_max_voltage</span></code> changed to 2.0</p></li>
+</ul>
+</section>
+<section id="id45">
+<h3>Fixed<a class="headerlink" href="#id45" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>An issue where the axis state machine would jump in and out of idle when there is an error</p></li>
+<li><p>There is a <a class="reference external" href="https://github.com/ARM-software/CMSIS_5/issues/267">bug</a> in the arm fast math library, which gives spikes in the output of arm_cos_f32 for input values close to -pi/2. We fixed the bug locally, and hence are using “our_arm_cos_f32”.</p></li>
+</ul>
+</section>
+</section>
+<section id="id46">
+<h2>[0.4.4] - 2018-09-18<a class="headerlink" href="#id46" title="Link to this heading"></a></h2>
+<section id="id47">
+<h3>Fixed<a class="headerlink" href="#id47" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Serious reliability issue with USB communication where packets on Native and the CDC interface would collide with each other.</p></li>
+</ul>
+</section>
+</section>
+<section id="id48">
+<h2>[0.4.3] - 2018-08-30<a class="headerlink" href="#id48" title="Link to this heading"></a></h2>
+<section id="id49">
+<h3>Added<a class="headerlink" href="#id49" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">min_endstop</span></code> and <code class="docutils literal notranslate"><span class="pre">max_endstop</span></code> objects can be configured on GPIO</p></li>
+<li><p>Axes can be homed if <code class="docutils literal notranslate"><span class="pre">min_endstop</span></code> is enabled</p></li>
+<li><p>Encoder position count “homed” to zero when index is found.</p></li>
+</ul>
+</section>
+<section id="id50">
+<h3>Changed<a class="headerlink" href="#id50" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>We now enforce encoder offset calibration must happen after index is found (if using index)</p></li>
+<li><p>Renaming of the velocity estimate <code class="docutils literal notranslate"><span class="pre">pll_vel</span></code> -&gt; <code class="docutils literal notranslate"><span class="pre">vel_estimate</span></code>.</p></li>
+<li><p>Hardcoded maximum inductance now 2500 uH.</p></li>
+</ul>
+</section>
+<section id="id51">
+<h3>Fixed<a class="headerlink" href="#id51" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Incorrect shifting of offset during index callback</p></li>
+<li><p>Once you got an axis error <code class="docutils literal notranslate"><span class="pre">ERROR_INVALID_STATE</span></code> you could never clear it</p></li>
+<li><p>Char to int conversion to read motornum on arduino example</p></li>
+<li><p>GPIO above #5 would not be used correctly in some cases</p></li>
+</ul>
+</section>
+</section>
+<section id="id52">
+<h2>[0.4.2] - 2018-08-04<a class="headerlink" href="#id52" title="Link to this heading"></a></h2>
+<section id="id53">
+<h3>Added<a class="headerlink" href="#id53" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Hall sensor feedback</p></li>
+<li><p>Configurable RC PWM input</p></li>
+<li><p>Ability to read axis FET temperature</p></li>
+<li><p>Config settings for:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">motor.config.requested_current_range</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">motor.config.current_control_bandwidth</span></code> and <code class="docutils literal notranslate"><span class="pre">motor.set_current_control_bandwidth</span></code>. Latter required to invoke gain recalculation.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">encoder.config.bandwidth</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sensorless_estimator.config.pm_flux_linkage</span></code></p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="id54">
+<h2>[0.4.1] - 2018-07-01<a class="headerlink" href="#id54" title="Link to this heading"></a></h2>
+<section id="id55">
+<h3>Fixed<a class="headerlink" href="#id55" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Encoder errors would show up as Axis error <code class="docutils literal notranslate"><span class="pre">ERROR_MOTOR_FAILED</span></code> instead of <code class="docutils literal notranslate"><span class="pre">ERROR_ENCODER_FAILED</span></code>.</p></li>
+<li><p>Various pip install dependencies</p></li>
+<li><p>Ability for python tools threads to quit properly</p></li>
+<li><p>dfuse error prints now python3 compatible</p></li>
+</ul>
+</section>
+</section>
+<section id="id56">
+<h2>[0.4.0] - 2018-06-10<a class="headerlink" href="#id56" title="Link to this heading"></a></h2>
+<section id="id57">
+<h3>Added<a class="headerlink" href="#id57" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Encoder can now go forever in velocity/torque mode due to using circular encoder space.</p></li>
+<li><p>Protocol supports function return values</p></li>
+<li><p>bake Git-derived firmware version into firmware binary. The firmware version is exposed through the <code class="docutils literal notranslate"><span class="pre">fw_version_[...]</span></code> properties.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">write_otp</span></code> command to burn the board version onto the ODrive’s one-time programmable memory. If you have an ODrive v3.4 or older, you should run this once for a better firmware update user experience in the future. Run the command without any options for more details. Once set, the board version is exposed through the <code class="docutils literal notranslate"><span class="pre">hw_version_[...]</span></code> properties.</p></li>
+<li><p>infrastructure to publish the python tools to PyPi. See <code class="docutils literal notranslate"><span class="pre">tools/setup.py</span></code> for details.</p></li>
+<li><p>Automated test script <code class="docutils literal notranslate"><span class="pre">run_tests.py</span></code></p></li>
+<li><p>System stats (e.g. stack usage) are exposed under <code class="docutils literal notranslate"><span class="pre">&lt;odrv&gt;.system_stats</span></code></p></li>
+</ul>
+</section>
+<section id="id58">
+<h3>Changed<a class="headerlink" href="#id58" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>DFU script updates</p>
+<ul>
+<li><p>Verify the flash after writing</p></li>
+<li><p>Automatically download firmware from GitHub releases if no file is provided</p></li>
+<li><p>Retain configuration during firmware updates</p></li>
+</ul>
+</li>
+<li><p>Refactor python tools</p>
+<ul>
+<li><p>The scripts <code class="docutils literal notranslate"><span class="pre">explore_odrive.py</span></code>, <code class="docutils literal notranslate"><span class="pre">liveplotter.py</span></code>, <code class="docutils literal notranslate"><span class="pre">drv_status.py</span></code> and <code class="docutils literal notranslate"><span class="pre">rate_test.py</span></code> have been merged into one single <code class="docutils literal notranslate"><span class="pre">odrivetool</span></code> script. Running this script without any arguments provides the shell that <code class="docutils literal notranslate"><span class="pre">explore_odrive.py</span></code> used to provide.</p></li>
+<li><p>The command line options of <code class="docutils literal notranslate"><span class="pre">odrivetool</span></code> have changed compared to the original <code class="docutils literal notranslate"><span class="pre">explore_odrive.py</span></code>. See <code class="docutils literal notranslate"><span class="pre">odrivetool</span> <span class="pre">--help</span></code> for more details.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">odrivetool</span></code> (previously <code class="docutils literal notranslate"><span class="pre">explore_odrive.py</span></code>) now supports controlling multiple ODrives concurrently (<code class="docutils literal notranslate"><span class="pre">odrv0</span></code>, <code class="docutils literal notranslate"><span class="pre">odrv1</span></code>, …)</p></li>
+<li><p>No need to restart the <code class="docutils literal notranslate"><span class="pre">odrivetool</span></code> shell when devices get disconnected and reconnected</p></li>
+<li><p>ODrive accesses from within python tools are now thread-safe. That means you can read from the same remote property from multiple threads concurrently.</p></li>
+<li><p>The liveplotter (<code class="docutils literal notranslate"><span class="pre">odrivetool</span> <span class="pre">liveplotter</span></code>, formerly <code class="docutils literal notranslate"><span class="pre">liveplotter.py</span></code>) does no longer steal focus and closes as expected</p></li>
+<li><p>Add commands <code class="docutils literal notranslate"><span class="pre">odrivetool</span> <span class="pre">backup-config</span></code> and <code class="docutils literal notranslate"><span class="pre">odrivetool</span> <span class="pre">restore-config</span></code></p></li>
+<li><p>(experimental: start liveplotter from <code class="docutils literal notranslate"><span class="pre">odrivetool</span></code> shell by typing <code class="docutils literal notranslate"><span class="pre">start_liveplotter(lambda:</span> <span class="pre">odrv0.motor0.encoder.encoder_state)</span></code>)</p></li>
+</ul>
+</li>
+<li><p>Set thread priority of USB pump thread above protocol thread</p></li>
+<li><p>GPIO3 not sensitive to edges by default</p></li>
+<li><p>The device now appears as a composite device on USB. One subdevice is still a CDC device (virtual COM port), the other subdevice is a vendor specific class. This should resolve several issues that were caused by conflicting kernel drivers or OS services.</p></li>
+<li><p>Add WinUSB descriptors. This will tell Windows &gt;= 8 to automatically load winusb.sys for the ODrive (only for the vendor specific subdevice). This makes it possible to use the ODrive from userspace via WinUSB with zero configuration. The Python tool currently still uses libusb so Zadig is still required.</p></li>
+<li><p>Add a configuration to enable the ASCII protocol on USB at runtime. This will only enable the ASCII protocol on the USB CDC subdevice, not the vendor specific subdevice so the python tools will still be able to talk to the ODrive.</p></li>
+</ul>
+</section>
+<section id="id59">
+<h3>Fixed<a class="headerlink" href="#id59" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Enums now transported with correct underlying type on native protocol</p></li>
+<li><p>USB issue where the device would stop responding when the host script would quit abruptly or reset the device during operation</p></li>
+</ul>
+</section>
+</section>
+<section id="id60">
+<h2>[0.3.6] - 2018-03-26<a class="headerlink" href="#id60" title="Link to this heading"></a></h2>
+<section id="id61">
+<h3>Added<a class="headerlink" href="#id61" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Storing of configuration parameters to Non Volatile Memory</strong></p></li>
+<li><p><strong>USB Bootloader</strong></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">make</span> <span class="pre">erase_config</span></code> to erase the configuration with an STLink (the configuration can also be erased from within explore_odrive.py, using <code class="docutils literal notranslate"><span class="pre">odrv0.erase_configuration()</span></code>)</p></li>
+<li><p>Travis-CI builds firmware for all board versions and deploys the binaries when a tag is pushed to master</p></li>
+<li><p>General purpose ADC API. See function get_adc_voltage() in low_level.cpp for more detais.</p></li>
+</ul>
+</section>
+<section id="id62">
+<h3>Changed<a class="headerlink" href="#id62" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Most of the code from <code class="docutils literal notranslate"><span class="pre">lowlevel.c</span></code> moved to <code class="docutils literal notranslate"><span class="pre">axis.cpp</span></code>, <code class="docutils literal notranslate"><span class="pre">encoder.cpp</span></code>, <code class="docutils literal notranslate"><span class="pre">controller.cpp</span></code>, <code class="docutils literal notranslate"><span class="pre">sensorless_estimator.cpp</span></code>, <code class="docutils literal notranslate"><span class="pre">motor.cpp</span></code> and the corresponding header files</p></li>
+<li><p>Refactoring of the developer-facing communication protocol interface. See e.g. <code class="docutils literal notranslate"><span class="pre">axis.hpp</span></code> or <code class="docutils literal notranslate"><span class="pre">controller.hpp</span></code> for examples on how to add your own fields and functions</p></li>
+<li><p>Change of the user-facing field paths. E.g. <code class="docutils literal notranslate"><span class="pre">my_odrive.motor0.pos_setpoint</span></code> is now at <code class="docutils literal notranslate"><span class="pre">my_odrive.axis0.controller.pos_setpoint</span></code>. Names are mostly unchanged.</p></li>
+<li><p>Rewrite of the top-level per-axis state-machine</p></li>
+<li><p>The build is now configured using the <code class="docutils literal notranslate"><span class="pre">tup.config</span></code> file instead of editing source files. Make sure you set your board version correctly. See <a class="reference internal" href="#README.md#configuring-the-build"><span class="xref myst">here</span></a> for details.</p></li>
+<li><p>The toplevel directory for tup is now <code class="docutils literal notranslate"><span class="pre">Firmware</span></code>. If you used tup before, go to <code class="docutils literal notranslate"><span class="pre">Firmware</span></code> and run <code class="docutils literal notranslate"><span class="pre">rm</span> <span class="pre">-rd</span> <span class="pre">../.tup;</span> <span class="pre">rm</span> <span class="pre">-rd</span> <span class="pre">build/*;</span> <span class="pre">make</span></code>.</p></li>
+<li><p>Update CubeMX generated STM platform code to version 1.19.0</p></li>
+<li><p>Remove <code class="docutils literal notranslate"><span class="pre">UUID_0</span></code>, <code class="docutils literal notranslate"><span class="pre">UUID_1</span></code> and <code class="docutils literal notranslate"><span class="pre">UUID_2</span></code> from USB protocol. Use <code class="docutils literal notranslate"><span class="pre">serial_number</span></code> instead.</p></li>
+<li><p>Freertos memory pool (task stacks, etc) now uses Core Coupled Memory.</p></li>
+</ul>
+</section>
+<section id="id63">
+<h3>Fixed<a class="headerlink" href="#id63" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>malloc now fails if we run out of memory (before it would always succeed even if we are out of ram…)</p></li>
+</ul>
+</section>
+</section>
+<section id="id64">
+<h2>[0.3.5] - 2018-03-04<a class="headerlink" href="#id64" title="Link to this heading"></a></h2>
+<section id="id65">
+<h3>Added<a class="headerlink" href="#id65" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Reporting error if your encoder CPR is incorrect</p></li>
+<li><p>Ability to start anticogging calibration over USB protocol</p></li>
+<li><p>Reporting of DRV status/control registers and fault codes</p></li>
+<li><p>DRV status read script</p></li>
+<li><p>Microsecond delay function</p></li>
+<li><p>Travis-CI</p></li>
+<li><p>Firmware update over USB</p></li>
+</ul>
+</section>
+<section id="id66">
+<h3>Changed<a class="headerlink" href="#id66" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Build system is now tup instead of make. Please check the <a class="reference internal" href="#README.md#installing-prerequisites"><span class="xref myst">Readme</span></a> for installation instructions.</p></li>
+</ul>
+</section>
+</section>
+<section id="id67">
+<h2>[0.3.4] - 2018-02-13<a class="headerlink" href="#id67" title="Link to this heading"></a></h2>
+<section id="id68">
+<h3>Fixed<a class="headerlink" href="#id68" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Broken way to check for python 2. Python 2 not supported yet.</p></li>
+</ul>
+</section>
+</section>
+<section id="id69">
+<h2>[0.3.3] - 2018-02-12<a class="headerlink" href="#id69" title="Link to this heading"></a></h2>
+<section id="id70">
+<h3>Added<a class="headerlink" href="#id70" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Liveplotter script</p></li>
+<li><p>Automatic recovery of USB halt/stall condition</p></li>
+</ul>
+</section>
+<section id="id71">
+<h3>Changed<a class="headerlink" href="#id71" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Modified python code to be Python 2 compatible</p></li>
+</ul>
+</section>
+<section id="id72">
+<h3>Fixed<a class="headerlink" href="#id72" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>USB CSC (USB serial) now reports a sensible baud rate</p></li>
+</ul>
+</section>
+</section>
+<section id="id73">
+<h2>[0.3.2] - 2018-02-02<a class="headerlink" href="#id73" title="Link to this heading"></a></h2>
+<section id="id74">
+<h3>Added<a class="headerlink" href="#id74" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Gimbal motor mode</p></li>
+<li><p>Encoder index pulse support</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">resistance_calib_max_voltage</span></code> parameter</p></li>
+</ul>
+</section>
+</section>
+<section id="id75">
+<h2>[0.3.1] - 2018-01-18<a class="headerlink" href="#id75" title="Link to this heading"></a></h2>
+<section id="id76">
+<h3>Added<a class="headerlink" href="#id76" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>UUID Endpoint</p></li>
+<li><p>Reporting of correct ODrive version on USB descriptor</p></li>
+<li><p>Getting started instructions for VSCode</p></li>
+</ul>
+</section>
+<section id="id77">
+<h3>Changed<a class="headerlink" href="#id77" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>USB Product ID to 0x0D32, as it is the only Pid we were allocated on <a class="reference external" href="http://pid.codes/1209/0D32/">pid.codes</a></p></li>
+<li><p>Recommended method to debug firmware from VSCode now uses Cortex-Debug extension instead of native-debug.</p></li>
+<li><p>Refactor IDE instructions into separate files</p></li>
+</ul>
+</section>
+<section id="id78">
+<h3>Fixed<a class="headerlink" href="#id78" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Bug where the remote function calls from Python to the ODrive were not working properly.</p></li>
+</ul>
+</section>
+</section>
+<section id="id79">
+<h2>[0.3] - 2017-12-18<a class="headerlink" href="#id79" title="Link to this heading"></a></h2>
+<section id="id80">
+<h3>Added<a class="headerlink" href="#id80" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>New binary communication protocol</strong></p>
+<ul>
+<li><p>This is a much richer and more efficient binary protocol than the old human-readable protocol.</p></li>
+<li><p>The old protocol is still available (but will be depricated eventually). You must manually chose to fall back on this protocol if you wish to still use it.</p></li>
+</ul>
+</li>
+<li><p>Support for C++</p></li>
+<li><p>Demo scripts for getting started with commanding ODrive from python</p></li>
+<li><p>Protection from user setting current_lim higher than is measurable</p></li>
+<li><p>Current sense shunt values for HW v3.4</p></li>
+<li><p>Check DRV chip fault line</p></li>
+</ul>
+</section>
+<section id="id81">
+<h3>Changed<a class="headerlink" href="#id81" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Shunt resistance values for v3.3 and earlier to include extra resistance of PCB</p></li>
+<li><p>Default HW revision to v3.4</p></li>
+<li><p>Refactoring of control code:</p>
+<ul>
+<li><p>Lifted top layer of low_level.c into Axis.cpp</p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="id82">
+<h2>[0.2.2] - 2017-11-17<a class="headerlink" href="#id82" title="Link to this heading"></a></h2>
+<section id="id83">
+<h3>Fixed<a class="headerlink" href="#id83" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Incorrect TIM14 interrupt mapping on board v3.2 caused hard-fault</p></li>
+</ul>
+</section>
+<section id="id84">
+<h3>Changed<a class="headerlink" href="#id84" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>GPIO communication mode now defaults to NONE</p></li>
+</ul>
+</section>
+</section>
+<section id="id85">
+<h2>[0.2.1] - 2017-11-14<a class="headerlink" href="#id85" title="Link to this heading"></a></h2>
+<section id="id86">
+<h3>Fixed<a class="headerlink" href="#id86" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>USB communication deadlock</p></li>
+<li><p>EXTI handler redefiniton in V3.2</p></li>
+</ul>
+</section>
+<section id="id87">
+<h3>Changed<a class="headerlink" href="#id87" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Resistance/inductance measurement now saved dispite errors, to allow debugging</p></li>
+</ul>
+</section>
+</section>
+<section id="id88">
+<h2>[0.2.0] - 2017-11-12<a class="headerlink" href="#id88" title="Link to this heading"></a></h2>
+<section id="id89">
+<h3>Added<a class="headerlink" href="#id89" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>UART communication</p></li>
+<li><p>Setting to select UART or Step/dir on GIPIO 1,2</p></li>
+<li><p>Basic Anti-cogging</p></li>
+</ul>
+</section>
+</section>
+<section id="id90">
+<h2>[0.1.0] - 2017-08-26<a class="headerlink" href="#id90" title="Link to this heading"></a></h2>
+<section id="id91">
+<h3>Added<a class="headerlink" href="#id91" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Step/Dir interface</p></li>
+<li><p>this Changelog</p></li>
+<li><p>motor control interrupt timing diagram</p></li>
+<li><p>uint16 exposed variable type</p></li>
+<li><p>null termination to USB string parsing</p></li>
+</ul>
+</section>
+<section id="id92">
+<h3>Changed<a class="headerlink" href="#id92" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Fixed Resistance measurement bug</p></li>
+<li><p>Simplified motor control adc triggers</p></li>
+<li><p>Increased AUX bridge deadtime</p></li>
+</ul>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="configuring-eclipse.html" class="btn btn-neutral float-left" title="Setting up Eclipse development environment" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, ODrive Robotics.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org/">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+    <!-- Theme Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-93396600-3"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'UA-93396600-3', {
+          'anonymize_ip': false,
+      });
+    </script> 
+
+</body>
+
+<!-- Mirrored from docs.odriverobotics.com/v/0.5.6/changelog.html by HTTrack Website Copier/3.x [XR&CO'2014], Fri, 30 May 2025 19:31:31 GMT -->
+</html>

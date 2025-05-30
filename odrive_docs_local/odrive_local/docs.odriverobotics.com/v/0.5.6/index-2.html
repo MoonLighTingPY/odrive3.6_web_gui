@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+
+<!-- Mirrored from docs.odriverobotics.com/v/0.5.6/index.html by HTTrack Website Copier/3.x [XR&CO'2014], Fri, 30 May 2025 19:31:19 GMT -->
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ODrive Documentation &mdash; ODrive Documentation 0.5.6 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments0de2.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/themeadc2.css?v=19f00094" />
+      <link rel="stylesheet" type="text/css" href="_static/copybutton3129.css?v=76b2166b" />
+      <link rel="stylesheet" type="text/css" href="_static/tabs4c26.css?v=a5c4661c" />
+      <link rel="stylesheet" type="text/css" href="_static/sphinx-dropdownd0cc.css?v=995e94df" />
+      <link rel="stylesheet" type="text/css" href="_static/panels-bootstrap.mine1eb.css?v=21c0b90a" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="_static/jquery3b25.js?v=5d32c60e"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compatfa9a.js?v=2cd50e6c"></script>
+        <script src="_static/documentation_optionse544.js?v=722679d6"></script>
+        <script src="_static/doctools56c1.js?v=888ff710"></script>
+        <script src="_static/sphinx_highlight7f57.js?v=dc90522c"></script>
+        <script src="_static/clipboard.min4664.js?v=a7894cd8"></script>
+        <script src="_static/copybutton7689.js?v=f281be69"></script>
+        <script src="../../docsInject.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Getting Started" href="getting-started.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            ODrive Documentation
+          </a>
+              <div class="version">
+                0.5.6
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="https://docs.odriverobotics.com/v/0.5.6/search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">General</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="odrivetool.html"><code class="code docutils literal notranslate"><span class="pre">odrivetool</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="control-modes.html">Control Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Parameters &amp; Commands</a></li>
+<li class="toctree-l1"><a class="reference internal" href="encoders.html">Encoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="control.html">Control Structure and Tuning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="specifications.html">Specifications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ground-loops.html">Ground Loops</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="hoverboard.html">Hoverboard Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migration.html">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="can-guide.html">CAN Guide</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y/edit#gid=0">Motor Guide</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.google.com/spreadsheets/d/1OBDwYrBb5zUPZLrhL98ezZbg94tUsZcdTuwiVNgVqpU/edit#gid=0">Encoder Guide</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Interfaces and Protocols</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="protocol.html">ODrive Communication Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pinout.html">Pinout</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usb.html">USB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="uart.html">UART Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="native-protocol.html">Native Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ascii-protocol.html">ASCII Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="can-protocol.html">CAN Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="step-direction.html">Step &amp; Direction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rc-pwm.html">RC PWM input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analog-input.html">Analog Input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="endstops.html">Endstops and Homing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="thermistors.html">Thermistors</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">ODrive Device API</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="fibre_types/com_odriverobotics_ODrive.html">ODrive Reference</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">For ODrive Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="developer-guide.html">ODrive Firmware Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuring-vscode.html">Configuring Visual Studio Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuring-eclipse.html">Setting up Eclipse development environment</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">CHANGELOG</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">CHANGELOG</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">ODrive Documentation</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content style-external-links">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">ODrive Documentation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="odrive-documentation">
+<h1>ODrive Documentation<a class="headerlink" href="#odrive-documentation" title="Link to this heading"></a></h1>
+<p>Welcome to the ODrive V3.6 documentation homepage!</p>
+<p>This project strives to bring high performance motor control to makers, all of the source code is
+open source and available on github <a class="reference external" href="https://github.com/odriverobotics/ODrive">here.</a></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This documentation is specifically for V3.6, for ODrive Pro Beta click <a class="reference external" href="https://betadocs.odriverobotics.com/">here.</a></p>
+</div>
+<p><a class="reference external" href="https://odriverobotics.com/">ODrive Robotics homepage.</a></p>
+<section id="table-of-contents">
+<h2>Table of Contents<a class="headerlink" href="#table-of-contents" title="Link to this heading"></a></h2>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">General</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="getting-started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="odrivetool.html"><code class="code docutils literal notranslate"><span class="pre">odrivetool</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="control-modes.html">Control Modes</a></li>
+<li class="toctree-l1"><a class="reference internal" href="commands.html">Parameters &amp; Commands</a></li>
+<li class="toctree-l1"><a class="reference internal" href="encoders.html">Encoders</a></li>
+<li class="toctree-l1"><a class="reference internal" href="control.html">Control Structure and Tuning</a></li>
+<li class="toctree-l1"><a class="reference internal" href="troubleshooting.html">Troubleshooting</a></li>
+<li class="toctree-l1"><a class="reference internal" href="specifications.html">Specifications</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ground-loops.html">Ground Loops</a></li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Tutorials</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="hoverboard.html">Hoverboard Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="migration.html">Migration Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="can-guide.html">CAN Guide</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.google.com/spreadsheets/d/12vzz7XVEK6YNIOqH0jAz51F5VUpc-lJEs3mmkWP1H4Y/edit#gid=0">Motor Guide</a></li>
+<li class="toctree-l1"><a class="reference external" href="https://docs.google.com/spreadsheets/d/1OBDwYrBb5zUPZLrhL98ezZbg94tUsZcdTuwiVNgVqpU/edit#gid=0">Encoder Guide</a></li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Interfaces and Protocols</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="protocol.html">ODrive Communication Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pinout.html">Pinout</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usb.html">USB</a></li>
+<li class="toctree-l1"><a class="reference internal" href="uart.html">UART Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="native-protocol.html">Native Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ascii-protocol.html">ASCII Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="can-protocol.html">CAN Protocol</a></li>
+<li class="toctree-l1"><a class="reference internal" href="step-direction.html">Step &amp; Direction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rc-pwm.html">RC PWM input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="analog-input.html">Analog Input</a></li>
+<li class="toctree-l1"><a class="reference internal" href="endstops.html">Endstops and Homing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="thermistors.html">Thermistors</a></li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">For ODrive Developers</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="developer-guide.html">ODrive Firmware Developer Guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuring-vscode.html">Configuring Visual Studio Code</a></li>
+<li class="toctree-l1"><a class="reference internal" href="configuring-eclipse.html">Setting up Eclipse development environment</a></li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">CHANGELOG</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="changelog.html">CHANGELOG</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id1">[0.5.6] - 2023-05-01</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#fixed">Fixed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#added">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#changed">Changed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id2">[0.5.5] - 2022-08-11</a></li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id3">[0.5.4] - 2021-10-12</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id4">Fixed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id5">Added</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id6">[0.5.3] - 2021-09-03</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id7">Fixed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id8">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id9">Changed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id10">[0.5.2] - 2021-05-21</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id11">Fixed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id12">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id13">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#api-migration-notes">API Migration Notes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id14">[0.5.1] - 2020-09-27</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id15">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id16">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id17">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id18">[0.5.0] - 2020-08-03</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id19">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id20">Changed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id21">[0.4.12] - 2020-05-06</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id22">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id23">[0.4.11] - 2019-07-25</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id24">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id25">Changed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id26">[0.4.10] - 2019-04-24</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id27">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id28">[0.4.9] - 2019-04-23</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id29">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id30">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id31">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id32">[0.4.8] - 2019-02-25</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id33">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id34">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id35">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id36">[0.4.7] - 2018-11-28</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id37">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id38">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id39">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id40">[0.4.6] - 2018-10-07</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id41">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id42">[0.4.5] - 2018-10-06</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id43">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id44">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id45">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id46">[0.4.4] - 2018-09-18</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id47">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id48">[0.4.3] - 2018-08-30</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id49">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id50">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id51">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id52">[0.4.2] - 2018-08-04</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id53">Added</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id54">[0.4.1] - 2018-07-01</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id55">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id56">[0.4.0] - 2018-06-10</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id57">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id58">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id59">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id60">[0.3.6] - 2018-03-26</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id61">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id62">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id63">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id64">[0.3.5] - 2018-03-04</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id65">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id66">Changed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id67">[0.3.4] - 2018-02-13</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id68">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id69">[0.3.3] - 2018-02-12</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id70">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id71">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id72">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id73">[0.3.2] - 2018-02-02</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id74">Added</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id75">[0.3.1] - 2018-01-18</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id76">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id77">Changed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id78">Fixed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id79">[0.3] - 2017-12-18</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id80">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id81">Changed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id82">[0.2.2] - 2017-11-17</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id83">Fixed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id84">Changed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id85">[0.2.1] - 2017-11-14</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id86">Fixed</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id87">Changed</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id88">[0.2.0] - 2017-11-12</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id89">Added</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="changelog.html#id90">[0.1.0] - 2017-08-26</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id91">Added</a></li>
+<li class="toctree-l3"><a class="reference internal" href="changelog.html#id92">Changed</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="getting-started.html" class="btn btn-neutral float-right" title="Getting Started" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2021, ODrive Robotics.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org/">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+    <!-- Theme Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-93396600-3"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+
+      gtag('config', 'UA-93396600-3', {
+          'anonymize_ip': false,
+      });
+    </script> 
+
+</body>
+
+<!-- Mirrored from docs.odriverobotics.com/v/0.5.6/index.html by HTTrack Website Copier/3.x [XR&CO'2014], Fri, 30 May 2025 19:31:19 GMT -->
+</html>

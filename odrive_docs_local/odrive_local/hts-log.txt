@@ -1,0 +1,14 @@
+HTTrack3.49-2+htsswf+htsjava launched on Fri, 30 May 2025 22:31:00 at https://docs.odriverobotics.com/v/0.5.6/ +*.png +*.gif +*.jpg +*.jpeg +*.css +*.js -ad.doubleclick.net/* -mime:application/foobar
+(winhttrack -qYC2%Ps2u1%s%uN0%I0p3DaK0H0%kf2A25000%f#f -F "Mozilla/4.5 (compatible; HTTrack 3.0x; Windows 98)" -%F "<!-- Mirrored from %s%s by HTTrack Website Copier/3.x [XR&CO'2014], %s -->" -%l "en, *" -Y https://docs.odriverobotics.com/v/0.5.6/ -O1 "D:\Projects\odrive3.6_web_gui\odrive_docs_local\odrive_local" +*.png +*.gif +*.jpg +*.jpeg +*.css +*.js -ad.doubleclick.net/* -mime:application/foobar )
+
+Information, Warnings and Errors reported for this mirror:
+note:	the hts-log.txt file, and hts-cache folder, may contain sensitive information,
+	such as username/password authentication for websites mirrored in this project
+	do not share these files/folders if you want these information to remain private
+
+22:31:01	Warning: 	Moved Temporarily for https://docs.odriverobotics.com/v/0.5.6/
+22:31:01	Warning: 	File has moved from https://docs.odriverobotics.com/v/0.5.6/ to https://docs.odriverobotics.com/v/0.5.6/getting-started.html
+22:31:31	Error: 	"Not Found" (404) at link https://cdn.discordapp.com/attachments/369667319280173069/420811057431445504/IMG_20180306_211224.jpg (from https://docs.odriverobotics.com/v/0.5.6/troubleshooting.html)
+
+HTTrack Website Copier/3.49-2 mirror complete in 31 seconds : 124 links scanned, 121 files written (10660591 bytes overall) [8550197 bytes received at 275812 bytes/sec], 2838869 bytes transferred using HTTP compression in 70 files, ratio 23%, 20.6 requests per connection
+(1 errors, 2 warnings, 0 messages)
