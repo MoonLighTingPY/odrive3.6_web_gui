@@ -17,7 +17,7 @@ const ConfigurationTab = () => {
 
   const steps = [
     { id: 1, name: 'Power', icon: '⚡', component: PowerConfigStep },
-    { id: 2, name: 'Motor', icon: '🔧', component: MotorConfigStep },
+    { id: 2, name: 'Motor', icon: '⚙️', component: MotorConfigStep },
     { id: 3, name: 'Encoder', icon: '📐', component: EncoderConfigStep },
     { id: 4, name: 'Control', icon: '🎮', component: ControlConfigStep },
     { id: 5, name: 'Interface', icon: '🔌', component: InterfaceConfigStep },

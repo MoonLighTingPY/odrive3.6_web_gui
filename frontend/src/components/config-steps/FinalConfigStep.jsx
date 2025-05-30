@@ -818,52 +818,6 @@ const FinalConfigStep = () => {
         </CardBody>
       </Card>
 
-      <Card bg="gray.700" variant="elevated">
-        <CardHeader>
-          <Heading size="md" color="white">Important Notes for ODrive v0.5.6</Heading>
-        </CardHeader>
-        <CardBody>
-          <VStack spacing={3} align="stretch">
-            <Alert status="warning" variant="left-accent">
-              <AlertIcon />
-              <Text>
-                <strong>Calibration Order:</strong> For proper operation, encoder calibration MUST be done in the correct order: 
-                Polarity (direction finding) FIRST, then Offset calibration.
-              </Text>
-            </Alert>
-            <Alert status="info" variant="left-accent">
-              <AlertIcon />
-              <Text>
-                <strong>Full Calibration:</strong> Recommended for first-time setup. Automatically runs Motor → Encoder Polarity → Encoder Offset in sequence.
-              </Text>
-            </Alert>
-            <Alert status="info" variant="left-accent">
-              <AlertIcon />
-              <Text>
-                <strong>Apply vs Save:</strong> Apply sends commands temporarily. Save makes them permanent across reboots.
-              </Text>
-            </Alert>
-            <Alert status="info" variant="left-accent">
-              <AlertIcon />
-              <Text>
-                <strong>Command Editing:</strong> Toggle "Enable Editing" to modify, disable, or add custom commands before applying.
-              </Text>
-            </Alert>
-            <Alert status="info" variant="left-accent">
-              <AlertIcon />
-              <Text>
-                <strong>Verification:</strong> After applying configuration, you'll be prompted to verify that all values were set correctly.
-              </Text>
-            </Alert>
-            <Alert status="info" variant="left-accent">
-              <AlertIcon />
-              <Text>
-                <strong>Auto-Continue:</strong> Encoder sequence will automatically continue from polarity to offset calibration.
-              </Text>
-            </Alert>
-          </VStack>
-        </CardBody>
-      </Card>
 
       {/* Use the new modal components */}
       <CalibrationModal
