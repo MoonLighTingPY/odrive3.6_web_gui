@@ -54,7 +54,7 @@ const FinalConfigStep = () => {
   const { powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig } = useSelector(state => state.config)
   const { isConnected } = useSelector(state => state.device)
 
-// Poll calibration status when calibrating
+  // Poll calibration status when calibrating
   useEffect(() => {
     let interval = null
     if (isCalibrating) {
@@ -63,45 +63,103 @@ const FinalConfigStep = () => {
           const response = await fetch('/api/odrive/calibration_status')
           if (response.ok) {
             const status = await response.json()
+            console.log('Calibration status update:', status)
             setCalibrationStatus(status)
             setCalibrationProgress(status.progress_percentage || 0)
             setCalibrationPhase(status.calibration_phase || 'idle')
             
-            // Auto-continue calibration sequence if needed
-            if (status.auto_continue_action && status.calibration_phase === 'ready_for_offset') {
-              toast({
-                title: 'Auto-continuing calibration',
-                description: 'Encoder polarity complete, starting offset calibration...',
-                status: 'info',
-                duration: 3000,
+            // Check for errors FIRST before auto-continue
+            const hasErrors = status.axis_error !== 0 || status.motor_error !== 0 || status.encoder_error !== 0
+            
+            if (hasErrors) {
+              console.log('Calibration errors detected, stopping calibration:', {
+                axis_error: status.axis_error,
+                motor_error: status.motor_error, 
+                encoder_error: status.encoder_error
               })
               
-              // Wait a moment, then continue to offset calibration
-              setTimeout(async () => {
-                try {
-                  const continueResponse = await fetch('/api/odrive/auto_continue_calibration', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ step: 'encoder_offset' })
-                  })
-                  
-                  if (continueResponse.ok) {
-                    const result = await continueResponse.json()
-                    toast({
-                      title: 'Calibration continued',
-                      description: result.message,
-                      status: 'success',
-                      duration: 3000,
-                    })
-                  }
-                } catch (error) {
-                  console.error('Failed to auto-continue calibration:', error)
-                }
-              }, 1000)
+              setIsCalibrating(false)
+              
+              // Determine error messages based on error codes
+              const errorMessages = []
+              if (status.axis_error === 0x100) {
+                errorMessages.push("Encoder subsystem failed")
+              }
+              if (status.encoder_error & 0x02) {
+                errorMessages.push("Encoder CPR doesn't match motor pole pairs")
+              }
+              if (status.encoder_error & 0x200) {
+                errorMessages.push("Hall sensors not calibrated")
+              }
+              
+              const errorDescription = errorMessages.length > 0 
+                ? errorMessages.join('; ')
+                : `Axis: 0x${status.axis_error.toString(16)}, Motor: 0x${status.motor_error.toString(16)}, Encoder: 0x${status.encoder_error.toString(16)}`
+              
+              toast({
+                title: 'Calibration Failed',
+                description: errorDescription,
+                status: 'error',
+                duration: 8000,
+                isClosable: true
+              })
+              
+              return // Exit early, don't process auto-continue
             }
             
-            // Check if calibration is complete or failed
-            if (status.calibration_phase === 'complete') {
+            // Auto-continue calibration sequence if needed (ONLY if no errors)
+            if (status.auto_continue_action && status.calibration_phase === 'ready_for_offset') {
+              console.log('Auto-continuing to encoder offset calibration...')
+              
+              // Add a state to prevent multiple auto-continue attempts
+              if (!calibrationStatus?.auto_continue_in_progress) {
+                setCalibrationStatus(prev => ({ ...prev, auto_continue_in_progress: true }))
+                
+                toast({
+                  title: 'Auto-continuing calibration',
+                  description: 'Encoder polarity complete, starting offset calibration...',
+                  status: 'info',
+                  duration: 3000,
+                })
+                
+                // Wait a moment, then continue to offset calibration
+                setTimeout(async () => {
+                  try {
+                    const continueResponse = await fetch('/api/odrive/auto_continue_calibration', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ step: 'encoder_offset' })
+                    })
+                    
+                    if (continueResponse.ok) {
+                      const result = await continueResponse.json()
+                      console.log('Auto-continue result:', result)
+                      toast({
+                        title: 'Calibration continued',
+                        description: result.message,
+                        status: 'success',
+                        duration: 3000,
+                      })
+                    }
+                  } catch (error) {
+                    console.error('Failed to auto-continue calibration:', error)
+                    setIsCalibrating(false)
+                    toast({
+                      title: 'Auto-continue failed',
+                      description: 'Failed to continue calibration sequence',
+                      status: 'error',
+                      duration: 5000,
+                    })
+                  } finally {
+                    setCalibrationStatus(prev => ({ ...prev, auto_continue_in_progress: false }))
+                  }
+                }, 1000)
+              }
+            }
+            
+            // Check if calibration is complete
+            if (status.calibration_phase === 'complete' || status.calibration_phase === 'full_calibration_complete') {
+              console.log('Calibration completed successfully!')
               setIsCalibrating(false)
               setCalibrationProgress(100)
               toast({
@@ -110,26 +168,20 @@ const FinalConfigStep = () => {
                 status: 'success',
                 duration: 5000,
               })
-            } else if (status.calibration_phase === 'idle' && 
-                      (status.axis_error !== 0 || status.motor_error !== 0 || status.encoder_error !== 0)) {
-              setIsCalibrating(false)
-              toast({
-                title: 'Calibration Failed',
-                description: 'Calibration encountered errors. Check device status.',
-                status: 'error',
-                duration: 5000,
-              })
             }
+          } else {
+            console.error('Failed to fetch calibration status:', response.status, response.statusText)
           }
         } catch (error) {
           console.error('Failed to fetch calibration status:', error)
         }
-      }, 2000) // Increased from 1000ms to 2000ms to reduce polling frequency
+      }, 2000)
       
       return () => clearInterval(interval)
     }
-  }, [isCalibrating, toast])
+  }, [isCalibrating, toast, calibrationStatus?.auto_continue_in_progress])
 
+  
   // Helper function to safely format numbers and handle undefined values
   const safeValue = (value, defaultValue = 0) => {
     if (value === undefined || value === null || isNaN(value)) {
