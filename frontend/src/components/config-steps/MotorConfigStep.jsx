@@ -1,26 +1,28 @@
-import { useSelector, useDispatch } from 'react-redux'
+import React from 'react'
 import {
-  Box,
   VStack,
   HStack,
+  Box,
+  Heading,
   Text,
-  NumberInput,
-  NumberInputField,
+  Card,
+  CardHeader,
+  CardBody,
   FormControl,
   FormLabel,
+  NumberInput,
+  NumberInputField,
   Select,
-  Card,
-  CardBody,
-  CardHeader,
-  Heading,
-  Tooltip,
   Icon,
+  Tooltip,
+  SimpleGrid,
+  Badge,
   Alert,
-  AlertIcon,
+  AlertIcon
 } from '@chakra-ui/react'
 import { InfoIcon } from '@chakra-ui/icons'
+import { useSelector, useDispatch } from 'react-redux'
 import { updateMotorConfig } from '../../store/slices/configSlice'
-import { MotorType, getMotorTypeName } from '../../utils/odriveEnums'
 
 const MotorConfigStep = () => {
   const dispatch = useDispatch()
@@ -30,286 +32,298 @@ const MotorConfigStep = () => {
     dispatch(updateMotorConfig({ [field]: value }))
   }
 
-  // Calculate torque constant from Kv
-  const calculateKt = () => {
-    if (motorConfig.motor_kv && motorConfig.motor_kv > 0) {
-      return (60 / (2 * Math.PI * motorConfig.motor_kv)) // Kt = 60/(2π * Kv)
-    }
-    return 0
-  }
-
-  const calculateMaxTorque = () => {
-    const kt = calculateKt()
-    return kt * motorConfig.current_lim
-  }
+  // Calculate derived values
+  const calculatedKt = 8.27 / (motorConfig.motor_kv || 230)
+  const maxTorque = calculatedKt * (motorConfig.current_lim || 10)
 
   return (
-    <VStack spacing={6} align="stretch" maxW="800px">
-      <Box>
-        <Heading size="lg" color="white" mb={2}>
-          Motor Configuration
-        </Heading>
-        <Text color="gray.300" mb={6}>
-          Configure your motor parameters. Accurate values are essential for proper operation and calibration.
-        </Text>
-      </Box>
+    <SimpleGrid columns={{ base: 1, xl: 2 }} spacing={4} h="100%" p={4} overflow="auto">
+      {/* Left Column */}
+      <VStack spacing={3} align="stretch">
+        <Box>
+          <Heading size="md" color="white" mb={1}>
+            Motor Configuration
+          </Heading>
+          <Text color="gray.300" fontSize="sm">
+            Configure motor parameters and current limits.
+          </Text>
+        </Box>
 
-      <Card bg="gray.800" variant="elevated">
-        <CardHeader>
-          <Heading size="md" color="white">Motor Type & Basic Parameters</Heading>
-        </CardHeader>
-        <CardBody>
-          <VStack spacing={4}>
-            <HStack spacing={6} w="100%">
-              <FormControl flex="1">
-                <HStack>
-                  <FormLabel color="white" mb={0}>Motor Type</FormLabel>
-                  <Tooltip label="High Current motors have low resistance and high current capability. Gimbal motors have high resistance and precise control.">
-                    <Icon as={InfoIcon} color="gray.400" />
-                  </Tooltip>
-                </HStack>
-                <Select
-                  value={motorConfig.motor_type}
-                  onChange={(e) => handleConfigChange('motor_type', parseInt(e.target.value))}
-                  bg="gray.700"
-                  border="1px solid"
-                  borderColor="gray.600"
-                  color="white"
-                >
-                  <option value={MotorType.HIGH_CURRENT}>High Current</option>
-                  <option value={MotorType.GIMBAL}>Gimbal</option>
-                </Select>
-              </FormControl>
-
-              <FormControl flex="1">
-                <HStack>
-                  <FormLabel color="white" mb={0}>Pole Pairs</FormLabel>
-                  <Tooltip label="Number of pole pairs in your motor. Usually found in motor specifications. Common values: 7, 14, 21.">
-                    <Icon as={InfoIcon} color="gray.400" />
-                  </Tooltip>
-                </HStack>
-                <NumberInput
-                  value={motorConfig.pole_pairs}
-                  onChange={(_, value) => handleConfigChange('pole_pairs', value)}
-                  step={1}
-                >
-                  <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
-                </NumberInput>
-              </FormControl>
-            </HStack>
-
-            <HStack spacing={6} w="100%">
-              <FormControl flex="1">
-                <HStack>
-                  <FormLabel color="white" mb={0}>Motor Kv</FormLabel>
-                  <Tooltip label="Motor velocity constant in RPM/V. Found in motor specifications or calculated from no-load speed and voltage.">
-                    <Icon as={InfoIcon} color="gray.400" />
-                  </Tooltip>
-                </HStack>
-                <HStack>
-                  <NumberInput
-                    value={motorConfig.motor_kv}
-                    onChange={(_, value) => handleConfigChange('motor_kv', value)}
-                    step={1}
-                  >
-                    <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
-                  </NumberInput>
-                  <Text color="gray.300" minW="50px">RPM/V</Text>
-                </HStack>
-              </FormControl>
-
-              <FormControl flex="1">
-                <HStack>
-                  <FormLabel color="white" mb={0}>Current Limit</FormLabel>
-                  <Tooltip label="Maximum continuous current for the motor. Check motor specifications and thermal capacity.">
-                    <Icon as={InfoIcon} color="gray.400" />
-                  </Tooltip>
-                </HStack>
-                <HStack>
-                  <NumberInput
-                    value={motorConfig.current_lim}
-                    onChange={(_, value) => handleConfigChange('current_lim', value)}
-                    step={0.1}
-                    precision={1}
-                  >
-                    <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
-                  </NumberInput>
-                  <Text color="gray.300" minW="20px">A</Text>
-                </HStack>
-              </FormControl>
-            </HStack>
-          </VStack>
-        </CardBody>
-      </Card>
-
-      <Card bg="gray.800" variant="elevated">
-        <CardHeader>
-          <Heading size="md" color="white">Calibration Parameters</Heading>
-        </CardHeader>
-        <CardBody>
-          <VStack spacing={4}>
-            <HStack spacing={6} w="100%">
-              <FormControl flex="1">
-                <HStack>
-                  <FormLabel color="white" mb={0}>Calibration Current</FormLabel>
-                  <Tooltip label="Current used for motor resistance and inductance calibration. Usually 10-25% of motor rated current.">
-                    <Icon as={InfoIcon} color="gray.400" />
-                  </Tooltip>
-                </HStack>
-                <HStack>
-                  <NumberInput
-                    value={motorConfig.calibration_current}
-                    onChange={(_, value) => handleConfigChange('calibration_current', value)}
-                    step={0.1}
-                    precision={1}
-                  >
-                    <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
-                  </NumberInput>
-                  <Text color="gray.300" minW="20px">A</Text>
-                </HStack>
-              </FormControl>
-
-              <FormControl flex="1">
-                <HStack>
-                  <FormLabel color="white" mb={0}>Resistance Calib Max Voltage</FormLabel>
-                  <Tooltip label="Maximum voltage applied during resistance calibration. Should be safely below your power supply voltage.">
-                    <Icon as={InfoIcon} color="gray.400" />
-                  </Tooltip>
-                </HStack>
-                <HStack>
-                  <NumberInput
-                    value={motorConfig.resistance_calib_max_voltage}
-                    onChange={(_, value) => handleConfigChange('resistance_calib_max_voltage', value)}
-                    step={0.1}
-                    precision={1}
-                  >
-                    <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
-                  </NumberInput>
-                  <Text color="gray.300" minW="20px">V</Text>
-                </HStack>
-              </FormControl>
-            </HStack>
-
-            <FormControl>
-              <HStack>
-                <FormLabel color="white" mb={0}>Lock-in Spin Current</FormLabel>
-                <Tooltip label="Current used during encoder offset calibration when the motor is spun slowly. Should be enough to overcome friction.">
-                  <Icon as={InfoIcon} color="gray.400" />
-                </Tooltip>
-              </HStack>
-              <HStack>
-                <NumberInput
-                  value={motorConfig.lock_in_spin_current}
-                  onChange={(_, value) => handleConfigChange('lock_in_spin_current', value)}
-                  step={0.1}
-                  precision={1}
-                >
-                  <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
-                </NumberInput>
-                <Text color="gray.300" minW="20px">A</Text>
-              </HStack>
-            </FormControl>
-          </VStack>
-        </CardBody>
-      </Card>
-
-      {motorConfig.motor_type === MotorType.GIMBAL && (
-        <Card bg="orange.900" variant="elevated">
-          <CardHeader>
-            <Heading size="md" color="white">Gimbal Motor Parameters</Heading>
+        <Card bg="gray.800" variant="elevated">
+          <CardHeader py={2}>
+            <Heading size="sm" color="white">Motor Type & Parameters</Heading>
           </CardHeader>
-          <CardBody>
-            <Alert status="info" mb={4}>
-              <AlertIcon />
-              Gimbal motors require manual phase resistance configuration. These values will be auto-detected during calibration.
-            </Alert>
-            <VStack spacing={4}>
-              <HStack spacing={6} w="100%">
+          <CardBody py={2}>
+            <VStack spacing={3}>
+              <HStack spacing={4} w="100%">
                 <FormControl flex="1">
-                  <HStack>
-                    <FormLabel color="white" mb={0}>Phase Resistance</FormLabel>
-                    <Tooltip label="Resistance of motor windings. Will be automatically measured during calibration.">
-                      <Icon as={InfoIcon} color="gray.400" />
-                    </Tooltip>
-                  </HStack>
+                  <FormLabel color="white" mb={1} fontSize="sm">Motor Type</FormLabel>
+                  <Select
+                    value={motorConfig.motor_type}
+                    onChange={(e) => handleConfigChange('motor_type', parseInt(e.target.value))}
+                    bg="gray.700"
+                    border="1px solid"
+                    borderColor="gray.600"
+                    color="white"
+                    size="sm"
+                  >
+                    <option value={0}>High Current</option>
+                    <option value={1}>Gimbal</option>
+                  </Select>
+                </FormControl>
+
+                <FormControl flex="1">
+                  <FormLabel color="white" mb={1} fontSize="sm">Pole Pairs</FormLabel>
+                  <NumberInput
+                    value={motorConfig.pole_pairs}
+                    onChange={(value) => handleConfigChange('pole_pairs', parseInt(value) || 0)}
+                    step={1}
+                    size="sm"
+                  >
+                    <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
+                  </NumberInput>
+                </FormControl>
+              </HStack>
+
+              <HStack spacing={4} w="100%">
+                <FormControl flex="1">
+                  <FormLabel color="white" mb={1} fontSize="sm">Motor Kv</FormLabel>
                   <HStack>
                     <NumberInput
-                      value={motorConfig.phase_resistance}
-                      onChange={(_, value) => handleConfigChange('phase_resistance', value)}
-                      step={0.01}
-                      precision={3}
+                      value={motorConfig.motor_kv}
+                      onChange={(value) => handleConfigChange('motor_kv', parseFloat(value) || 0)}
+                      step={10}
+                      precision={1}
+                      size="sm"
                     >
                       <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
                     </NumberInput>
-                    <Text color="gray.300" minW="20px">Ω</Text>
+                    <Text color="gray.300" minW="60px" fontSize="sm">RPM/V</Text>
                   </HStack>
                 </FormControl>
 
                 <FormControl flex="1">
-                  <HStack>
-                    <FormLabel color="white" mb={0}>Phase Inductance</FormLabel>
-                    <Tooltip label="Inductance of motor windings. Will be automatically measured during calibration.">
-                      <Icon as={InfoIcon} color="gray.400" />
-                    </Tooltip>
-                  </HStack>
+                  <FormLabel color="white" mb={1} fontSize="sm">Current Limit</FormLabel>
                   <HStack>
                     <NumberInput
-                      value={motorConfig.phase_inductance}
-                      onChange={(_, value) => handleConfigChange('phase_inductance', value)}
-                      step={0.000001}
-                      precision={6}
+                      value={motorConfig.current_lim}
+                      onChange={(value) => handleConfigChange('current_lim', parseFloat(value) || 0)}
+                      step={1}
+                      precision={1}
+                      size="sm"
                     >
                       <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
                     </NumberInput>
-                    <Text color="gray.300" minW="20px">H</Text>
+                    <Text color="gray.300" minW="20px" fontSize="sm">A</Text>
                   </HStack>
                 </FormControl>
               </HStack>
             </VStack>
           </CardBody>
         </Card>
-      )}
 
-      <Card bg="gray.700" variant="elevated">
-        <CardHeader>
-          <Heading size="md" color="white">Motor Summary & Calculations</Heading>
-        </CardHeader>
-        <CardBody>
-          <VStack spacing={2} align="stretch">
-            <HStack justify="space-between">
-              <Text color="gray.300">Motor Type:</Text>
-              <Text fontWeight="bold" color="white">
-                {getMotorTypeName(motorConfig.motor_type)}
+        <Card bg="gray.800" variant="elevated">
+          <CardHeader py={2}>
+            <Heading size="sm" color="white">Calibration Settings</Heading>
+          </CardHeader>
+          <CardBody py={2}>
+            <VStack spacing={3}>
+              <HStack spacing={4} w="100%">
+                <FormControl flex="1">
+                  <FormLabel color="white" mb={1} fontSize="sm">Calibration Current</FormLabel>
+                  <HStack>
+                    <NumberInput
+                      value={motorConfig.calibration_current}
+                      onChange={(value) => handleConfigChange('calibration_current', parseFloat(value) || 0)}
+                      step={1}
+                      precision={1}
+                      size="sm"
+                    >
+                      <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
+                    </NumberInput>
+                    <Text color="gray.300" minW="20px" fontSize="sm">A</Text>
+                  </HStack>
+                </FormControl>
+
+                <FormControl flex="1">
+                  <FormLabel color="white" mb={1} fontSize="sm">Calib. Voltage</FormLabel>
+                  <HStack>
+                    <NumberInput
+                      value={motorConfig.resistance_calib_max_voltage}
+                      onChange={(value) => handleConfigChange('resistance_calib_max_voltage', parseFloat(value) || 0)}
+                      step={0.5}
+                      precision={1}
+                      size="sm"
+                    >
+                      <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
+                    </NumberInput>
+                    <Text color="gray.300" minW="20px" fontSize="sm">V</Text>
+                  </HStack>
+                </FormControl>
+              </HStack>
+
+              <FormControl>
+                <FormLabel color="white" mb={1} fontSize="sm">Lock-in Spin Current</FormLabel>
+                <HStack>
+                  <NumberInput
+                    value={motorConfig.lock_in_spin_current}
+                    onChange={(value) => handleConfigChange('lock_in_spin_current', parseFloat(value) || 0)}
+                    step={1}
+                    precision={1}
+                    size="sm"
+                  >
+                    <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
+                  </NumberInput>
+                  <Text color="gray.300" minW="20px" fontSize="sm">A</Text>
+                </HStack>
+              </FormControl>
+
+              {motorConfig.motor_type === 1 && (
+                <FormControl>
+                  <HStack>
+                    <FormLabel color="white" mb={1} fontSize="sm">Phase Resistance</FormLabel>
+                    <Tooltip label="Only for gimbal motors. Leave 0 for auto-detection.">
+                      <Icon as={InfoIcon} color="gray.400" />
+                    </Tooltip>
+                  </HStack>
+                  <HStack>
+                    <NumberInput
+                      value={motorConfig.phase_resistance}
+                      onChange={(value) => handleConfigChange('phase_resistance', parseFloat(value) || 0)}
+                      step={0.001}
+                      precision={6}
+                      size="sm"
+                    >
+                      <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
+                    </NumberInput>
+                    <Text color="gray.300" minW="20px" fontSize="sm">Ω</Text>
+                  </HStack>
+                </FormControl>
+              )}
+            </VStack>
+          </CardBody>
+        </Card>
+      </VStack>
+
+      {/* Right Column */}
+      <VStack spacing={3} align="stretch">
+        <Card bg="green.900" variant="elevated" borderColor="green.500" borderWidth="1px">
+          <CardHeader py={2}>
+            <Heading size="sm" color="white">Calculated Values</Heading>
+          </CardHeader>
+          <CardBody py={2}>
+            <VStack spacing={2} align="stretch">
+              <HStack justify="space-between">
+                <Text color="gray.300" fontSize="sm">Torque Constant (Kt):</Text>
+                <Text fontWeight="bold" color="green.300" fontSize="sm">
+                  {calculatedKt.toFixed(4)} Nm/A
+                </Text>
+              </HStack>
+              <HStack justify="space-between">
+                <Text color="gray.300" fontSize="sm">Max Torque:</Text>
+                <Text fontWeight="bold" color="green.300" fontSize="sm">
+                  {maxTorque.toFixed(2)} Nm
+                </Text>
+              </HStack>
+              <HStack justify="space-between">
+                <Text color="gray.300" fontSize="sm">Motor Type:</Text>
+                <Badge colorScheme={motorConfig.motor_type === 0 ? "blue" : "purple"} fontSize="xs">
+                  {motorConfig.motor_type === 0 ? "High Current" : "Gimbal"}
+                </Badge>
+              </HStack>
+            </VStack>
+          </CardBody>
+        </Card>
+
+        <Card bg="gray.700" variant="elevated">
+          <CardHeader py={2}>
+            <Heading size="sm" color="white">Configuration Summary</Heading>
+          </CardHeader>
+          <CardBody py={2}>
+            <VStack spacing={2} align="stretch">
+              <HStack justify="space-between">
+                <Text color="gray.300" fontSize="sm">Pole Pairs:</Text>
+                <Text fontWeight="bold" color="white" fontSize="sm">
+                  {motorConfig.pole_pairs}
+                </Text>
+              </HStack>
+              <HStack justify="space-between">
+                <Text color="gray.300" fontSize="sm">Motor Kv:</Text>
+                <Text fontWeight="bold" color="odrive.300" fontSize="sm">
+                  {motorConfig.motor_kv} RPM/V
+                </Text>
+              </HStack>
+              <HStack justify="space-between">
+                <Text color="gray.300" fontSize="sm">Current Limit:</Text>
+                <Text fontWeight="bold" color="odrive.300" fontSize="sm">
+                  {motorConfig.current_lim}A
+                </Text>
+              </HStack>
+              <HStack justify="space-between">
+                <Text color="gray.300" fontSize="sm">Calibration Current:</Text>
+                <Text fontWeight="bold" color="yellow.300" fontSize="sm">
+                  {motorConfig.calibration_current}A
+                </Text>
+              </HStack>
+            </VStack>
+          </CardBody>
+        </Card>
+
+        <Card bg="blue.900" variant="elevated" borderColor="blue.500" borderWidth="1px">
+          <CardHeader py={2}>
+            <Heading size="sm" color="white">Motor Guidelines</Heading>
+          </CardHeader>
+          <CardBody py={2}>
+            <VStack spacing={2} align="start">
+              <Text fontSize="sm" color="blue.100">
+                <strong>High Current:</strong> For most BLDC motors and high-power applications
               </Text>
-            </HStack>
-            <HStack justify="space-between">
-              <Text color="gray.300">Pole Pairs:</Text>
-              <Text fontWeight="bold" color="white">{motorConfig.pole_pairs}</Text>
-            </HStack>
-            <HStack justify="space-between">
-              <Text color="gray.300">Motor Kv:</Text>
-              <Text fontWeight="bold" color="white">{motorConfig.motor_kv} RPM/V</Text>
-            </HStack>
-            <HStack justify="space-between">
-              <Text color="gray.300">Calculated Kt:</Text>
-              <Text fontWeight="bold" color="odrive.300">
-                {calculateKt().toFixed(4)} Nm/A
+              <Text fontSize="sm" color="blue.100">
+                <strong>Gimbal:</strong> For low-current, high-precision gimbal motors
               </Text>
-            </HStack>
-            <HStack justify="space-between">
-              <Text color="gray.300">Current Limit:</Text>
-              <Text fontWeight="bold" color="odrive.300">{motorConfig.current_lim} A</Text>
-            </HStack>
-            <HStack justify="space-between">
-              <Text color="gray.300">Max Torque:</Text>
-              <Text fontWeight="bold" color="odrive.300">
-                {calculateMaxTorque().toFixed(3)} Nm
+              <Text fontSize="sm" color="blue.100">
+                <strong>Pole Pairs:</strong> Number of magnet pole pairs (typically 7-14)
               </Text>
-            </HStack>
+              <Text fontSize="sm" color="yellow.300">
+                <strong>Check motor datasheet for exact specifications</strong>
+              </Text>
+            </VStack>
+          </CardBody>
+        </Card>
+
+        <Alert status="info" py={2}>
+          <AlertIcon />
+          <VStack align="start" spacing={1}>
+            <Text fontWeight="bold" fontSize="sm">ODrive v0.5.6 Motor Requirements:</Text>
+            <Text fontSize="xs">• 3-phase BLDC or PMSM motors</Text>
+            <Text fontSize="xs">• Resistance: 0.01Ω - 10Ω per phase</Text>
+            <Text fontSize="xs">• Inductance: 1µH - 10mH per phase</Text>
           </VStack>
-        </CardBody>
-      </Card>
-    </VStack>
+        </Alert>
+
+        <Card bg="gray.800" variant="elevated">
+          <CardHeader py={2}>
+            <Heading size="sm" color="white">Common Motor Types</Heading>
+          </CardHeader>
+          <CardBody py={2}>
+            <VStack spacing={2}>
+              <HStack justify="space-between" w="100%">
+                <Text fontSize="sm" color="gray.300">Hobby Motors:</Text>
+                <Text fontSize="sm" color="white">230-1000 Kv</Text>
+              </HStack>
+              <HStack justify="space-between" w="100%">
+                <Text fontSize="sm" color="gray.300">Industrial:</Text>
+                <Text fontSize="sm" color="white">50-500 Kv</Text>
+              </HStack>
+              <HStack justify="space-between" w="100%">
+                <Text fontSize="sm" color="gray.300">Gimbal:</Text>
+                <Text fontSize="sm" color="white">10-100 Kv</Text>
+              </HStack>
+            </VStack>
+          </CardBody>
+        </Card>
+      </VStack>
+    </SimpleGrid>
   )
 }
 
