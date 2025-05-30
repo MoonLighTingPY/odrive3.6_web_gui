@@ -54,7 +54,7 @@ const FinalConfigStep = () => {
   const { powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig } = useSelector(state => state.config)
   const { isConnected } = useSelector(state => state.device)
 
-  // Poll calibration status when calibrating
+// Poll calibration status when calibrating
   useEffect(() => {
     let interval = null
     if (isCalibrating) {
@@ -124,7 +124,7 @@ const FinalConfigStep = () => {
         } catch (error) {
           console.error('Failed to fetch calibration status:', error)
         }
-      }, 1000) // Poll every second
+      }, 2000) // Increased from 1000ms to 2000ms to reduce polling frequency
       
       return () => clearInterval(interval)
     }

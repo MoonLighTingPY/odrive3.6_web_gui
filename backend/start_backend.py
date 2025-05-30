@@ -12,7 +12,7 @@ import logging
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 try:
-    import odrive
+    import odrive # type: ignore
     print("✓ ODrive library found")
 except ImportError:
     print("✗ ODrive library not found. Please install with: pip install odrive==0.5.6")

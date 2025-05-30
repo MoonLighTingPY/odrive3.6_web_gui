@@ -4,10 +4,11 @@ import time
 from typing import Dict, Any, List, Optional
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import odrive
-from odrive.enums import *
+import odrive # type: ignore
+from odrive.enums import * # type: ignore
 import threading
 import logging
+from collections import defaultdict
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -15,6 +16,8 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 CORS(app, origins=["http://localhost:3000"])
+last_api_call = defaultdict(float)
+API_RATE_LIMIT = 0.1  # Minimum 100ms between same API calls
 
 # Global variables
 connected_odrives: Dict[str, Any] = {}
@@ -317,6 +320,14 @@ class ODriveManager:
         if not self.current_device:
             return {'error': 'No device connected'}
         
+        # Rate limiting - prevent spamming the same command
+        current_time = time.time()
+        if current_time - last_api_call[command] < API_RATE_LIMIT:
+            # Return cached result if available, otherwise skip
+            return {'error': 'Rate limited - too many requests'}
+        
+        last_api_call[command] = current_time
+    
         # Check connection and try to reconnect if needed (but not during reboot)
         if not self.is_rebooting:
             if not self.check_connection():
@@ -846,25 +857,36 @@ def calibration_status():
             
         axis_state = axis_state_result.get('value', 0)
         
-        # Get calibration flags
-        motor_calibrated_result = odrive_manager.execute_command('device.axis0.motor.is_calibrated')
-        encoder_ready_result = odrive_manager.execute_command('device.axis0.encoder.is_ready')
-        
-        motor_calibrated = motor_calibrated_result.get('value', False) if 'error' not in motor_calibrated_result else False
-        encoder_ready = encoder_ready_result.get('value', False) if 'error' not in encoder_ready_result else False
-        
-        # Get encoder polarity calibration status (ODrive v0.5.6 specific)
-        encoder_direction_result = odrive_manager.execute_command('device.axis0.encoder.config.direction')
-        encoder_polarity_calibrated = encoder_direction_result.get('value', 0) != 0 if 'error' not in encoder_direction_result else False
-        
-        # Get any errors
-        axis_error_result = odrive_manager.execute_command('device.axis0.error')
-        motor_error_result = odrive_manager.execute_command('device.axis0.motor.error')
-        encoder_error_result = odrive_manager.execute_command('device.axis0.encoder.error')
-        
-        axis_error = axis_error_result.get('value', 0) if 'error' not in axis_error_result else 0
-        motor_error = motor_error_result.get('value', 0) if 'error' not in motor_error_result else 0
-        encoder_error = encoder_error_result.get('value', 0) if 'error' not in encoder_error_result else 0
+        # Only check calibration flags if we're not actively calibrating
+        # This reduces unnecessary API calls during calibration
+        if axis_state in [1, 8]:  # IDLE or CLOSED_LOOP_CONTROL
+            # Get calibration flags
+            motor_calibrated_result = odrive_manager.execute_command('device.axis0.motor.is_calibrated')
+            encoder_ready_result = odrive_manager.execute_command('device.axis0.encoder.is_ready')
+            
+            motor_calibrated = motor_calibrated_result.get('value', False) if 'error' not in motor_calibrated_result else False
+            encoder_ready = encoder_ready_result.get('value', False) if 'error' not in encoder_ready_result else False
+            
+            # Get encoder polarity calibration status (ODrive v0.5.6 specific)
+            encoder_direction_result = odrive_manager.execute_command('device.axis0.encoder.config.direction')
+            encoder_polarity_calibrated = encoder_direction_result.get('value', 0) != 0 if 'error' not in encoder_direction_result else False
+            
+            # Get any errors
+            axis_error_result = odrive_manager.execute_command('device.axis0.error')
+            motor_error_result = odrive_manager.execute_command('device.axis0.motor.error')
+            encoder_error_result = odrive_manager.execute_command('device.axis0.encoder.error')
+            
+            axis_error = axis_error_result.get('value', 0) if 'error' not in axis_error_result else 0
+            motor_error = motor_error_result.get('value', 0) if 'error' not in motor_error_result else 0
+            encoder_error = encoder_error_result.get('value', 0) if 'error' not in encoder_error_result else 0
+        else:
+            # During calibration, use cached values or defaults
+            motor_calibrated = False
+            encoder_ready = False
+            encoder_polarity_calibrated = False
+            axis_error = 0
+            motor_error = 0
+            encoder_error = 0
         
         # Determine calibration phase based on axis state
         calibration_phase = 'idle'
