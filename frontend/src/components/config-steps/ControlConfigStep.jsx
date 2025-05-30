@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import {
   Box,
@@ -28,7 +28,7 @@ import {
   ButtonGroup,
   Divider,
 } from '@chakra-ui/react'
-import { InfoIcon } from '@chakra-ui/icons'
+import { InfoIcon, RepeatIcon } from '@chakra-ui/icons'
 import { updateControlConfig, updateUiPreferences } from '../../store/slices/configSlice'
 import { ControlMode, InputMode, getControlModeName, getInputModeName } from '../../utils/odriveEnums'
 import { 
@@ -36,10 +36,6 @@ import {
   rpmToRad, 
   velGainRadToRpm, 
   velGainRpmToRad,
-  formatVelocity,
-  formatAcceleration,
-  formatVelGain,
-  formatVelIntGain
 } from '../../utils/unitConversions'
 
 const ControlConfigStep = () => {
@@ -47,7 +43,7 @@ const ControlConfigStep = () => {
   const config = useSelector(state => state.config)
   
   // Safe destructuring with fallbacks
-  const { controlConfig } = config
+  const { controlConfig, motorConfig, encoderConfig } = config
   const uiPreferences = config.uiPreferences || { useRpmUnits: true }
   const useRpm = uiPreferences.useRpmUnits ?? true
 
@@ -58,6 +54,44 @@ const ControlConfigStep = () => {
     velGain: 0,
     velIntGain: 0
   })
+
+  // Calculate optimal PID gains based on motor and encoder configuration
+  const calculateOptimalGains = useCallback(() => {
+    const motorKv = motorConfig.motor_kv || 230
+    const encoderCpr = encoderConfig.cpr || 4000
+    
+    // Calculate torque constant (Kt = 60/(2π * Kv))
+    const torqueConstant = 60 / (2 * Math.PI * motorKv)
+    
+    // Default bandwidth assumptions for stable operation
+    const currentBandwidth = 1000 // Hz - typical current control bandwidth
+    const velocityBandwidth = 100 // Hz - target velocity bandwidth
+    const positionBandwidth = 20 // Hz - target position bandwidth
+    
+    // Calculate gains based on ODrive v0.5.6 formulas
+    // vel_gain should be: vel_gain = torque_constant * encoder_cpr * bandwidth_factor
+    const velGain = torqueConstant * encoderCpr * (velocityBandwidth / currentBandwidth)
+    
+    // vel_integrator_gain should be: 0.5 * bandwidth * vel_gain
+    const velIntegratorGain = 0.5 * velocityBandwidth * velGain
+    
+    // pos_gain should give reasonable bandwidth: pos_gain = bandwidth_ratio
+    const posGain = positionBandwidth
+    
+    return {
+      pos_gain: posGain,
+      vel_gain: velGain,
+      vel_integrator_gain: velIntegratorGain,
+      torque_constant: torqueConstant
+    }
+  }, [motorConfig.motor_kv, encoderConfig.cpr])
+
+  const [calculatedGains, setCalculatedGains] = useState(calculateOptimalGains())
+
+  // Recalculate gains when motor or encoder config changes
+  useEffect(() => {
+    setCalculatedGains(calculateOptimalGains())
+  }, [calculateOptimalGains])
 
   // Initialize display values when config or unit preference changes
   useEffect(() => {
@@ -75,6 +109,20 @@ const ControlConfigStep = () => {
 
   const handleUnitToggle = (useRpmUnits) => {
     dispatch(updateUiPreferences({ useRpmUnits }))
+  }
+
+  // Apply calculated gains
+  const applyCalculatedGains = () => {
+    const gains = calculateOptimalGains()
+    handleConfigChange('pos_gain', gains.pos_gain)
+    handleConfigChange('vel_gain', gains.vel_gain)
+    handleConfigChange('vel_integrator_gain', gains.vel_integrator_gain)
+  }
+
+  // Reset individual gain to calculated value
+  const resetGainToCalculated = (gainType) => {
+    const gains = calculateOptimalGains()
+    handleConfigChange(gainType, gains[gainType])
   }
 
   // Handle velocity limit changes
@@ -110,8 +158,8 @@ const ControlConfigStep = () => {
   }
 
   const isPositionControl = controlConfig.control_mode === ControlMode.POSITION_CONTROL
-  const isVelocityControl = controlConfig.control_mode === ControlMode.VELOCITY_CONTROL
 
+  // ...existing code continues unchanged...
   return (
     <VStack spacing={6} align="stretch" maxW="800px">
       <Box>
@@ -214,29 +262,131 @@ const ControlConfigStep = () => {
         <TabPanels>
           {/* PID Gains Tab */}
           <TabPanel p={0}>
-            <Card bg="gray.800" variant="elevated" mt={4}>
+            {/* Calculated Gains Section */}
+            <Card bg="green.900" variant="elevated" mt={4} borderColor="green.500" borderWidth="1px">
               <CardHeader>
-                <Heading size="md" color="white">PID Controller Gains</Heading>
+                <HStack justify="space-between">
+                  <Heading size="md" color="white">Calculated Optimal Gains</Heading>
+                  <Button
+                    leftIcon={<RepeatIcon />}
+                    colorScheme="green"
+                    size="sm"
+                    onClick={applyCalculatedGains}
+                  >
+                    Apply All Calculated Gains
+                  </Button>
+                </HStack>
               </CardHeader>
               <CardBody>
                 <Alert status="info" mb={4}>
                   <AlertIcon />
                   <VStack align="start" spacing={1}>
+                    <Text fontWeight="bold">Auto-calculated based on your motor configuration:</Text>
+                    <Text fontSize="sm">Motor Kv: {motorConfig.motor_kv || 230} RPM/V</Text>
+                    <Text fontSize="sm">Pole Pairs: {motorConfig.pole_pairs || 7}</Text>
+                    <Text fontSize="sm">Encoder CPR: {encoderConfig.cpr || 4000}</Text>
+                    <Text fontSize="sm">Calculated Torque Constant: {calculatedGains.torque_constant.toFixed(4)} Nm/A</Text>
+                  </VStack>
+                </Alert>
+
+                <VStack spacing={3}>
+                  {isPositionControl && (
+                    <HStack justify="space-between" w="100%" p={3} bg="gray.800" borderRadius="md">
+                      <VStack align="start" spacing={1}>
+                        <Text color="white" fontWeight="bold">Position Gain (Calculated)</Text>
+                        <Text fontSize="sm" color="gray.300">{calculatedGains.pos_gain.toFixed(3)} (turns/s)/turn</Text>
+                      </VStack>
+                      <Button
+                        size="sm"
+                        leftIcon={<RepeatIcon />}
+                        colorScheme="blue"
+                        variant="outline"
+                        onClick={() => resetGainToCalculated('pos_gain')}
+                      >
+                        Use This Value
+                      </Button>
+                    </HStack>
+                  )}
+
+                  <HStack justify="space-between" w="100%" p={3} bg="gray.800" borderRadius="md">
+                    <VStack align="start" spacing={1}>
+                      <Text color="white" fontWeight="bold">Velocity Gain (Calculated)</Text>
+                      <Text fontSize="sm" color="gray.300">
+                        {useRpm ? 
+                          `${velGainRadToRpm(calculatedGains.vel_gain).toFixed(3)} A/(RPM)` : 
+                          `${calculatedGains.vel_gain.toFixed(6)} A/(turns/s)`
+                        }
+                      </Text>
+                    </VStack>
+                    <Button
+                      size="sm"
+                      leftIcon={<RepeatIcon />}
+                      colorScheme="blue"
+                      variant="outline"
+                      onClick={() => resetGainToCalculated('vel_gain')}
+                    >
+                      Use This Value
+                    </Button>
+                  </HStack>
+
+                  <HStack justify="space-between" w="100%" p={3} bg="gray.800" borderRadius="md">
+                    <VStack align="start" spacing={1}>
+                      <Text color="white" fontWeight="bold">Velocity Integrator Gain (Calculated)</Text>
+                      <Text fontSize="sm" color="gray.300">
+                        {useRpm ? 
+                          `${velGainRadToRpm(calculatedGains.vel_integrator_gain).toFixed(3)} A⋅s/(RPM)` : 
+                          `${calculatedGains.vel_integrator_gain.toFixed(6)} A⋅s/(turns/s)`
+                        }
+                      </Text>
+                    </VStack>
+                    <Button
+                      size="sm"
+                      leftIcon={<RepeatIcon />}
+                      colorScheme="blue"
+                      variant="outline"
+                      onClick={() => resetGainToCalculated('vel_integrator_gain')}
+                    >
+                      Use This Value
+                    </Button>
+                  </HStack>
+                </VStack>
+              </CardBody>
+            </Card>
+
+            <Card bg="gray.800" variant="elevated" mt={4}>
+              <CardHeader>
+                <Heading size="md" color="white">Manual PID Controller Gains</Heading>
+              </CardHeader>
+              <CardBody>
+                <Alert status="warning" mb={4}>
+                  <AlertIcon />
+                  <VStack align="start" spacing={1}>
                     <Text fontWeight="bold">ODrive v0.5.6 Control Formulas:</Text>
                     <Text fontSize="sm">Position: <code>vel_setpoint = pos_gain × pos_error</code></Text>
                     <Text fontSize="sm">Velocity: <code>current_setpoint = vel_gain × vel_error + vel_integrator_gain × ∫vel_error</code></Text>
-                    <Text fontSize="sm">All units are in turns/s and amperes. Tuning requires careful adjustment.</Text>
+                    <Text fontSize="sm">Start with calculated values above, then fine-tune as needed.</Text>
                   </VStack>
                 </Alert>
                 
                 <VStack spacing={4}>
                   {isPositionControl && (
                     <FormControl>
-                      <HStack>
-                        <FormLabel color="white" mb={0}>Position Gain</FormLabel>
-                        <Tooltip label="Proportional gain for position control. Converts position error (turns) to velocity setpoint (turns/s). Higher values increase position stiffness but may cause oscillation.">
-                          <Icon as={InfoIcon} color="gray.400" />
-                        </Tooltip>
+                      <HStack justify="space-between">
+                        <HStack>
+                          <FormLabel color="white" mb={0}>Position Gain</FormLabel>
+                          <Tooltip label="Proportional gain for position control. Converts position error (turns) to velocity setpoint (turns/s). Higher values increase position stiffness but may cause oscillation.">
+                            <Icon as={InfoIcon} color="gray.400" />
+                          </Tooltip>
+                        </HStack>
+                        <Button
+                          size="xs"
+                          leftIcon={<RepeatIcon />}
+                          colorScheme="blue"
+                          variant="ghost"
+                          onClick={() => resetGainToCalculated('pos_gain')}
+                        >
+                          Reset to Calculated
+                        </Button>
                       </HStack>
                       <HStack>
                         <NumberInput
@@ -252,16 +402,30 @@ const ControlConfigStep = () => {
                       <Text fontSize="xs" color="gray.500" mt={1}>
                         Formula: vel_setpoint = pos_gain × (pos_setpoint - pos_estimate)
                       </Text>
+                      <Text fontSize="xs" color="blue.300" mt={1}>
+                        Calculated optimal: {calculatedGains.pos_gain.toFixed(3)}
+                      </Text>
                     </FormControl>
                   )}
 
                   <HStack spacing={6} w="100%">
                     <FormControl flex="1">
-                      <HStack>
-                        <FormLabel color="white" mb={0}>Velocity Gain</FormLabel>
-                        <Tooltip label="Proportional gain for velocity control. Converts velocity error (turns/s) to current setpoint (A). Affects how aggressively the motor responds to velocity errors.">
-                          <Icon as={InfoIcon} color="gray.400" />
-                        </Tooltip>
+                      <HStack justify="space-between">
+                        <HStack>
+                          <FormLabel color="white" mb={0}>Velocity Gain</FormLabel>
+                          <Tooltip label="Proportional gain for velocity control. Converts velocity error (turns/s) to current setpoint (A). Affects how aggressively the motor responds to velocity errors.">
+                            <Icon as={InfoIcon} color="gray.400" />
+                          </Tooltip>
+                        </HStack>
+                        <Button
+                          size="xs"
+                          leftIcon={<RepeatIcon />}
+                          colorScheme="blue"
+                          variant="ghost"
+                          onClick={() => resetGainToCalculated('vel_gain')}
+                        >
+                          Reset
+                        </Button>
                       </HStack>
                       <HStack>
                         <NumberInput
@@ -280,16 +444,30 @@ const ControlConfigStep = () => {
                         Stored as: {controlConfig.vel_gain.toFixed(6)} A/(turns/s)
                       </Text>
                       <Text fontSize="xs" color="blue.300" mt={1}>
-                        Formula: I_proportional = vel_gain × vel_error
+                        Calculated: {useRpm ? 
+                          `${velGainRadToRpm(calculatedGains.vel_gain).toFixed(3)} A/(RPM)` : 
+                          `${calculatedGains.vel_gain.toFixed(6)} A/(turns/s)`
+                        }
                       </Text>
                     </FormControl>
 
                     <FormControl flex="1">
-                      <HStack>
-                        <FormLabel color="white" mb={0}>Velocity Integrator Gain</FormLabel>
-                        <Tooltip label="Integral gain for velocity control. Converts accumulated velocity error (turns/s×s) to current setpoint (A). Helps eliminate steady-state velocity errors but can cause overshoot.">
-                          <Icon as={InfoIcon} color="gray.400" />
-                        </Tooltip>
+                      <HStack justify="space-between">
+                        <HStack>
+                          <FormLabel color="white" mb={0}>Velocity Integrator Gain</FormLabel>
+                          <Tooltip label="Integral gain for velocity control. Converts accumulated velocity error (turns/s×s) to current setpoint (A). Helps eliminate steady-state velocity errors but can cause overshoot.">
+                            <Icon as={InfoIcon} color="gray.400" />
+                          </Tooltip>
+                        </HStack>
+                        <Button
+                          size="xs"
+                          leftIcon={<RepeatIcon />}
+                          colorScheme="blue"
+                          variant="ghost"
+                          onClick={() => resetGainToCalculated('vel_integrator_gain')}
+                        >
+                          Reset
+                        </Button>
                       </HStack>
                       <HStack>
                         <NumberInput
@@ -308,7 +486,10 @@ const ControlConfigStep = () => {
                         Stored as: {controlConfig.vel_integrator_gain.toFixed(6)} A⋅s/(turns/s)
                       </Text>
                       <Text fontSize="xs" color="blue.300" mt={1}>
-                        Formula: I_integral = vel_integrator_gain × ∫vel_error dt
+                        Calculated: {useRpm ? 
+                          `${velGainRadToRpm(calculatedGains.vel_integrator_gain).toFixed(3)} A⋅s/(RPM)` : 
+                          `${calculatedGains.vel_integrator_gain.toFixed(6)} A⋅s/(turns/s)`
+                        }
                       </Text>
                     </FormControl>
                   </HStack>
