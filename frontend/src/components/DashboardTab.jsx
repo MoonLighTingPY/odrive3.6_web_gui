@@ -100,7 +100,7 @@ const DashboardTab = ({ isConnected, odriveState }) => {
         <Box flex="1">
           <HStack justify="space-between" mb={1}>
             <Text fontWeight="bold" fontSize="sm">
-              {title}
+              {title} 
             </Text>
             <HStack>
               <Badge 
@@ -121,15 +121,6 @@ const DashboardTab = ({ isConnected, odriveState }) => {
           </HStack>
           <Text fontSize="xs" color="gray.0" mb={1}>
             {description}
-          </Text>
-          <Text 
-            fontSize="xs" 
-            color="blue.300" 
-            cursor="pointer"
-            _hover={{ textDecoration: 'underline' }}
-            onClick={() => handleErrorClick(errorCode, errorType)}
-          >
-            Click for troubleshooting help →
           </Text>
         </Box>
       </Alert>

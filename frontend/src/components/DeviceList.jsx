@@ -16,7 +16,6 @@ import {
   useToast,
   Tooltip,
   Icon,
-  useDisclosure,
 } from '@chakra-ui/react'
 import { InfoIcon } from '@chakra-ui/icons'
 import { 
@@ -27,16 +26,14 @@ import {
 } from '../store/slices/deviceSlice'
 import { getAxisStateName } from '../utils/odriveEnums'
 import { getErrorDescription, getErrorColor, isErrorCritical } from '../utils/odriveErrors'
-import ErrorTroubleshooting from './ErrorTroubleshooting'
 import '../styles/DeviceList.css'
 
 const DeviceList = () => {
   const dispatch = useDispatch()
   const toast = useToast()
   const [isScanning, setIsScanning] = useState(false)
-  const [selectedError, setSelectedError] = useState({ code: null, type: null })
+  const [ setSelectedError] = useState({ code: null, type: null })
   
-  const { isOpen: isTroubleshootingOpen, onOpen: onTroubleshootingOpen, onClose: onTroubleshootingClose } = useDisclosure()
   
   const { 
     availableDevices, 
@@ -227,7 +224,6 @@ const DeviceList = () => {
   // Helper function to open troubleshooting modal
   const handleErrorClick = (errorCode, errorType) => {
     setSelectedError({ code: errorCode, type: errorType })
-    onTroubleshootingOpen()
   }
 
   // Helper function to render error information with clickable badges
@@ -269,16 +265,6 @@ const DeviceList = () => {
         </HStack>
         <Text fontSize="xs" color={`${colorScheme}.300`} textAlign="right" maxW="200px">
           {description}
-        </Text>
-        <Text 
-          fontSize="xs" 
-          color="blue.300" 
-          textAlign="right" 
-          cursor="pointer"
-          _hover={{ textDecoration: 'underline' }}
-          onClick={() => handleErrorClick(errorCode, errorType)}
-        >
-          Click for troubleshooting →
         </Text>
       </VStack>
     )
@@ -504,13 +490,6 @@ const DeviceList = () => {
         )}
       </VStack>
 
-      {/* Error Troubleshooting Modal */}
-      <ErrorTroubleshooting
-        isOpen={isTroubleshootingOpen}
-        onClose={onTroubleshootingClose}
-        errorCode={selectedError.code}
-        errorType={selectedError.type}
-      />
     </Box>
   )
 }

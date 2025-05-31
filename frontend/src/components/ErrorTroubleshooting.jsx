@@ -1,72 +1,74 @@
+import React from 'react'
 import {
   Modal,
   ModalOverlay,
   ModalContent,
   ModalHeader,
+  ModalFooter,
   ModalBody,
   ModalCloseButton,
+  Button,
+  Text,
   VStack,
   HStack,
-  Text,
-  Code,
   List,
   ListItem,
   ListIcon,
-  Divider,
+  Code,
   Alert,
   AlertIcon,
-  Badge,
   Box,
-  Button,
-  useClipboard,
+  Divider,
+  useClipboard
 } from '@chakra-ui/react'
-import { CheckCircleIcon, WarningIcon, InfoIcon } from '@chakra-ui/icons'
+import {
+  WarningIcon,
+  CheckCircleIcon,
+  InfoIcon
+} from '@chakra-ui/icons'
 import { getErrorTroubleshootingGuide } from '../utils/odriveErrors'
+import { EncoderError } from '../utils/odriveErrors'
 
 const ErrorTroubleshooting = ({ isOpen, onClose, errorCode, errorType = 'encoder' }) => {
   const guide = getErrorTroubleshootingGuide(errorCode, errorType)
-  const { onCopy, hasCopied } = useClipboard(
-    guide?.commands?.join('\n') || 'No commands available'
-  )
+  const { hasCopied, onCopy } = useClipboard(guide?.commands?.join('\n') || '')
 
   if (!guide) {
-    return (
-      <Modal isOpen={isOpen} onClose={onClose} size="lg">
-        <ModalOverlay />
-        <ModalContent bg="gray.800" color="white">
-          <ModalHeader>Error Information</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody pb={6}>
-            <Alert status="info">
-              <AlertIcon />
-              No specific troubleshooting guide available for this error code.
-            </Alert>
-          </ModalBody>
-        </ModalContent>
-      </Modal>
-    )
+    return null
   }
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="xl">
+    <Modal isOpen={isOpen} onClose={onClose} size="xl" scrollBehavior="inside">
       <ModalOverlay />
-      <ModalContent bg="gray.800" color="white" maxH="80vh" overflowY="auto">
-        <ModalHeader>
-          <HStack>
-            <Text>{guide.title}</Text>
-            <Badge colorScheme="red" fontSize="sm">
-              0x{errorCode.toString(16).toUpperCase()}
-            </Badge>
-          </HStack>
-        </ModalHeader>
+      <ModalContent bg="gray.800" color="white">
+        <ModalHeader color="red.300">{guide.title}</ModalHeader>
         <ModalCloseButton />
-        <ModalBody pb={6}>
+        
+        <ModalBody>
           <VStack spacing={6} align="stretch">
             {/* Description */}
-            <Alert status="error" variant="left-accent">
-              <AlertIcon />
-              <Text>{guide.description}</Text>
+            <Alert status="error" variant="left-accent" bg="red.900" borderColor="red.500">
+              <AlertIcon color="red.300" />
+              <Text color="red.100">{guide.description}</Text>
             </Alert>
+
+            {/* Specific guidance for CPR mismatch - FIXED CONDITION */}
+            {errorType === 'encoder' && (errorCode & EncoderError.CPR_POLEPAIRS_MISMATCH) === EncoderError.CPR_POLEPAIRS_MISMATCH && (
+              <Alert status="warning" variant="left-accent">
+                <AlertIcon />
+                <Box>
+                  <Text fontWeight="bold" mb={2}>Quick Fix for CPR Mismatch:</Text>
+                  <Text fontSize="sm" mb={2}>
+                    For Hall encoders: This error should not occur since Hall sensors don't use CPR. 
+                    Check that encoder mode is set to 1 (Hall) not 0 (Incremental).
+                  </Text>
+                  <Text fontSize="sm">
+                    For Incremental encoders with 7 pole pairs: try CPR values like 28, 35, 56, 70, 140, 280, 2800, 4200, 5600, 7000, 8400.
+                    Any multiple of your pole pairs should work.
+                  </Text>
+                </Box>
+              </Alert>
+            )}
 
             {/* Possible Causes */}
             <Box>
@@ -128,26 +130,12 @@ const ErrorTroubleshooting = ({ isOpen, onClose, errorCode, errorType = 'encoder
                 ))}
               </VStack>
             </Box>
-
-            {/* Specific guidance for CPR mismatch */}
-            {errorCode === 0x2 && (
-              <Alert status="warning" variant="left-accent">
-                <AlertIcon />
-                <Box>
-                  <Text fontWeight="bold" mb={2}>Quick Fix for CPR Mismatch:</Text>
-                  <Text fontSize="sm" mb={2}>
-                    For Hall encoders: This error should not occur since Hall sensors don't use CPR. 
-                    Check that encoder mode is set to 0 (Hall) not 1 (Incremental).
-                  </Text>
-                  <Text fontSize="sm">
-                    For Incremental encoders with 7 pole pairs: try CPR values like 28, 35, 56, 70, 140, 280, 2800, 4200, 5600, 7000, 8400.
-                    Any multiple of your pole pairs should work.
-                  </Text>
-                </Box>
-              </Alert>
-            )}
           </VStack>
         </ModalBody>
+
+        <ModalFooter>
+          <Button onClick={onClose}>Close</Button>
+        </ModalFooter>
       </ModalContent>
     </Modal>
   )
