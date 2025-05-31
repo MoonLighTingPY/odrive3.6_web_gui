@@ -130,7 +130,7 @@ export const odriveCommands = {
     },
     {
       name: "Clear Axis Errors",
-      command: "odrv0.axis0.clear_errors()",
+      command: "odrv0.clear_errors()",
       description: "Clear all axis error flags"
     }
   ],
@@ -143,7 +143,7 @@ export const odriveCommands = {
     },
     {
       name: "Set Motor Type - Gimbal",
-      command: "odrv0.axis0.motor.config.motor_type = 1",
+      command: "odrv0.axis0.motor.config.motor_type = 2",
       description: "Set motor type to gimbal motor"
     },
     {

@@ -3,8 +3,8 @@
 // Motor Types
 export const MotorType = {
   HIGH_CURRENT: 0,
-  GIMBAL: 2,        // Fixed: was 1, should be 2
-  ACIM: 3,          // Added missing ACIM type
+  GIMBAL: 2,        // This is correct
+  ACIM: 3,          // This is correct
 }
 
 export const getMotorTypeName = (type) => {
@@ -48,6 +48,7 @@ export const ControlMode = {
   TORQUE_CONTROL: 1,
   VELOCITY_CONTROL: 2,
   POSITION_CONTROL: 3,
+  
 }
 
 export const getControlModeName = (mode) => {
@@ -95,7 +96,7 @@ export const AxisState = {
   STARTUP_SEQUENCE: 2,
   FULL_CALIBRATION_SEQUENCE: 3,
   MOTOR_CALIBRATION: 4,
-  // Note: 5 is missing in official firmware
+  SENSORLESS_CONTROL: 5,
   ENCODER_INDEX_SEARCH: 6,
   ENCODER_OFFSET_CALIBRATION: 7,
   CLOSED_LOOP_CONTROL: 8,
