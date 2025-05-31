@@ -1,4 +1,4 @@
-You are writing a GUI for ODriveFirmware_v3.6-56V.elf(0.5.6 in fact, but conventional name is v3.6). Documentation is available at https://docs.odriverobotics.com/v/0.5.6/getting-started.html.
+You are writing a GUI for ODriveFirmware_v3.6-56V.elf(0.5.6 in fact, but conventional name is v3.6). but the version for odrive python lib is 0.6.10.post0. Documentation is available at https://docs.odriverobotics.com/v/0.5.6/getting-started.html.
 Also, there is local copy of the documentation available at odrive_docs_local/ downloaded using httrack.
 This is an old version of the ODrive firmware, so you should not use the latest version of the documentation.
 You should always use the documentation for version 0.5.6, which is available at https://docs.odriverobotics.com/v/0.5.6/getting-started.html.
