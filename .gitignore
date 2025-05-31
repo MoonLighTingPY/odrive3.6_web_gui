@@ -27,3 +27,5 @@ dist-ssr
 # Ignore venv for python
 .venv/
 __pycache__/
+backend/build/*
+*.spec
