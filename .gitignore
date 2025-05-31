@@ -28,4 +28,3 @@ dist-ssr
 .venv/
 __pycache__/
 backend/build/*
-*.spec
