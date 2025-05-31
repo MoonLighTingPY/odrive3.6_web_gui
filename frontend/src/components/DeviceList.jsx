@@ -25,6 +25,7 @@ import {
   updateOdriveState,
   setConnectionLost
 } from '../store/slices/deviceSlice'
+import { getAxisStateName } from '../utils/odriveEnums'
 import { getErrorDescription, getErrorColor, isErrorCritical } from '../utils/odriveErrors'
 import ErrorTroubleshooting from './ErrorTroubleshooting'
 import '../styles/DeviceList.css'
@@ -72,6 +73,28 @@ const DeviceList = () => {
       setIsScanning(false)
     }
   }, [dispatch, toast])
+
+    const getAxisStateColorScheme = (state) => {
+    if (state === 8) return "green" // CLOSED_LOOP_CONTROL
+    if (state === 1) return "blue" // IDLE
+    if (state >= 2 && state <= 7) return "yellow" // Calibration states
+    return "red" // Error or undefined
+  }
+  
+  // Add this helper function to fetch device state
+  const fetchDeviceState = async () => {
+    try {
+      const response = await fetch('/api/odrive/state')
+      if (response.ok) {
+        const state = await response.json()
+        if (Object.keys(state).length > 0) {
+          dispatch(updateOdriveState(state))
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch device state:', error)
+    }
+  }
 
   useEffect(() => {
     scanForDevices()
@@ -382,6 +405,60 @@ const DeviceList = () => {
                     {odriveState.axis0?.encoder?.pos_estimate?.toFixed(2) || '0.00'}
                   </Text>
                 </HStack>
+
+                {/* Status Information */}
+                <HStack justify="space-between">
+                  <Text fontSize="sm" color="gray.300">Status:</Text>
+                  <Badge colorScheme={getAxisStateColorScheme(odriveState.axis0?.current_state)}>
+                    {getAxisStateName(odriveState.axis0?.current_state)}
+                  </Badge>
+                </HStack>
+
+                {/* Clear Errors Button - only shown if errors exist */}
+                {(odriveState.axis0?.error || 
+                  odriveState.axis0?.motor?.error || 
+                  odriveState.axis0?.encoder?.error || 
+                  odriveState.axis0?.controller?.error ||
+                  odriveState.axis0?.sensorless_estimator?.error) && (
+                  <Button
+                    size="xs"
+                    colorScheme="red"
+                    variant="outline"
+                    mt={2}
+                    onClick={async () => {
+                      try {
+                        const response = await fetch('/api/odrive/command', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ command: 'odrv0.clear_errors()' })
+                        });
+                        
+                        if (response.ok) {
+                          toast({
+                            title: 'Errors cleared',
+                            description: 'All error flags have been cleared',
+                            status: 'success',
+                            duration: 3000,
+                          });
+                          // Refresh data after clearing errors
+                          setTimeout(() => fetchDeviceState(), 100);
+                        } else {
+                          const error = await response.json();
+                          throw new Error(error.error || 'Failed to clear errors');
+                        }
+                      } catch (error) {
+                        toast({
+                          title: 'Error',
+                          description: `Failed to clear errors: ${error.message}`,
+                          status: 'error',
+                          duration: 5000,
+                        });
+                      }
+                    }}
+                  >
+                    Clear All Errors
+                  </Button>
+                )}
 
                 {/* Axis Error */}
                 {renderErrorInfo(odriveState.axis0?.error, 'axis')}
