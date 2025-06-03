@@ -55,10 +55,17 @@ const DashboardTab = ({ isConnected, odriveState }) => {
     }
   }, [isConnected])
 
-  if (!isConnected) {
+    // Check if we should show dashboard content
+  const shouldShowDashboard = () => {
+    const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development'
+    return isDevelopment || isConnected
+  }
+
+  // If we shouldn't show dashboard, show the connection warning
+  if (!shouldShowDashboard()) {
     return (
-      <Box className="dashboard-tab" p={8} textAlign="center">
-        <Alert status="info" variant="subtle" borderRadius="md">
+      <Box p={6} bg="gray.900" h="100%">
+        <Alert status="warning" bg="orange.900" borderColor="orange.500">
           <AlertIcon />
           Connect to an ODrive device to view dashboard data.
         </Alert>

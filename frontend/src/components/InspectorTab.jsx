@@ -1,12 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useSelector } from 'react-redux'
 import {
   VStack,
   HStack,
   Text,
   Box,
-  Grid,
-  GridItem,
   Card,
   CardBody,
   CardHeader,
@@ -25,7 +23,6 @@ import {
 } from '@chakra-ui/react'
 import { RefreshCw } from 'lucide-react'
 import PropertyTree from './inspector/PropertyTree'
-import StatusOverview from './inspector/StatusOverview'
 import ErrorDisplay from './inspector/ErrorDisplay'
 import LiveMonitor from './inspector/LiveMonitor'
 import LiveDataView from './inspector/LiveDataView'
@@ -46,19 +43,7 @@ const InspectorTab = () => {
   const currentOdriveState = Object.keys(odriveState).length > 0 ? odriveState : localOdriveState
 
   // Auto-refresh when enabled
-  useEffect(() => {
-    let interval = null
-    if (autoRefresh && isConnected) {
-      interval = setInterval(() => {
-        refreshAllData()
-      }, refreshRate)
-    }
-    return () => {
-      if (interval) clearInterval(interval)
-    }
-  }, [autoRefresh, isConnected, refreshRate])
-
-  const refreshAllData = async () => {
+  const refreshAllData = useCallback(async () => {
     if (!isConnected) return
 
     setIsLoading(true)
@@ -80,7 +65,20 @@ const InspectorTab = () => {
       })
     }
     setIsLoading(false)
-  }
+  }, [isConnected, toast])
+
+  // Auto-refresh when enabled
+  useEffect(() => {
+    let interval = null
+    if (autoRefresh && isConnected) {
+      interval = setInterval(() => {
+        refreshAllData()
+      }, refreshRate)
+    }
+    return () => {
+      if (interval) clearInterval(interval)
+    }
+  }, [autoRefresh, isConnected, refreshRate, refreshAllData])
 
   const updateProperty = async (path, value) => {
     if (!isConnected) return
@@ -116,12 +114,17 @@ const InspectorTab = () => {
     }
   }
 
-    if (!isConnected) {
+  const shouldShowInspector = () => {
+    const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development'
+    return isDevelopment || isConnected
+  }
+
+  if (!shouldShowInspector()) {
     return (
-      <Box p={8} textAlign="center">
-        <Alert status="info" variant="subtle" borderRadius="md">
+      <Box p={6} bg="gray.900" h="100%">
+        <Alert status="warning" bg="orange.900" borderColor="orange.500">
           <AlertIcon />
-          Connect to an ODrive device to inspect properties and execute commands.
+          Connect to an ODrive device to view Inspector.
         </Alert>
       </Box>
     )
@@ -129,6 +132,7 @@ const InspectorTab = () => {
 
   return (
     <VStack spacing={6} align="stretch" p={6} h="100%">
+
       <Box>
         <Heading size="lg" color="white" mb={2}>
           ODrive Inspector
@@ -198,9 +202,6 @@ const InspectorTab = () => {
                 Property Tree
               </Tab>
               <Tab color="gray.300" _selected={{ color: 'blue.300', borderBottomColor: 'blue.300' }}>
-                System Status
-              </Tab>
-              <Tab color="gray.300" _selected={{ color: 'blue.300', borderBottomColor: 'blue.300' }}>
                 Live Monitor
               </Tab>
               <Tab color="gray.300" _selected={{ color: 'blue.300', borderBottomColor: 'blue.300' }}>
@@ -220,17 +221,6 @@ const InspectorTab = () => {
                   updateProperty={updateProperty}
                   isConnected={isConnected}
                 />
-              </TabPanel>
-              
-              <TabPanel p={4} h="100%">
-                <Grid templateColumns="1fr 1fr" gap={6} h="100%">
-                  <GridItem>
-                    <StatusOverview odriveState={currentOdriveState} />
-                  </GridItem>
-                  <GridItem>
-                    <ErrorDisplay odriveState={currentOdriveState} />
-                  </GridItem>
-                </Grid>
               </TabPanel>
               
               <TabPanel p={4} h="100%">
