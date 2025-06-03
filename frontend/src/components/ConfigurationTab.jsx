@@ -1,5 +1,5 @@
 import React from 'react'
-import { Box, HStack, VStack, Button, Progress, Text, Flex, Alert, AlertIcon } from '@chakra-ui/react'
+import { Box, HStack, VStack, Button, Progress, Text, Flex, Alert, AlertIcon, useDisclosure } from '@chakra-ui/react'
 import { useSelector, useDispatch } from 'react-redux'
 import { nextConfigStep, prevConfigStep } from '../store/slices/uiSlice'
 
@@ -10,6 +10,7 @@ import EncoderConfigStep from './config-steps/EncoderConfigStep'
 import ControlConfigStep from './config-steps/ControlConfigStep'
 import InterfaceConfigStep from './config-steps/InterfaceConfigStep'
 import FinalConfigStep from './config-steps/FinalConfigStep'
+import PullConfigModal from './modals/PullConfigModal'
 
 
 const ConfigurationTab = ({ isConnected }) => {
@@ -28,6 +29,8 @@ const ConfigurationTab = ({ isConnected }) => {
   const currentStep = steps.find(step => step.id === activeConfigStep)
   const CurrentStepComponent = currentStep?.component
 
+  const { isOpen: isPullModalOpen, onOpen: onPullModalOpen, onClose: onPullModalClose } = useDisclosure()
+
     if (!isConnected) {
     return (
       <Box p={8} textAlign="center">
@@ -39,7 +42,8 @@ const ConfigurationTab = ({ isConnected }) => {
     )
   }
 
-  return (
+return (
+  <>
     <Flex direction="column" h="100%" bg="gray.900">
       {/* Combined Header with Navigation and Progress */}
       <Box bg="gray.800" borderBottom="1px solid" borderColor="gray.600" p={4}>
@@ -63,6 +67,16 @@ const ConfigurationTab = ({ isConnected }) => {
               </Button>
             ))}
           </HStack>
+
+          <Button
+            colorScheme="green"
+            variant="outline"
+            size="sm"
+            onClick={onPullModalOpen}
+            isDisabled={!isConnected}
+          >
+            📥 Pull Current Config
+          </Button>
 
           {/* Combined Progress Bar and Navigation */}
           <HStack justify="space-between" align="center" w="100%" maxW="800px">
@@ -108,7 +122,15 @@ const ConfigurationTab = ({ isConnected }) => {
         {CurrentStepComponent && <CurrentStepComponent />}
       </Box>
     </Flex>
-  )
+    
+    <PullConfigModal
+      isOpen={isPullModalOpen}
+      onClose={onPullModalClose}
+      isConnected={isConnected}
+    />
+  </>
+)
+
 }
 
 export default ConfigurationTab
