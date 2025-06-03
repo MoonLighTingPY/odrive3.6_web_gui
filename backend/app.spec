@@ -55,7 +55,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='app',
+    name='odrive_v36_gui',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

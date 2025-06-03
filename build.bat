@@ -64,7 +64,7 @@ echo.
 echo [5/5] Building executable with PyInstaller...
 REM Clean up old build files
 if exist "build" rmdir /s /q build
-if exist "dist\app.exe" del /f /q "dist\app.exe"
+if exist "dist\odrive_v36_gui.exe" del /f /q "dist\odrive_v36_gui.exe"
 
 pyinstaller app.spec --clean
 if %errorlevel% neq 0 (
@@ -80,9 +80,9 @@ echo ============================================
 echo Build completed successfully!
 echo ============================================
 echo.
-echo Executable location: backend\dist\app.exe
+echo Executable location: backend\dist\odrive_v36_gui.exe
 echo.
 echo You can now run the ODrive GUI by executing:
-echo   backend\dist\app.exe
+echo   backend\dist\odrive_v36_gui.exe
 echo.
 pause
