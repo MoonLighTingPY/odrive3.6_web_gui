@@ -51,10 +51,8 @@ const MotorConfigStep = ({
   const maxTorque = calculatedKt * (motorConfig.current_lim || 10)
 
   return (
-    <SimpleGrid columns={{ base: 1, xl: 2 }} spacing={4} h="100%" p={4} overflow="auto">
-      {/* Left Column */}
-      <VStack spacing={3} align="stretch">
-
+    <Box h="100%" p={3} overflow="auto">
+      <VStack spacing={3} align="stretch" maxW="1400px" mx="auto">
         <Card bg="gray.800" variant="elevated">
           <CardHeader py={2}>
             <Heading size="sm" color="white">Motor Type & Parameters</Heading>
@@ -221,13 +219,7 @@ const MotorConfigStep = ({
           </CardBody>
         </Card>
       </VStack>
-
-      {/* Right Column - Calculated Values */}
-      <VStack spacing={3} align="stretch">
-
-
-      </VStack>
-    </SimpleGrid>
+    </Box>
   )
 }
 
