@@ -526,3 +526,107 @@ export const searchCommands = (searchTerm) => {
     cmd.description.toLowerCase().includes(searchTerm.toLowerCase())
   )
 }
+
+// ODrive v0.5.6 Configuration Parameter Mappings for GUI
+export const configurationMappings = {
+  power: {
+    name: 'Power Configuration',
+    dc_bus_overvoltage_trip_level: 'config.dc_bus_overvoltage_trip_level',
+    dc_bus_undervoltage_trip_level: 'config.dc_bus_undervoltage_trip_level',
+    dc_max_positive_current: 'config.dc_max_positive_current',
+    dc_max_negative_current: 'config.dc_max_negative_current',
+    brake_resistance: 'config.brake_resistance',
+    brake_resistor_enabled: 'config.enable_brake_resistor',
+  },
+  motor: {
+    name: 'Motor Configuration',
+    motor_type: 'axis0.motor.config.motor_type',
+    pole_pairs: 'axis0.motor.config.pole_pairs',
+    motor_kv: 'axis0.motor.config.torque_constant', // Will convert from Kt to Kv
+    current_lim: 'axis0.motor.config.current_lim',
+    calibration_current: 'axis0.motor.config.calibration_current',
+    resistance_calib_max_voltage: 'axis0.motor.config.resistance_calib_max_voltage',
+    lock_in_spin_current: 'axis0.config.calibration_lockin.current',
+    phase_resistance: 'axis0.motor.config.phase_resistance',
+    phase_inductance: 'axis0.motor.config.phase_inductance',
+  },
+  encoder: {
+    name: 'Encoder Configuration',
+    encoder_type: 'axis0.encoder.config.mode',
+    cpr: 'axis0.encoder.config.cpr',
+    bandwidth: 'axis0.encoder.config.bandwidth',
+    use_index: 'axis0.encoder.config.use_index',
+    calib_range: 'axis0.encoder.config.calib_range',
+    calib_scan_distance: 'axis0.encoder.config.calib_scan_distance',
+    calib_scan_omega: 'axis0.encoder.config.calib_scan_omega',
+    pre_calibrated: 'axis0.encoder.config.pre_calibrated',
+    use_index_offset: 'axis0.encoder.config.use_index_offset',
+    find_idx_on_lockin_only: 'axis0.encoder.config.find_idx_on_lockin_only',
+    abs_spi_cs_gpio_pin: 'axis0.encoder.config.abs_spi_cs_gpio_pin',
+    direction: 'axis0.encoder.config.direction',
+    enable_phase_interpolation: 'axis0.encoder.config.enable_phase_interpolation',
+    hall_polarity: 'axis0.encoder.config.hall_polarity',
+    hall_polarity_calibrated: 'axis0.encoder.config.hall_polarity_calibrated',
+  },
+  control: {
+    name: 'Control Configuration',
+    control_mode: 'axis0.controller.config.control_mode',
+    input_mode: 'axis0.controller.config.input_mode',
+    vel_limit: 'axis0.controller.config.vel_limit',
+    pos_gain: 'axis0.controller.config.pos_gain',
+    vel_gain: 'axis0.controller.config.vel_gain',
+    vel_integrator_gain: 'axis0.controller.config.vel_integrator_gain',
+    vel_limit_tolerance: 'axis0.controller.config.vel_limit_tolerance',
+    vel_ramp_rate: 'axis0.controller.config.vel_ramp_rate',
+    torque_ramp_rate: 'axis0.controller.config.torque_ramp_rate',
+    circular_setpoints: 'axis0.controller.config.circular_setpoints',
+    inertia: 'axis0.controller.config.inertia',
+    input_filter_bandwidth: 'axis0.controller.config.input_filter_bandwidth',
+    homing_speed: 'axis0.controller.config.homing_speed',
+    anticogging_enabled: 'axis0.controller.config.anticogging.anticogging_enabled',
+  },
+  interface: {
+    name: 'Interface Configuration',
+    can_node_id: 'axis0.config.can.node_id',
+    can_node_id_extended: 'axis0.config.can.is_extended',
+    can_baudrate: 'can.config.baud_rate',
+    can_heartbeat_rate_ms: 'axis0.config.can.heartbeat_rate_ms',
+    enable_uart_a: 'config.enable_uart_a',
+    uart_a_baudrate: 'config.uart_a_baudrate',
+    uart0_protocol: 'config.uart0_protocol',
+    enable_uart_b: 'config.enable_uart_b',
+    uart_b_baudrate: 'config.uart_b_baudrate',
+    uart1_protocol: 'config.uart1_protocol',
+    gpio1_mode: 'config.gpio1_mode',
+    gpio2_mode: 'config.gpio2_mode',
+    gpio3_mode: 'config.gpio3_mode',
+    gpio4_mode: 'config.gpio4_mode',
+    enable_watchdog: 'axis0.config.enable_watchdog',
+    watchdog_timeout: 'axis0.config.watchdog_timeout',
+    enable_step_dir: 'axis0.config.enable_step_dir',
+    step_dir_always_on: 'axis0.config.step_dir_always_on',
+    enable_sensorless: 'axis0.config.enable_sensorless_mode',
+  }
+}
+
+// Helper function to get configuration parameters for pulling
+export const getConfigurationParams = (category) => {
+  const categoryData = configurationMappings[category]
+  if (!categoryData) return {}
+  
+  // Extract just the parameter mappings (exclude 'name')
+  const { name, ...params } = categoryData
+  return params
+}
+
+// Get all configuration parameters for pulling
+export const getAllConfigurationParams = () => {
+  const allParams = {}
+  Object.keys(configurationMappings).forEach(category => {
+    allParams[category] = {
+      name: configurationMappings[category].name,
+      params: getConfigurationParams(category)
+    }
+  })
+  return allParams
+}

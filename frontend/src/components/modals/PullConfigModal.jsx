@@ -28,6 +28,7 @@ import {
   updateControlConfig, 
   updateInterfaceConfig 
 } from '../../store/slices/configSlice'
+import { getAllConfigurationParams } from '../../utils/odriveCommands'
 
 const PullConfigModal = ({ isOpen, onClose, isConnected }) => {
   const dispatch = useDispatch()
@@ -43,101 +44,16 @@ const PullConfigModal = ({ isOpen, onClose, isConnected }) => {
   const shouldPauseRef = useRef(false)
   const shouldStopRef = useRef(false)
 
-  // Configuration parameters mapped to ODrive v0.5.6 paths
-  const configParamMaps = {
-    power: {
-      name: 'Power Configuration',
-      storeAction: updatePowerConfig,
-      params: {
-        dc_bus_overvoltage_trip_level: 'config.dc_bus_overvoltage_trip_level',
-        dc_bus_undervoltage_trip_level: 'config.dc_bus_undervoltage_trip_level',
-        dc_max_positive_current: 'config.dc_max_positive_current',
-        dc_max_negative_current: 'config.dc_max_negative_current',
-        brake_resistance: 'config.brake_resistance',
-        brake_resistor_enabled: 'config.enable_brake_resistor',
-      }
-    },
-    motor: {
-      name: 'Motor Configuration', 
-      storeAction: updateMotorConfig,
-      params: {
-        motor_type: 'axis0.motor.config.motor_type',
-        pole_pairs: 'axis0.motor.config.pole_pairs',
-        motor_kv: 'axis0.motor.config.torque_constant', // Will convert from Kt to Kv
-        current_lim: 'axis0.motor.config.current_lim',
-        calibration_current: 'axis0.motor.config.calibration_current',
-        resistance_calib_max_voltage: 'axis0.motor.config.resistance_calib_max_voltage',
-        lock_in_spin_current: 'axis0.config.calibration_lockin.current',
-        phase_resistance: 'axis0.motor.config.phase_resistance',
-        phase_inductance: 'axis0.motor.config.phase_inductance',
-      }
-    },
-    encoder: {
-      name: 'Encoder Configuration',
-      storeAction: updateEncoderConfig,
-      params: {
-        encoder_type: 'axis0.encoder.config.mode',
-        cpr: 'axis0.encoder.config.cpr',
-        bandwidth: 'axis0.encoder.config.bandwidth',
-        use_index: 'axis0.encoder.config.use_index',
-        calib_range: 'axis0.encoder.config.calib_range',
-        calib_scan_distance: 'axis0.encoder.config.calib_scan_distance',
-        calib_scan_omega: 'axis0.encoder.config.calib_scan_omega',
-        pre_calibrated: 'axis0.encoder.config.pre_calibrated',
-        use_index_offset: 'axis0.encoder.config.use_index_offset',
-        find_idx_on_lockin_only: 'axis0.encoder.config.find_idx_on_lockin_only',
-        abs_spi_cs_gpio_pin: 'axis0.encoder.config.abs_spi_cs_gpio_pin',
-        direction: 'axis0.encoder.config.direction',
-        enable_phase_interpolation: 'axis0.encoder.config.enable_phase_interpolation',
-        hall_polarity: 'axis0.encoder.config.hall_polarity',
-        hall_polarity_calibrated: 'axis0.encoder.config.hall_polarity_calibrated',
-      }
-    },
-    control: {
-      name: 'Control Configuration',
-      storeAction: updateControlConfig,
-      params: {
-        control_mode: 'axis0.controller.config.control_mode',
-        input_mode: 'axis0.controller.config.input_mode',
-        vel_limit: 'axis0.controller.config.vel_limit',
-        pos_gain: 'axis0.controller.config.pos_gain',
-        vel_gain: 'axis0.controller.config.vel_gain',
-        vel_integrator_gain: 'axis0.controller.config.vel_integrator_gain',
-        vel_limit_tolerance: 'axis0.controller.config.vel_limit_tolerance',
-        vel_ramp_rate: 'axis0.controller.config.vel_ramp_rate',
-        torque_ramp_rate: 'axis0.controller.config.torque_ramp_rate',
-        circular_setpoints: 'axis0.controller.config.circular_setpoints',
-        inertia: 'axis0.controller.config.inertia',
-        input_filter_bandwidth: 'axis0.controller.config.input_filter_bandwidth',
-        homing_speed: 'axis0.controller.config.homing_speed',
-        anticogging_enabled: 'axis0.controller.config.anticogging.anticogging_enabled',
-      }
-    },
-    interface: {
-      name: 'Interface Configuration',
-      storeAction: updateInterfaceConfig,
-      params: {
-        can_node_id: 'axis0.config.can.node_id',
-        can_node_id_extended: 'axis0.config.can.is_extended',
-        can_baudrate: 'can.config.baud_rate',
-        can_heartbeat_rate_ms: 'axis0.config.can.heartbeat_rate_ms',
-        enable_uart_a: 'config.enable_uart_a',
-        uart_a_baudrate: 'config.uart_a_baudrate',
-        uart0_protocol: 'config.uart0_protocol',
-        enable_uart_b: 'config.enable_uart_b',
-        uart_b_baudrate: 'config.uart_b_baudrate',
-        uart1_protocol: 'config.uart1_protocol',
-        gpio1_mode: 'config.gpio1_mode',
-        gpio2_mode: 'config.gpio2_mode',
-        gpio3_mode: 'config.gpio3_mode',
-        gpio4_mode: 'config.gpio4_mode',
-        enable_watchdog: 'axis0.config.enable_watchdog',
-        watchdog_timeout: 'axis0.config.watchdog_timeout',
-        enable_step_dir: 'axis0.config.enable_step_dir',
-        step_dir_always_on: 'axis0.config.step_dir_always_on',
-        enable_sensorless: 'axis0.config.enable_sensorless_mode',
-      }
-    }
+  // Get configuration parameters from utils
+  const configParamMaps = getAllConfigurationParams()
+
+  // Add store action mappings
+  const storeActionMap = {
+    power: updatePowerConfig,
+    motor: updateMotorConfig,
+    encoder: updateEncoderConfig,
+    control: updateControlConfig,
+    interface: updateInterfaceConfig
   }
 
   const addLog = (type, category, param, odriveParam, value = null, message = null) => {
@@ -303,8 +219,11 @@ const PullConfigModal = ({ isOpen, onClose, isConnected }) => {
         // Update store for this category
         if (!shouldStopRef.current && Object.keys(categoryConfig).length > 0) {
           try {
-            dispatch(category.storeAction(categoryConfig))
-            addLog('info', category.name, 'Store Updated', '', null, `Updated ${Object.keys(categoryConfig).length} parameters`)
+            const storeAction = storeActionMap[categoryKey]
+            if (storeAction) {
+              dispatch(storeAction(categoryConfig))
+              addLog('info', category.name, 'Store Updated', '', null, `Updated ${Object.keys(categoryConfig).length} parameters`)
+            }
           } catch (error) {
             addLog('error', category.name, 'Store Update', '', null, `Failed to update store: ${error.message}`)
           }
@@ -347,12 +266,10 @@ const PullConfigModal = ({ isOpen, onClose, isConnected }) => {
 
   const handlePauseResume = () => {
     if (isPaused) {
-      // Resume
       shouldPauseRef.current = false
       setIsPaused(false)
       addLog('info', 'System', 'Pull Resumed', '', null, 'Configuration pull resumed')
     } else {
-      // Pause
       shouldPauseRef.current = true
       setIsPaused(true)
       addLog('info', 'System', 'Pull Paused', '', null, 'Configuration pull paused')
@@ -383,7 +300,7 @@ const PullConfigModal = ({ isOpen, onClose, isConnected }) => {
           <VStack align="start" spacing={2}>
             <Text>Pull Configuration from ODrive</Text>
             <Text fontSize="sm" color="gray.300">
-              Fast batch pull of current ODrive configuration with pause/resume control
+              Fast batch pull using ODrive v0.5.6 parameter mappings
             </Text>
           </VStack>
         </ModalHeader>
@@ -451,13 +368,13 @@ const PullConfigModal = ({ isOpen, onClose, isConnected }) => {
               <AlertIcon />
               <VStack align="start" spacing={1}>
                 <Text fontWeight="bold" fontSize="sm">
-                  Fast batch pulling from:
+                  Pulling from centralized command mappings:
                 </Text>
                 <Text fontSize="xs">
-                  • Power, Motor, Encoder, Control, and Interface settings
+                  • All parameter paths defined in utils/odriveCommands.js
                 </Text>
                 <Text fontSize="xs">
-                  • Use pause/resume controls to manage the pulling process
+                  • Batch processing with pause/resume controls
                 </Text>
               </VStack>
             </Alert>
