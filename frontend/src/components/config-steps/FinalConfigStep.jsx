@@ -658,14 +658,6 @@ const FinalConfigStep = () => {
 
   return (
     <VStack spacing={6} align="stretch" maxW="800px">
-      <Box>
-        <Heading size="lg" color="white" mb={2}>
-          Apply Configuration
-        </Heading>
-        <Text color="gray.300" mb={6}>
-          Review and apply your ODrive configuration. Choose the appropriate action based on your needs.
-        </Text>
-      </Box>
 
       {!isConnected && (
         <Alert status="error">
@@ -687,7 +679,7 @@ const FinalConfigStep = () => {
               isDisabled={!isConnected}
               isLoading={isLoading && pendingAction === 'erase'}
             >
-              🗑️ Erase Old Configuration and Reboot
+              🗑️ Erase Old Configuration
             </Button>
 
             <Box>
@@ -754,6 +746,17 @@ const FinalConfigStep = () => {
             </Button>
 
             <Divider />
+            <Button
+              colorScheme="green"
+              size="lg"
+              onClick={() => handleAction('save_and_reboot')}
+              isDisabled={!isConnected}
+              isLoading={isLoading && pendingAction === 'save_and_reboot'}
+            >
+              💾 Save
+            </Button>
+
+            <Divider />
 
             <Text fontWeight="bold" color="white" textAlign="center">
               Calibration Options (Proper Sequence for ODrive v0.5.6)
@@ -792,28 +795,7 @@ const FinalConfigStep = () => {
               </Button>
             </HStack>
 
-            <Divider />
 
-            <Button
-              colorScheme="green"
-              size="lg"
-              onClick={() => handleAction('save_and_reboot')}
-              isDisabled={!isConnected}
-              isLoading={isLoading && pendingAction === 'save_and_reboot'}
-            >
-              💾 Save to Non-Volatile Memory and Reboot
-            </Button>
-
-            <Button
-              colorScheme="green"
-              variant="outline"
-              size="lg"
-              onClick={() => handleAction('save')}
-              isDisabled={!isConnected}
-              isLoading={isLoading && pendingAction === 'save'}
-            >
-              💾 Save to Non-Volatile Memory
-            </Button>
           </VStack>
         </CardBody>
       </Card>
