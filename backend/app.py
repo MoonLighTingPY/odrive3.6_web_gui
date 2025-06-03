@@ -11,6 +11,7 @@ import logging
 from collections import defaultdict
 import os
 import sys
+import webbrowser
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -26,6 +27,23 @@ connected_odrives: Dict[str, Any] = {}
 current_odrive: Optional[Any] = None
 device_state_cache = {}
 last_update_time = 0
+
+# Add the backend directory to the Python path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+def is_running_as_executable():
+    """Check if we're running as a PyInstaller executable"""
+    return getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS')
+
+def open_browser():
+    """Open the web browser after a short delay to ensure the server is running"""
+    time.sleep(3)
+    try:
+        webbrowser.open('http://localhost:5000', new=2)
+        print("🌐 Opened ODrive GUI in your default web browser")
+    except Exception as e:
+        print(f"⚠️ Could not automatically open browser: {e}")
+        print("   Please manually open: http://localhost:5000")
 
 # Add this near the top after other imports
 def get_static_folder():
@@ -1195,5 +1213,23 @@ def health_check():
     return jsonify({'status': 'ok', 'version': '0.5.6'})
 
 if __name__ == '__main__':
-    logger.info("Starting ODrive GUI Backend v0.5.6")
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    print("🚀 Starting ODrive GUI Backend...")
+    
+    # Only open browser if running as executable (not when imported or in development)
+    if is_running_as_executable():
+        print("📦 Running as executable - browser will open automatically")
+        browser_thread = threading.Thread(target=open_browser, daemon=True)
+        browser_thread.start()
+    else:
+        print("🔧 Running in development mode")
+        print("   Open: http://localhost:5000")
+    
+    try:
+        logger.info("Starting ODrive GUI Backend v0.5.6")
+        app.run(host='0.0.0.0', port=5000, debug=False)  # Set debug=False to avoid the reloader
+    except KeyboardInterrupt:
+        print("\n👋 ODrive GUI Backend stopped")
+    except Exception as e:
+        print(f"\n❌ Error: {e}")
+        if is_running_as_executable():
+            input("Press Enter to close...")

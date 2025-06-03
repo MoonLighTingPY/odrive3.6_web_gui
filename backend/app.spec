@@ -19,6 +19,12 @@ if os.path.exists(odrive_lib_path):
         if file.endswith('.dll') or file.endswith('.so') or file.endswith('.dylib'):
             odrive_binaries.append((os.path.join(odrive_lib_path, file), 'odrive/lib'))
 
+# Determine icon file
+icon_file = None
+if os.path.exists('servo.ico'):
+    icon_file = 'servo.ico'
+
+
 block_cipher = None
 
 a = Analysis(
@@ -35,6 +41,16 @@ a = Analysis(
         'usb.backend.libusb1',
         'usb.backend.openusb',
         'usb.backend.libusb0',
+        'flask',
+        'flask_cors',
+        'threading',
+        'webbrowser',
+        'json',
+        'time',
+        'logging',
+        'collections',
+        'os',
+        'sys',
     ],
     hookspath=[],
     hooksconfig={},
@@ -68,4 +84,5 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
+    icon=icon_file,  # Use the determined icon file
 )

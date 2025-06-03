@@ -19,16 +19,17 @@ if not exist "backend" (
 )
 
 echo.
-echo [1/5] Stopping any running ODrive GUI processes...
+echo [1/6] Stopping any running ODrive GUI processes...
 taskkill /f /im app.exe >nul 2>&1
+taskkill /f /im odrive_v36_gui.exe >nul 2>&1
 if %errorlevel% equ 0 (
-    echo ✓ Stopped existing app.exe process
+    echo ✓ Stopped existing processes
 ) else (
-    echo ✓ No existing app.exe process found
+    echo ✓ No existing processes found
 )
 
 echo.
-echo [2/5] Installing frontend dependencies...
+echo [2/6] Installing frontend dependencies...
 cd frontend
 call npm install
 if %errorlevel% neq 0 (
@@ -39,18 +40,19 @@ if %errorlevel% neq 0 (
 )
 
 echo.
-echo [3/5] Building frontend production bundle...
+echo [3/6] Building frontend production bundle...
 call npm run build
 if %errorlevel% neq 0 (
-    echo Error: Frontend build failed!
+    echo Error: Failed to build frontend!
     cd ..
     pause
     exit /b 1
 )
+
 cd ..
 
 echo.
-echo [4/5] Installing backend dependencies...
+echo [4/6] Installing backend dependencies...
 cd backend
 pip install -r requirements.txt
 if %errorlevel% neq 0 (
@@ -61,28 +63,67 @@ if %errorlevel% neq 0 (
 )
 
 echo.
-echo [5/5] Building executable with PyInstaller...
-REM Clean up old build files
-if exist "build" rmdir /s /q build
-if exist "dist\odrive_v36_gui.exe" del /f /q "dist\odrive_v36_gui.exe"
-
-pyinstaller app.spec --clean
+echo [5/6] Installing PyInstaller...
+pip install pyinstaller
 if %errorlevel% neq 0 (
-    echo Error: PyInstaller build failed!
+    echo Error: Failed to install PyInstaller!
     cd ..
     pause
     exit /b 1
 )
+
+echo.
+echo [6/6] Building executable with PyInstaller...
+if exist "dist" rmdir /s /q dist
+if exist "build" rmdir /s /q build
+
+echo Running PyInstaller...
+REM Run PyInstaller from the backend directory where app.spec is located
+pyinstaller app.spec --clean --noconfirm
+set PYINSTALLER_EXIT_CODE=%errorlevel%
+
+echo PyInstaller exit code: %PYINSTALLER_EXIT_CODE%
+
+if %PYINSTALLER_EXIT_CODE% neq 0 (
+    echo Error: PyInstaller build failed with exit code %PYINSTALLER_EXIT_CODE%!
+    echo.
+    echo Troubleshooting steps:
+    echo 1. Make sure PyInstaller is installed: pip install pyinstaller
+    echo 2. Check that app.spec file exists in backend directory
+    echo 3. Verify all dependencies are installed
+    echo 4. Check for any error messages above
+    cd ..
+    pause
+    exit /b 1
+)
+
+REM Check if the executable was actually created
+if not exist "dist\odrive_v36_gui.exe" (
+    echo Error: Executable was not created!
+    echo Expected location: backend\dist\odrive_v36_gui.exe
+    echo.
+    echo Please check the PyInstaller output above for errors.
+    cd ..
+    pause
+    exit /b 1
+)
+
+REM Go back to project root
 cd ..
 
 echo.
 echo ============================================
-echo Build completed successfully!
+echo BUILD COMPLETED SUCCESSFULLY!
 echo ============================================
 echo.
 echo Executable location: backend\dist\odrive_v36_gui.exe
+echo File size: 
+dir "backend\dist\odrive_v36_gui.exe" | findstr "odrive_v36_gui.exe"
 echo.
-echo You can now run the ODrive GUI by executing:
-echo   backend\dist\odrive_v36_gui.exe
+echo You can now run the GUI by executing:
+echo backend\dist\odrive_v36_gui.exe
 echo.
+echo The GUI will automatically open in your browser when started.
+echo ============================================
+
 pause
