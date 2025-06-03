@@ -27,7 +27,9 @@ import {
 import { InfoIcon } from '@chakra-ui/icons'
 import ParameterInput from '../buttons/ParameterInput'
 import { configurationMappings } from '../../utils/odriveCommands'
-import { EncoderMode } from '../../utils/odriveEnums'
+import { EncoderMode, getEncoderModeName } from '../../utils/odriveEnums'
+
+
 
 const EncoderConfigStep = ({ 
   deviceConfig, 
@@ -37,6 +39,7 @@ const EncoderConfigStep = ({
   isConnected 
 }) => {
   const encoderConfig = deviceConfig.encoder || {}
+  const motorConfig = deviceConfig.motor || {}
   const encoderMappings = configurationMappings.encoder
 
   const handleConfigChange = (configKey, value) => {

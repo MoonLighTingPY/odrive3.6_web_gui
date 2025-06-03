@@ -19,7 +19,16 @@ if not exist "backend" (
 )
 
 echo.
-echo [1/4] Installing frontend dependencies...
+echo [1/5] Stopping any running ODrive GUI processes...
+taskkill /f /im app.exe >nul 2>&1
+if %errorlevel% equ 0 (
+    echo ✓ Stopped existing app.exe process
+) else (
+    echo ✓ No existing app.exe process found
+)
+
+echo.
+echo [2/5] Installing frontend dependencies...
 cd frontend
 call npm install
 if %errorlevel% neq 0 (
@@ -30,7 +39,7 @@ if %errorlevel% neq 0 (
 )
 
 echo.
-echo [2/4] Building frontend production bundle...
+echo [3/5] Building frontend production bundle...
 call npm run build
 if %errorlevel% neq 0 (
     echo Error: Frontend build failed!
@@ -41,7 +50,7 @@ if %errorlevel% neq 0 (
 cd ..
 
 echo.
-echo [3/4] Installing backend dependencies...
+echo [4/5] Installing backend dependencies...
 cd backend
 pip install -r requirements.txt
 if %errorlevel% neq 0 (
@@ -52,7 +61,11 @@ if %errorlevel% neq 0 (
 )
 
 echo.
-echo [4/4] Building executable with PyInstaller...
+echo [5/5] Building executable with PyInstaller...
+REM Clean up old build files
+if exist "build" rmdir /s /q build
+if exist "dist\app.exe" del /f /q "dist\app.exe"
+
 pyinstaller app.spec --clean
 if %errorlevel% neq 0 (
     echo Error: PyInstaller build failed!
