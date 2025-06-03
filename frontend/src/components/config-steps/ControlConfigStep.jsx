@@ -176,7 +176,7 @@ const ControlConfigStep = ({
     handleConfigChange('vel_integrator_gain', radValue)
   }
 
-  const isPositionControl = controlConfig.control_mode === ControlMode.POSITION_CONTROL
+  const isPositionControl = (controlConfig.control_mode ?? ControlMode.VELOCITY_CONTROL) === ControlMode.POSITION_CONTROL
   const { isOpen: isCalculatedOpen, onToggle: onCalculatedToggle } = useDisclosure({ defaultIsOpen: false })
 
   return (
@@ -232,7 +232,7 @@ const ControlConfigStep = ({
                     </Tooltip>
                   </HStack>
                   <Select
-                    value={controlConfig.control_mode || ControlMode.POSITION_CONTROL}
+                    value={controlConfig.control_mode ?? ControlMode.VELOCITY_CONTROL}
                     onChange={(e) => handleConfigChange('control_mode', parseInt(e.target.value))}
                     bg="gray.700"
                     border="1px solid"
@@ -255,7 +255,7 @@ const ControlConfigStep = ({
                     </Tooltip>
                   </HStack>
                   <Select
-                    value={controlConfig.input_mode || InputMode.PASSTHROUGH}
+                    value={controlConfig.input_mode ?? InputMode.VEL_RAMP}
                     onChange={(e) => handleConfigChange('input_mode', parseInt(e.target.value))}
                     bg="gray.700"
                     border="1px solid"
@@ -690,13 +690,13 @@ const ControlConfigStep = ({
                 <HStack justify="space-between">
                   <Text color="gray.300" fontSize="sm">Control Mode:</Text>
                   <Badge colorScheme="blue" fontSize="xs">
-                    {getControlModeName(controlConfig.control_mode || ControlMode.POSITION_CONTROL)}
+                    {getControlModeName(controlConfig.control_mode ?? ControlMode.VELOCITY_CONTROL)}
                   </Badge>
                 </HStack>
                 <HStack justify="space-between">
                   <Text color="gray.300" fontSize="sm">Input Mode:</Text>
                   <Badge colorScheme="green" fontSize="xs">
-                    {getInputModeName(controlConfig.input_mode || InputMode.PASSTHROUGH)}
+                    {getInputModeName(controlConfig.input_mode ?? InputMode.VEL_RAMP)}
                   </Badge>
                 </HStack>
                 <HStack justify="space-between">

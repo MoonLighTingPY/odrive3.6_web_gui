@@ -27,6 +27,7 @@ import {
 import { InfoIcon } from '@chakra-ui/icons'
 import ParameterInput from '../buttons/ParameterInput'
 import { configurationMappings } from '../../utils/odriveCommands'
+import { EncoderMode } from '../../utils/odriveEnums'
 
 const EncoderConfigStep = ({ 
   deviceConfig, 
@@ -70,6 +71,7 @@ const EncoderConfigStep = ({
   const angularResolution = encoderConfig.cpr ? (360 / encoderConfig.cpr).toFixed(4) : '0.0900'
   const hallCpr = encoderConfig.encoder_type === 1 ? (encoderConfig.pole_pairs || 15) * 6 : null
 
+  // Update the encoder mode Select component (around line 150):
   return (
     <SimpleGrid columns={{ base: 1, xl: 2 }} spacing={4} h="100%" p={4} overflow="auto">
       {/* Left Column */}
@@ -97,20 +99,22 @@ const EncoderConfigStep = ({
                   </Tooltip>
                 </HStack>
                 <Select
-                  value={encoderConfig.encoder_type || 0}
-                  onChange={(e) => handleConfigChange('encoder_type', parseInt(e.target.value))}
+                  value={encoderConfig.mode ?? EncoderMode.HALL}
+                  onChange={(e) => handleConfigChange('mode', parseInt(e.target.value))}
                   bg="gray.700"
                   border="1px solid"
                   borderColor="gray.600"
                   color="white"
                   size="sm"
                 >
-                  <option value={0}>Incremental (Quadrature)</option>
-                  <option value={1}>Hall Effect</option>
-                  <option value={2}>SinCos</option>
-                  <option value={3}>SPI Absolute (CUI)</option>
-                  <option value={4}>SPI Absolute (AMS)</option>
-                  <option value={5}>SPI Absolute (AEAT)</option>
+                  <option value={EncoderMode.INCREMENTAL}>Incremental</option>
+                  <option value={EncoderMode.HALL}>Hall Effect</option>
+                  <option value={EncoderMode.SINCOS}>SinCos</option>
+                  <option value={EncoderMode.SPI_ABS_CUI}>SPI Absolute (CUI)</option>
+                  <option value={EncoderMode.SPI_ABS_AMS}>SPI Absolute (AMS)</option>
+                  <option value={EncoderMode.SPI_ABS_AEAT}>SPI Absolute (AEAT)</option>
+                  <option value={EncoderMode.SPI_ABS_RLS}>SPI Absolute (RLS)</option>
+                  <option value={EncoderMode.SPI_ABS_MA732}>SPI Absolute (MA732)</option>
                 </Select>
               </FormControl>
 
