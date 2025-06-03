@@ -407,7 +407,6 @@ const ConfigurationTab = () => {
         throw new Error(`Failed to save configuration: ${error.message || 'Unknown error'}`)
       }
 
-      const saveResult = await saveResponse.json()
       
       toast({
         title: 'Configuration Applied & Saved',
