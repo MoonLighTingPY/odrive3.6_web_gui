@@ -58,7 +58,7 @@ const EncoderConfigStep = ({
             <Heading size="sm" color="white">Basic Settings</Heading>
           </CardHeader>
           <CardBody py={2}>
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={3}>
+            <VStack spacing={3}>
               <FormControl>
                 <HStack spacing={2} mb={1}>
                   <FormLabel color="white" mb={0} fontSize="sm">Encoder Type</FormLabel>
@@ -74,7 +74,6 @@ const EncoderConfigStep = ({
                   borderColor="gray.600"
                   color="white"
                   size="sm"
-                  maxW="200px"
                 >
                   <option value={EncoderMode.INCREMENTAL}>Incremental</option>
                   <option value={EncoderMode.HALL}>Hall Effect</option>
@@ -87,25 +86,56 @@ const EncoderConfigStep = ({
                 </Select>
               </FormControl>
 
-              <FormControl>
-                <HStack spacing={2} mb={1}>
-                  <Switch
-                    isChecked={encoderConfig.use_separate_commutation_encoder}
-                    onChange={(e) => handleConfigChange('use_separate_commutation_encoder', e.target.checked)}
-                    colorScheme="odrive"
+              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={3} w="100%">
+                <FormControl>
+                  <HStack spacing={2} mb={1}>
+                    <FormLabel color="white" mb={0} fontSize="sm">Hall Polarity</FormLabel>
+                    <Tooltip label="Normal or inverted hall signal polarity. Hall encoders use CPR = pole_pairs × 6 and GPIO pins 9,10,11 (axis0) / 12,13,14 (axis1).">
+                      <Icon as={InfoIcon} color="gray.400" boxSize={3} />
+                    </Tooltip>
+                  </HStack>
+                  <Select
+                    value={encoderConfig.hall_polarity || 0}
+                    onChange={(e) => handleConfigChange('hall_polarity', parseInt(e.target.value))}
+                    bg="gray.700"
+                    border="1px solid"
+                    borderColor="gray.600"
+                    color="white"
                     size="sm"
-                  />
-                  <FormLabel color="white" mb={0} fontSize="sm">Use Separate Commutation Encoder</FormLabel>
-                  <Tooltip label="Enable if you have a separate low-resolution encoder for commutation.">
-                    <Icon as={InfoIcon} color="gray.400" boxSize={3} />
-                  </Tooltip>
-                </HStack>
-              </FormControl>
-            </SimpleGrid>
+                  >
+                    <option value={0}>Normal</option>
+                    <option value={1}>Inverted</option>
+                  </Select>
+                </FormControl>
+
+                <FormControl>
+                  <HStack spacing={2} mb={1}>
+                    <FormLabel color="white" mb={0} fontSize="sm">SPI CS GPIO Pin</FormLabel>
+                    <Tooltip label="GPIO pin for SPI chip select. Avoid GPIO1/2 if using UART_A. CUI encoders typically use CPR = 16384 or 4096.">
+                      <Icon as={InfoIcon} color="gray.400" boxSize={3} />
+                    </Tooltip>
+                  </HStack>
+                  <Select
+                    value={encoderConfig.abs_spi_cs_gpio_pin || 4}
+                    onChange={(e) => handleConfigChange('abs_spi_cs_gpio_pin', parseInt(e.target.value))}
+                    bg="gray.700"
+                    border="1px solid"
+                    borderColor="gray.600"
+                    color="white"
+                    size="sm"
+                  >
+                    <option value={1}>GPIO1</option>
+                    <option value={2}>GPIO2</option>
+                    <option value={3}>GPIO3</option>
+                    <option value={4}>GPIO4</option>
+                  </Select>
+                </FormControl>
+              </SimpleGrid>
+            </VStack>
           </CardBody>
         </Card>
 
-        {/* All Encoder Configuration */}
+        {/* Encoder Configuration */}
         <Card bg="gray.800" variant="elevated">
           <CardHeader py={1}>
             <Heading size="sm" color="white">Encoder Configuration</Heading>
@@ -160,122 +190,12 @@ const EncoderConfigStep = ({
                       max={1.0}
                     />
                   </FormControl>
-
-                  <HStack spacing={2}>
-                    <Switch
-                      isChecked={encoderConfig.use_index}
-                      onChange={(e) => handleConfigChange('use_index', e.target.checked)}
-                      colorScheme="odrive"
-                      size="sm"
-                    />
-                    <FormLabel color="white" mb={0} fontSize="xs">Use Index</FormLabel>
-                    <Tooltip label="Enable if your encoder has an index pulse.">
-                      <Icon as={InfoIcon} color="gray.400" boxSize={3} />
-                    </Tooltip>
-                  </HStack>
-
-                  <HStack spacing={2}>
-                    <Switch
-                      isChecked={encoderConfig.use_index_offset}
-                      onChange={(e) => handleConfigChange('use_index_offset', e.target.checked)}
-                      colorScheme="odrive"
-                      size="sm"
-                    />
-                    <FormLabel color="white" mb={0} fontSize="xs">Use Index Offset</FormLabel>
-                    <Tooltip label="Use stored index offset for faster startup.">
-                      <Icon as={InfoIcon} color="gray.400" boxSize={3} />
-                    </Tooltip>
-                  </HStack>
-
-                  <HStack spacing={2}>
-                    <Switch
-                      isChecked={encoderConfig.find_idx_on_lockin_only}
-                      onChange={(e) => handleConfigChange('find_idx_on_lockin_only', e.target.checked)}
-                      colorScheme="odrive"
-                      size="sm"
-                    />
-                    <FormLabel color="white" mb={0} fontSize="xs">Find Index on Lockin</FormLabel>
-                    <Tooltip label="Only search for index during motor lockin phase.">
-                      <Icon as={InfoIcon} color="gray.400" boxSize={3} />
-                    </Tooltip>
-                  </HStack>
                 </VStack>
               </Box>
 
-              {/* Center Column - Hall & SPI Settings */}
+              {/* Center Column - Calibration Settings */}
               <Box>
-                <Text fontWeight="bold" color="green.300" mb={2} fontSize="sm">Hall & SPI Settings</Text>
-                <VStack spacing={2} align="stretch">
-                  <FormControl>
-                    <FormLabel color="white" mb={1} fontSize="xs">Hall Polarity</FormLabel>
-                    <Select
-                      value={encoderConfig.hall_polarity || 0}
-                      onChange={(e) => handleConfigChange('hall_polarity', parseInt(e.target.value))}
-                      bg="gray.700"
-                      border="1px solid"
-                      borderColor="gray.600"
-                      color="white"
-                      size="sm"
-                      maxW="120px"
-                    >
-                      <option value={0}>Normal</option>
-                      <option value={1}>Inverted</option>
-                    </Select>
-                  </FormControl>
-
-                  <HStack spacing={2}>
-                    <Switch
-                      isChecked={encoderConfig.hall_polarity_calibrated}
-                      onChange={(e) => handleConfigChange('hall_polarity_calibrated', e.target.checked)}
-                      colorScheme="odrive"
-                      size="sm"
-                    />
-                    <FormLabel color="white" mb={0} fontSize="xs">Hall Polarity Calibrated</FormLabel>
-                    <Tooltip label="Indicates if hall polarity calibration has been completed.">
-                      <Icon as={InfoIcon} color="gray.400" boxSize={3} />
-                    </Tooltip>
-                  </HStack>
-
-                  <Alert status="info" py={1} fontSize="xs">
-                    <AlertIcon boxSize={3} />
-                    <VStack align="start" spacing={0}>
-                      <Text fontSize="xs">Hall: CPR = pole_pairs × 6</Text>
-                      <Text fontSize="xs">GPIO: 9,10,11 (axis0) / 12,13,14 (axis1)</Text>
-                    </VStack>
-                  </Alert>
-
-                  <FormControl>
-                    <FormLabel color="white" mb={1} fontSize="xs">SPI CS GPIO Pin</FormLabel>
-                    <Select
-                      value={encoderConfig.abs_spi_cs_gpio_pin || 4}
-                      onChange={(e) => handleConfigChange('abs_spi_cs_gpio_pin', parseInt(e.target.value))}
-                      bg="gray.700"
-                      border="1px solid"
-                      borderColor="gray.600"
-                      color="white"
-                      size="sm"
-                      maxW="100px"
-                    >
-                      <option value={1}>GPIO1</option>
-                      <option value={2}>GPIO2</option>
-                      <option value={3}>GPIO3</option>
-                      <option value={4}>GPIO4</option>
-                    </Select>
-                  </FormControl>
-
-                  <Alert status="warning" py={1} fontSize="xs">
-                    <AlertIcon boxSize={3} />
-                    <VStack align="start" spacing={0}>
-                      <Text fontSize="xs">SPI: Avoid GPIO1/2 if using UART_A</Text>
-                      <Text fontSize="xs">CUI: CPR = 16384 or 4096</Text>
-                    </VStack>
-                  </Alert>
-                </VStack>
-              </Box>
-
-              {/* Right Column - Calibration & Advanced */}
-              <Box>
-                <Text fontWeight="bold" color="purple.300" mb={2} fontSize="sm">Calibration & Advanced</Text>
+                <Text fontWeight="bold" color="green.300" mb={2} fontSize="sm">Calibration Settings</Text>
                 <VStack spacing={2} align="stretch">
                   <FormControl>
                     <FormLabel color="white" mb={1} fontSize="xs">Scan Distance</FormLabel>
@@ -322,6 +242,77 @@ const EncoderConfigStep = ({
                       <option value={-1}>Reverse</option>
                     </Select>
                   </FormControl>
+                </VStack>
+              </Box>
+
+              {/* Right Column - Advanced Settings */}
+              <Box>
+                <Text fontWeight="bold" color="purple.300" mb={2} fontSize="sm">Advanced Settings</Text>
+                <VStack spacing={2} align="stretch">
+                  <HStack spacing={2}>
+                    <Switch
+                      isChecked={encoderConfig.use_separate_commutation_encoder}
+                      onChange={(e) => handleConfigChange('use_separate_commutation_encoder', e.target.checked)}
+                      colorScheme="odrive"
+                      size="sm"
+                    />
+                    <FormLabel color="white" mb={0} fontSize="xs">Use Separate Commutation Encoder</FormLabel>
+                    <Tooltip label="Enable if you have a separate low-resolution encoder for commutation.">
+                      <Icon as={InfoIcon} color="gray.400" boxSize={3} />
+                    </Tooltip>
+                  </HStack>
+
+                  <HStack spacing={2}>
+                    <Switch
+                      isChecked={encoderConfig.hall_polarity_calibrated}
+                      onChange={(e) => handleConfigChange('hall_polarity_calibrated', e.target.checked)}
+                      colorScheme="odrive"
+                      size="sm"
+                    />
+                    <FormLabel color="white" mb={0} fontSize="xs">Hall Polarity Calibrated</FormLabel>
+                    <Tooltip label="Indicates if hall polarity calibration has been completed.">
+                      <Icon as={InfoIcon} color="gray.400" boxSize={3} />
+                    </Tooltip>
+                  </HStack>
+
+                  <HStack spacing={2}>
+                    <Switch
+                      isChecked={encoderConfig.use_index}
+                      onChange={(e) => handleConfigChange('use_index', e.target.checked)}
+                      colorScheme="odrive"
+                      size="sm"
+                    />
+                    <FormLabel color="white" mb={0} fontSize="xs">Use Index</FormLabel>
+                    <Tooltip label="Enable if your encoder has an index pulse.">
+                      <Icon as={InfoIcon} color="gray.400" boxSize={3} />
+                    </Tooltip>
+                  </HStack>
+
+                  <HStack spacing={2}>
+                    <Switch
+                      isChecked={encoderConfig.use_index_offset}
+                      onChange={(e) => handleConfigChange('use_index_offset', e.target.checked)}
+                      colorScheme="odrive"
+                      size="sm"
+                    />
+                    <FormLabel color="white" mb={0} fontSize="xs">Use Index Offset</FormLabel>
+                    <Tooltip label="Use stored index offset for faster startup.">
+                      <Icon as={InfoIcon} color="gray.400" boxSize={3} />
+                    </Tooltip>
+                  </HStack>
+
+                  <HStack spacing={2}>
+                    <Switch
+                      isChecked={encoderConfig.find_idx_on_lockin_only}
+                      onChange={(e) => handleConfigChange('find_idx_on_lockin_only', e.target.checked)}
+                      colorScheme="odrive"
+                      size="sm"
+                    />
+                    <FormLabel color="white" mb={0} fontSize="xs">Find Index on Lockin</FormLabel>
+                    <Tooltip label="Only search for index during motor lockin phase.">
+                      <Icon as={InfoIcon} color="gray.400" boxSize={3} />
+                    </Tooltip>
+                  </HStack>
 
                   <HStack spacing={2}>
                     <Switch
