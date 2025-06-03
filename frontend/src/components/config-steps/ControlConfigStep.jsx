@@ -40,6 +40,7 @@ import {
   rpmToRad, 
   velGainRadToRpm, 
   velGainRpmToRad,
+  safeToFixed
 } from '../../utils/unitConversions'
 
 const ControlConfigStep = ({ 
@@ -75,6 +76,8 @@ const ControlConfigStep = ({
       onReadParameter(odriveParam, 'control', configKey)
     }
   }
+
+
 
 
   const isLoading = (configKey) => {
@@ -713,38 +716,52 @@ const ControlConfigStep = ({
                     {getInputModeName(controlConfig.input_mode || InputMode.PASSTHROUGH)}
                   </Badge>
                 </HStack>
-                <HStack justify="space-between">
-                  <Text color="gray.300" fontSize="sm">Max Velocity:</Text>
-                  <Text fontWeight="bold" color="odrive.300" fontSize="sm">
-                    {useRpm ? `${(controlConfig.vel_limit * 60 || 1200).toFixed(0)} RPM` : `${(controlConfig.vel_limit || 20).toFixed(2)} turns/s`}
-                  </Text>
-                </HStack>
-                <HStack justify="space-between">
-                  <Text color="gray.300" fontSize="sm">Max Acceleration:</Text>
-                  <Text fontWeight="bold" color="odrive.300" fontSize="sm">
-                    {useRpm ? `${(controlConfig.vel_ramp_rate * 60 || 600).toFixed(0)} RPM/s` : `${(controlConfig.vel_ramp_rate || 10).toFixed(2)} turns/s²`}
-                  </Text>
-                </HStack>
-                {isPositionControl && (
-                  <HStack justify="space-between">
-                    <Text color="gray.300" fontSize="sm">Position Gain:</Text>
-                    <Text fontWeight="bold" color="odrive.300" fontSize="sm">
-                      {(controlConfig.pos_gain || 1).toFixed(3)} (turns/s)/turn
-                    </Text>
-                  </HStack>
-                )}
-                <HStack justify="space-between">
-                  <Text color="gray.300" fontSize="sm">Velocity Gain:</Text>
-                  <Text fontWeight="bold" color="odrive.300" fontSize="sm">
-                    {useRpm ? `${velGainRadToRpm(controlConfig.vel_gain || 0.228).toFixed(3)} A/(RPM)` : `${(controlConfig.vel_gain || 0.228).toFixed(6)} A/(turns/s)`}
-                  </Text>
-                </HStack>
-                <HStack justify="space-between">
-                  <Text color="gray.300" fontSize="sm">Velocity Integrator Gain:</Text>
-                  <Text fontWeight="bold" color="odrive.300" fontSize="sm">
-                    {useRpm ? `${velGainRadToRpm(controlConfig.vel_integrator_gain || 0.0228).toFixed(3)} A⋅s/(RPM)` : `${(controlConfig.vel_integrator_gain || 0.0228).toFixed(6)} A⋅s/(turns/s)`}
-                  </Text>
-                </HStack>
+                // Around line 715-725, replace the problematic section with:
+
+<HStack justify="space-between">
+  <Text color="gray.300" fontSize="sm">Max Velocity:</Text>
+  <Text fontWeight="bold" color="odrive.300" fontSize="sm">
+    {useRpm ? 
+      `${safeToFixed((controlConfig.vel_limit || 20) * 60, 0)} RPM` : 
+      `${safeToFixed(controlConfig.vel_limit || 20, 2)} turns/s`
+    }
+  </Text>
+</HStack>
+<HStack justify="space-between">
+  <Text color="gray.300" fontSize="sm">Max Acceleration:</Text>
+  <Text fontWeight="bold" color="odrive.300" fontSize="sm">
+    {useRpm ? 
+      `${safeToFixed((controlConfig.vel_ramp_rate || 10) * 60, 0)} RPM/s` : 
+      `${safeToFixed(controlConfig.vel_ramp_rate || 10, 2)} turns/s²`
+    }
+  </Text>
+</HStack>
+{isPositionControl && (
+  <HStack justify="space-between">
+    <Text color="gray.300" fontSize="sm">Position Gain:</Text>
+    <Text fontWeight="bold" color="odrive.300" fontSize="sm">
+      {safeToFixed(controlConfig.pos_gain || 1, 3)} (turns/s)/turn
+    </Text>
+  </HStack>
+)}
+<HStack justify="space-between">
+  <Text color="gray.300" fontSize="sm">Velocity Gain:</Text>
+  <Text fontWeight="bold" color="odrive.300" fontSize="sm">
+    {useRpm ? 
+      `${safeToFixed(velGainRadToRpm(controlConfig.vel_gain || 0.228), 3)} A/(RPM)` : 
+      `${safeToFixed(controlConfig.vel_gain || 0.228, 6)} A/(turns/s)`
+    }
+  </Text>
+</HStack>
+<HStack justify="space-between">
+  <Text color="gray.300" fontSize="sm">Velocity Integrator Gain:</Text>
+  <Text fontWeight="bold" color="odrive.300" fontSize="sm">
+    {useRpm ? 
+      `${safeToFixed(velGainRadToRpm(controlConfig.vel_integrator_gain || 0.0228), 3)} A⋅s/(RPM)` : 
+      `${safeToFixed(controlConfig.vel_integrator_gain || 0.0228, 6)} A⋅s/(turns/s)`
+    }
+  </Text>
+</HStack>
               </VStack>
             </CardBody>
           </Card>

@@ -1,5 +1,12 @@
 // ODrive v0.5.6 Error Codes - Updated to match official firmware definitions
 
+const safeNumber = (value, fallback = 0) => {
+  const num = Number(value)
+  return isNaN(num) ? fallback : num
+}
+
+
+
 // ODrive System Errors
 export const ODriveError = {
   NONE: 0x00000000,
@@ -600,8 +607,9 @@ export const validateEncoderConfig = (encoderConfig, motorConfig) => {
   const warnings = []
   const errors = []
 
-  const cpr = encoderConfig.cpr || 4000
-  const polePairs = motorConfig.pole_pairs || 7
+  // Safe number extraction
+  const cpr = safeNumber(encoderConfig?.cpr, 4000)
+  const polePairs = safeNumber(motorConfig?.pole_pairs, 7)
 
   // Check CPR vs pole pairs ratio
   const ratio = cpr / polePairs
