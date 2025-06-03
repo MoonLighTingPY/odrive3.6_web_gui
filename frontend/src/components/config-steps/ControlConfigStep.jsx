@@ -86,25 +86,28 @@ const ControlConfigStep = ({
 
   // Calculate optimal PID gains based on motor and encoder configuration
   const calculateOptimalGains = useCallback(() => {
-    const motorKv = motorConfig.motor_kv || 230
-    const encoderCpr = encoderConfig.cpr || 4000
-    
-    // Calculate torque constant (Kt = 60/(2π * Kv))
-    const torqueConstant = motorKv > 0 ? (60 / (2 * Math.PI * motorKv)) : 0.04
-    
-    // Calculate optimal gains using ODrive's recommended formulas
-    const bandwidth = 20 // Hz, typical control bandwidth
-    const velGain = bandwidth * torqueConstant * encoderCpr / 60
-    const velIntGain = 0.1 * bandwidth * velGain
-    const posGain = 1 * bandwidth // Typical ratio
-    
-    return {
-      pos_gain: posGain,
-      vel_gain: velGain,
-      vel_integrator_gain: velIntGain,
-      torque_constant: torqueConstant
-    }
-  }, [motorConfig.motor_kv, encoderConfig.cpr])
+  const motorKv = motorConfig.motor_kv || 230
+  const encoderCpr = encoderConfig.cpr || 4000
+  
+  // Calculate torque constant (Kt = 60/(2π * Kv))
+  const torqueConstant = motorKv > 0 ? (60 / (2 * Math.PI * motorKv)) : 0.04
+  
+  // ODrive v0.5.6 gain formulas from documentation
+  const velGainMultiplier = 0.02  // Typical starting value from hoverboard example
+  const velIntGainMultiplier = 0.1  // Typical starting value from hoverboard example
+  
+  // Correct ODrive v0.5.6 formulas (NO division by 60!)
+  const velGain = velGainMultiplier * torqueConstant * encoderCpr
+  const velIntGain = velIntGainMultiplier * torqueConstant * encoderCpr
+  const posGain = 1 // Typical starting value for position gain
+  
+  return {
+    pos_gain: posGain,
+    vel_gain: velGain,
+    vel_integrator_gain: velIntGain,
+    torque_constant: torqueConstant
+  }
+}, [motorConfig.motor_kv, encoderConfig.cpr])
 
   const [calculatedGains, setCalculatedGains] = useState(calculateOptimalGains())
 
