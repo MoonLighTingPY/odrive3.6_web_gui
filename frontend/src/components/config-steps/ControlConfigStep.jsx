@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo} from 'react'
+import { useState, useMemo} from 'react'
 import {
   Box,
   VStack,
@@ -33,7 +33,6 @@ import { ControlMode, InputMode} from '../../utils/odriveEnums'
 import { 
   radToRpm, 
   rpmToRad, 
-  velGainRadToRpm, 
 } from '../../utils/unitConversions'
 
 const ControlConfigStep = ({ 
@@ -68,7 +67,6 @@ const ControlConfigStep = ({
   const calculatedGains = useMemo(() => {
     const motor_kv = motorConfig.motor_kv || 230
     const cpr = encoderConfig.cpr || 4000
-    const current_lim = motorConfig.current_lim || 10
     
     const torque_constant = 8.27 / motor_kv
     const pos_gain = motor_kv / 10.0 / cpr * 60
@@ -81,7 +79,7 @@ const ControlConfigStep = ({
       vel_gain,
       vel_integrator_gain
     }
-  }, [motorConfig.motor_kv, encoderConfig.cpr, motorConfig.current_lim])
+  }, [motorConfig.motor_kv, encoderConfig.cpr])
 
   const resetGainToCalculated = (gainType) => {
     handleConfigChange(gainType, calculatedGains[gainType])
