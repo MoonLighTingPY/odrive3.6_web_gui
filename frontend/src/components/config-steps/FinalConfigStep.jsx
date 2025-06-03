@@ -19,6 +19,7 @@ import {
   Switch,
   FormControl,
   FormLabel,
+  SimpleGrid
 } from '@chakra-ui/react'
 import { ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons'
 
@@ -53,6 +54,7 @@ const FinalConfigStep = () => {
   
   const { powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig } = useSelector(state => state.config)
   const { isConnected } = useSelector(state => state.device)
+  
 
   // Poll calibration status when calibrating
   useEffect(() => {
@@ -657,183 +659,208 @@ const FinalConfigStep = () => {
   const enabledCommandCount = baseGeneratedCommands.length - disabledCommands.size + Object.keys(customCommands).filter(key => parseInt(key) >= baseGeneratedCommands.length).length
 
   return (
-    <VStack spacing={6} align="stretch" maxW="800px">
+    <Box h="100%" p={3} overflow="auto">
+      <VStack spacing={4} align="stretch" maxW="1200px" mx="auto">
 
-      {!isConnected && (
-        <Alert status="error">
-          <AlertIcon />
-          ODrive not connected. Please connect to a device before applying configuration.
-        </Alert>
-      )}
+        {!isConnected && (
+          <Alert status="error">
+            <AlertIcon />
+            ODrive not connected. Please connect to a device before applying configuration.
+          </Alert>
+        )}
 
-      <Card bg="gray.800" variant="elevated">
-        <CardHeader>
-          <Heading size="md" color="white">Configuration Actions</Heading>
-        </CardHeader>
-        <CardBody>
-          <VStack spacing={4} align="stretch">
-            <Button
-              colorScheme="red"
-              size="lg"
-              onClick={() => handleAction('erase')}
-              isDisabled={!isConnected}
-              isLoading={isLoading && pendingAction === 'erase'}
-            >
-              🗑️ Erase Old Configuration
-            </Button>
-
-            <Box>
-              <HStack justify="space-between" mb={2}>
-                <Text fontWeight="bold" color="white">
-                  Configuration Commands Preview ({enabledCommandCount} commands)
-                </Text>
-                <HStack>
-                  <FormControl display="flex" alignItems="center">
-                    <FormLabel htmlFor="enable-editing" mb="0" color="gray.300" fontSize="sm">
-                      Enable Editing
-                    </FormLabel>
-                    <Switch
-                      id="enable-editing"
-                      size="sm"
-                      colorScheme="odrive"
-                      isChecked={enableCommandEditing}
-                      onChange={(e) => setEnableCommandEditing(e.target.checked)}
-                    />
-                  </FormControl>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={onCommandsToggle}
-                    rightIcon={isCommandsOpen ? <ChevronUpIcon /> : <ChevronDownIcon />}
-                    color="gray.300"
-                  >
-                    {isCommandsOpen ? 'Hide' : 'Show'} Commands
-                  </Button>
-                </HStack>
-              </HStack>
+        <Card bg="gray.800" variant="elevated">
+          <CardHeader py={2}>
+            <Heading size="md" color="white" textAlign="center">Configuration Actions</Heading>
+          </CardHeader>
+          <CardBody py={3}>
+            <VStack spacing={4} align="stretch">
               
-              <Collapse in={isCommandsOpen}>
-                <Box
-                  bg="gray.900"
-                  p={4}
-                  borderRadius="md"
-                  maxH="400px"
-                  overflowY="auto"
-                  border="1px solid"
-                  borderColor="gray.600"
-                >
-                  <CommandList
-                    commands={baseGeneratedCommands}
-                    customCommands={customCommands}
-                    disabledCommands={disabledCommands}
-                    enableEditing={enableCommandEditing}
-                    onCustomCommandChange={handleCustomCommandChange}
-                    onCommandToggle={handleCommandToggle}
-                    onAddCustomCommand={handleAddCustomCommand}
-                  />
-                </Box>
-              </Collapse>
-            </Box>
+              {/* Configuration Commands Preview */}
+              <Box>
+                <HStack justify="space-between" mb={3}>
+                  <Text fontWeight="bold" color="white" fontSize="lg">
+                    Configuration Commands Preview ({enabledCommandCount} commands)
+                  </Text>
+                  <HStack spacing={3}>
+                    <FormControl display="flex" alignItems="center">
+                      <FormLabel htmlFor="enable-editing" mb="0" color="gray.300" fontSize="sm">
+                        Enable Editing
+                      </FormLabel>
+                      <Switch
+                        id="enable-editing"
+                        size="sm"
+                        colorScheme="odrive"
+                        isChecked={enableCommandEditing}
+                        onChange={(e) => setEnableCommandEditing(e.target.checked)}
+                      />
+                    </FormControl>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={onCommandsToggle}
+                      rightIcon={isCommandsOpen ? <ChevronUpIcon /> : <ChevronDownIcon />}
+                      color="gray.300"
+                    >
+                      {isCommandsOpen ? 'Hide' : 'Show'} Commands
+                    </Button>
+                  </HStack>
+                </HStack>
+                
+                <Collapse in={isCommandsOpen}>
+                  <Box
+                    bg="gray.900"
+                    p={4}
+                    borderRadius="md"
+                    maxH="400px"
+                    overflowY="auto"
+                    border="1px solid"
+                    borderColor="gray.600"
+                  >
+                    <CommandList
+                      commands={baseGeneratedCommands}
+                      customCommands={customCommands}
+                      disabledCommands={disabledCommands}
+                      enableEditing={enableCommandEditing}
+                      onCustomCommandChange={handleCustomCommandChange}
+                      onCommandToggle={handleCommandToggle}
+                      onAddCustomCommand={handleAddCustomCommand}
+                    />
+                  </Box>
+                </Collapse>
+              </Box>
 
-            <Button
-              colorScheme="blue"
-              size="lg"
-              onClick={() => handleAction('apply')}
-              isDisabled={!isConnected}
-              isLoading={isLoading && pendingAction === 'apply'}
-            >
-              ⚙️ Apply New Configuration
-            </Button>
+              {/* Main Action Buttons Grid */}
+              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4} w="100%">
+                
+                {/* Configuration Actions */}
+                <VStack spacing={3}>
+                  <Text fontWeight="bold" color="red.300" fontSize="sm" textAlign="center">
+                    Configuration Management
+                  </Text>
+                  
+                  <Button
+                    colorScheme="red"
+                    size="lg"
+                    w="100%"
+                    h="60px"
+                    onClick={() => handleAction('erase')}
+                    isDisabled={!isConnected}
+                    isLoading={isLoading && pendingAction === 'erase'}
+                  >
+                    🗑️ Erase Old Configuration
+                  </Button>
 
-            <Divider />
-            <Button
-              colorScheme="green"
-              size="lg"
-              onClick={() => handleAction('save_and_reboot')}
-              isDisabled={!isConnected}
-              isLoading={isLoading && pendingAction === 'save_and_reboot'}
-            >
-              💾 Save
-            </Button>
+                  <Button
+                    colorScheme="blue"
+                    size="lg"
+                    w="100%"
+                    h="60px"
+                    onClick={() => handleAction('apply')}
+                    isDisabled={!isConnected}
+                    isLoading={isLoading && pendingAction === 'apply'}
+                  >
+                    ⚙️ Apply New Configuration
+                  </Button>
 
-            <Divider />
+                  <Button
+                    colorScheme="green"
+                    size="lg"
+                    w="100%"
+                    h="60px"
+                    onClick={() => handleAction('save_and_reboot')}
+                    isDisabled={!isConnected}
+                    isLoading={isLoading && pendingAction === 'save_and_reboot'}
+                  >
+                    💾 Save & Reboot
+                  </Button>
+                </VStack>
 
-            <Text fontWeight="bold" color="white" textAlign="center">
-              Calibration Options (Proper Sequence for ODrive v0.5.6)
-            </Text>
+                {/* Calibration Actions */}
+                <VStack spacing={3}>
+                  <Text fontWeight="bold" color="orange.300" fontSize="sm" textAlign="center">
+                    Calibration
+                  </Text>
+                  
+                  <Button
+                    colorScheme="orange"
+                    size="lg"
+                    w="100%"
+                    h="60px"
+                    onClick={() => handleAction('calibrate')}
+                    isDisabled={!isConnected}
+                    isLoading={isLoading && pendingAction === 'calibrate'}
+                  >
+                    🎯 Full Calibration
+                  </Button>
 
-            <Button
-              colorScheme="orange"
-              size="lg"
-              onClick={() => handleAction('calibrate')}
-              isDisabled={!isConnected}
-              isLoading={isLoading && pendingAction === 'calibrate'}
-            >
-              🎯 Full Calibration (Motor → Encoder Polarity → Encoder Offset)
-            </Button>
+                  <Button
+                    colorScheme="orange"
+                    variant="outline"
+                    size="lg"
+                    w="100%"
+                    h="60px"
+                    onClick={() => handleAction('calibrate_motor')}
+                    isDisabled={!isConnected}
+                    isLoading={isLoading && pendingAction === 'calibrate_motor'}
+                  >
+                    🔧 Motor Only
+                  </Button>
 
-            <HStack spacing={4}>
-              <Button
-                colorScheme="orange"
-                variant="outline"
-                flex={1}
-                onClick={() => handleAction('calibrate_motor')}
-                isDisabled={!isConnected}
-                isLoading={isLoading && pendingAction === 'calibrate_motor'}
-              >
-                🔧 Motor Only
-              </Button>
-              <Button
-                colorScheme="orange"
-                variant="outline"
-                flex={1}
-                onClick={() => handleAction('calibrate_encoder')}
-                isDisabled={!isConnected}
-                isLoading={isLoading && pendingAction === 'calibrate_encoder'}
-              >
-                📐 Encoder Only (Polarity → Offset)
-              </Button>
-            </HStack>
+                  <Button
+                    colorScheme="orange"
+                    variant="outline"
+                    size="lg"
+                    w="100%"
+                    h="60px"
+                    onClick={() => handleAction('calibrate_encoder')}
+                    isDisabled={!isConnected}
+                    isLoading={isLoading && pendingAction === 'calibrate_encoder'}
+                  >
+                    📐 Encoder Only
+                  </Button>
+                </VStack>
 
+              </SimpleGrid>
 
-          </VStack>
-        </CardBody>
-      </Card>
+            </VStack>
+          </CardBody>
+        </Card>
 
+        {/* Use the new modal components */}
+        <CalibrationModal
+          isOpen={isCalibrationOpen}
+          onClose={onCalibrationClose}
+          isCalibrating={isCalibrating}
+          calibrationProgress={calibrationProgress}
+          calibrationPhase={calibrationPhase}
+          calibrationSequence={calibrationSequence}
+          calibrationStatus={calibrationStatus}
+          getCalibrationPhaseDescription={getCalibrationPhaseDescription}
+        />
 
-      {/* Use the new modal components */}
-      <CalibrationModal
-        isOpen={isCalibrationOpen}
-        onClose={onCalibrationClose}
-        isCalibrating={isCalibrating}
-        calibrationProgress={calibrationProgress}
-        calibrationPhase={calibrationPhase}
-        calibrationSequence={calibrationSequence}
-        calibrationStatus={calibrationStatus}
-        getCalibrationPhaseDescription={getCalibrationPhaseDescription}
-      />
+        <ConfirmationModal
+          isOpen={isConfirmOpen}
+          onClose={onConfirmClose}
+          pendingAction={pendingAction}
+          getActionDetails={getActionDetails}
+          onConfirm={() => executeAction(pendingAction)}
+          isLoading={isLoading}
+          enabledCommandCount={enabledCommandCount}
+          customCommandCount={Object.keys(customCommands).length}
+        />
 
-      <ConfirmationModal
-        isOpen={isConfirmOpen}
-        onClose={onConfirmClose}
-        pendingAction={pendingAction}
-        getActionDetails={getActionDetails}
-        onConfirm={() => executeAction(pendingAction)}
-        isLoading={isLoading}
-        enabledCommandCount={enabledCommandCount}
-        customCommandCount={Object.keys(customCommands).length}
-      />
-
-      <VerificationModal
-        isOpen={isVerificationOpen}
-        onClose={onVerificationClose}
-        isVerifying={isVerifying}
-        verificationProgress={verificationProgress}
-        verificationResults={verificationResults}
-        onStartVerification={() => verifyConfiguration(finalCommands)}
-        getStatusColor={getStatusColor}
-      />
-    </VStack>
+        <VerificationModal
+          isOpen={isVerificationOpen}
+          onClose={onVerificationClose}
+          isVerifying={isVerifying}
+          verificationProgress={verificationProgress}
+          verificationResults={verificationResults}
+          onStartVerification={() => verifyConfiguration(finalCommands)}
+          getStatusColor={getStatusColor}
+        />
+      </VStack>
+    </Box>
   )
 }
 
