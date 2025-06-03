@@ -27,7 +27,6 @@ const InterfaceConfigStep = ({
   onReadParameter, 
   onUpdateConfig,
   loadingParams, 
-  isConnected 
 }) => {
   const interfaceConfig = deviceConfig.interface || {}
   const interfaceMappings = configurationMappings.interface
@@ -51,14 +50,6 @@ const InterfaceConfigStep = ({
     <SimpleGrid columns={{ base: 1, xl: 2 }} spacing={4} h="100%" p={4} overflow="auto">
       {/* Left Column */}
       <VStack spacing={3} align="stretch">
-        <Box>
-          <Heading size="md" color="white" mb={1}>
-            Interface Configuration
-          </Heading>
-          <Text color="gray.300" fontSize="sm">
-            Configure communication interfaces, GPIO pins, and safety features.
-          </Text>
-        </Box>
 
         <Card bg="gray.800" variant="elevated">
           <CardHeader py={2}>
@@ -412,61 +403,9 @@ const InterfaceConfigStep = ({
         </Card>
 
         <Card bg="gray.700" variant="elevated">
-          <CardHeader py={2}>
-            <Heading size="sm" color="white">Interface Summary</Heading>
-          </CardHeader>
-          <CardBody py={2}>
-            <VStack spacing={2} align="stretch">
-              <HStack justify="space-between">
-                <Text color="gray.300" fontSize="sm">CAN Bus:</Text>
-                <Text fontWeight="bold" color="odrive.300" fontSize="sm">
-                  Node ID: {interfaceConfig.can_node_id || 0} ({interfaceConfig.can_node_id_extended ? '29-bit' : '11-bit'})
-                </Text>
-              </HStack>
-              <HStack justify="space-between">
-                <Text color="gray.300" fontSize="sm">UART A:</Text>
-                <Text fontWeight="bold" color={interfaceConfig.enable_uart_a ? "green.300" : "gray.300"} fontSize="sm">
-                  {interfaceConfig.enable_uart_a ? `${interfaceConfig.uart_a_baudrate || 115200} bps` : "Disabled"}
-                </Text>
-              </HStack>
-              <HStack justify="space-between">
-                <Text color="gray.300" fontSize="sm">UART B:</Text>
-                <Text fontWeight="bold" color={interfaceConfig.enable_uart_b ? "green.300" : "gray.300"} fontSize="sm">
-                  {interfaceConfig.enable_uart_b ? `${interfaceConfig.uart_b_baudrate || 115200} bps` : "Disabled"}
-                </Text>
-              </HStack>
-              <HStack justify="space-between">
-                <Text color="gray.300" fontSize="sm">Step/Dir:</Text>
-                <Text fontWeight="bold" color={interfaceConfig.enable_step_dir ? "green.300" : "gray.300"} fontSize="sm">
-                  {interfaceConfig.enable_step_dir ? "Enabled" : "Disabled"}
-                </Text>
-              </HStack>
-              <HStack justify="space-between">
-                <Text color="gray.300" fontSize="sm">Watchdog:</Text>
-                <Text fontWeight="bold" color={interfaceConfig.enable_watchdog ? "yellow.300" : "gray.300"} fontSize="sm">
-                  {interfaceConfig.enable_watchdog ? `${interfaceConfig.watchdog_timeout || 0}s` : "Disabled"}
-                </Text>
-              </HStack>
-              <HStack justify="space-between">
-                <Text color="gray.300" fontSize="sm">Sensorless:</Text>
-                <Text fontWeight="bold" color={interfaceConfig.enable_sensorless ? "purple.300" : "gray.300"} fontSize="sm">
-                  {interfaceConfig.enable_sensorless ? "Enabled" : "Disabled"}
-                </Text>
-              </HStack>
-            </VStack>
-          </CardBody>
+          
         </Card>
 
-        <Alert status="info" variant="left-accent">
-          <AlertIcon />
-          <VStack align="start" spacing={1}>
-            <Text fontWeight="bold" fontSize="sm">ODrive v0.5.6 Interface Tips:</Text>
-            <Text fontSize="xs">• Use refresh buttons to read current values from ODrive</Text>
-            <Text fontSize="xs">• Changes are applied immediately to the device</Text>
-            <Text fontSize="xs">• UART_A (GPIO1/2) is enabled by default with ASCII+STDOUT protocol</Text>
-            <Text fontSize="xs">• Step/Dir interface uses GPIO1 (step) and GPIO2 (direction)</Text>
-          </VStack>
-        </Alert>
       </VStack>
     </SimpleGrid>
   )

@@ -27,7 +27,6 @@ const MotorConfigStep = ({
   onReadParameter, 
   onUpdateConfig,
   loadingParams, 
-  isConnected 
 }) => {
   const motorConfig = deviceConfig.motor || {}
   const motorMappings = configurationMappings.motor
@@ -55,14 +54,6 @@ const MotorConfigStep = ({
     <SimpleGrid columns={{ base: 1, xl: 2 }} spacing={4} h="100%" p={4} overflow="auto">
       {/* Left Column */}
       <VStack spacing={3} align="stretch">
-        <Box>
-          <Heading size="md" color="white" mb={1}>
-            Motor Configuration
-          </Heading>
-          <Text color="gray.300" fontSize="sm">
-            Configure motor parameters and current limits.
-          </Text>
-        </Box>
 
         <Card bg="gray.800" variant="elevated">
           <CardHeader py={2}>
@@ -202,10 +193,6 @@ const MotorConfigStep = ({
             </VStack>
           </CardBody>
         </Card>
-      </VStack>
-
-      {/* Right Column - Calculated Values */}
-      <VStack spacing={3} align="stretch">
         <Card bg="gray.800" variant="elevated">
           <CardHeader py={2}>
             <Heading size="sm" color="white">Calculated Values</Heading>
@@ -233,16 +220,12 @@ const MotorConfigStep = ({
             </VStack>
           </CardBody>
         </Card>
+      </VStack>
 
-        <Alert status="info" variant="left-accent">
-          <AlertIcon />
-          <VStack align="start" spacing={1}>
-            <Text fontWeight="bold" fontSize="sm">Motor Configuration Tips:</Text>
-            <Text fontSize="xs">• Use refresh buttons to read current values from ODrive</Text>
-            <Text fontSize="xs">• Changes are applied immediately to the device</Text>
-            <Text fontSize="xs">• Gimbal motors require phase resistance configuration</Text>
-          </VStack>
-        </Alert>
+      {/* Right Column - Calculated Values */}
+      <VStack spacing={3} align="stretch">
+
+
       </VStack>
     </SimpleGrid>
   )

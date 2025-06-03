@@ -27,7 +27,6 @@ const PowerConfigStep = ({
   onReadParameter, 
   onUpdateConfig,
   loadingParams, 
-  isConnected 
 }) => {
   const powerConfig = deviceConfig.power || {}
   const powerMappings = configurationMappings.power
@@ -51,15 +50,6 @@ const PowerConfigStep = ({
     <SimpleGrid columns={{ base: 1, xl: 2 }} spacing={4} h="100%" p={4} overflow="auto">
       {/* Left Column */}
       <VStack spacing={3} align="stretch">
-        <Box>
-          <Heading size="md" color="white" mb={1}>
-            Power Configuration
-          </Heading>
-          <Text color="gray.300" fontSize="sm">
-            Configure DC bus voltage limits and current protections.
-          </Text>
-        </Box>
-
         <Card bg="gray.800" variant="elevated">
           <CardHeader py={2}>
             <Heading size="sm" color="white">Voltage Limits</Heading>
@@ -198,109 +188,7 @@ const PowerConfigStep = ({
 
       {/* Right Column */}
       <VStack spacing={3} align="stretch">
-        <Card bg="gray.700" variant="elevated">
-          <CardHeader py={2}>
-            <Heading size="sm" color="white">Configuration Summary</Heading>
-          </CardHeader>
-          <CardBody py={2}>
-            <VStack spacing={2} align="stretch">
-              <HStack justify="space-between">
-                <Text color="gray.300" fontSize="sm">Overvoltage Trip:</Text>
-                <Badge colorScheme="red" fontSize="xs">
-                  {powerConfig.dc_bus_overvoltage_trip_level || 56}V
-                </Badge>
-              </HStack>
-              <HStack justify="space-between">
-                <Text color="gray.300" fontSize="sm">Undervoltage Trip:</Text>
-                <Badge colorScheme="yellow" fontSize="xs">
-                  {powerConfig.dc_bus_undervoltage_trip_level || 10}V
-                </Badge>
-              </HStack>
-              <HStack justify="space-between">
-                <Text color="gray.300" fontSize="sm">Max Positive Current:</Text>
-                <Text fontWeight="bold" color="odrive.300" fontSize="sm">
-                  {powerConfig.dc_max_positive_current || 10}A
-                </Text>
-              </HStack>
-              <HStack justify="space-between">
-                <Text color="gray.300" fontSize="sm">Max Negative Current:</Text>
-                <Text fontWeight="bold" color="odrive.300" fontSize="sm">
-                  {powerConfig.dc_max_negative_current || -10}A
-                </Text>
-              </HStack>
-              <HStack justify="space-between">
-                <Text color="gray.300" fontSize="sm">Brake Resistor:</Text>
-                <Badge colorScheme={powerConfig.brake_resistor_enabled ? "green" : "gray"} fontSize="xs">
-                  {powerConfig.brake_resistor_enabled ? "Enabled" : "Disabled"}
-                </Badge>
-              </HStack>
-            </VStack>
-          </CardBody>
-        </Card>
-
-        <Card bg="orange.900" variant="elevated" borderColor="orange.500" borderWidth="1px">
-          <CardHeader py={2}>
-            <Heading size="sm" color="white">Safety Guidelines</Heading>
-          </CardHeader>
-          <CardBody py={2}>
-            <VStack spacing={2} align="start">
-              <Text fontSize="sm" color="orange.100">
-                <strong>Overvoltage:</strong> Set 10-15% above your maximum supply voltage
-              </Text>
-              <Text fontSize="sm" color="orange.100">
-                <strong>Undervoltage:</strong> Set 10-15% below your minimum supply voltage
-              </Text>
-              <Text fontSize="sm" color="orange.100">
-                <strong>Current Limits:</strong> Consider your power supply capabilities
-              </Text>
-              <Text fontSize="sm" color="yellow.300">
-                <strong>Always use appropriate fusing and protection circuits</strong>
-              </Text>
-            </VStack>
-          </CardBody>
-        </Card>
-
-        <Alert status="warning" py={2}>
-          <AlertIcon />
-          <VStack align="start" spacing={1}>
-            <Text fontWeight="bold" fontSize="sm">ODrive v0.5.6 Power Requirements:</Text>
-            <Text fontSize="xs">• 12-56V DC input voltage range</Text>
-            <Text fontSize="xs">• Maximum 120A peak current per axis</Text>
-            <Text fontSize="xs">• Brake resistor recommended for high-power applications</Text>
-          </VStack>
-        </Alert>
-
-        <Card bg="gray.800" variant="elevated">
-          <CardHeader py={2}>
-            <Heading size="sm" color="white">Voltage Range Recommendations</Heading>
-          </CardHeader>
-          <CardBody py={2}>
-            <VStack spacing={2}>
-              <HStack justify="space-between" w="100%">
-                <Text fontSize="sm" color="gray.300">12V System:</Text>
-                <Text fontSize="sm" color="white">10V - 15V</Text>
-              </HStack>
-              <HStack justify="space-between" w="100%">
-                <Text fontSize="sm" color="gray.300">24V System:</Text>
-                <Text fontSize="sm" color="white">20V - 30V</Text>
-              </HStack>
-              <HStack justify="space-between" w="100%">
-                <Text fontSize="sm" color="gray.300">48V System:</Text>
-                <Text fontSize="sm" color="white">40V - 56V</Text>
-              </HStack>
-            </VStack>
-          </CardBody>
-        </Card>
-
-        <Alert status="info" variant="left-accent">
-          <AlertIcon />
-          <VStack align="start" spacing={1}>
-            <Text fontWeight="bold" fontSize="sm">Power Configuration Tips:</Text>
-            <Text fontSize="xs">• Use refresh buttons to read current values from ODrive</Text>
-            <Text fontSize="xs">• Changes are applied immediately to the device</Text>
-            <Text fontSize="xs">• Brake resistor helps with deceleration and regenerative energy</Text>
-          </VStack>
-        </Alert>
+        
       </VStack>
     </SimpleGrid>
   )

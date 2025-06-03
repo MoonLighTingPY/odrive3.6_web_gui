@@ -34,13 +34,11 @@ import {
 import { InfoIcon, RepeatIcon, ChevronUpIcon, ChevronDownIcon } from '@chakra-ui/icons'
 import ParameterInput from '../buttons/ParameterInput'
 import { configurationMappings } from '../../utils/odriveCommands'
-import { ControlMode, InputMode, getControlModeName, getInputModeName } from '../../utils/odriveEnums'
+import { ControlMode, InputMode} from '../../utils/odriveEnums'
 import { 
   radToRpm, 
   rpmToRad, 
   velGainRadToRpm, 
-  velGainRpmToRad,
-  safeToFixed
 } from '../../utils/unitConversions'
 
 const ControlConfigStep = ({ 
@@ -48,7 +46,6 @@ const ControlConfigStep = ({
   onReadParameter, 
   onUpdateConfig,
   loadingParams, 
-  isConnected 
 }) => {
   const controlConfig = deviceConfig.control || {}
   const motorConfig = deviceConfig.motor || {}
@@ -160,21 +157,6 @@ const ControlConfigStep = ({
     handleConfigChange('vel_ramp_rate', radValue)
   }
 
-  // Handle velocity gain changes
-  const handleVelGainChange = (value) => {
-    const numValue = parseFloat(value) || 0
-    setDisplayValues(prev => ({ ...prev, velGain: numValue }))
-    const radValue = useRpm ? velGainRpmToRad(numValue) : numValue
-    handleConfigChange('vel_gain', radValue)
-  }
-
-  // Handle velocity integrator gain changes
-  const handleVelIntGainChange = (value) => {
-    const numValue = parseFloat(value) || 0
-    setDisplayValues(prev => ({ ...prev, velIntGain: numValue }))
-    const radValue = useRpm ? velGainRpmToRad(numValue) : numValue
-    handleConfigChange('vel_integrator_gain', radValue)
-  }
 
   const isPositionControl = (controlConfig.control_mode ?? ControlMode.VELOCITY_CONTROL) === ControlMode.POSITION_CONTROL
   const { isOpen: isCalculatedOpen, onToggle: onCalculatedToggle } = useDisclosure({ defaultIsOpen: false })
@@ -185,12 +167,6 @@ const ControlConfigStep = ({
         {/* Left Column */}
         <VStack spacing={4} align="stretch" h="100%" overflow="auto">
           <Box>
-            <Heading size="md" color="white" mb={1}>
-              Control Mode Configuration
-            </Heading>
-            <Text color="gray.300" fontSize="sm" mb={3}>
-              Configure the control mode and input processing for your motor.
-            </Text>
             
             {/* Unit Toggle */}
             <Card bg="gray.700" variant="elevated">
@@ -681,105 +657,7 @@ const ControlConfigStep = ({
 
         {/* Right Column */}
         <VStack spacing={4} align="stretch" h="100%" overflow="auto">
-          <Card bg="gray.700" variant="elevated">
-            <CardHeader py={2}>
-              <Heading size="sm" color="white">Configuration Summary</Heading>
-            </CardHeader>
-            <CardBody py={2}>
-              <VStack spacing={2} align="stretch">
-                <HStack justify="space-between">
-                  <Text color="gray.300" fontSize="sm">Control Mode:</Text>
-                  <Badge colorScheme="blue" fontSize="xs">
-                    {getControlModeName(controlConfig.control_mode ?? ControlMode.VELOCITY_CONTROL)}
-                  </Badge>
-                </HStack>
-                <HStack justify="space-between">
-                  <Text color="gray.300" fontSize="sm">Input Mode:</Text>
-                  <Badge colorScheme="green" fontSize="xs">
-                    {getInputModeName(controlConfig.input_mode ?? InputMode.VEL_RAMP)}
-                  </Badge>
-                </HStack>
-                <HStack justify="space-between">
-                  <Text color="gray.300" fontSize="sm">Max Velocity:</Text>
-                  <Text fontWeight="bold" color="odrive.300" fontSize="sm">
-                    {useRpm ? 
-                      `${safeToFixed((controlConfig.vel_limit || 20) * 60, 0)} RPM` : 
-                      `${safeToFixed(controlConfig.vel_limit || 20, 2)} turns/s`
-                    }
-                  </Text>
-                </HStack>
-                <HStack justify="space-between">
-                  <Text color="gray.300" fontSize="sm">Max Acceleration:</Text>
-                  <Text fontWeight="bold" color="odrive.300" fontSize="sm">
-                    {useRpm ? 
-                      `${safeToFixed((controlConfig.vel_ramp_rate || 10) * 60, 0)} RPM/s` : 
-                      `${safeToFixed(controlConfig.vel_ramp_rate || 10, 2)} turns/s²`
-                    }
-                  </Text>
-                </HStack>
-                {isPositionControl && (
-                  <HStack justify="space-between">
-                    <Text color="gray.300" fontSize="sm">Position Gain:</Text>
-                    <Text fontWeight="bold" color="odrive.300" fontSize="sm">
-                      {safeToFixed(controlConfig.pos_gain || 1, 3)} (turns/s)/turn
-                    </Text>
-                  </HStack>
-                )}
-                <HStack justify="space-between">
-                  <Text color="gray.300" fontSize="sm">Velocity Gain:</Text>
-                  <Text fontWeight="bold" color="odrive.300" fontSize="sm">
-                    {safeToFixed(controlConfig.vel_gain || 0.228, 6)} Nm [per turn/s]
-                  </Text>
-                </HStack>
-                <HStack justify="space-between">
-                  <Text color="gray.300" fontSize="sm">Velocity Integrator Gain:</Text>
-                  <Text fontWeight="bold" color="odrive.300" fontSize="sm">
-                    {safeToFixed(controlConfig.vel_integrator_gain || 0.0228, 6)} Nm⋅s [per turn/s]
-                  </Text>
-                </HStack>
-              </VStack>
-            </CardBody>
-          </Card>
-
-          <Card bg="blue.900" variant="elevated" borderColor="blue.500" borderWidth="1px">
-            <CardHeader py={2}>
-              <Heading size="sm" color="white">Control Guidelines</Heading>
-            </CardHeader>
-            <CardBody py={2}>
-              <VStack spacing={2} align="start">
-                <Text fontSize="sm" color="blue.100">
-                  <strong>Start with calculated gains</strong> for stable operation
-                </Text>
-                <Text fontSize="sm" color="blue.100">
-                  <strong>Position Control:</strong> Good for precise positioning tasks
-                </Text>
-                <Text fontSize="sm" color="blue.100">
-                  <strong>Velocity Control:</strong> Good for speed regulation
-                </Text>
-                <Text fontSize="sm" color="blue.100">
-                  <strong>Higher gains:</strong> Faster response but may cause oscillation
-                </Text>
-                <Text fontSize="sm" color="blue.100">
-                  <strong>Lower gains:</strong> Slower but more stable response
-                </Text>
-              </VStack>
-            </CardBody>
-          </Card>
-
-          <Alert status="info" variant="left-accent" py={2}>
-            <AlertIcon />
-            <VStack align="start" spacing={1}>
-              <Text fontSize="sm" fontWeight="bold">
-                ODrive v0.5.6 Control Loop
-              </Text>
-              <Text fontSize="xs">
-                Position → Velocity → Current → Voltage
-              </Text>
-              <Text fontSize="xs">
-                Each control mode bypasses earlier stages
-              </Text>
-            </VStack>
-          </Alert>
+        
         </VStack>
       </SimpleGrid>
     </Box>

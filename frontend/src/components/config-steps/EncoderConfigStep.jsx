@@ -27,7 +27,7 @@ import {
 import { InfoIcon } from '@chakra-ui/icons'
 import ParameterInput from '../buttons/ParameterInput'
 import { configurationMappings } from '../../utils/odriveCommands'
-import { EncoderMode, getEncoderModeName } from '../../utils/odriveEnums'
+import { EncoderMode} from '../../utils/odriveEnums'
 
 
 
@@ -36,10 +36,8 @@ const EncoderConfigStep = ({
   onReadParameter, 
   onUpdateConfig,
   loadingParams, 
-  isConnected 
 }) => {
   const encoderConfig = deviceConfig.encoder || {}
-  const motorConfig = deviceConfig.motor || {}
   const encoderMappings = configurationMappings.encoder
 
   const handleConfigChange = (configKey, value) => {
@@ -57,36 +55,11 @@ const EncoderConfigStep = ({
     return loadingParams.has(`encoder.${configKey}`)
   }
 
-  // Encoder mode names for display
-  const getEncoderModeName = (mode) => {
-    switch (mode) {
-      case 0: return 'Incremental'
-      case 1: return 'Hall Effect'
-      case 2: return 'SinCos'
-      case 3: return 'SPI Absolute (CUI)'
-      case 4: return 'SPI Absolute (AMS)'
-      case 5: return 'SPI Absolute (AEAT)'
-      default: return 'Unknown'
-    }
-  }
-
-  // Calculate derived values
-  const angularResolution = encoderConfig.cpr ? (360 / encoderConfig.cpr).toFixed(4) : '0.0900'
-  const hallCpr = encoderConfig.encoder_type === 1 ? (encoderConfig.pole_pairs || 15) * 6 : null
-
   // Update the encoder mode Select component (around line 150):
   return (
     <SimpleGrid columns={{ base: 1, xl: 2 }} spacing={4} h="100%" p={4} overflow="auto">
       {/* Left Column */}
       <VStack spacing={3} align="stretch">
-        <Box>
-          <Heading size="md" color="white" mb={1}>
-            Encoder Configuration
-          </Heading>
-          <Text color="gray.300" fontSize="sm">
-            Configure your position feedback encoder and calibration settings.
-          </Text>
-        </Box>
 
         <Card bg="gray.800" variant="elevated">
           <CardHeader py={2}>
@@ -438,160 +411,6 @@ const EncoderConfigStep = ({
 
       {/* Right Column - Summary and Status */}
       <VStack spacing={3} align="stretch">
-        <Box>
-          <Heading size="md" color="white" mb={1}>
-            Encoder Summary
-          </Heading>
-          <Text color="gray.300" fontSize="sm">
-            Current encoder configuration overview.
-          </Text>
-        </Box>
-
-        <Card bg="gray.700" variant="elevated">
-          <CardHeader py={2}>
-            <HStack justify="space-between">
-              <Heading size="sm" color="white">Configuration Status</Heading>
-              <Badge colorScheme="odrive" variant="subtle">
-                {getEncoderModeName(encoderConfig.encoder_type || 0)}
-              </Badge>
-            </HStack>
-          </CardHeader>
-          <CardBody py={2}>
-            <VStack spacing={2} align="stretch">
-              <HStack justify="space-between">
-                <Text color="gray.300" fontSize="sm">Encoder Type:</Text>
-                <Text fontWeight="bold" color="white" fontSize="sm">
-                  {getEncoderModeName(encoderConfig.encoder_type || 0)}
-                </Text>
-              </HStack>
-              <HStack justify="space-between">
-                <Text color="gray.300" fontSize="sm">CPR:</Text>
-                <Text fontWeight="bold" color="odrive.300" fontSize="sm">
-                  {hallCpr ? `${hallCpr} (Hall)` : `${encoderConfig.cpr || 4000} counts/rev`}
-                </Text>
-              </HStack>
-              <HStack justify="space-between">
-                <Text color="gray.300" fontSize="sm">Angular Resolution:</Text>
-                <Text fontWeight="bold" color="odrive.300" fontSize="sm">
-                  {angularResolution}°/count
-                </Text>
-              </HStack>
-              <HStack justify="space-between">
-                <Text color="gray.300" fontSize="sm">Bandwidth:</Text>
-                <Text fontWeight="bold" color="odrive.300" fontSize="sm">
-                  {encoderConfig.bandwidth || 1000} Hz
-                </Text>
-              </HStack>
-              <HStack justify="space-between">
-                <Text color="gray.300" fontSize="sm">Use Index:</Text>
-                <Badge colorScheme={encoderConfig.use_index ? "green" : "gray"} variant="subtle" fontSize="xs">
-                  {encoderConfig.use_index ? "Yes" : "No"}
-                </Badge>
-              </HStack>
-              <HStack justify="space-between">
-                <Text color="gray.300" fontSize="sm">Hall Polarity:</Text>
-                <Text fontWeight="bold" color="odrive.300" fontSize="sm">
-                  {encoderConfig.hall_polarity === 0 ? "Normal" : "Inverted"}
-                </Text>
-              </HStack>
-              <HStack justify="space-between">
-                <Text color="gray.300" fontSize="sm">Direction:</Text>
-                <Text fontWeight="bold" color="odrive.300" fontSize="sm">
-                  {encoderConfig.direction === -1 ? "Reverse" : "Forward"}
-                </Text>
-              </HStack>
-              <HStack justify="space-between">
-                <Text color="gray.300" fontSize="sm">Pre-Calibrated:</Text>
-                <Badge colorScheme={encoderConfig.pre_calibrated ? "green" : "gray"} variant="subtle" fontSize="xs">
-                  {encoderConfig.pre_calibrated ? "Yes" : "No"}
-                </Badge>
-              </HStack>
-            </VStack>
-          </CardBody>
-        </Card>
-
-        {/* Encoder Type Information */}
-        <Card bg="gray.800" variant="elevated">
-          <CardHeader py={2}>
-            <Heading size="sm" color="white">Encoder Information</Heading>
-          </CardHeader>
-          <CardBody py={2}>
-            <VStack spacing={3} align="stretch">
-              {encoderConfig.encoder_type === 0 && (
-                <VStack spacing={2} align="stretch">
-                  <Text color="odrive.300" fontWeight="bold" fontSize="sm">Incremental Encoder</Text>
-                  <Text color="gray.300" fontSize="xs">
-                    Most common encoder type. Provides quadrature signals (A/B) and optionally an index pulse (Z).
-                    CPR = 4 × encoder lines (PPR).
-                  </Text>
-                  <Text color="gray.300" fontSize="xs">
-                    <strong>Typical CPR values:</strong> 1000-8000 for most motors
-                  </Text>
-                </VStack>
-              )}
-              {encoderConfig.encoder_type === 1 && (
-                <VStack spacing={2} align="stretch">
-                  <Text color="odrive.300" fontWeight="bold" fontSize="sm">Hall Effect Encoder</Text>
-                  <Text color="gray.300" fontSize="xs">
-                    Low resolution encoder using Hall effect sensors. Provides 6 states per pole pair.
-                    CPR = pole_pairs × 6.
-                  </Text>
-                  <Text color="gray.300" fontSize="xs">
-                    <strong>For hoverboard motors:</strong> CPR = 15 × 6 = 90
-                  </Text>
-                </VStack>
-              )}
-              {(encoderConfig.encoder_type === 3 || 
-                encoderConfig.encoder_type === 4 || 
-                encoderConfig.encoder_type === 5) && (
-                <VStack spacing={2} align="stretch">
-                  <Text color="odrive.300" fontWeight="bold" fontSize="sm">SPI Absolute Encoder</Text>
-                  <Text color="gray.300" fontSize="xs">
-                    High resolution absolute position encoder using SPI communication.
-                    Provides absolute position without calibration.
-                  </Text>
-                  <Text color="gray.300" fontSize="xs">
-                    <strong>Requires:</strong> SPI bus connection and CS pin configuration
-                  </Text>
-                </VStack>
-              )}
-            </VStack>
-          </CardBody>
-        </Card>
-
-        {/* Calibration Guidelines */}
-        <Card bg="gray.800" variant="elevated">
-          <CardHeader py={2}>
-            <Heading size="sm" color="white">Calibration Guidelines</Heading>
-          </CardHeader>
-          <CardBody py={2}>
-            <VStack spacing={2} align="stretch">
-              <Text color="gray.300" fontSize="xs">
-                <strong>Scan Distance:</strong> Distance to scan during calibration. 
-                Higher values give better accuracy but take longer.
-              </Text>
-              <Text color="gray.300" fontSize="xs">
-                <strong>Scan Omega:</strong> Angular velocity during calibration. 
-                Lower values are more accurate but slower.
-              </Text>
-              <Text color="gray.300" fontSize="xs">
-                <strong>Index Signal:</strong> If enabled, encoder will search for 
-                index pulse during calibration for absolute reference.
-              </Text>
-            </VStack>
-          </CardBody>
-        </Card>
-
-        <Alert status="info" variant="left-accent">
-          <AlertIcon />
-          <VStack align="start" spacing={1}>
-            <Text fontWeight="bold" fontSize="sm">ODrive v0.5.6 Encoder Tips:</Text>
-            <Text fontSize="xs">• Use refresh buttons to read current values from ODrive</Text>
-            <Text fontSize="xs">• Changes are applied immediately to the device</Text>
-            <Text fontSize="xs">• Test encoder with shadow_count before calibration</Text>
-            <Text fontSize="xs">• Hall encoders require polarity calibration first</Text>
-          </VStack>
-        </Alert>
       </VStack>
     </SimpleGrid>
   )
