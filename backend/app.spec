@@ -1,37 +1,40 @@
 # -*- mode: python ; coding: utf-8 -*-
+import os
+import sys
+from PyInstaller.utils.hooks import collect_data_files, collect_dynamic_libs
+
+# Collect ODrive data files and dynamic libraries
+odrive_datas = collect_data_files('odrive')
+odrive_binaries = collect_dynamic_libs('odrive')
+
+# Get the path to the odrive package
+import odrive
+odrive_path = os.path.dirname(odrive.__file__)
+
+# Add ODrive lib directory containing the DLL
+odrive_lib_path = os.path.join(odrive_path, 'lib')
+if os.path.exists(odrive_lib_path):
+    # Add all files from the lib directory
+    for file in os.listdir(odrive_lib_path):
+        if file.endswith('.dll') or file.endswith('.so') or file.endswith('.dylib'):
+            odrive_binaries.append((os.path.join(odrive_lib_path, file), 'odrive/lib'))
 
 block_cipher = None
 
 a = Analysis(
     ['app.py'],
     pathex=[],
-    binaries=[],
+    binaries=odrive_binaries,
     datas=[
         ('../frontend/dist', 'static'),
-    ],
+    ] + odrive_datas,
     hiddenimports=[
         'odrive',
-        'odrive.core',
-        'odrive.dfu',
-        'odrive.enums',
         'odrive.utils',
-        'odrive.serial_transport',
-        'odrive.usb_transport',
-        'odrive.version',
-        'usb',
-        'usb.core',
-        'usb.util',
-        'usb.backend',
+        'odrive.enums',
         'usb.backend.libusb1',
         'usb.backend.openusb',
-        'serial',
-        'serial.tools',
-        'serial.tools.list_ports',
-        'flask',
-        'flask_cors',
-        'threading',
-        'json',
-        'time',
+        'usb.backend.libusb0',
     ],
     hookspath=[],
     hooksconfig={},
@@ -52,7 +55,7 @@ exe = EXE(
     a.zipfiles,
     a.datas,
     [],
-    name='odrive_gui',
+    name='app',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,

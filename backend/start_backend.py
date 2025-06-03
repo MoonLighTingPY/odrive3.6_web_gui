@@ -15,7 +15,7 @@ try:
     import odrive # type: ignore
     print("✓ ODrive library found")
 except ImportError:
-    print("✗ ODrive library not found. Please install with: pip install odrive==0.5.6")
+    print("✗ ODrive library not found. Please install with: pip install odrive==0.6.10.post0")
     sys.exit(1)
 
 try:

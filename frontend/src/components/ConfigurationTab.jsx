@@ -1,5 +1,5 @@
 import React from 'react'
-import { Box, HStack, VStack, Button, Progress, Text, Flex } from '@chakra-ui/react'
+import { Box, HStack, VStack, Button, Progress, Text, Flex, Alert, AlertIcon } from '@chakra-ui/react'
 import { useSelector, useDispatch } from 'react-redux'
 import { nextConfigStep, prevConfigStep } from '../store/slices/uiSlice'
 
@@ -11,7 +11,8 @@ import ControlConfigStep from './config-steps/ControlConfigStep'
 import InterfaceConfigStep from './config-steps/InterfaceConfigStep'
 import FinalConfigStep from './config-steps/FinalConfigStep'
 
-const ConfigurationTab = () => {
+
+const ConfigurationTab = ({ isConnected }) => {
   const dispatch = useDispatch()
   const { activeConfigStep } = useSelector(state => state.ui)
 
@@ -26,6 +27,17 @@ const ConfigurationTab = () => {
 
   const currentStep = steps.find(step => step.id === activeConfigStep)
   const CurrentStepComponent = currentStep?.component
+
+    if (!isConnected) {
+    return (
+      <Box p={8} textAlign="center">
+        <Alert status="info" variant="subtle" borderRadius="md">
+          <AlertIcon />
+          Connect to an ODrive device to access configuration settings.
+        </Alert>
+      </Box>
+    )
+  }
 
   return (
     <Flex direction="column" h="100%" bg="gray.900">

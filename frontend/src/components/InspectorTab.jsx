@@ -116,6 +116,17 @@ const InspectorTab = () => {
     }
   }
 
+    if (!isConnected) {
+    return (
+      <Box p={8} textAlign="center">
+        <Alert status="info" variant="subtle" borderRadius="md">
+          <AlertIcon />
+          Connect to an ODrive device to inspect properties and execute commands.
+        </Alert>
+      </Box>
+    )
+  }
+
   return (
     <VStack spacing={6} align="stretch" p={6} h="100%">
       <Box>
@@ -126,13 +137,6 @@ const InspectorTab = () => {
           Real-time monitoring, debugging, and control of all ODrive properties and states
         </Text>
       </Box>
-
-      {!isConnected && (
-        <Alert status="warning">
-          <AlertIcon />
-          ODrive not connected. Please connect to a device to inspect properties.
-        </Alert>
-      )}
 
       {/* Control Panel */}
       <Card bg="gray.800" variant="elevated">
