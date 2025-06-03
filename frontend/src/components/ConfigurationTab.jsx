@@ -1,23 +1,33 @@
-import React, { useState } from 'react'
-import { Box, HStack, VStack, Button, Progress, Text, Flex, Alert, AlertIcon, useDisclosure, useToast } from '@chakra-ui/react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import { nextConfigStep, prevConfigStep } from '../store/slices/uiSlice'
-
-// Import all step components
+import {
+  Box,
+  VStack,
+  HStack,
+  Button,
+  Progress,
+  Text,
+  Alert,
+  AlertIcon,
+  Flex,
+  useToast,
+  Spinner
+} from '@chakra-ui/react'
 import PowerConfigStep from './config-steps/PowerConfigStep'
 import MotorConfigStep from './config-steps/MotorConfigStep'
 import EncoderConfigStep from './config-steps/EncoderConfigStep'
 import ControlConfigStep from './config-steps/ControlConfigStep'
 import InterfaceConfigStep from './config-steps/InterfaceConfigStep'
 import FinalConfigStep from './config-steps/FinalConfigStep'
-import PullConfigModal from './modals/PullConfigModal'
+import { getAllConfigurationParams } from '../utils/odriveCommands'
 
-const ConfigurationTab = ({ isConnected }) => {
+const ConfigurationTab = () => {
   const dispatch = useDispatch()
   const toast = useToast()
+  
+  const { isConnected } = useSelector(state => state.device)
   const { activeConfigStep } = useSelector(state => state.ui)
   
-  // Device configuration state - source of truth from ODrive
   const [deviceConfig, setDeviceConfig] = useState({
     power: {},
     motor: {},
@@ -25,33 +35,175 @@ const ConfigurationTab = ({ isConnected }) => {
     control: {},
     interface: {}
   })
-  
-  // Loading states for individual parameters
   const [loadingParams, setLoadingParams] = useState(new Set())
+  const [isPullingConfig, setIsPullingConfig] = useState(false)
+  const [pullProgress, setPullProgress] = useState(0)
 
   const steps = [
     { id: 1, name: 'Power', icon: '⚡', component: PowerConfigStep },
-    { id: 2, name: 'Motor', icon: '⚙️', component: MotorConfigStep },
+    { id: 2, name: 'Motor', icon: '🔧', component: MotorConfigStep },
     { id: 3, name: 'Encoder', icon: '📐', component: EncoderConfigStep },
     { id: 4, name: 'Control', icon: '🎮', component: ControlConfigStep },
     { id: 5, name: 'Interface', icon: '🔌', component: InterfaceConfigStep },
-    { id: 6, name: 'Apply', icon: '✅', component: FinalConfigStep },
+    { id: 6, name: 'Apply', icon: '✅', component: FinalConfigStep }
   ]
 
   const currentStep = steps.find(step => step.id === activeConfigStep)
   const CurrentStepComponent = currentStep?.component
 
-  const { isOpen: isPullModalOpen, onOpen: onPullModalOpen, onClose: onPullModalClose } = useDisclosure()
+  const pullBatchParams = useCallback(async (odriveParams) => {
+    const promises = odriveParams.map(async (odriveParam) => {
+      try {
+        const response = await fetch('/api/odrive/command', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ command: `odrv0.${odriveParam}` })
+        })
+
+        if (response.ok) {
+          const result = await response.json()
+          return { param: odriveParam, value: result.result, success: true }
+        } else {
+          throw new Error('Failed to read parameter')
+        }
+      } catch (error) {
+        return { param: odriveParam, error: error.message, success: false }
+      }
+    })
+
+    const batchResults = await Promise.allSettled(promises)
+    
+    return batchResults.map(result => {
+      if (result.status === 'fulfilled') {
+        return result.value
+      } else {
+        return { param: 'unknown', error: result.reason.message, success: false }
+      }
+    })
+  }, [])
+
+  const convertTorqueConstantToKv = useCallback((torqueConstant) => {
+    if (torqueConstant > 0) {
+      return 60 / (2 * Math.PI * torqueConstant)
+    }
+    return 230
+  }, [])
+
+  const pullAllConfigInBackground = useCallback(async () => {
+    if (!isConnected || isPullingConfig) return
+
+    setIsPullingConfig(true)
+    setPullProgress(0)
+
+    try {
+      const configParamMaps = getAllConfigurationParams()
+      const totalParams = Object.values(configParamMaps).reduce((total, category) => {
+        return total + Object.keys(category.params).length
+      }, 0)
+
+      let currentProgress = 0
+      let successCount = 0
+      const allConfig = {}
+
+      for (const [categoryKey, category] of Object.entries(configParamMaps)) {
+        const categoryConfig = {}
+        const paramEntries = Object.entries(category.params)
+        const batchSize = 10
+        
+        for (let i = 0; i < paramEntries.length; i += batchSize) {
+          const batch = paramEntries.slice(i, i + batchSize)
+          const odriveParams = batch.map(([, odriveParam]) => odriveParam)
+          
+          try {
+            const batchResults = await pullBatchParams(odriveParams)
+            
+            batchResults.forEach((result, index) => {
+              const [configKey, odriveParam] = batch[index]
+              
+              if (result.success) {
+                let value = result.value
+                
+                // Handle special conversions
+                if (configKey === 'motor_kv' && odriveParam.includes('torque_constant')) {
+                  const kvValue = convertTorqueConstantToKv(value)
+                  categoryConfig[configKey] = kvValue
+                } else {
+                  categoryConfig[configKey] = value
+                }
+                
+                successCount++
+              }
+
+              currentProgress++
+              setPullProgress((currentProgress / totalParams) * 100)
+            })
+                    
+          } catch (error) {
+            console.error('Batch pull error:', error)
+            currentProgress += batch.length
+            setPullProgress((currentProgress / totalParams) * 100)
+          }
+          
+          // Small delay between batches
+          if (i + batchSize < paramEntries.length) {
+            await new Promise(resolve => setTimeout(resolve, 10))
+          }
+        }
+
+        if (Object.keys(categoryConfig).length > 0) {
+          allConfig[categoryKey] = categoryConfig
+        }
+      }
+
+      // Update device config with pulled values
+      setDeviceConfig(allConfig)
+
+      toast({
+        title: 'Configuration loaded',
+        description: `${successCount}/${totalParams} parameters loaded from ODrive`,
+        status: successCount > totalParams * 0.8 ? 'success' : 'warning',
+        duration: 3000,
+      })
+
+    } catch (error) {
+      console.error('Failed to pull configuration:', error)
+      toast({
+        title: 'Configuration load failed',
+        description: error.message,
+        status: 'error',
+        duration: 5000,
+      })
+    } finally {
+      setIsPullingConfig(false)
+      setPullProgress(0)
+    }
+  }, [isConnected, isPullingConfig, pullBatchParams, convertTorqueConstantToKv, toast])
+
+  // Auto-pull configuration when connected
+  useEffect(() => {
+    if (isConnected) {
+      pullAllConfigInBackground()
+    } else {
+      // Clear config when disconnected
+      setDeviceConfig({
+        power: {},
+        motor: {},
+        encoder: {},
+        control: {},
+        interface: {}
+      })
+    }
+  }, [isConnected, pullAllConfigInBackground])
 
   const onUpdateConfig = (category, key, value) => {
-  setDeviceConfig(prev => ({
-    ...prev,
-    [category]: {
-      ...prev[category],
-      [key]: value
-    }
-  }))
-}
+    setDeviceConfig(prev => ({
+      ...prev,
+      [category]: {
+        ...prev[category],
+        [key]: value
+      }
+    }))
+  }
 
   // Function to read a single parameter from ODrive
   const readParameter = async (odriveParam, configCategory, configKey) => {
@@ -66,7 +218,7 @@ const ConfigurationTab = ({ isConnected }) => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ command: `odrv0.${odriveParam}` })
       })
-
+      
       if (response.ok) {
         const result = await response.json()
         let value = result.result
@@ -110,20 +262,21 @@ const ConfigurationTab = ({ isConnected }) => {
     }
   }
 
-
-  // Handle pull modal completion
-  const handlePullComplete = (pulledConfig) => {
-    setDeviceConfig(pulledConfig)
-    onPullModalClose()
+  const nextConfigStep = () => {
+    if (activeConfigStep < steps.length) {
+      dispatch({ type: 'ui/setConfigStep', payload: activeConfigStep + 1 })
+    }
   }
 
-    // Check if we should show configuration steps
-  // In development, always show steps; in production, only show when connected
+  const prevConfigStep = () => {
+    if (activeConfigStep > 1) {
+      dispatch({ type: 'ui/setConfigStep', payload: activeConfigStep - 1 })
+    }
+  }
+
+  // Check if we should show configuration steps
   const shouldShowConfigSteps = () => {
-    // Check if we're in development mode
     const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development'
-    
-    // Show steps if in development OR if connected
     return isDevelopment || isConnected
   }
 
@@ -140,45 +293,78 @@ const ConfigurationTab = ({ isConnected }) => {
   }
 
   return (
-    <>
-      <Flex direction="column" h="100%" bg="gray.900">
-        {/* Combined Header with Navigation and Progress */}
-        <Box bg="gray.800" borderBottom="1px solid" borderColor="gray.600" p={4}>
-          <VStack spacing={4}>
-            {/* Step Indicators */}
-            <HStack spacing={2} justify="center" w="100%" overflowX="auto">
+    <Flex direction="column" h="100%" bg="gray.900">
+      {/* Combined Header with Navigation and Progress */}
+      <Box bg="gray.800" borderBottom="1px solid" borderColor="gray.600" p={4}>
+        <VStack spacing={4}>
+          {/* Step Indicators */}
+          <HStack spacing={2} justify="center" w="100%" overflowX="auto">
+            {steps.map((step) => (
+              <Button
+                key={step.id}
+                size="sm"
+                variant={activeConfigStep === step.id ? "solid" : "outline"}
+                colorScheme={activeConfigStep === step.id ? "odrive" : "gray"}
+                onClick={() => dispatch({ type: 'ui/setConfigStep', payload: step.id })}
+                minW="60px"
+                h="50px"
+                flexDirection="column"
+                fontSize="xs"
+              >
+                <Text fontSize="md" mb={1}>{step.icon}</Text>
+                <Text fontSize="xs">{step.name}</Text>
+              </Button>
+            ))}
+          </HStack>
+
+          {/* Configuration Loading Indicator */}
+          {isPullingConfig && (
+            <VStack spacing={2} w="100%" maxW="400px">
+              <HStack spacing={2} align="center">
+                <Spinner size="sm" color="blue.400" />
+                <Text color="blue.400" fontSize="sm">
+                  Loading configuration from ODrive...
+                </Text>
+              </HStack>
+              <Progress 
+                value={pullProgress} 
+                colorScheme="blue" 
+                size="sm" 
+                borderRadius="md"
+                w="100%"
+              />
+              <Text color="gray.400" fontSize="xs">
+                {Math.round(pullProgress)}% complete
+              </Text>
+            </VStack>
+          )}
+
+          {/* Sectioned Progress Bar and Navigation */}
+          <VStack spacing={3} w="100%" maxW="800px">
+            {/* Progress Sections */}
+            <HStack spacing={2} justify="center" w="100%">
               {steps.map((step) => (
-                <Button
-                  key={step.id}
-                  size="sm"
-                  variant={activeConfigStep === step.id ? "solid" : "outline"}
-                  colorScheme={activeConfigStep === step.id ? "odrive" : "gray"}
-                  onClick={() => dispatch({ type: 'ui/setConfigStep', payload: step.id })}
-                  minW="60px"
-                  h="50px"
-                  flexDirection="column"
-                  fontSize="xs"
-                >
-                  <Text fontSize="md" mb={1}>{step.icon}</Text>
-                  <Text fontSize="xs">{step.name}</Text>
-                </Button>
+                <VStack key={step.id} spacing={1} minW="65px">
+                  <Box w="100%" h="4px" bg="gray.600" borderRadius="md" overflow="hidden">
+                    <Box
+                      w="100%"
+                      h="100%"
+                      bg={
+                        step.id < activeConfigStep ? "green.400" :
+                        step.id === activeConfigStep ? "odrive.400" :
+                        "gray.600"
+                      }
+                      transition="all 0.3s ease"
+                    />
+                  </Box>
+                </VStack>
               ))}
             </HStack>
 
-            <Button
-              colorScheme="green"
-              variant="outline"
-              size="sm"
-              onClick={onPullModalOpen}
-              isDisabled={!isConnected}
-            >
-              📥 Pull All Configuration
-            </Button>
-
-            {/* Combined Progress Bar and Navigation */}
-            <HStack justify="space-between" align="center" w="100%" maxW="800px">
+            {/* Navigation and Step Info */}
+            <HStack justify="center" align="center" w="100%" spacing={6}>
               <Button
-                onClick={() => dispatch(prevConfigStep())}
+                onClick={prevConfigStep}
                 isDisabled={activeConfigStep === 1}
                 variant="outline"
                 colorScheme="gray"
@@ -188,23 +374,17 @@ const ConfigurationTab = ({ isConnected }) => {
                 Previous
               </Button>
               
-              <VStack spacing={1} flex="1" mx={4}>
-                <Progress 
-                  value={(activeConfigStep / steps.length) * 100} 
-                  colorScheme="odrive" 
-                  size="sm" 
-                  borderRadius="md"
-                  w="100%"
-                />
-                <Text fontSize="xs" color="gray.400">
-                  Step {activeConfigStep} of {steps.length}: {currentStep?.name}
+              <VStack spacing={0}>
+                <Text fontSize="lg" color="white" fontWeight="bold">
+                  Step {activeConfigStep}: {currentStep?.name}
                 </Text>
               </VStack>
               
               <Button
-                onClick={() => dispatch(nextConfigStep())}
+                onClick={nextConfigStep}
                 isDisabled={activeConfigStep === steps.length}
-                colorScheme="odrive"
+                variant="outline"
+                colorScheme="gray"
                 size="sm"
                 minW="80px"
               >
@@ -212,29 +392,21 @@ const ConfigurationTab = ({ isConnected }) => {
               </Button>
             </HStack>
           </VStack>
-        </Box>
+        </VStack>
+      </Box>
 
-        {/* Step Content - Full remaining height */}
-        <Box flex="1" overflow="hidden" bg="gray.900">
-          {CurrentStepComponent && (
-            <CurrentStepComponent 
-              deviceConfig={deviceConfig}
-              onReadParameter={readParameter}
-              onUpdateConfig={onUpdateConfig}
-              loadingParams={loadingParams}
-              isConnected={isConnected}
-            />
-          )}
-        </Box>
-      </Flex>
-      
-      <PullConfigModal
-        isOpen={isPullModalOpen}
-        onClose={onPullModalClose}
-        onComplete={handlePullComplete}
-        isConnected={isConnected}
-      />
-    </>
+      {/* Configuration Step Content */}
+      <Box flex="1" overflow="hidden">
+        {CurrentStepComponent && (
+          <CurrentStepComponent
+            deviceConfig={deviceConfig}
+            onReadParameter={readParameter}
+            onUpdateConfig={onUpdateConfig}
+            loadingParams={loadingParams}
+          />
+        )}
+      </Box>
+    </Flex>
   )
 }
 
