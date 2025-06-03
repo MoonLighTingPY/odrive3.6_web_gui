@@ -5,7 +5,7 @@
 
 /**
  * Execute configuration action via API
- * @param {string} action - The action to execute ('erase', 'apply', 'save_and_reboot', 'calibrate', 'save')
+ * @param {string} action - The action to execute ('erase', 'apply', 'save_and_reboot', 'calibrate', 'save', 'clear_errors')
  * @param {Object} options - Action options
  * @param {Array<string>} options.commands - Array of commands (for apply action)
  * @param {string} options.calibrationType - Type of calibration ('full', 'motor', 'encoder_sequence')
@@ -40,6 +40,10 @@ export const executeConfigAction = async (action, options = {}) => {
       break
     case 'save':
       endpoint = '/api/odrive/save_config'
+      break
+    case 'clear_errors':
+      endpoint = '/api/odrive/command'
+      payload = { command: 'odrv0.clear_errors()' }
       break
     default:
       throw new Error(`Unknown action: ${action}`)
@@ -90,6 +94,14 @@ export const saveAndReboot = async () => {
  */
 export const eraseConfiguration = async () => {
   return await executeConfigAction('erase')
+}
+
+/**
+ * Clear all ODrive errors
+ * @returns {Promise<Object>} Response from the API
+ */
+export const clearErrors = async () => {
+  return await executeConfigAction('clear_errors')
 }
 
 /**
@@ -157,13 +169,38 @@ export const executeCommand = async (command) => {
 
 /**
  * Apply configuration and save to non-volatile memory
- * @param {Array<string>} commands - Array of ODrive commands
+ * @param {Object} deviceConfig - Device configuration object
+ * @param {Function} toast - Toast notification function
  * @returns {Promise<void>} Resolves when both apply and save are complete
  */
-export const applyAndSaveConfiguration = async (commands) => {
-  // First apply the configuration
-  await applyConfiguration(commands)
+export const applyAndSaveConfiguration = async (deviceConfig, toast) => {
+  const { generateConfigCommands } = await import('./configCommandGenerator')
+  const commands = generateConfigCommands(deviceConfig)
   
-  // Then save to non-volatile memory
+  // Step 1: Apply configuration
+  toast({
+    title: 'Applying configuration...',
+    description: `Sending ${commands.length} commands to ODrive`,
+    status: 'info',
+    duration: 2000,
+  })
+
+  await applyConfiguration(commands)
+
+  // Step 2: Save to non-volatile memory
+  toast({
+    title: 'Saving to memory...',
+    description: 'Saving configuration to non-volatile memory',
+    status: 'info',
+    duration: 2000,
+  })
+
   await saveConfiguration()
+
+  toast({
+    title: 'Configuration Applied & Saved',
+    description: `Configuration successfully applied and saved to non-volatile memory`,
+    status: 'success',
+    duration: 5000,
+  })
 }

@@ -276,7 +276,7 @@ const FinalConfigStep = () => {
     }))
   }
 
-  const getActionDetails = (action) => {
+    const getActionDetails = (action) => {
     const details = {
       erase: {
         title: 'Erase Configuration and Reboot',
@@ -319,6 +319,12 @@ const FinalConfigStep = () => {
         description: 'This will save the current configuration to flash memory without rebooting.',
         color: 'green',
         confirmText: 'Save configuration'
+      },
+      clear_errors: {
+        title: 'Clear All Errors',
+        description: 'This will clear all error flags on the ODrive device. Use this to reset after fixing error conditions.',
+        color: 'yellow',
+        confirmText: 'Clear all errors'
       }
     }
     return details[action] || {}
@@ -449,6 +455,8 @@ const FinalConfigStep = () => {
                   >
                     💾 Save & Reboot
                   </Button>
+
+
                 </VStack>
 
                 {/* Calibration Actions */}
@@ -494,9 +502,22 @@ const FinalConfigStep = () => {
                   >
                     📐 Encoder Only
                   </Button>
+
                 </VStack>
+                                  
 
               </SimpleGrid>
+              <Button
+                    colorScheme="blue"
+                    size="lg"
+                    w="100%"
+                    h="60px"
+                    onClick={() => handleAction('clear_errors')}
+                    isDisabled={!isConnected}
+                    isLoading={isLoading && pendingAction === 'clear_errors'}
+                  >
+                    🔄 Clear Errors
+                  </Button>
 
             </VStack>
           </CardBody>
