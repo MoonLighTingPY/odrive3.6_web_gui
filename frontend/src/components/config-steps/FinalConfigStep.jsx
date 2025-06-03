@@ -26,14 +26,12 @@ import { ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons'
 // Import our new components
 import CommandList from '../CommandList'
 import CalibrationModal from '../CalibrationModal'
-import VerificationModal from '../VerificationModal'
 import ConfirmationModal from '../ConfirmationModal'
 
 const FinalConfigStep = () => {
   const toast = useToast()
   const { isOpen: isCommandsOpen, onToggle: onCommandsToggle } = useDisclosure()
   const { isOpen: isConfirmOpen, onOpen: onConfirmOpen, onClose: onConfirmClose } = useDisclosure()
-  const { isOpen: isVerificationOpen, onOpen: onVerificationOpen, onClose: onVerificationClose } = useDisclosure()
   const { isOpen: isCalibrationOpen, onOpen: onCalibrationOpen, onClose: onCalibrationClose } = useDisclosure()
   
   const [isLoading, setIsLoading] = useState(false)
@@ -41,9 +39,6 @@ const FinalConfigStep = () => {
   const [customCommands, setCustomCommands] = useState({})
   const [disabledCommands, setDisabledCommands] = useState(new Set())
   const [enableCommandEditing, setEnableCommandEditing] = useState(false)
-  const [verificationResults, setVerificationResults] = useState([])
-  const [verificationProgress, setVerificationProgress] = useState(0)
-  const [isVerifying, setIsVerifying] = useState(false)
   
   // Calibration state
   const [calibrationStatus, setCalibrationStatus] = useState(null)
@@ -293,169 +288,6 @@ const FinalConfigStep = () => {
     }).filter((_, index) => !disabledCommands.has(index))
   }, [baseGeneratedCommands, customCommands, disabledCommands])
 
-  // Extract property path and expected value from command
-  const parseCommand = (command) => {
-    const match = command.match(/^(.+?)\s*=\s*(.+)$/)
-    if (match) {
-      let property = match[1].trim()
-      let expectedValue = match[2].trim()
-      
-      // Convert odrv0 syntax to device syntax for reading
-      property = property.replace(/^odrv0\./, 'device.')
-      
-      // Parse expected value - keep the original string format for better comparison
-      let parsedExpectedValue = expectedValue
-      if (expectedValue === 'True') {
-        parsedExpectedValue = true
-      } else if (expectedValue === 'False') {
-        parsedExpectedValue = false
-      } else if (!isNaN(parseFloat(expectedValue))) {
-        parsedExpectedValue = parseFloat(expectedValue)
-      }
-      
-      return { 
-        property, 
-        expectedValue: parsedExpectedValue,
-        originalExpectedValue: expectedValue // Keep original for display
-      }
-    }
-    return null
-  }
-
-  // Verify applied configuration
-  const verifyConfiguration = async (appliedCommands) => {
-    setIsVerifying(true)
-    setVerificationProgress(0)
-    setVerificationResults([])
-    
-    const results = []
-    const totalCommands = appliedCommands.length
-    
-    for (let i = 0; i < appliedCommands.length; i++) {
-      const command = appliedCommands[i]
-      const parsed = parseCommand(command)
-      
-      if (!parsed) {
-        results.push({
-          command,
-          status: 'skipped',
-          reason: 'Cannot parse command for verification'
-        })
-        setVerificationProgress(((i + 1) / totalCommands) * 100)
-        continue
-      }
-      
-      try {
-        // Read the actual value from the device
-        const response = await fetch('/api/odrive/command', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ command: parsed.property })
-        })
-        
-        if (response.ok) {
-          const result = await response.json()
-          let actualValue = result.result
-          
-          // Parse the actual value based on its type
-          if (typeof actualValue === 'string') {
-            if (actualValue === 'True') {
-              actualValue = true
-            } else if (actualValue === 'False') {
-              actualValue = false
-            } else if (!isNaN(parseFloat(actualValue))) {
-              actualValue = parseFloat(actualValue)
-            }
-          }
-          
-          // Compare values with proper type handling
-          let matches = false
-          let reason = ''
-          
-          if (typeof parsed.expectedValue === 'boolean' && typeof actualValue === 'boolean') {
-            matches = parsed.expectedValue === actualValue
-            reason = matches ? 'Boolean value matches' : `Expected ${parsed.expectedValue}, got ${actualValue}`
-          } else if (typeof parsed.expectedValue === 'number' && typeof actualValue === 'number') {
-            // Use tolerance for floating point numbers
-            const tolerance = Math.abs(parsed.expectedValue) * 0.001 // 0.1% tolerance
-            const minTolerance = 1e-6 // Minimum tolerance for very small numbers
-            matches = Math.abs(actualValue - parsed.expectedValue) <= Math.max(tolerance, minTolerance)
-            reason = matches ? 'Numeric value within tolerance' : `Expected ${parsed.expectedValue}, got ${actualValue} (diff: ${Math.abs(actualValue - parsed.expectedValue).toFixed(6)})`
-          } else if (typeof parsed.expectedValue === 'number' && typeof actualValue === 'boolean') {
-            // Handle case where we expect a number but get a boolean (should not match)
-            matches = false
-            reason = `Type mismatch: expected number ${parsed.expectedValue}, got boolean ${actualValue}`
-          } else if (typeof parsed.expectedValue === 'boolean' && typeof actualValue === 'number') {
-            // Handle case where we expect a boolean but get a number (should not match)
-            matches = false
-            reason = `Type mismatch: expected boolean ${parsed.expectedValue}, got number ${actualValue}`
-          } else {
-            // String comparison or other types
-            matches = String(parsed.expectedValue) === String(actualValue)
-            reason = matches ? 'String value matches' : `Expected "${parsed.expectedValue}", got "${actualValue}"`
-          }
-          
-          results.push({
-            command,
-            property: parsed.property,
-            expectedValue: parsed.expectedValue,
-            actualValue,
-            status: matches ? 'success' : 'mismatch',
-            reason
-          })
-        } else {
-          const error = await response.json()
-          results.push({
-            command,
-            property: parsed.property,
-            expectedValue: parsed.expectedValue,
-            actualValue: null,
-            status: 'error',
-            reason: `Failed to read: ${error.error || 'Unknown error'}`
-          })
-        }
-      } catch (error) {
-        results.push({
-          command,
-          property: parsed.property,
-          expectedValue: parsed.expectedValue,
-          actualValue: null,
-          status: 'error',
-          reason: `Network error: ${error.message}`
-        })
-      }
-      
-      setVerificationProgress(((i + 1) / totalCommands) * 100)
-      setVerificationResults([...results])
-      
-      // Small delay to prevent overwhelming the device
-      await new Promise(resolve => setTimeout(resolve, 50))
-    }
-    
-    setIsVerifying(false)
-    
-    // Show summary toast
-    const successCount = results.filter(r => r.status === 'success').length
-    const errorCount = results.filter(r => r.status === 'error').length
-    const mismatchCount = results.filter(r => r.status === 'mismatch').length
-    
-    if (errorCount === 0 && mismatchCount === 0) {
-      toast({
-        title: 'Verification Complete',
-        description: `All ${successCount} commands verified successfully!`,
-        status: 'success',
-        duration: 5000,
-      })
-    } else {
-      toast({
-        title: 'Verification Complete',
-        description: `${successCount} success, ${mismatchCount} mismatches, ${errorCount} errors`,
-        status: mismatchCount > 0 || errorCount > 0 ? 'warning' : 'info',
-        duration: 5000,
-      })
-    }
-  }
-
   const executeAction = async (action) => {
     if (!isConnected) {
       toast({
@@ -522,13 +354,6 @@ const FinalConfigStep = () => {
           setCalibrationPhase('starting')
           setCalibrationSequence(result.sequence || [])
           onCalibrationOpen()
-        }
-        
-        // If this was an apply action, offer verification
-        if (action === 'apply') {
-          setTimeout(() => {
-            onVerificationOpen()
-          }, 1000) // Give device a moment to settle
         }
       } else {
         const error = await response.json()
@@ -632,16 +457,6 @@ const FinalConfigStep = () => {
     return details[action] || {}
   }
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'success': return 'green'
-      case 'mismatch': return 'orange'
-      case 'error': return 'red'
-      case 'skipped': return 'gray'
-      default: return 'gray'
-    }
-  }
-
   const getCalibrationPhaseDescription = (phase) => {
     switch (phase) {
       case 'motor_calibration': return 'Measuring motor resistance and inductance...'
@@ -661,13 +476,6 @@ const FinalConfigStep = () => {
   return (
     <Box h="100%" p={3} overflow="auto">
       <VStack spacing={4} align="stretch" maxW="1200px" mx="auto">
-
-        {!isConnected && (
-          <Alert status="error">
-            <AlertIcon />
-            ODrive not connected. Please connect to a device before applying configuration.
-          </Alert>
-        )}
 
         <Card bg="gray.800" variant="elevated">
           <CardHeader py={2}>
@@ -848,16 +656,6 @@ const FinalConfigStep = () => {
           isLoading={isLoading}
           enabledCommandCount={enabledCommandCount}
           customCommandCount={Object.keys(customCommands).length}
-        />
-
-        <VerificationModal
-          isOpen={isVerificationOpen}
-          onClose={onVerificationClose}
-          isVerifying={isVerifying}
-          verificationProgress={verificationProgress}
-          verificationResults={verificationResults}
-          onStartVerification={() => verifyConfiguration(finalCommands)}
-          getStatusColor={getStatusColor}
         />
       </VStack>
     </Box>

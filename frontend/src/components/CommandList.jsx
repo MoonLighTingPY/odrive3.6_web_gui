@@ -45,8 +45,21 @@ const CommandList = ({
     onCustomCommandChange(index, null) // null means delete
   }
 
-  return (
+return (
     <VStack spacing={2} align="stretch">
+      {enableEditing && (
+        <Button
+          size="sm"
+          variant="outline"
+          colorScheme="blue"
+          onClick={onAddCustomCommand}
+          leftIcon={<EditIcon />}
+          mb={2}
+        >
+          Add Custom Command
+        </Button>
+      )}
+
       {commands.map((command, index) => {
         const isEditing = editingIndex === index
         const isCustom = customCommands[index] !== undefined
@@ -244,19 +257,6 @@ const CommandList = ({
             </HStack>
           )
         })}
-      
-      {enableEditing && (
-        <Button
-          size="sm"
-          variant="outline"
-          colorScheme="blue"
-          onClick={onAddCustomCommand}
-          leftIcon={<EditIcon />}
-          mt={2}
-        >
-          Add Custom Command
-        </Button>
-      )}
     </VStack>
   )
 }
