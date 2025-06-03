@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { Box, HStack, VStack, Button, Progress, Text, Flex, Alert, AlertIcon, useDisclosure, useToast } from '@chakra-ui/react'
 import { useSelector, useDispatch } from 'react-redux'
 import { nextConfigStep, prevConfigStep } from '../store/slices/uiSlice'
@@ -110,54 +110,6 @@ const ConfigurationTab = ({ isConnected }) => {
     }
   }
 
-  // Function to write a single parameter to ODrive
-  const writeParameter = async (odriveParam, value, configCategory, configKey) => {
-    if (!isConnected) return
-
-    try {
-      let commandValue = value
-      
-      // Handle special conversions
-      if (configKey === 'motor_kv' && odriveParam.includes('torque_constant')) {
-        // Convert Kv to torque constant
-        commandValue = value > 0 ? (60 / (2 * Math.PI * value)) : 0.04
-      }
-
-      const command = `odrv0.${odriveParam} = ${commandValue}`
-      const response = await fetch('/api/odrive/command', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ command })
-      })
-
-      if (response.ok) {
-        // Update local state to reflect the change
-        setDeviceConfig(prev => ({
-          ...prev,
-          [configCategory]: {
-            ...prev[configCategory],
-            [configKey]: value
-          }
-        }))
-
-        toast({
-          title: 'Parameter updated',
-          description: `${configKey} = ${value}`,
-          status: 'success',
-          duration: 2000,
-        })
-      } else {
-        throw new Error('Failed to write parameter')
-      }
-    } catch (error) {
-      toast({
-        title: 'Write failed',
-        description: `Failed to write ${configKey}: ${error.message}`,
-        status: 'error',
-        duration: 3000,
-      })
-    }
-  }
 
   // Handle pull modal completion
   const handlePullComplete = (pulledConfig) => {
@@ -165,10 +117,21 @@ const ConfigurationTab = ({ isConnected }) => {
     onPullModalClose()
   }
 
-  if (!isConnected) {
+    // Check if we should show configuration steps
+  // In development, always show steps; in production, only show when connected
+  const shouldShowConfigSteps = () => {
+    // Check if we're in development mode
+    const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development'
+    
+    // Show steps if in development OR if connected
+    return isDevelopment || isConnected
+  }
+
+  // If we shouldn't show config steps, show the connection warning
+  if (!shouldShowConfigSteps()) {
     return (
-      <Box p={8} textAlign="center">
-        <Alert status="info" variant="subtle" borderRadius="md">
+      <Box p={6} bg="gray.900" h="100%">
+        <Alert status="warning" bg="orange.900" borderColor="orange.500">
           <AlertIcon />
           Connect to an ODrive device to access configuration settings.
         </Alert>
