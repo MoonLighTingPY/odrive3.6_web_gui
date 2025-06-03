@@ -2,13 +2,15 @@ import asyncio
 import json
 import time
 from typing import Dict, Any, List, Optional
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory, send_file
 from flask_cors import CORS
 import odrive # type: ignore
 from odrive.enums import * # type: ignore
 import threading
 import logging
 from collections import defaultdict
+import os
+import sys
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -24,6 +26,46 @@ connected_odrives: Dict[str, Any] = {}
 current_odrive: Optional[Any] = None
 device_state_cache = {}
 last_update_time = 0
+
+# Add this near the top after other imports
+def get_static_folder():
+    """Get the correct static folder path for both development and PyInstaller"""
+    if getattr(sys, 'frozen', False):
+        # Running as PyInstaller bundle
+        return os.path.join(sys._MEIPASS, 'static')
+    else:
+        # Running in development
+        return os.path.join(os.path.dirname(__file__), '..', 'frontend', 'dist')
+
+# Add these routes before the health check endpoint
+@app.route('/')
+def serve_frontend():
+    """Serve the main frontend application"""
+    try:
+        static_folder = get_static_folder()
+        return send_file(os.path.join(static_folder, 'index.html'))
+    except Exception as e:
+        logger.error(f"Error serving frontend: {e}")
+        return jsonify({'error': 'Frontend not available'}), 404
+
+@app.route('/<path:path>')
+def serve_static(path):
+    """Serve static frontend files"""
+    try:
+        static_folder = get_static_folder()
+        # Check if the requested file exists
+        if os.path.exists(os.path.join(static_folder, path)):
+            return send_from_directory(static_folder, path)
+        else:
+            # For SPA routing, return index.html for non-API routes
+            if not path.startswith('api/'):
+                return send_file(os.path.join(static_folder, 'index.html'))
+            else:
+                return jsonify({'error': 'Not found'}), 404
+    except Exception as e:
+        logger.error(f"Error serving static file {path}: {e}")
+        return jsonify({'error': 'File not found'}), 404
+
 
 class ODriveManager:
     def __init__(self):
@@ -122,6 +164,7 @@ class ODriveManager:
         except Exception as e:
             logger.error(f"Error disconnecting: {e}")
             return False
+            
 
     def check_connection(self) -> bool:
         """Check if device is still connected"""
