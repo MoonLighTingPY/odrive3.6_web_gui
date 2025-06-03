@@ -38,6 +38,7 @@ const ConfigurationTab = () => {
   const [loadingParams, setLoadingParams] = useState(new Set())
   const [isPullingConfig, setIsPullingConfig] = useState(false)
   const [pullProgress, setPullProgress] = useState(0)
+  const [isApplyingSave, setIsApplyingSave] = useState(false)
 
   const steps = [
     { id: 1, name: 'Power', icon: '⚡', component: PowerConfigStep },
@@ -262,6 +263,171 @@ const ConfigurationTab = () => {
     }
   }
 
+  // Generate configuration commands
+  const generateConfigCommands = useCallback(() => {
+    const { power, motor, encoder, control, interface: interfaceConfig } = deviceConfig
+    const commands = []
+
+    const safeValue = (value, defaultValue = 0) => {
+      if (value === undefined || value === null || isNaN(value)) {
+        return defaultValue
+      }
+      return value
+    }
+
+    const safeBool = (value, defaultValue = false) => {
+      if (value === undefined || value === null) {
+        return defaultValue
+      }
+      return Boolean(value)
+    }
+
+    // Power configuration commands
+    commands.push(`odrv0.config.dc_bus_overvoltage_trip_level = ${safeValue(power.dc_bus_overvoltage_trip_level, 56)}`)
+    commands.push(`odrv0.config.dc_bus_undervoltage_trip_level = ${safeValue(power.dc_bus_undervoltage_trip_level, 10)}`)
+    commands.push(`odrv0.config.dc_max_positive_current = ${safeValue(power.dc_max_positive_current, 10)}`)
+    commands.push(`odrv0.config.dc_max_negative_current = ${safeValue(power.dc_max_negative_current, -10)}`)
+    commands.push(`odrv0.config.brake_resistance = ${safeValue(power.brake_resistance, 2)}`)
+    commands.push(`odrv0.config.enable_brake_resistor = ${safeBool(power.brake_resistor_enabled) ? 'True' : 'False'}`)
+
+    // Motor configuration commands
+    commands.push(`odrv0.axis0.motor.config.motor_type = ${safeValue(motor.motor_type, 0)}`)
+    commands.push(`odrv0.axis0.motor.config.pole_pairs = ${safeValue(motor.pole_pairs, 7)}`)
+    
+    const motorKv = safeValue(motor.motor_kv, 230)
+    const torqueConstant = motorKv > 0 ? (60 / (2 * Math.PI * motorKv)) : 0.04
+    commands.push(`odrv0.axis0.motor.config.torque_constant = ${torqueConstant.toFixed(6)}`)
+    
+    commands.push(`odrv0.axis0.motor.config.current_lim = ${safeValue(motor.current_lim, 10)}`)
+    commands.push(`odrv0.axis0.motor.config.calibration_current = ${safeValue(motor.calibration_current, 10)}`)
+    commands.push(`odrv0.axis0.motor.config.resistance_calib_max_voltage = ${safeValue(motor.resistance_calib_max_voltage, 4)}`)
+    commands.push(`odrv0.axis0.config.calibration_lockin.current = ${safeValue(motor.lock_in_spin_current, 10)}`)
+
+    if (safeValue(motor.motor_type, 0) === 1) {
+      commands.push(`odrv0.axis0.motor.config.phase_resistance = ${safeValue(motor.phase_resistance, 0)}`)
+      commands.push(`odrv0.axis0.motor.config.phase_inductance = ${safeValue(motor.phase_inductance, 0)}`)
+    }
+
+    // Encoder configuration commands
+    commands.push(`odrv0.axis0.encoder.config.mode = ${safeValue(encoder.encoder_type, 1)}`)
+    if (safeValue(encoder.encoder_type, 1) === 1) {
+      commands.push(`odrv0.axis0.encoder.config.cpr = ${safeValue(encoder.cpr, 4000)}`)
+      commands.push(`odrv0.axis0.encoder.config.bandwidth = ${safeValue(encoder.bandwidth, 1000)}`)
+      commands.push(`odrv0.axis0.encoder.config.use_index = ${safeBool(encoder.use_index) ? 'True' : 'False'}`)
+      commands.push(`odrv0.axis0.encoder.config.calib_range = ${safeValue(encoder.calib_range, 0.02)}`)
+      commands.push(`odrv0.axis0.encoder.config.calib_scan_distance = ${safeValue(encoder.calib_scan_distance, 16384)}`)
+      commands.push(`odrv0.axis0.encoder.config.calib_scan_omega = ${safeValue(encoder.calib_scan_omega, 12.566)}`)
+    }
+
+    // Control configuration commands
+    commands.push(`odrv0.axis0.controller.config.control_mode = ${safeValue(control.control_mode, 3)}`)
+    commands.push(`odrv0.axis0.controller.config.input_mode = ${safeValue(control.input_mode, 1)}`)
+    commands.push(`odrv0.axis0.controller.config.vel_limit = ${safeValue(control.vel_limit, 20)}`)
+    commands.push(`odrv0.axis0.controller.config.pos_gain = ${safeValue(control.pos_gain, 1)}`)
+    commands.push(`odrv0.axis0.controller.config.vel_gain = ${safeValue(control.vel_gain, 0.228)}`)
+    commands.push(`odrv0.axis0.controller.config.vel_integrator_gain = ${safeValue(control.vel_integrator_gain, 0.228)}`)
+    commands.push(`odrv0.axis0.controller.config.vel_limit_tolerance = ${safeValue(control.vel_limit_tolerance, 1.2)}`)
+    commands.push(`odrv0.axis0.controller.config.vel_ramp_rate = ${safeValue(control.vel_ramp_rate, 10)}`)
+    commands.push(`odrv0.axis0.controller.config.torque_ramp_rate = ${safeValue(control.torque_ramp_rate, 0.01)}`)
+    commands.push(`odrv0.axis0.controller.config.circular_setpoints = ${safeBool(control.circular_setpoints) ? 'True' : 'False'}`)
+    commands.push(`odrv0.axis0.controller.config.inertia = ${safeValue(control.inertia, 0)}`)
+    commands.push(`odrv0.axis0.controller.config.input_filter_bandwidth = ${safeValue(control.input_filter_bandwidth, 2)}`)
+
+    // Interface configuration commands
+    if (safeBool(interfaceConfig.enable_can)) {
+      commands.push(`odrv0.axis0.config.can.node_id = ${safeValue(interfaceConfig.can_node_id, 0)}`)
+    }
+    
+    if (safeBool(interfaceConfig.enable_watchdog)) {
+      commands.push(`odrv0.axis0.config.watchdog_timeout = ${safeValue(interfaceConfig.watchdog_timeout, 0)}`)
+    }
+
+    for (let i = 1; i <= 4; i++) {
+      const gpioMode = safeValue(interfaceConfig[`gpio${i}_mode`], 0)
+      commands.push(`odrv0.config.gpio${i}_mode = ${gpioMode}`)
+    }
+
+    if (safeBool(interfaceConfig.enable_step_dir)) {
+      commands.push(`odrv0.axis0.config.step_dir_always_on = ${safeBool(interfaceConfig.step_dir_always_on) ? 'True' : 'False'}`)
+    }
+
+    return commands
+  }, [deviceConfig])
+
+  // Apply and Save function
+  const handleApplyAndSave = async () => {
+    if (!isConnected) {
+      toast({
+        title: 'Error',
+        description: 'No ODrive connected',
+        status: 'error',
+        duration: 3000,
+      })
+      return
+    }
+
+    setIsApplyingSave(true)
+    try {
+      const commands = generateConfigCommands()
+      
+      // Step 1: Apply configuration
+      toast({
+        title: 'Applying configuration...',
+        description: `Sending ${commands.length} commands to ODrive`,
+        status: 'info',
+        duration: 2000,
+      })
+
+      const applyResponse = await fetch('/api/odrive/apply_config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ commands })
+      })
+
+      if (!applyResponse.ok) {
+        const error = await applyResponse.json()
+        throw new Error(`Failed to apply configuration: ${error.message || 'Unknown error'}`)
+      }
+
+      // Step 2: Save to non-volatile memory
+      toast({
+        title: 'Saving to memory...',
+        description: 'Saving configuration to non-volatile memory',
+        status: 'info',
+        duration: 2000,
+      })
+
+      const saveResponse = await fetch('/api/odrive/save_config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      })
+
+      if (!saveResponse.ok) {
+        const error = await saveResponse.json()
+        throw new Error(`Failed to save configuration: ${error.message || 'Unknown error'}`)
+      }
+
+      const saveResult = await saveResponse.json()
+      
+      toast({
+        title: 'Configuration Applied & Saved',
+        description: `Configuration successfully applied and saved to non-volatile memory`,
+        status: 'success',
+        duration: 5000,
+      })
+
+    } catch (error) {
+      toast({
+        title: 'Apply & Save Failed',
+        description: error.message,
+        status: 'error',
+        duration: 5000,
+      })
+    } finally {
+      setIsApplyingSave(false)
+    }
+  }
+
   const nextConfigStep = () => {
     if (activeConfigStep < steps.length) {
       dispatch({ type: 'ui/setConfigStep', payload: activeConfigStep + 1 })
@@ -344,7 +510,7 @@ const ConfigurationTab = () => {
             {/* Progress Sections */}
             <HStack spacing={2} justify="center" w="100%">
               {steps.map((step) => (
-                <VStack key={step.id} spacing={1} minW="65px">
+                <VStack key={step.id} spacing={1} minW="60px">
                   <Box w="100%" h="4px" bg="gray.600" borderRadius="md" overflow="hidden">
                     <Box
                       w="100%"
@@ -357,6 +523,18 @@ const ConfigurationTab = () => {
                       transition="all 0.3s ease"
                     />
                   </Box>
+                  <Text 
+                    fontSize="2xs" 
+                    color={
+                      step.id < activeConfigStep ? "green.300" :
+                      step.id === activeConfigStep ? "odrive.300" :
+                      "gray.500"
+                    }
+                    fontWeight={step.id === activeConfigStep ? "bold" : "normal"}
+                    textAlign="center"
+                  >
+                    {step.name}
+                  </Text>
                 </VStack>
               ))}
             </HStack>
@@ -391,6 +569,21 @@ const ConfigurationTab = () => {
                 Next
               </Button>
             </HStack>
+
+            {/* Apply & Save Button */}
+            {activeConfigStep < steps.length && (
+              <Button
+                colorScheme="blue"
+                size="md"
+                onClick={handleApplyAndSave}
+                isDisabled={!isConnected}
+                isLoading={isApplyingSave}
+                loadingText="Applying & Saving..."
+                leftIcon={!isApplyingSave ? <Text>⚙️💾</Text> : undefined}
+              >
+                Apply & Save Configuration
+              </Button>
+            )}
           </VStack>
         </VStack>
       </Box>
