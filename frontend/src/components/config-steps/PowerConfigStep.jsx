@@ -10,8 +10,6 @@ import {
   CardBody,
   FormControl,
   FormLabel,
-  NumberInput,
-  NumberInputField,
   Switch,
   Icon,
   Tooltip,
@@ -21,15 +19,32 @@ import {
   Badge
 } from '@chakra-ui/react'
 import { InfoIcon } from '@chakra-ui/icons'
-import { useSelector, useDispatch } from 'react-redux'
-import { updatePowerConfig } from '../../store/slices/configSlice'
+import ParameterInput from '../buttons/ParameterInput'
+import { configurationMappings } from '../../utils/odriveCommands'
 
-const PowerConfigStep = () => {
-  const dispatch = useDispatch()
-  const { powerConfig } = useSelector(state => state.config)
+const PowerConfigStep = ({ 
+  deviceConfig, 
+  onReadParameter, 
+  onUpdateConfig,
+  loadingParams, 
+  isConnected 
+}) => {
+  const powerConfig = deviceConfig.power || {}
+  const powerMappings = configurationMappings.power
 
-  const handleConfigChange = (field, value) => {
-    dispatch(updatePowerConfig({ [field]: value }))
+  const handleConfigChange = (configKey, value) => {
+    onUpdateConfig('power', configKey, value)
+  }
+
+  const handleRefresh = (configKey) => {
+    const odriveParam = powerMappings[configKey]
+    if (odriveParam) {
+      onReadParameter(odriveParam, 'power', configKey)
+    }
+  }
+
+  const isLoading = (configKey) => {
+    return loadingParams.has(`power.${configKey}`)
   }
 
   return (
@@ -59,18 +74,17 @@ const PowerConfigStep = () => {
                       <Icon as={InfoIcon} color="gray.400" />
                     </Tooltip>
                   </HStack>
-                  <HStack>
-                    <NumberInput
-                      value={powerConfig.dc_bus_overvoltage_trip_level}
-                      onChange={(value) => handleConfigChange('dc_bus_overvoltage_trip_level', parseFloat(value) || 0)}
-                      step={1}
-                      precision={1}
-                      size="sm"
-                    >
-                      <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
-                    </NumberInput>
-                    <Text color="gray.300" minW="30px" fontSize="sm">V</Text>
-                  </HStack>
+                  <ParameterInput
+                    value={powerConfig.dc_bus_overvoltage_trip_level}
+                    onChange={(value) => handleConfigChange('dc_bus_overvoltage_trip_level', parseFloat(value) || 0)}
+                    onRefresh={() => handleRefresh('dc_bus_overvoltage_trip_level')}
+                    isLoading={isLoading('dc_bus_overvoltage_trip_level')}
+                    unit="V"
+                    step={1}
+                    precision={1}
+                    min={10}
+                    max={60}
+                  />
                 </FormControl>
 
                 <FormControl flex="1">
@@ -80,18 +94,17 @@ const PowerConfigStep = () => {
                       <Icon as={InfoIcon} color="gray.400" />
                     </Tooltip>
                   </HStack>
-                  <HStack>
-                    <NumberInput
-                      value={powerConfig.dc_bus_undervoltage_trip_level}
-                      onChange={(value) => handleConfigChange('dc_bus_undervoltage_trip_level', parseFloat(value) || 0)}
-                      step={1}
-                      precision={1}
-                      size="sm"
-                    >
-                      <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
-                    </NumberInput>
-                    <Text color="gray.300" minW="30px" fontSize="sm">V</Text>
-                  </HStack>
+                  <ParameterInput
+                    value={powerConfig.dc_bus_undervoltage_trip_level}
+                    onChange={(value) => handleConfigChange('dc_bus_undervoltage_trip_level', parseFloat(value) || 0)}
+                    onRefresh={() => handleRefresh('dc_bus_undervoltage_trip_level')}
+                    isLoading={isLoading('dc_bus_undervoltage_trip_level')}
+                    unit="V"
+                    step={1}
+                    precision={1}
+                    min={5}
+                    max={30}
+                  />
                 </FormControl>
               </HStack>
             </VStack>
@@ -106,58 +119,35 @@ const PowerConfigStep = () => {
             <VStack spacing={3}>
               <HStack spacing={4} w="100%">
                 <FormControl flex="1">
-                  <HStack justify="space-between">
-                    <HStack>
-                      <FormLabel color="white" mb={0} fontSize="sm">Enable DC Current Limit</FormLabel>
-                      <Tooltip label="Enable maximum DC bus current protection.">
-                        <Icon as={InfoIcon} color="gray.400" />
-                      </Tooltip>
-                    </HStack>
-                    <Switch
-                      isChecked={powerConfig.enable_dc_current_limit}
-                      onChange={(e) => handleConfigChange('enable_dc_current_limit', e.target.checked)}
-                      colorScheme="odrive"
-                      size="sm"
-                    />
-                  </HStack>
+                  <FormLabel color="white" mb={1} fontSize="sm">Max Positive Current</FormLabel>
+                  <ParameterInput
+                    value={powerConfig.dc_max_positive_current}
+                    onChange={(value) => handleConfigChange('dc_max_positive_current', parseFloat(value) || 0)}
+                    onRefresh={() => handleRefresh('dc_max_positive_current')}
+                    isLoading={isLoading('dc_max_positive_current')}
+                    unit="A"
+                    step={1}
+                    precision={1}
+                    min={0}
+                    max={120}
+                  />
+                </FormControl>
+
+                <FormControl flex="1">
+                  <FormLabel color="white" mb={1} fontSize="sm">Max Negative Current</FormLabel>
+                  <ParameterInput
+                    value={powerConfig.dc_max_negative_current}
+                    onChange={(value) => handleConfigChange('dc_max_negative_current', parseFloat(value) || 0)}
+                    onRefresh={() => handleRefresh('dc_max_negative_current')}
+                    isLoading={isLoading('dc_max_negative_current')}
+                    unit="A"
+                    step={1}
+                    precision={1}
+                    min={-120}
+                    max={0}
+                  />
                 </FormControl>
               </HStack>
-
-              {powerConfig.enable_dc_current_limit && (
-                <HStack spacing={4} w="100%">
-                  <FormControl flex="1">
-                    <FormLabel color="white" mb={1} fontSize="sm">Max Positive Current</FormLabel>
-                    <HStack>
-                      <NumberInput
-                        value={powerConfig.dc_max_positive_current}
-                        onChange={(value) => handleConfigChange('dc_max_positive_current', parseFloat(value) || 0)}
-                        step={1}
-                        precision={1}
-                        size="sm"
-                      >
-                        <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
-                      </NumberInput>
-                      <Text color="gray.300" minW="20px" fontSize="sm">A</Text>
-                    </HStack>
-                  </FormControl>
-
-                  <FormControl flex="1">
-                    <FormLabel color="white" mb={1} fontSize="sm">Max Negative Current</FormLabel>
-                    <HStack>
-                      <NumberInput
-                        value={powerConfig.dc_max_negative_current}
-                        onChange={(value) => handleConfigChange('dc_max_negative_current', parseFloat(value) || 0)}
-                        step={1}
-                        precision={1}
-                        size="sm"
-                      >
-                        <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
-                      </NumberInput>
-                      <Text color="gray.300" minW="20px" fontSize="sm">A</Text>
-                    </HStack>
-                  </FormControl>
-                </HStack>
-              )}
             </VStack>
           </CardBody>
         </Card>
@@ -177,26 +167,28 @@ const PowerConfigStep = () => {
                     </Tooltip>
                   </HStack>
                   <Switch
-                    isChecked={powerConfig.enable_brake_resistor}
-                    onChange={(e) => handleConfigChange('enable_brake_resistor', e.target.checked)}
+                    isChecked={powerConfig.brake_resistor_enabled}
+                    onChange={(e) => handleConfigChange('brake_resistor_enabled', e.target.checked)}
                     colorScheme="odrive"
                     size="sm"
                   />
                 </HStack>
               </FormControl>
 
-              {powerConfig.enable_brake_resistor && (
+              {powerConfig.brake_resistor_enabled && (
                 <FormControl>
-                  <FormLabel color="white" mb={1} fontSize="sm">Brake Resistance (Ω)</FormLabel>
-                  <NumberInput
+                  <FormLabel color="white" mb={1} fontSize="sm">Brake Resistance</FormLabel>
+                  <ParameterInput
                     value={powerConfig.brake_resistance}
                     onChange={(value) => handleConfigChange('brake_resistance', parseFloat(value) || 0)}
+                    onRefresh={() => handleRefresh('brake_resistance')}
+                    isLoading={isLoading('brake_resistance')}
+                    unit="Ω"
                     step={0.1}
                     precision={2}
-                    size="sm"
-                  >
-                    <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
-                  </NumberInput>
+                    min={0.1}
+                    max={10}
+                  />
                 </FormControl>
               )}
             </VStack>
@@ -215,31 +207,31 @@ const PowerConfigStep = () => {
               <HStack justify="space-between">
                 <Text color="gray.300" fontSize="sm">Overvoltage Trip:</Text>
                 <Badge colorScheme="red" fontSize="xs">
-                  {powerConfig.dc_bus_overvoltage_trip_level}V
+                  {powerConfig.dc_bus_overvoltage_trip_level || 56}V
                 </Badge>
               </HStack>
               <HStack justify="space-between">
                 <Text color="gray.300" fontSize="sm">Undervoltage Trip:</Text>
                 <Badge colorScheme="yellow" fontSize="xs">
-                  {powerConfig.dc_bus_undervoltage_trip_level}V
+                  {powerConfig.dc_bus_undervoltage_trip_level || 10}V
                 </Badge>
               </HStack>
               <HStack justify="space-between">
                 <Text color="gray.300" fontSize="sm">Max Positive Current:</Text>
                 <Text fontWeight="bold" color="odrive.300" fontSize="sm">
-                  {powerConfig.dc_max_positive_current}A
+                  {powerConfig.dc_max_positive_current || 10}A
                 </Text>
               </HStack>
               <HStack justify="space-between">
                 <Text color="gray.300" fontSize="sm">Max Negative Current:</Text>
                 <Text fontWeight="bold" color="odrive.300" fontSize="sm">
-                  {powerConfig.dc_max_negative_current}A
+                  {powerConfig.dc_max_negative_current || -10}A
                 </Text>
               </HStack>
               <HStack justify="space-between">
                 <Text color="gray.300" fontSize="sm">Brake Resistor:</Text>
-                <Badge colorScheme={powerConfig.enable_brake_resistor ? "green" : "gray"} fontSize="xs">
-                  {powerConfig.enable_brake_resistor ? "Enabled" : "Disabled"}
+                <Badge colorScheme={powerConfig.brake_resistor_enabled ? "green" : "gray"} fontSize="xs">
+                  {powerConfig.brake_resistor_enabled ? "Enabled" : "Disabled"}
                 </Badge>
               </HStack>
             </VStack>
@@ -299,6 +291,16 @@ const PowerConfigStep = () => {
             </VStack>
           </CardBody>
         </Card>
+
+        <Alert status="info" variant="left-accent">
+          <AlertIcon />
+          <VStack align="start" spacing={1}>
+            <Text fontWeight="bold" fontSize="sm">Power Configuration Tips:</Text>
+            <Text fontSize="xs">• Use refresh buttons to read current values from ODrive</Text>
+            <Text fontSize="xs">• Changes are applied immediately to the device</Text>
+            <Text fontSize="xs">• Brake resistor helps with deceleration and regenerative energy</Text>
+          </VStack>
+        </Alert>
       </VStack>
     </SimpleGrid>
   )

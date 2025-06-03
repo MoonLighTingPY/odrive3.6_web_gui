@@ -10,8 +10,6 @@ import {
   CardBody,
   FormControl,
   FormLabel,
-  NumberInput,
-  NumberInputField,
   Select,
   Switch,
   Icon,
@@ -21,19 +19,36 @@ import {
   AlertIcon
 } from '@chakra-ui/react'
 import { InfoIcon } from '@chakra-ui/icons'
-import { useSelector, useDispatch } from 'react-redux'
-import { updateInterfaceConfig } from '../../store/slices/configSlice'
+import ParameterInput from '../buttons/ParameterInput'
+import { configurationMappings } from '../../utils/odriveCommands'
 
-const InterfaceConfigStep = () => {
-  const dispatch = useDispatch()
-  const { interfaceConfig } = useSelector(state => state.config)
+const InterfaceConfigStep = ({ 
+  deviceConfig, 
+  onReadParameter, 
+  onUpdateConfig,
+  loadingParams, 
+  isConnected 
+}) => {
+  const interfaceConfig = deviceConfig.interface || {}
+  const interfaceMappings = configurationMappings.interface
 
-  const handleConfigChange = (field, value) => {
-    dispatch(updateInterfaceConfig({ [field]: value }))
+  const handleConfigChange = (configKey, value) => {
+    onUpdateConfig('interface', configKey, value)
+  }
+
+  const handleRefresh = (configKey) => {
+    const odriveParam = interfaceMappings[configKey]
+    if (odriveParam) {
+      onReadParameter(odriveParam, 'interface', configKey)
+    }
+  }
+
+  const isLoading = (configKey) => {
+    return loadingParams.has(`interface.${configKey}`)
   }
 
   return (
-    <SimpleGrid columns={{ base: 1, xl: 2 }} spacing={3} h="100%" p={3} overflow="auto">
+    <SimpleGrid columns={{ base: 1, xl: 2 }} spacing={4} h="100%" p={4} overflow="auto">
       {/* Left Column */}
       <VStack spacing={3} align="stretch">
         <Box>
@@ -51,58 +66,69 @@ const InterfaceConfigStep = () => {
           </CardHeader>
           <CardBody py={2}>
             <VStack spacing={3}>
-              <FormControl>
-                <HStack justify="space-between">
-                  <HStack>
-                    <FormLabel color="white" mb={0} fontSize="sm">Enable CAN Bus</FormLabel>
-                    <Tooltip label="Enable CAN bus communication. Requires proper termination and wiring.">
-                      <Icon as={InfoIcon} color="gray.400" />
-                    </Tooltip>
-                  </HStack>
-                  <Switch
-                    isChecked={interfaceConfig.enable_can}
-                    onChange={(e) => handleConfigChange('enable_can', e.target.checked)}
-                    colorScheme="odrive"
-                    size="sm"
+              <HStack spacing={4} w="100%">
+                <FormControl flex="1">
+                  <FormLabel color="white" mb={1} fontSize="sm">CAN Node ID</FormLabel>
+                  <ParameterInput
+                    value={interfaceConfig.can_node_id}
+                    onChange={(value) => handleConfigChange('can_node_id', parseInt(value) || 0)}
+                    onRefresh={() => handleRefresh('can_node_id')}
+                    isLoading={isLoading('can_node_id')}
+                    step={1}
+                    precision={0}
+                    min={0}
+                    max={63}
                   />
-                </HStack>
-              </FormControl>
+                </FormControl>
 
-              {interfaceConfig.enable_can && (
-                <HStack spacing={3} w="100%">
-                  <FormControl flex="1">
-                    <FormLabel color="white" mb={1} fontSize="sm">CAN Node ID</FormLabel>
-                    <NumberInput
-                      value={interfaceConfig.can_node_id}
-                      onChange={(value) => handleConfigChange('can_node_id', parseInt(value) || 0)}
-                      min={0}
-                      max={63}
-                      step={1}
+                <FormControl flex="1">
+                  <FormLabel color="white" mb={1} fontSize="sm">Extended ID</FormLabel>
+                  <HStack justify="space-between">
+                    <Text color="gray.300" fontSize="sm">Use 29-bit IDs</Text>
+                    <Switch
+                      isChecked={interfaceConfig.can_node_id_extended}
+                      onChange={(e) => handleConfigChange('can_node_id_extended', e.target.checked)}
+                      colorScheme="odrive"
                       size="sm"
-                    >
-                      <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
-                    </NumberInput>
-                  </FormControl>
+                    />
+                  </HStack>
+                </FormControl>
+              </HStack>
 
-                  <FormControl flex="1">
-                    <FormLabel color="white" mb={1} fontSize="sm">CAN Baudrate</FormLabel>
-                    <Select
-                      value={interfaceConfig.can_baudrate}
-                      onChange={(e) => handleConfigChange('can_baudrate', parseInt(e.target.value))}
-                      bg="gray.700"
-                      border="1px solid"
-                      borderColor="gray.600"
-                      color="white"
-                      size="sm"
-                    >
-                      <option value={125000}>125 kbps</option>
-                      <option value={250000}>250 kbps</option>
-                      <option value={500000}>500 kbps</option>
-                      <option value={1000000}>1 Mbps</option>
-                    </Select>
-                  </FormControl>
-                </HStack>
-              )}
+              <HStack spacing={4} w="100%">
+                <FormControl flex="1">
+                  <FormLabel color="white" mb={1} fontSize="sm">CAN Baudrate</FormLabel>
+                  <Select
+                    value={interfaceConfig.can_baudrate || 250000}
+                    onChange={(e) => handleConfigChange('can_baudrate', parseInt(e.target.value))}
+                    bg="gray.700"
+                    border="1px solid"
+                    borderColor="gray.600"
+                    color="white"
+                    size="sm"
+                  >
+                    <option value={125000}>125 kbps</option>
+                    <option value={250000}>250 kbps</option>
+                    <option value={500000}>500 kbps</option>
+                    <option value={1000000}>1 Mbps</option>
+                  </Select>
+                </FormControl>
+
+                <FormControl flex="1">
+                  <FormLabel color="white" mb={1} fontSize="sm">Heartbeat Rate</FormLabel>
+                  <ParameterInput
+                    value={interfaceConfig.can_heartbeat_rate_ms}
+                    onChange={(value) => handleConfigChange('can_heartbeat_rate_ms', parseInt(value) || 0)}
+                    onRefresh={() => handleRefresh('can_heartbeat_rate_ms')}
+                    isLoading={isLoading('can_heartbeat_rate_ms')}
+                    unit="ms"
+                    step={10}
+                    precision={0}
+                    min={0}
+                    max={1000}
+                  />
+                </FormControl>
+              </HStack>
             </VStack>
           </CardBody>
         </Card>
@@ -116,40 +142,107 @@ const InterfaceConfigStep = () => {
               <FormControl>
                 <HStack justify="space-between">
                   <HStack>
-                    <FormLabel color="white" mb={0} fontSize="sm">Enable UART</FormLabel>
-                    <Tooltip label="Enable UART serial communication on designated GPIO pins.">
+                    <FormLabel color="white" mb={0} fontSize="sm">Enable UART A</FormLabel>
+                    <Tooltip label="Enable UART_A serial communication on GPIO1/2.">
                       <Icon as={InfoIcon} color="gray.400" />
                     </Tooltip>
                   </HStack>
                   <Switch
-                    isChecked={interfaceConfig.enable_uart}
-                    onChange={(e) => handleConfigChange('enable_uart', e.target.checked)}
+                    isChecked={interfaceConfig.enable_uart_a}
+                    onChange={(e) => handleConfigChange('enable_uart_a', e.target.checked)}
                     colorScheme="odrive"
                     size="sm"
                   />
                 </HStack>
               </FormControl>
 
-              {interfaceConfig.enable_uart && (
-                <FormControl>
-                  <FormLabel color="white" mb={1} fontSize="sm">UART Baudrate</FormLabel>
-                  <Select
-                    value={interfaceConfig.uart_baudrate}
-                    onChange={(e) => handleConfigChange('uart_baudrate', parseInt(e.target.value))}
-                    bg="gray.700"
-                    border="1px solid"
-                    borderColor="gray.600"
-                    color="white"
+              {interfaceConfig.enable_uart_a && (
+                <HStack spacing={4} w="100%">
+                  <FormControl flex="1">
+                    <FormLabel color="white" mb={1} fontSize="sm">UART_A Baudrate</FormLabel>
+                    <ParameterInput
+                      value={interfaceConfig.uart_a_baudrate}
+                      onChange={(value) => handleConfigChange('uart_a_baudrate', parseInt(value) || 0)}
+                      onRefresh={() => handleRefresh('uart_a_baudrate')}
+                      isLoading={isLoading('uart_a_baudrate')}
+                      unit="bps"
+                      step={9600}
+                      precision={0}
+                      min={9600}
+                      max={921600}
+                    />
+                  </FormControl>
+
+                  <FormControl flex="1">
+                    <FormLabel color="white" mb={1} fontSize="sm">Protocol</FormLabel>
+                    <Select
+                      value={interfaceConfig.uart0_protocol || 3}
+                      onChange={(e) => handleConfigChange('uart0_protocol', parseInt(e.target.value))}
+                      bg="gray.700"
+                      border="1px solid"
+                      borderColor="gray.600"
+                      color="white"
+                      size="sm"
+                    >
+                      <option value={1}>ASCII</option>
+                      <option value={3}>ASCII + STDOUT</option>
+                      <option value={4}>Native</option>
+                    </Select>
+                  </FormControl>
+                </HStack>
+              )}
+
+              <FormControl>
+                <HStack justify="space-between">
+                  <HStack>
+                    <FormLabel color="white" mb={0} fontSize="sm">Enable UART B</FormLabel>
+                    <Tooltip label="Enable UART_B serial communication on GPIO3/4.">
+                      <Icon as={InfoIcon} color="gray.400" />
+                    </Tooltip>
+                  </HStack>
+                  <Switch
+                    isChecked={interfaceConfig.enable_uart_b}
+                    onChange={(e) => handleConfigChange('enable_uart_b', e.target.checked)}
+                    colorScheme="odrive"
                     size="sm"
-                  >
-                    <option value={9600}>9600</option>
-                    <option value={19200}>19200</option>
-                    <option value={38400}>38400</option>
-                    <option value={57600}>57600</option>
-                    <option value={115200}>115200</option>
-                    <option value={230400}>230400</option>
-                  </Select>
-                </FormControl>
+                  />
+                </HStack>
+              </FormControl>
+
+              {interfaceConfig.enable_uart_b && (
+                <HStack spacing={4} w="100%">
+                  <FormControl flex="1">
+                    <FormLabel color="white" mb={1} fontSize="sm">UART_B Baudrate</FormLabel>
+                    <ParameterInput
+                      value={interfaceConfig.uart_b_baudrate}
+                      onChange={(value) => handleConfigChange('uart_b_baudrate', parseInt(value) || 0)}
+                      onRefresh={() => handleRefresh('uart_b_baudrate')}
+                      isLoading={isLoading('uart_b_baudrate')}
+                      unit="bps"
+                      step={9600}
+                      precision={0}
+                      min={9600}
+                      max={921600}
+                    />
+                  </FormControl>
+
+                  <FormControl flex="1">
+                    <FormLabel color="white" mb={1} fontSize="sm">Protocol</FormLabel>
+                    <Select
+                      value={interfaceConfig.uart1_protocol || 1}
+                      onChange={(e) => handleConfigChange('uart1_protocol', parseInt(e.target.value))}
+                      bg="gray.700"
+                      border="1px solid"
+                      borderColor="gray.600"
+                      color="white"
+                      size="sm"
+                    >
+                      <option value={1}>ASCII</option>
+                      <option value={3}>ASCII + STDOUT</option>
+                      <option value={4}>Native</option>
+                    </Select>
+                  </FormControl>
+                </HStack>
               )}
             </VStack>
           </CardBody>
@@ -177,6 +270,25 @@ const InterfaceConfigStep = () => {
                   />
                 </HStack>
               </FormControl>
+
+              {interfaceConfig.enable_step_dir && (
+                <FormControl>
+                  <HStack justify="space-between">
+                    <HStack>
+                      <FormLabel color="white" mb={0} fontSize="sm">Always On</FormLabel>
+                      <Tooltip label="Keep step/dir enabled even when not in closed loop.">
+                        <Icon as={InfoIcon} color="gray.400" />
+                      </Tooltip>
+                    </HStack>
+                    <Switch
+                      isChecked={interfaceConfig.step_dir_always_on}
+                      onChange={(e) => handleConfigChange('step_dir_always_on', e.target.checked)}
+                      colorScheme="odrive"
+                      size="sm"
+                    />
+                  </HStack>
+                </FormControl>
+              )}
 
               {interfaceConfig.enable_step_dir && (
                 <Alert status="info" py={2}>
@@ -217,20 +329,17 @@ const InterfaceConfigStep = () => {
               {interfaceConfig.enable_watchdog && (
                 <FormControl>
                   <FormLabel color="white" mb={1} fontSize="sm">Watchdog Timeout</FormLabel>
-                  <HStack>
-                    <NumberInput
-                      value={interfaceConfig.watchdog_timeout}
-                      onChange={(value) => handleConfigChange('watchdog_timeout', parseFloat(value) || 0)}
-                      min={0.1}
-                      max={10}
-                      step={0.1}
-                      precision={1}
-                      size="sm"
-                    >
-                      <NumberInputField bg="gray.700" border="1px solid" borderColor="gray.600" color="white" />
-                    </NumberInput>
-                    <Text color="gray.300" minW="20px" fontSize="sm">s</Text>
-                  </HStack>
+                  <ParameterInput
+                    value={interfaceConfig.watchdog_timeout}
+                    onChange={(value) => handleConfigChange('watchdog_timeout', parseFloat(value) || 0)}
+                    onRefresh={() => handleRefresh('watchdog_timeout')}
+                    isLoading={isLoading('watchdog_timeout')}
+                    unit="s"
+                    step={0.1}
+                    precision={1}
+                    min={0.1}
+                    max={10}
+                  />
                 </FormControl>
               )}
 
@@ -278,21 +387,22 @@ const InterfaceConfigStep = () => {
                       size="sm"
                       isDisabled={
                         (interfaceConfig.enable_step_dir && (pin === 1 || pin === 2)) ||
-                        (interfaceConfig.enable_uart && (pin === 1 || pin === 2)) ||
-                        (interfaceConfig.enable_can && (pin === 3 || pin === 4))
+                        (interfaceConfig.enable_uart_a && (pin === 1 || pin === 2)) ||
+                        (interfaceConfig.enable_uart_b && (pin === 3 || pin === 4))
                       }
                     >
                       <option value={0}>Digital</option>
                       <option value={1}>Digital Pull-up</option>
                       <option value={2}>Digital Pull-down</option>
                       <option value={3}>Analog Input</option>
-                      <option value={4}>PWM Output</option>
-                      <option value={5}>UART A</option>
-                      <option value={6}>UART B</option>
+                      <option value={11}>UART A TX</option>
+                      <option value={12}>UART A RX</option>
+                      <option value={13}>UART B TX</option>
+                      <option value={14}>UART B RX</option>
                       <option value={7}>CAN A</option>
                       <option value={8}>CAN B</option>
-                      <option value={9}>Encoder 0</option>
-                      <option value={10}>Encoder 1</option>
+                      <option value={9}>Step Input</option>
+                      <option value={10}>Dir Input</option>
                     </Select>
                   </HStack>
                 </FormControl>
@@ -309,14 +419,20 @@ const InterfaceConfigStep = () => {
             <VStack spacing={2} align="stretch">
               <HStack justify="space-between">
                 <Text color="gray.300" fontSize="sm">CAN Bus:</Text>
-                <Text fontWeight="bold" color={interfaceConfig.enable_can ? "green.300" : "gray.300"} fontSize="sm">
-                  {interfaceConfig.enable_can ? `Enabled (ID: ${interfaceConfig.can_node_id})` : "Disabled"}
+                <Text fontWeight="bold" color="odrive.300" fontSize="sm">
+                  Node ID: {interfaceConfig.can_node_id || 0} ({interfaceConfig.can_node_id_extended ? '29-bit' : '11-bit'})
                 </Text>
               </HStack>
               <HStack justify="space-between">
-                <Text color="gray.300" fontSize="sm">UART:</Text>
-                <Text fontWeight="bold" color={interfaceConfig.enable_uart ? "green.300" : "gray.300"} fontSize="sm">
-                  {interfaceConfig.enable_uart ? `Enabled (${interfaceConfig.uart_baudrate} bps)` : "Disabled"}
+                <Text color="gray.300" fontSize="sm">UART A:</Text>
+                <Text fontWeight="bold" color={interfaceConfig.enable_uart_a ? "green.300" : "gray.300"} fontSize="sm">
+                  {interfaceConfig.enable_uart_a ? `${interfaceConfig.uart_a_baudrate || 115200} bps` : "Disabled"}
+                </Text>
+              </HStack>
+              <HStack justify="space-between">
+                <Text color="gray.300" fontSize="sm">UART B:</Text>
+                <Text fontWeight="bold" color={interfaceConfig.enable_uart_b ? "green.300" : "gray.300"} fontSize="sm">
+                  {interfaceConfig.enable_uart_b ? `${interfaceConfig.uart_b_baudrate || 115200} bps` : "Disabled"}
                 </Text>
               </HStack>
               <HStack justify="space-between">
@@ -328,12 +444,29 @@ const InterfaceConfigStep = () => {
               <HStack justify="space-between">
                 <Text color="gray.300" fontSize="sm">Watchdog:</Text>
                 <Text fontWeight="bold" color={interfaceConfig.enable_watchdog ? "yellow.300" : "gray.300"} fontSize="sm">
-                  {interfaceConfig.enable_watchdog ? `Enabled (${interfaceConfig.watchdog_timeout}s)` : "Disabled"}
+                  {interfaceConfig.enable_watchdog ? `${interfaceConfig.watchdog_timeout || 0}s` : "Disabled"}
+                </Text>
+              </HStack>
+              <HStack justify="space-between">
+                <Text color="gray.300" fontSize="sm">Sensorless:</Text>
+                <Text fontWeight="bold" color={interfaceConfig.enable_sensorless ? "purple.300" : "gray.300"} fontSize="sm">
+                  {interfaceConfig.enable_sensorless ? "Enabled" : "Disabled"}
                 </Text>
               </HStack>
             </VStack>
           </CardBody>
         </Card>
+
+        <Alert status="info" variant="left-accent">
+          <AlertIcon />
+          <VStack align="start" spacing={1}>
+            <Text fontWeight="bold" fontSize="sm">ODrive v0.5.6 Interface Tips:</Text>
+            <Text fontSize="xs">• Use refresh buttons to read current values from ODrive</Text>
+            <Text fontSize="xs">• Changes are applied immediately to the device</Text>
+            <Text fontSize="xs">• UART_A (GPIO1/2) is enabled by default with ASCII+STDOUT protocol</Text>
+            <Text fontSize="xs">• Step/Dir interface uses GPIO1 (step) and GPIO2 (direction)</Text>
+          </VStack>
+        </Alert>
       </VStack>
     </SimpleGrid>
   )

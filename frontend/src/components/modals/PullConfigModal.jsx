@@ -30,7 +30,7 @@ import {
 } from '../../store/slices/configSlice'
 import { getAllConfigurationParams } from '../../utils/odriveCommands'
 
-const PullConfigModal = ({ isOpen, onClose, isConnected }) => {
+const PullConfigModal = ({ isOpen, onClose, onComplete, isConnected }) => {
   const dispatch = useDispatch()
   const toast = useToast()
   
@@ -114,6 +114,8 @@ const PullConfigModal = ({ isOpen, onClose, isConnected }) => {
     }
   }
 
+  // ...existing code...
+
   const pullAllConfig = async () => {
     if (!isConnected) {
       toast({
@@ -140,6 +142,7 @@ const PullConfigModal = ({ isOpen, onClose, isConnected }) => {
     let currentProgress = 0
     let successCount = 0
     let failedCount = 0
+    const allConfig = {} // Collect all configuration here
 
     addLog('info', 'System', 'Pull Started', '', null, `Starting fast pull of ${totalParams} parameters...`)
 
@@ -159,7 +162,6 @@ const PullConfigModal = ({ isOpen, onClose, isConnected }) => {
 
           // Wait if paused
           await waitForResume()
-          if (shouldStopRef.current) break
 
           const batch = paramEntries.slice(i, i + batchSize)
           const odriveParams = batch.map(([paramKey, odriveParam]) => odriveParam)
@@ -216,17 +218,10 @@ const PullConfigModal = ({ isOpen, onClose, isConnected }) => {
           }
         }
 
-        // Update store for this category
+        // Store category config
         if (!shouldStopRef.current && Object.keys(categoryConfig).length > 0) {
-          try {
-            const storeAction = storeActionMap[categoryKey]
-            if (storeAction) {
-              dispatch(storeAction(categoryConfig))
-              addLog('info', category.name, 'Store Updated', '', null, `Updated ${Object.keys(categoryConfig).length} parameters`)
-            }
-          } catch (error) {
-            addLog('error', category.name, 'Store Update', '', null, `Failed to update store: ${error.message}`)
-          }
+          allConfig[categoryKey] = categoryConfig
+          addLog('info', category.name, 'Category Complete', '', null, `Completed ${Object.keys(categoryConfig).length} parameters`)
         }
       }
 
@@ -240,28 +235,27 @@ const PullConfigModal = ({ isOpen, onClose, isConnected }) => {
           status: successCount === totalParams ? 'success' : 'warning',
           duration: 5000,
         })
+
+        // Call onComplete with the pulled configuration
+        if (onComplete) {
+          onComplete(allConfig)
+        }
       } else {
-        addLog('info', 'System', 'Pull Stopped', '', null, 'Pull operation was stopped by user')
-        toast({
-          title: 'Pull Stopped',
-          description: `Stopped at ${successCount}/${totalParams} parameters`,
-          status: 'info',
-          duration: 3000,
-        })
+        addLog('info', 'System', 'Pull Stopped', '', null, 'Configuration pull was stopped by user')
       }
 
     } catch (error) {
-      addLog('error', 'System', 'Pull Failed', '', null, `Unexpected error: ${error.message}`)
+      addLog('error', 'System', 'Pull Failed', '', null, `Pull failed: ${error.message}`)
       toast({
         title: 'Pull Failed',
         description: error.message,
         status: 'error',
         duration: 5000,
       })
+    } finally {
+      setIsLoading(false)
+      setIsPaused(false)
     }
-
-    setIsLoading(false)
-    setIsPaused(false)
   }
 
   const handlePauseResume = () => {
