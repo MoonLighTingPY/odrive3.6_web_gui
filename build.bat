@@ -54,6 +54,7 @@ cd ..
 echo.
 echo [4/6] Installing backend dependencies...
 cd backend
+echo Installing/updating backend dependencies...
 pip install -r requirements.txt
 if %errorlevel% neq 0 (
     echo Error: Failed to install backend dependencies!
@@ -64,21 +65,43 @@ if %errorlevel% neq 0 (
 
 echo.
 echo [5/6] Installing PyInstaller...
-pip install pyinstaller
-if %errorlevel% neq 0 (
-    echo Error: Failed to install PyInstaller!
-    cd ..
-    pause
-    exit /b 1
+echo Checking if PyInstaller is installed...
+pip show pyinstaller >nul 2>&1
+if %errorlevel% equ 0 (
+    echo ✓ PyInstaller is already installed
+) else (
+    echo Installing PyInstaller...
+    pip install pyinstaller
+    if %errorlevel% neq 0 (
+        echo Error: Failed to install PyInstaller!
+        cd ..
+        pause
+        exit /b 1
+    )
 )
 
 echo.
 echo [6/6] Building executable with PyInstaller...
+echo Checking for servo.ico...
+if not exist "servo.ico" (
+    echo Warning: servo.ico not found in backend directory!
+    echo Looking for icon in frontend...
+    if exist "..\frontend\public\servo.ico" (
+        copy "..\frontend\public\servo.ico" "servo.ico"
+        echo ✓ Copied servo.ico from frontend
+    ) else (
+        echo Warning: No servo.ico found, executable will use default icon
+    )
+) else (
+    echo ✓ Found servo.ico file (size: 
+    dir servo.ico | findstr /C:"servo.ico"
+    echo )
+)
+
 if exist "dist" rmdir /s /q dist
 if exist "build" rmdir /s /q build
 
 echo Running PyInstaller...
-REM Run PyInstaller from the backend directory where app.spec is located
 pyinstaller app.spec --clean --noconfirm
 set PYINSTALLER_EXIT_CODE=%errorlevel%
 
@@ -107,6 +130,8 @@ if not exist "dist\odrive_v36_gui.exe" (
     pause
     exit /b 1
 )
+
+echo ✓ Executable created successfully
 
 REM Go back to project root
 cd ..
