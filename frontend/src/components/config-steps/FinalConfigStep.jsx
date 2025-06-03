@@ -28,6 +28,10 @@ import CommandList from '../CommandList'
 import CalibrationModal from '../CalibrationModal'
 import ConfirmationModal from '../ConfirmationModal'
 
+// Import shared utilities
+import { generateConfigCommands } from '../../utils/configCommandGenerator'
+import { executeConfigAction } from '../../utils/configurationActions'
+
 const FinalConfigStep = () => {
   const toast = useToast()
   const { isOpen: isCommandsOpen, onToggle: onCommandsToggle } = useDisclosure()
@@ -178,106 +182,16 @@ const FinalConfigStep = () => {
     }
   }, [isCalibrating, toast, calibrationStatus?.auto_continue_in_progress])
 
-  
-  // Helper function to safely format numbers and handle undefined values
-  const safeValue = (value, defaultValue = 0) => {
-    if (value === undefined || value === null || isNaN(value)) {
-      return defaultValue
-    }
-    return value
-  }
-
-  // Helper function to format boolean values
-  const safeBool = (value, defaultValue = false) => {
-    if (value === undefined || value === null) {
-      return defaultValue
-    }
-    return Boolean(value)
-  }
-
-  // Generate base commands using useMemo to prevent infinite re-renders
+  // Generate base commands using shared utility
   const baseGeneratedCommands = useMemo(() => {
-    const commands = []
-
-    // Power configuration commands (ODrive v0.5.6 syntax)
-    commands.push(`odrv0.config.dc_bus_overvoltage_trip_level = ${safeValue(powerConfig.dc_bus_overvoltage_trip_level, 56)}`)
-    commands.push(`odrv0.config.dc_bus_undervoltage_trip_level = ${safeValue(powerConfig.dc_bus_undervoltage_trip_level, 10)}`)
-    commands.push(`odrv0.config.dc_max_positive_current = ${safeValue(powerConfig.dc_max_positive_current, 10)}`)
-    commands.push(`odrv0.config.dc_max_negative_current = ${safeValue(powerConfig.dc_max_negative_current, -10)}`)
-    commands.push(`odrv0.config.brake_resistance = ${safeValue(powerConfig.brake_resistance, 2)}`)
-    commands.push(`odrv0.config.enable_brake_resistor = ${safeBool(powerConfig.brake_resistor_enabled) ? 'True' : 'False'}`)
-
-    // Motor configuration commands
-    commands.push(`odrv0.axis0.motor.config.motor_type = ${safeValue(motorConfig.motor_type, 0)}`)
-    commands.push(`odrv0.axis0.motor.config.pole_pairs = ${safeValue(motorConfig.pole_pairs, 7)}`)
-    
-    // Calculate torque constant safely
-    const motorKv = safeValue(motorConfig.motor_kv, 230)
-    const torqueConstant = motorKv > 0 ? (60 / (2 * Math.PI * motorKv)) : 0.04
-    commands.push(`odrv0.axis0.motor.config.torque_constant = ${torqueConstant.toFixed(6)}`)
-    
-    commands.push(`odrv0.axis0.motor.config.current_lim = ${safeValue(motorConfig.current_lim, 10)}`)
-    commands.push(`odrv0.axis0.motor.config.calibration_current = ${safeValue(motorConfig.calibration_current, 10)}`)
-    commands.push(`odrv0.axis0.motor.config.resistance_calib_max_voltage = ${safeValue(motorConfig.resistance_calib_max_voltage, 4)}`)
-    
-    // Add lock-in spin current if it exists in motorConfig
-    const lockInCurrent = safeValue(motorConfig.lock_in_spin_current, 10)
-    commands.push(`odrv0.axis0.config.calibration_lockin.current = ${lockInCurrent}`)
-
-    if (safeValue(motorConfig.motor_type, 0) === 1) { // GIMBAL motor type
-      commands.push(`odrv0.axis0.motor.config.phase_resistance = ${safeValue(motorConfig.phase_resistance, 0)}`)
-      commands.push(`odrv0.axis0.motor.config.phase_inductance = ${safeValue(motorConfig.phase_inductance, 0)}`)
+    const deviceConfig = {
+      power: powerConfig,
+      motor: motorConfig,
+      encoder: encoderConfig,
+      control: controlConfig,
+      interface: interfaceConfig
     }
-
-    // Encoder configuration commands
-    commands.push(`odrv0.axis0.encoder.config.mode = ${safeValue(encoderConfig.encoder_type, 1)}`)
-    if (safeValue(encoderConfig.encoder_type, 1) === 1) { // INCREMENTAL
-      commands.push(`odrv0.axis0.encoder.config.cpr = ${safeValue(encoderConfig.cpr, 4000)}`)
-      commands.push(`odrv0.axis0.encoder.config.bandwidth = ${safeValue(encoderConfig.bandwidth, 1000)}`)
-      commands.push(`odrv0.axis0.encoder.config.use_index = ${safeBool(encoderConfig.use_index) ? 'True' : 'False'}`)
-      commands.push(`odrv0.axis0.encoder.config.calib_range = ${safeValue(encoderConfig.calib_range, 0.02)}`)
-      commands.push(`odrv0.axis0.encoder.config.calib_scan_distance = ${safeValue(encoderConfig.calib_scan_distance, 16384)}`)
-      commands.push(`odrv0.axis0.encoder.config.calib_scan_omega = ${safeValue(encoderConfig.calib_scan_omega, 12.566)}`)
-    }
-
-    // Control configuration commands
-    commands.push(`odrv0.axis0.controller.config.control_mode = ${safeValue(controlConfig.control_mode, 3)}`)
-    commands.push(`odrv0.axis0.controller.config.input_mode = ${safeValue(controlConfig.input_mode, 1)}`)
-    commands.push(`odrv0.axis0.controller.config.vel_limit = ${safeValue(controlConfig.vel_limit, 20)}`)
-    commands.push(`odrv0.axis0.controller.config.pos_gain = ${safeValue(controlConfig.pos_gain, 1)}`)
-    commands.push(`odrv0.axis0.controller.config.vel_gain = ${safeValue(controlConfig.vel_gain, 0.228)}`)
-    commands.push(`odrv0.axis0.controller.config.vel_integrator_gain = ${safeValue(controlConfig.vel_integrator_gain, 0.228)}`)
-    commands.push(`odrv0.axis0.controller.config.vel_limit_tolerance = ${safeValue(controlConfig.vel_limit_tolerance, 1.2)}`)
-    commands.push(`odrv0.axis0.controller.config.vel_ramp_rate = ${safeValue(controlConfig.vel_ramp_rate, 10)}`)
-    commands.push(`odrv0.axis0.controller.config.torque_ramp_rate = ${safeValue(controlConfig.torque_ramp_rate, 0.01)}`)
-    commands.push(`odrv0.axis0.controller.config.circular_setpoints = ${safeBool(controlConfig.circular_setpoints) ? 'True' : 'False'}`)
-    commands.push(`odrv0.axis0.controller.config.inertia = ${safeValue(controlConfig.inertia, 0)}`)
-    commands.push(`odrv0.axis0.controller.config.input_filter_bandwidth = ${safeValue(controlConfig.input_filter_bandwidth, 2)}`)
-
-    // Interface configuration commands (ODrive v0.5.6 specific)
-    
-    // CAN configuration (v0.5.6 syntax)
-    if (safeBool(interfaceConfig.enable_can)) {
-      commands.push(`odrv0.axis0.config.can.node_id = ${safeValue(interfaceConfig.can_node_id, 0)}`)
-    }
-    
-    // Watchdog configuration
-    if (safeBool(interfaceConfig.enable_watchdog)) {
-      commands.push(`odrv0.axis0.config.watchdog_timeout = ${safeValue(interfaceConfig.watchdog_timeout, 0)}`)
-    }
-
-    // GPIO configuration (v0.5.6 syntax)
-    for (let i = 1; i <= 4; i++) {
-      const gpioMode = safeValue(interfaceConfig[`gpio${i}_mode`], 0)
-      commands.push(`odrv0.config.gpio${i}_mode = ${gpioMode}`)
-    }
-
-    // Step/Direction interface (if enabled)
-    if (safeBool(interfaceConfig.enable_step_dir)) {
-      commands.push(`odrv0.axis0.config.step_dir_always_on = ${safeBool(interfaceConfig.step_dir_always_on) ? 'True' : 'False'}`)
-    }
-
-    return commands
+    return generateConfigCommands(deviceConfig)
   }, [powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig])
 
   // Final commands list with custom edits applied
@@ -288,7 +202,7 @@ const FinalConfigStep = () => {
     }).filter((_, index) => !disabledCommands.has(index))
   }, [baseGeneratedCommands, customCommands, disabledCommands])
 
-  const executeAction = async (action) => {
+   const executeAction = async (action) => {
     if (!isConnected) {
       toast({
         title: 'Error',
@@ -301,63 +215,15 @@ const FinalConfigStep = () => {
 
     setIsLoading(true)
     try {
-      let endpoint = ''
-      let payload = {}
-
-      switch (action) {
-        case 'erase':
-          endpoint = '/api/odrive/erase_config'
-          break
-        case 'apply':
-          endpoint = '/api/odrive/apply_config'
-          payload = { commands: finalCommands }
-          break
-        case 'save_and_reboot':
-          endpoint = '/api/odrive/save_and_reboot'
-          break
-        case 'calibrate':
-          endpoint = '/api/odrive/calibrate'
-          payload = { type: 'full' } // Full calibration: Motor -> Encoder Polarity -> Encoder Offset
-          break
-        case 'calibrate_motor':
-          endpoint = '/api/odrive/calibrate'
-          payload = { type: 'motor' }
-          break
-        case 'calibrate_encoder':
-          endpoint = '/api/odrive/calibrate'
-          payload = { type: 'encoder_sequence' } // Encoder sequence: Polarity -> Offset
-          break
-        case 'save':
-          endpoint = '/api/odrive/save_config'
-          break
-      }
-
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
-
-      if (response.ok) {
-        const result = await response.json()
-        toast({
-          title: 'Success',
-          description: result.message || 'Action completed successfully',
-          status: 'success',
-          duration: 3000,
-        })
-        
-        // If this was a calibration action, start monitoring
-        if (action.includes('calibrate')) {
-          setIsCalibrating(true)
-          setCalibrationProgress(0)
-          setCalibrationPhase('starting')
-          setCalibrationSequence(result.sequence || [])
-          onCalibrationOpen()
-        }
-      } else {
-        const error = await response.json()
-        throw new Error(error.message || 'Action failed')
+      const result = await executeConfigAction(action, { commands: finalCommands })
+      
+      // If this was a calibration action, start monitoring
+      if (action.includes('calibrate')) {
+        setIsCalibrating(true)
+        setCalibrationProgress(0)
+        setCalibrationPhase('starting')
+        setCalibrationSequence(result.sequence || [])
+        onCalibrationOpen()
       }
     } catch (error) {
       toast({
@@ -366,9 +232,10 @@ const FinalConfigStep = () => {
         status: 'error',
         duration: 5000,
       })
+    } finally {
+      setIsLoading(false)
+      onConfirmClose()
     }
-    setIsLoading(false)
-    onConfirmClose()
   }
 
   const handleAction = (action) => {
