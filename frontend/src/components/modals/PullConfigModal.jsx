@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef } from 'react'
 import {
   Modal,
   ModalOverlay,
@@ -16,14 +16,8 @@ import {
   AlertIcon,
   Box,
   Badge,
-  Divider,
   useToast,
   Code,
-  Accordion,
-  AccordionItem,
-  AccordionButton,
-  AccordionPanel,
-  AccordionIcon,
 } from '@chakra-ui/react'
 import { CheckIcon, WarningIcon, CloseIcon } from '@chakra-ui/icons'
 import { useDispatch } from 'react-redux'
@@ -40,14 +34,20 @@ const PullConfigModal = ({ isOpen, onClose, isConnected }) => {
   const toast = useToast()
   
   const [isLoading, setIsLoading] = useState(false)
+  const [isPaused, setIsPaused] = useState(false)
   const [progress, setProgress] = useState(0)
   const [logs, setLogs] = useState([])
   const [stats, setStats] = useState({ total: 0, success: 0, failed: 0 })
+  
+  // Use refs to control the pulling process
+  const shouldPauseRef = useRef(false)
+  const shouldStopRef = useRef(false)
 
-  // Configuration parameters to pull from ODrive v0.5.6
-  const configParams = {
+  // Configuration parameters mapped to ODrive v0.5.6 paths
+  const configParamMaps = {
     power: {
       name: 'Power Configuration',
+      storeAction: updatePowerConfig,
       params: {
         dc_bus_overvoltage_trip_level: 'config.dc_bus_overvoltage_trip_level',
         dc_bus_undervoltage_trip_level: 'config.dc_bus_undervoltage_trip_level',
@@ -58,7 +58,8 @@ const PullConfigModal = ({ isOpen, onClose, isConnected }) => {
       }
     },
     motor: {
-      name: 'Motor Configuration',
+      name: 'Motor Configuration', 
+      storeAction: updateMotorConfig,
       params: {
         motor_type: 'axis0.motor.config.motor_type',
         pole_pairs: 'axis0.motor.config.pole_pairs',
@@ -73,6 +74,7 @@ const PullConfigModal = ({ isOpen, onClose, isConnected }) => {
     },
     encoder: {
       name: 'Encoder Configuration',
+      storeAction: updateEncoderConfig,
       params: {
         encoder_type: 'axis0.encoder.config.mode',
         cpr: 'axis0.encoder.config.cpr',
@@ -93,6 +95,7 @@ const PullConfigModal = ({ isOpen, onClose, isConnected }) => {
     },
     control: {
       name: 'Control Configuration',
+      storeAction: updateControlConfig,
       params: {
         control_mode: 'axis0.controller.config.control_mode',
         input_mode: 'axis0.controller.config.input_mode',
@@ -110,10 +113,10 @@ const PullConfigModal = ({ isOpen, onClose, isConnected }) => {
         anticogging_enabled: 'axis0.controller.config.anticogging.anticogging_enabled',
       }
     },
-    // Update the interface section in configParams
     interface: {
-    name: 'Interface Configuration',
-    params: {
+      name: 'Interface Configuration',
+      storeAction: updateInterfaceConfig,
+      params: {
         can_node_id: 'axis0.config.can.node_id',
         can_node_id_extended: 'axis0.config.can.is_extended',
         can_baudrate: 'can.config.baud_rate',
@@ -133,29 +136,25 @@ const PullConfigModal = ({ isOpen, onClose, isConnected }) => {
         enable_step_dir: 'axis0.config.enable_step_dir',
         step_dir_always_on: 'axis0.config.step_dir_always_on',
         enable_sensorless: 'axis0.config.enable_sensorless_mode',
-    }
+      }
     }
   }
 
-const addLog = (type, category, param, odriveParam, value = null, message = null) => {
-  const timestamp = new Date().toLocaleTimeString()
-  setLogs(prev => [...prev, {
-    timestamp,
-    type,
-    category,
-    param,
-    odriveParam,
-    value,
-    message, // Use message instead of error for info logs
-    id: Date.now() + Math.random()
-  }])
-}
+  const addLog = (type, category, param, odriveParam, value = null, message = null) => {
+    const timestamp = new Date().toLocaleTimeString()
+    setLogs(prev => [...prev, {
+      timestamp,
+      type,
+      category,
+      param,
+      odriveParam,
+      value,
+      message,
+      id: Date.now() + Math.random()
+    }])
+  }
 
-  // Batch pull multiple parameters at once to speed up the process
   const pullBatchParams = async (odriveParams) => {
-    const results = []
-    
-    // Use Promise.allSettled to pull multiple parameters simultaneously
     const promises = odriveParams.map(async (odriveParam) => {
       try {
         const response = await fetch('/api/odrive/command', {
@@ -187,11 +186,16 @@ const addLog = (type, category, param, odriveParam, value = null, message = null
   }
 
   const convertTorqueConstantToKv = (torqueConstant) => {
-    // Kt = 60/(2π * Kv), so Kv = 60/(2π * Kt)
     if (torqueConstant > 0) {
       return 60 / (2 * Math.PI * torqueConstant)
     }
-    return 230 // Default fallback
+    return 230
+  }
+
+  const waitForResume = async () => {
+    while (shouldPauseRef.current && !shouldStopRef.current) {
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
   }
 
   const pullAllConfig = async () => {
@@ -206,12 +210,14 @@ const addLog = (type, category, param, odriveParam, value = null, message = null
     }
 
     setIsLoading(true)
+    setIsPaused(false)
     setProgress(0)
     setLogs([])
     setStats({ total: 0, success: 0, failed: 0 })
+    shouldPauseRef.current = false
+    shouldStopRef.current = false
 
-    // Calculate total parameters
-    const totalParams = Object.values(configParams).reduce((total, category) => {
+    const totalParams = Object.values(configParamMaps).reduce((total, category) => {
       return total + Object.keys(category.params).length
     }, 0)
 
@@ -221,119 +227,143 @@ const addLog = (type, category, param, odriveParam, value = null, message = null
 
     addLog('info', 'System', 'Pull Started', '', null, `Starting fast pull of ${totalParams} parameters...`)
 
-    // Process each category with batch pulling
-    for (const [categoryKey, category] of Object.entries(configParams)) {
-      const categoryConfig = {}
-      
-      addLog('info', category.name, 'Category Started', '', null, `Pulling ${category.name} (${Object.keys(category.params).length} params)...`)
+    try {
+      for (const [categoryKey, category] of Object.entries(configParamMaps)) {
+        if (shouldStopRef.current) break
 
-      // Prepare batch of parameters for this category
-      const paramEntries = Object.entries(category.params)
-      const batchSize = 10 // Pull 10 parameters at once
-      
-      // Process in batches
-      for (let i = 0; i < paramEntries.length; i += batchSize) {
-        const batch = paramEntries.slice(i, i + batchSize)
-        const odriveParams = batch.map(([paramKey, odriveParam]) => odriveParam)
+        const categoryConfig = {}
         
-        try {
-          // Pull batch of parameters simultaneously
-          const batchResults = await pullBatchParams(odriveParams)
+        addLog('info', category.name, 'Category Started', '', null, `Pulling ${category.name} (${Object.keys(category.params).length} params)...`)
+
+        const paramEntries = Object.entries(category.params)
+        const batchSize = 10
+        
+        for (let i = 0; i < paramEntries.length; i += batchSize) {
+          if (shouldStopRef.current) break
+
+          // Wait if paused
+          await waitForResume()
+          if (shouldStopRef.current) break
+
+          const batch = paramEntries.slice(i, i + batchSize)
+          const odriveParams = batch.map(([paramKey, odriveParam]) => odriveParam)
           
-          // Process results
-          batchResults.forEach((result, index) => {
-            const [paramKey, odriveParam] = batch[index]
+          try {
+            const batchResults = await pullBatchParams(odriveParams)
             
-            if (result.success) {
-              let value = result.value
+            batchResults.forEach((result, index) => {
+              const [paramKey, odriveParam] = batch[index]
               
-              // Special handling for torque constant -> Kv conversion
-              if (paramKey === 'motor_kv' && odriveParam.includes('torque_constant')) {
-                const kvValue = convertTorqueConstantToKv(value)
-                categoryConfig[paramKey] = kvValue
-                addLog('success', category.name, paramKey, odriveParam, `${kvValue.toFixed(1)} RPM/V (from Kt: ${value})`)
+              if (result.success) {
+                let value = result.value
+                
+                if (paramKey === 'motor_kv' && odriveParam.includes('torque_constant')) {
+                  const kvValue = convertTorqueConstantToKv(value)
+                  categoryConfig[paramKey] = kvValue
+                  addLog('success', category.name, paramKey, odriveParam, `${kvValue.toFixed(1)} RPM/V (from Kt: ${value})`)
+                } else {
+                  categoryConfig[paramKey] = value
+                  addLog('success', category.name, paramKey, odriveParam, value)
+                }
+                
+                successCount++
               } else {
-                categoryConfig[paramKey] = value
-                addLog('success', category.name, paramKey, odriveParam, value)
+                addLog('error', category.name, paramKey, odriveParam, null, result.error)
+                failedCount++
               }
-              
-              successCount++
-            } else {
-              addLog('error', category.name, paramKey, odriveParam, null, result.error)
+
+              currentProgress++
+              setProgress((currentProgress / totalParams) * 100)
+              setStats({ 
+                total: totalParams, 
+                success: successCount, 
+                failed: failedCount 
+              })
+            })
+                    
+          } catch (error) {
+            batch.forEach(([paramKey, odriveParam]) => {
+              addLog('error', category.name, paramKey, odriveParam, null, error.message)
               failedCount++
-            }
-
-            currentProgress++
-            setProgress((currentProgress / totalParams) * 100)
-          })
+              currentProgress++
+              setProgress((currentProgress / totalParams) * 100)
+              setStats({ 
+                total: totalParams, 
+                success: successCount, 
+                failed: failedCount 
+              })
+            })
+          }
           
-        } catch (error) {
-          // Handle batch failure
-          batch.forEach(([paramKey, odriveParam]) => {
-            addLog('error', category.name, paramKey, odriveParam, null, error.message)
-            failedCount++
-            currentProgress++
-            setProgress((currentProgress / totalParams) * 100)
-          })
+          if (i + batchSize < paramEntries.length && !shouldStopRef.current) {
+            await new Promise(resolve => setTimeout(resolve, 10))
+          }
         }
-        
-        // Small delay between batches to prevent overwhelming the ODrive
-        if (i + batchSize < paramEntries.length) {
-          await new Promise(resolve => setTimeout(resolve, 10))
+
+        // Update store for this category
+        if (!shouldStopRef.current && Object.keys(categoryConfig).length > 0) {
+          try {
+            dispatch(category.storeAction(categoryConfig))
+            addLog('info', category.name, 'Store Updated', '', null, `Updated ${Object.keys(categoryConfig).length} parameters`)
+          } catch (error) {
+            addLog('error', category.name, 'Store Update', '', null, `Failed to update store: ${error.message}`)
+          }
         }
       }
 
-      // Update the store for this category
-      try {
-        switch (categoryKey) {
-          case 'power':
-            if (Object.keys(categoryConfig).length > 0) {
-              dispatch(updatePowerConfig(categoryConfig))
-              addLog('info', category.name, 'Store Updated', '', null, `Updated ${Object.keys(categoryConfig).length} parameters`)
-            }
-            break
-          case 'motor':
-            if (Object.keys(categoryConfig).length > 0) {
-              dispatch(updateMotorConfig(categoryConfig))
-              addLog('info', category.name, 'Store Updated', '', null, `Updated ${Object.keys(categoryConfig).length} parameters`)
-            }
-            break
-          case 'encoder':
-            if (Object.keys(categoryConfig).length > 0) {
-              dispatch(updateEncoderConfig(categoryConfig))
-              addLog('info', category.name, 'Store Updated', '', null, `Updated ${Object.keys(categoryConfig).length} parameters`)
-            }
-            break
-          case 'control':
-            if (Object.keys(categoryConfig).length > 0) {
-              dispatch(updateControlConfig(categoryConfig))
-              addLog('info', category.name, 'Store Updated', '', null, `Updated ${Object.keys(categoryConfig).length} parameters`)
-            }
-            break
-          case 'interface':
-            if (Object.keys(categoryConfig).length > 0) {
-              dispatch(updateInterfaceConfig(categoryConfig))
-              addLog('info', category.name, 'Store Updated', '', null, `Updated ${Object.keys(categoryConfig).length} parameters`)
-            }
-            break
-        }
-      } catch (error) {
-        addLog('error', category.name, 'Store Update', '', null, `Failed to update store: ${error.message}`)
+      if (!shouldStopRef.current) {
+        addLog('info', 'System', 'Pull Completed', '', null, 
+          `Completed! ${successCount} successful, ${failedCount} failed out of ${totalParams} total parameters`)
+
+        toast({
+          title: 'Configuration Pull Complete',
+          description: `${successCount}/${totalParams} parameters pulled successfully`,
+          status: successCount === totalParams ? 'success' : 'warning',
+          duration: 5000,
+        })
+      } else {
+        addLog('info', 'System', 'Pull Stopped', '', null, 'Pull operation was stopped by user')
+        toast({
+          title: 'Pull Stopped',
+          description: `Stopped at ${successCount}/${totalParams} parameters`,
+          status: 'info',
+          duration: 3000,
+        })
       }
+
+    } catch (error) {
+      addLog('error', 'System', 'Pull Failed', '', null, `Unexpected error: ${error.message}`)
+      toast({
+        title: 'Pull Failed',
+        description: error.message,
+        status: 'error',
+        duration: 5000,
+      })
     }
 
-    setStats({ total: totalParams, success: successCount, failed: failedCount })
     setIsLoading(false)
+    setIsPaused(false)
+  }
 
-    addLog('info', 'System', 'Pull Completed', '', null, 
-      `Completed! ${successCount} successful, ${failedCount} failed out of ${totalParams} total parameters`)
+  const handlePauseResume = () => {
+    if (isPaused) {
+      // Resume
+      shouldPauseRef.current = false
+      setIsPaused(false)
+      addLog('info', 'System', 'Pull Resumed', '', null, 'Configuration pull resumed')
+    } else {
+      // Pause
+      shouldPauseRef.current = true
+      setIsPaused(true)
+      addLog('info', 'System', 'Pull Paused', '', null, 'Configuration pull paused')
+    }
+  }
 
-    toast({
-      title: 'Configuration Pull Complete',
-      description: `${successCount}/${totalParams} parameters pulled successfully`,
-      status: successCount === totalParams ? 'success' : 'warning',
-      duration: 5000,
-    })
+  const handleStop = () => {
+    shouldStopRef.current = true
+    shouldPauseRef.current = false
+    setIsPaused(false)
+    addLog('info', 'System', 'Pull Stopping', '', null, 'Stopping configuration pull...')
   }
 
   const getLogIcon = (type) => {
@@ -353,7 +383,7 @@ const addLog = (type, category, param, odriveParam, value = null, message = null
           <VStack align="start" spacing={2}>
             <Text>Pull Configuration from ODrive</Text>
             <Text fontSize="sm" color="gray.300">
-              Fast batch pull of current ODrive configuration
+              Fast batch pull of current ODrive configuration with pause/resume control
             </Text>
           </VStack>
         </ModalHeader>
@@ -373,6 +403,11 @@ const addLog = (type, category, param, odriveParam, value = null, message = null
                 <Badge colorScheme="red" variant="solid">
                   Failed: {stats.failed}
                 </Badge>
+                {isPaused && (
+                  <Badge colorScheme="orange" variant="solid">
+                    PAUSED
+                  </Badge>
+                )}
               </HStack>
               
               {isLoading && (
@@ -385,10 +420,33 @@ const addLog = (type, category, param, odriveParam, value = null, message = null
             </HStack>
 
             {isLoading && (
-              <Progress value={progress} colorScheme="blue" size="sm" />
+              <Progress 
+                value={progress} 
+                colorScheme={isPaused ? "orange" : "blue"} 
+                size="sm" 
+              />
             )}
 
-            {/* Configuration Categories */}
+            {/* Control Buttons */}
+            {isLoading && (
+              <HStack spacing={3} justify="center">
+                <Button
+                  colorScheme={isPaused ? "green" : "orange"}
+                  size="sm"
+                  onClick={handlePauseResume}
+                >
+                  {isPaused ? "▶️ Resume" : "⏸️ Pause"}
+                </Button>
+                <Button
+                  colorScheme="red"
+                  size="sm"
+                  onClick={handleStop}
+                >
+                  ⏹️ Stop
+                </Button>
+              </HStack>
+            )}
+
             <Alert status="info" variant="left-accent">
               <AlertIcon />
               <VStack align="start" spacing={1}>
@@ -399,7 +457,7 @@ const addLog = (type, category, param, odriveParam, value = null, message = null
                   • Power, Motor, Encoder, Control, and Interface settings
                 </Text>
                 <Text fontSize="xs">
-                  • Using parallel requests for maximum speed
+                  • Use pause/resume controls to manage the pulling process
                 </Text>
               </VStack>
             </Alert>
@@ -435,28 +493,28 @@ const addLog = (type, category, param, odriveParam, value = null, message = null
                           {log.category}
                         </Badge>
                         <Text flex="1">
-                            {log.param && <Code fontSize="xs" mr={2}>{log.param}</Code>}
-                            {log.value !== null && log.value !== undefined && (
-                                <Text as="span" color="green.300">
-                                = {typeof log.value === 'boolean' ? (log.value ? 'true' : 'false') : log.value}
-                                </Text>
-                            )}
-                            {log.error && (
-                                <Text as="span" color="red.300">
-                                Error: {log.error}
-                                </Text>
-                            )}
-                            {log.message && (
-                                <Text as="span" color={log.type === 'info' ? 'blue.300' : 'gray.300'}>
-                                {log.message}
-                                </Text>
-                            )}
-                            {!log.value && !log.error && !log.message && log.odriveParam && (
-                                <Text as="span" color="gray.400">
-                                {log.odriveParam}
-                                </Text>
-                            )}
+                          {log.param && <Code fontSize="xs" mr={2}>{log.param}</Code>}
+                          {log.value !== null && log.value !== undefined && (
+                            <Text as="span" color="green.300">
+                              = {typeof log.value === 'boolean' ? (log.value ? 'true' : 'false') : log.value}
                             </Text>
+                          )}
+                          {log.error && (
+                            <Text as="span" color="red.300">
+                              Error: {log.error}
+                            </Text>
+                          )}
+                          {log.message && (
+                            <Text as="span" color={log.type === 'info' ? 'blue.300' : 'gray.300'}>
+                              {log.message}
+                            </Text>
+                          )}
+                          {!log.value && !log.error && !log.message && log.odriveParam && (
+                            <Text as="span" color="gray.400">
+                              {log.odriveParam}
+                            </Text>
+                          )}
+                        </Text>
                       </HStack>
                     ))}
                   </VStack>
@@ -473,16 +531,16 @@ const addLog = (type, category, param, odriveParam, value = null, message = null
               onClick={onClose}
               isDisabled={isLoading}
             >
-              {isLoading ? 'Pulling...' : 'Close'}
+              Close
             </Button>
             <Button
               colorScheme="blue"
               onClick={pullAllConfig}
               isLoading={isLoading}
               isDisabled={!isConnected}
-              loadingText="Fast Pulling..."
+              loadingText={isPaused ? "Paused..." : "Fast Pulling..."}
             >
-              🚀 Fast Pull All Config
+              🚀 Start Pull
             </Button>
           </HStack>
         </ModalFooter>
