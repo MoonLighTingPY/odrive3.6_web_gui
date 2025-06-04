@@ -22,6 +22,7 @@ echo.
 echo [1/6] Stopping any running ODrive GUI processes...
 taskkill /f /im app.exe >nul 2>&1
 taskkill /f /im odrive_v36_gui.exe >nul 2>&1
+taskkill /f /im ODrive_GUI_Tray.exe >nul 2>&1
 if %errorlevel% equ 0 (
     echo ✓ Stopped existing processes
 ) else (
@@ -55,7 +56,7 @@ echo.
 echo [4/6] Installing backend dependencies...
 cd backend
 echo Installing/updating backend dependencies...
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 if %errorlevel% neq 0 (
     echo Error: Failed to install backend dependencies!
     cd ..
@@ -64,14 +65,24 @@ if %errorlevel% neq 0 (
 )
 
 echo.
+echo Installing tray app dependencies...
+python -m pip install pystray Pillow
+if %errorlevel% neq 0 (
+    echo Error: Failed to install tray dependencies!
+    cd ..
+    pause
+    exit /b 1
+)
+
+echo.
 echo [5/6] Installing PyInstaller...
 echo Checking if PyInstaller is installed...
-pip show pyinstaller >nul 2>&1
+python -m pip show pyinstaller >nul 2>&1
 if %errorlevel% equ 0 (
     echo ✓ PyInstaller is already installed
 ) else (
     echo Installing PyInstaller...
-    pip install pyinstaller
+    python -m pip install pyinstaller
     if %errorlevel% neq 0 (
         echo Error: Failed to install PyInstaller!
         cd ..
@@ -81,28 +92,32 @@ if %errorlevel% equ 0 (
 )
 
 echo.
-echo [6/6] Building executable with PyInstaller...
-echo Checking for servo.ico...
-if not exist "servo.ico" (
-    echo Warning: servo.ico not found in backend directory!
-    echo Looking for icon in frontend...
-    if exist "..\frontend\public\servo.ico" (
-        copy "..\frontend\public\servo.ico" "servo.ico"
-        echo ✓ Copied servo.ico from frontend
-    ) else (
-        echo Warning: No servo.ico found, executable will use default icon
-    )
+echo [6/6] Building ODrive GUI Tray Application...
+echo Preparing servo.ico for tray app...
+
+REM Always ensure servo.ico is available for tray app
+if exist "..\frontend\public\servo.ico" (
+    copy "..\frontend\public\servo.ico" "servo.ico" /Y >nul 2>&1
+    echo ✓ Copied servo.ico to backend directory
 ) else (
-    echo ✓ Found servo.ico file (size: 
-    dir servo.ico | findstr /C:"servo.ico"
-    echo )
+    echo ⚠️ Warning: servo.ico not found in frontend\public\
+)
+
+REM Verify the icon exists
+if exist "servo.ico" (
+    echo ✓ servo.ico ready for tray app
+    for %%A in (servo.ico) do echo    Size: %%~zA bytes
+) else (
+    echo ⚠️ Warning: No servo.ico found, tray will use fallback icon
 )
 
 if exist "dist" rmdir /s /q dist
 if exist "build" rmdir /s /q build
 
-echo Running PyInstaller...
-pyinstaller app.spec --clean --noconfirm
+echo.
+echo Building System Tray Application...
+echo Running PyInstaller with tray_app.spec...
+pyinstaller tray_app.spec --clean --noconfirm
 set PYINSTALLER_EXIT_CODE=%errorlevel%
 
 echo PyInstaller exit code: %PYINSTALLER_EXIT_CODE%
@@ -112,18 +127,18 @@ if %PYINSTALLER_EXIT_CODE% neq 0 (
     echo.
     echo Troubleshooting steps:
     echo 1. Make sure PyInstaller is installed: pip install pyinstaller
-    echo 2. Check that app.spec file exists in backend directory
-    echo 3. Verify all dependencies are installed
+    echo 2. Check that tray_app.spec file exists in backend directory
+    echo 3. Verify all dependencies are installed: pystray, Pillow
     echo 4. Check for any error messages above
     cd ..
     pause
     exit /b 1
 )
 
-REM Check if the executable was actually created
-if not exist "dist\odrive_v36_gui.exe" (
-    echo Error: Executable was not created!
-    echo Expected location: backend\dist\odrive_v36_gui.exe
+REM Check if the tray executable was actually created
+if not exist "dist\ODrive_GUI_Tray.exe" (
+    echo Error: Tray executable was not created!
+    echo Expected location: backend\dist\ODrive_GUI_Tray.exe
     echo.
     echo Please check the PyInstaller output above for errors.
     cd ..
@@ -131,7 +146,7 @@ if not exist "dist\odrive_v36_gui.exe" (
     exit /b 1
 )
 
-echo ✓ Executable created successfully
+echo ✓ Tray executable created successfully
 
 REM Go back to project root
 cd ..
@@ -141,12 +156,24 @@ echo ============================================
 echo BUILD COMPLETED SUCCESSFULLY!
 echo ============================================
 echo.
-echo Executable location: backend\dist\odrive_v36_gui.exe
-echo File size: 
-dir "backend\dist\odrive_v36_gui.exe" | findstr "odrive_v36_gui.exe"
+echo 🎉 ODrive GUI Tray Application Built Successfully!
 echo.
-echo You can now run the GUI by executing:
-echo backend\dist\odrive_v36_gui.exe
+echo Executable location: backend\dist\ODrive_GUI_Tray.exe
+echo File size: 
+for %%A in ("backend\dist\ODrive_GUI_Tray.exe") do echo    %%~zA bytes
+echo.
+echo 🚀 How to use:
+echo   1. Run: backend\dist\ODrive_GUI_Tray.exe
+echo   2. Look for the ODrive icon in your system tray
+echo   3. Left click the tray icon to open the GUI
+echo   4. Right click for menu options (Open GUI / Exit)
+echo.
+echo ✨ Features:
+echo   • No console window - clean professional appearance
+echo   • System tray icon with your servo.ico
+echo   • Auto-opens GUI in browser on startup
+echo   • Right-click menu for easy access
+echo   • Clean shutdown and resource management
 echo.
 echo The GUI will automatically open in your browser when started.
 echo ============================================
