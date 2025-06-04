@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useSelector } from 'react-redux'
 import {
   Box,
@@ -19,18 +19,19 @@ import {
   Heading,
   CardBody,
   SimpleGrid,
-  Badge 
+  Badge, 
+  Input
 } from '@chakra-ui/react'
-import { ChevronDownIcon, ChevronUpIcon, AddIcon } from '@chakra-ui/icons'
+import { ChevronDownIcon, ChevronUpIcon, AddIcon, DownloadIcon } from '@chakra-ui/icons'
 import { 
   getAllAvailablePresets, 
   isFactoryPreset,
   saveCurrentConfigAsPreset,
   loadPresetConfig,
-  createAutoBackup
+  createAutoBackup,
+  importPresetsFromFile
 } from '../../utils/configurationPresetsManager'
 import PresetSaveDialog from './PresetSaveDialog'
-import PresetImportExport from './PresetImportExport'
 
 const PresetManager = ({ 
   onPresetLoad, 
@@ -43,6 +44,8 @@ const PresetManager = ({
   const { isOpen, onToggle } = useDisclosure()
   const [showSaveDialog, setShowSaveDialog] = useState(false)
   const toast = useToast()
+  const fileInputRef = useRef(null)
+  const [importing, setImporting] = useState(false)
 
   const { powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig } = useSelector(state => state.config)
 
@@ -207,6 +210,140 @@ const PresetManager = ({
   }
 }
 
+const handleDownloadCurrent = async () => {
+  try {
+    // Generate a timestamp-based name for the download
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')
+    const downloadName = `current_config_${timestamp[0]}_${timestamp[1].split('.')[0]}`
+    
+    // Create a temporary preset object for export
+    const tempPreset = {
+      name: downloadName,
+      description: 'Current configuration export',
+      timestamp: new Date().toISOString(),
+      version: '0.5.6',
+      config: currentConfig
+    }
+    
+    // Create export data
+    const exportData = {
+      exportInfo: {
+        exportDate: new Date().toISOString(),
+        odriveVersion: '0.5.6',
+        guiVersion: '1.0.0',
+        presetCount: 1
+      },
+      presets: {
+        [downloadName]: tempPreset
+      }
+    }
+
+    // Create and download file
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { 
+      type: 'application/json' 
+    })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `${downloadName}.json`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+    
+    toast({
+      title: 'Configuration Downloaded',
+      description: 'Current configuration exported to file',
+      status: 'success',
+      duration: 3000,
+    })
+  } catch (error) {
+    toast({
+      title: 'Download Failed',
+      description: error.message,
+      status: 'error',
+      duration: 3000,
+    })
+  }
+}
+
+// Drag and drop handlers
+const handleDragOver = (e) => {
+  e.preventDefault()
+  e.stopPropagation()
+}
+
+const handleDrop = (e) => {
+  e.preventDefault()
+  e.stopPropagation()
+  
+  const files = Array.from(e.dataTransfer.files)
+  const jsonFile = files.find(file => file.name.endsWith('.json'))
+  
+  if (jsonFile) {
+    importPresetFile(jsonFile)
+  } else {
+    toast({
+      title: 'Invalid File',
+      description: 'Please drop a valid JSON preset file',
+      status: 'error',
+      duration: 3000,
+    })
+  }
+}
+
+const handleFileImport = (e) => {
+  const file = e.target.files[0]
+  if (file) {
+    importPresetFile(file)
+  }
+}
+
+const importPresetFile = async (file) => {
+  if (importing) return
+  
+  setImporting(true)
+  try {
+    toast({
+      title: 'Importing Presets',
+      description: 'Processing preset file...',
+      status: 'info',
+      duration: 2000,
+    })
+
+    const results = await importPresetsFromFile(file, false)
+    
+    let resultMessage = `Imported: ${results.imported}`
+    if (results.skipped > 0) {
+      resultMessage += `, Skipped: ${results.skipped} (already exist)`
+    }
+    if (results.errors.length > 0) {
+      resultMessage += `, Errors: ${results.errors.length}`
+    }
+
+    toast({
+      title: 'Import Complete',
+      description: resultMessage,
+      status: results.errors.length > 0 ? 'warning' : 'success',
+      duration: 5000,
+    })
+    
+    loadPresets()
+  } catch (error) {
+    toast({
+      title: 'Import Failed',
+      description: error.message,
+      status: 'error',
+      duration: 5000,
+    })
+  } finally {
+    setImporting(false)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ''
+    }
+  }
+}
+
 
   const presetOptions = Object.keys(presets).sort((a, b) => {
     // Factory presets first, then user presets alphabetically
@@ -246,6 +383,39 @@ const PresetManager = ({
             </Alert>
           )}
 
+          {/* Import Section - Drag & Drop */}
+          <Box 
+            p={4} 
+            bg="gray.700" 
+            borderRadius="md"
+            borderWidth="2px"
+            borderStyle="dashed"
+            borderColor="gray.500"
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+            cursor="pointer"
+            _hover={{ borderColor: "blue.400", bg: "gray.600" }}
+            transition="all 0.2s"
+          >
+            <VStack spacing={2}>
+              <Text fontSize="sm" fontWeight="medium" color="white" textAlign="center">
+                Import Presets
+              </Text>
+              <Text fontSize="xs" color="gray.300" textAlign="center">
+                Click here or drag & drop a preset JSON file to import
+              </Text>
+            </VStack>
+            
+            <Input
+              ref={fileInputRef}
+              type="file"
+              accept=".json"
+              onChange={handleFileImport}
+              style={{ display: 'none' }}
+            />
+          </Box>
+
           {/* Save Current Configuration - First Priority */}
           <Box p={4} bg="green.900" borderRadius="md" borderWidth="1px" borderColor="green.500">
             <HStack justify="space-between" align="center" spacing={4}>
@@ -255,18 +425,33 @@ const PresetManager = ({
                   Save your current ODrive settings as a new preset
                 </Text>
               </VStack>
-              <Button
-                leftIcon={<AddIcon />}
-                colorScheme="green"
-                size="md"
-                onClick={() => setShowSaveDialog(true)}
-                isDisabled={!isConnected && !(import.meta.env.DEV || import.meta.env.MODE === 'development')}
-                minW="140px"
-              >
-                Save Preset
-              </Button>
+              <HStack spacing={2}>
+                <Button
+                  leftIcon={<AddIcon />}
+                  colorScheme="green"
+                  size="md"
+                  onClick={() => setShowSaveDialog(true)}
+                  isDisabled={!isConnected && !(import.meta.env.DEV || import.meta.env.MODE === 'development')}
+                  minW="120px"
+                >
+                  Save Preset
+                </Button>
+                <Button
+                  leftIcon={<DownloadIcon />}
+                  colorScheme="blue"
+                  variant="outline"
+                  size="md"
+                  onClick={handleDownloadCurrent}
+                  isDisabled={!isConnected && !(import.meta.env.DEV || import.meta.env.MODE === 'development')}
+                  title="Download current configuration as preset file"
+                >
+                  Download
+                </Button>
+              </HStack>
             </HStack>
           </Box>
+
+          
 
           {/* Load Preset Section - Grid Layout */}
           <Box p={4} bg="blue.900" borderRadius="md" borderWidth="1px" borderColor="blue.500">
@@ -346,13 +531,7 @@ const PresetManager = ({
             </VStack>
           </Box>
 
-          {/* Import/Export Section - Compact */}
-          <Box p={3} bg="gray.700" borderRadius="md">
-            <HStack justify="space-between" align="center">
-              <Text fontSize="sm" fontWeight="medium" color="white">Import/Export</Text>
-              <PresetImportExport onImportComplete={loadPresets} compact={true} />
-            </HStack>
-          </Box>
+          
         </VStack>
       </CardBody>
     </Collapse>
