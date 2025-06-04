@@ -67,32 +67,6 @@ const PresetList = ({ onPresetLoad, onRefreshNeeded }) => {
     onDeleteOpen()
   }
 
-  const confirmDelete = () => {
-    if (!deleteTarget) return
-
-    try {
-      deletePreset(deleteTarget)
-      loadPresets()
-      if (onRefreshNeeded) onRefreshNeeded()
-      
-      toast({
-        title: 'Preset Deleted',
-        description: `"${deleteTarget}" has been deleted`,
-        status: 'success',
-        duration: 3000,
-      })
-    } catch (error) {
-      toast({
-        title: 'Delete Failed',
-        description: error.message,
-        status: 'error',
-        duration: 3000,
-      })
-    }
-
-    setDeleteTarget(null)
-    onDeleteClose()
-  }
 
   const handleLoad = async (presetName) => {
     setIsLoading(true)
@@ -142,59 +116,98 @@ const PresetList = ({ onPresetLoad, onRefreshNeeded }) => {
     onEditOpen()
   }
 
-  const confirmEdit = () => {
-    if (!editTarget || !editName.trim()) return
+  const confirmDelete = () => {
+  if (!deleteTarget) return
 
-    try {
-      // Get the original preset
-      const originalPreset = presets[editTarget]
-      if (!originalPreset) {
-        throw new Error('Preset not found')
-      }
+  try {
+    deletePreset(deleteTarget)
+    loadPresets()
+    if (onRefreshNeeded) onRefreshNeeded()
+    
+    // Broadcast preset update to other components
+    window.dispatchEvent(new CustomEvent('presetUpdated', { 
+      detail: { action: 'delete', presetName: deleteTarget } 
+    }))
+    
+    toast({
+      title: 'Preset Deleted',
+      description: `"${deleteTarget}" has been deleted`,
+      status: 'success',
+      duration: 3000,
+    })
+  } catch (error) {
+    toast({
+      title: 'Delete Failed',
+      description: error.message,
+      status: 'error',
+      duration: 3000,
+    })
+  }
 
-      // Create updated preset with new name/description
-      const updatedPreset = {
-        ...originalPreset,
-        name: editName.trim(),
-        description: editDescription.trim(),
-        timestamp: new Date().toISOString() // Update timestamp when edited
-      }
+  setDeleteTarget(null)
+  onDeleteClose()
+}
 
-      // Get existing presets
-      const storedPresets = getStoredPresets()
+// Update the confirmEdit function around line 175:
 
-      // If name changed, remove old and add new
-      if (editTarget !== editName.trim()) {
-        delete storedPresets[editTarget]
-      }
-      storedPresets[editName.trim()] = updatedPreset
+const confirmEdit = () => {
+  if (!editTarget || !editName.trim()) return
 
-      // Save to localStorage
-      localStorage.setItem('odrive_config_presets', JSON.stringify(storedPresets))
-      
-      loadPresets()
-      if (onRefreshNeeded) onRefreshNeeded()
-      
-      toast({
-        title: 'Preset Updated',
-        description: `"${editName}" has been updated`,
-        status: 'success',
-        duration: 3000,
-      })
-    } catch (error) {
-      toast({
-        title: 'Update Failed',
-        description: error.message,
-        status: 'error',
-        duration: 3000,
-      })
+  try {
+    // Get the original preset
+    const originalPreset = presets[editTarget]
+    if (!originalPreset) {
+      throw new Error('Preset not found')
     }
 
-    setEditTarget(null)
-    setEditName('')
-    setEditDescription('')
-    onEditClose()
+    // Create updated preset with new name/description
+    const updatedPreset = {
+      ...originalPreset,
+      name: editName.trim(),
+      description: editDescription.trim(),
+      timestamp: new Date().toISOString()
+    }
+
+    // Get existing presets
+    const storedPresets = getStoredPresets()
+
+    // If name changed, remove old and add new
+    if (editTarget !== editName.trim()) {
+      delete storedPresets[editTarget]
+    }
+    storedPresets[editName.trim()] = updatedPreset
+
+    // Save to localStorage
+    localStorage.setItem('odrive_config_presets', JSON.stringify(storedPresets))
+    
+    loadPresets()
+    if (onRefreshNeeded) onRefreshNeeded()
+    
+    // Broadcast preset update to other components
+    window.dispatchEvent(new CustomEvent('presetUpdated', { 
+      detail: { action: 'edit', oldName: editTarget, newName: editName.trim() } 
+    }))
+    
+    toast({
+      title: 'Preset Updated',
+      description: `"${editName}" has been updated`,
+      status: 'success',
+      duration: 3000,
+    })
+  } catch (error) {
+    toast({
+      title: 'Update Failed',
+      description: error.message,
+      status: 'error',
+      duration: 3000,
+    })
   }
+
+  setEditTarget(null)
+  setEditName('')
+  setEditDescription('')
+  onEditClose()
+}
 
 
   const presetEntries = Object.entries(presets).sort(([a], [b]) => {

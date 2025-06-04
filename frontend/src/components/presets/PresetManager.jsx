@@ -172,6 +172,10 @@ const PresetManager = ({
     saveCurrentConfigAsPreset(configToSave, name, description)
     loadPresets() // Refresh preset list
     setShowSaveDialog(false)
+
+    window.dispatchEvent(new CustomEvent('presetUpdated', { 
+      detail: { action: 'save', presetName: name } 
+    }))
     
     // Auto-export the saved preset as a file
     try {
@@ -329,6 +333,10 @@ const importPresetFile = async (file) => {
     })
     
     loadPresets()
+
+    window.dispatchEvent(new CustomEvent('presetUpdated', { 
+    detail: { action: 'import', imported: results.imported } 
+  }))
   } catch (error) {
     toast({
       title: 'Import Failed',
@@ -354,6 +362,18 @@ const importPresetFile = async (file) => {
     if (!aFactory && bFactory) return 1
     return a.localeCompare(b)
   })
+
+  useEffect(() => {
+  const handlePresetUpdate = () => {
+    loadPresets() // Refresh preset list when other components update presets
+  }
+
+  window.addEventListener('presetUpdated', handlePresetUpdate)
+  
+  return () => {
+    window.removeEventListener('presetUpdate', handlePresetUpdate)
+  }
+}, [loadPresets])
 
 
   return (

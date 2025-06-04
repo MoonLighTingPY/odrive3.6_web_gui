@@ -220,7 +220,7 @@ const handlePresetSave = (presetName) => {
               <Tab color="gray.300" _selected={{ color: 'blue.300', borderBottomColor: 'blue.300' }}>
                 <HStack spacing={2}>
                   <Save size={16} />
-                  <Text>Quick Actions</Text>
+                  <Text>Save/Load</Text>
                 </HStack>
               </Tab>
               <Tab color="gray.300" _selected={{ color: 'blue.300', borderBottomColor: 'blue.300' }}>
