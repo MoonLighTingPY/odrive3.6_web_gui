@@ -22,11 +22,11 @@ import {
   TabPanel,
 } from '@chakra-ui/react'
 import { RefreshCw } from 'lucide-react'
-import PropertyTree from './inspector/PropertyTree'
-import ErrorDisplay from './inspector/ErrorDisplay'
-import LiveMonitor from './inspector/LiveMonitor'
-import LiveDataView from './inspector/LiveDataView'
-import CommandConsole from './inspector/CommandConsole'
+import PropertyTree from '../inspector/PropertyTree'
+import ErrorDisplay from '../inspector/ErrorDisplay'
+import LiveMonitor from '../inspector/LiveMonitor'
+import LiveDataView from '../inspector/LiveDataView'
+import CommandConsole from '../inspector/CommandConsole'
 
 const InspectorTab = () => {
   const toast = useToast()

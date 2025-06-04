@@ -25,10 +25,10 @@ import {
   useDisclosure,
 } from '@chakra-ui/react'
 import { InfoIcon, WarningIcon } from '@chakra-ui/icons'
-import { getAxisStateName } from '../utils/odriveEnums'
-import { getErrorDescription, isErrorCritical } from '../utils/odriveErrors'
-import ErrorTroubleshooting from './ErrorTroubleshooting'
-import '../styles/DashboardTab.css'
+import { getAxisStateName } from '../../utils/odriveEnums'
+import { getErrorDescription, isErrorCritical } from '../../utils/odriveErrors'
+import ErrorTroubleshooting from "../modals/ErrorTroubleshootingModal"
+import '../../styles/DashboardTab.css'
 
 const DashboardTab = ({ isConnected, odriveState }) => {
   const [realTimeData, setRealTimeData] = useState({})

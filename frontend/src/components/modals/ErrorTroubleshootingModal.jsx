@@ -26,8 +26,9 @@ import {
   CheckCircleIcon,
   InfoIcon
 } from '@chakra-ui/icons'
-import { getErrorTroubleshootingGuide } from '../utils/odriveErrors'
-import { EncoderError } from '../utils/odriveErrors'
+import { getErrorTroubleshootingGuide } from '../../utils/odriveErrors'
+import { EncoderError } from '../../utils/odriveErrors'
+
 
 const ErrorTroubleshooting = ({ isOpen, onClose, errorCode, errorType = 'encoder' }) => {
   const guide = getErrorTroubleshootingGuide(errorCode, errorType)

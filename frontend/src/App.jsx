@@ -16,10 +16,10 @@ import {
 } from '@chakra-ui/react'
 
 import DeviceList from './components/DeviceList'
-import ConfigurationTab from './components/ConfigurationTab'
-import DashboardTab from './components/DashboardTab'
-import InspectorTab from './components/InspectorTab'
-import PresetsTab from './components/PresetsTab'
+import ConfigurationTab from './components/tabs/ConfigurationTab'
+import DashboardTab from './components/tabs/DashboardTab'
+import InspectorTab from './components/tabs/InspectorTab'
+import PresetsTab from './components/tabs/PresetsTab'
 
 import { updateOdriveState } from './store/slices/deviceSlice'
 import './App.css'

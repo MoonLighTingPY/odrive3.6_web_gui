@@ -25,8 +25,8 @@ import { ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons'
 
 // Import our new components
 import CommandList from '../CommandList'
-import CalibrationModal from '../CalibrationModal'
-import ConfirmationModal from '../ConfirmationModal'
+import CalibrationModal from '../modals/CalibrationModal'
+import ConfirmationModal from '../modals/ConfirmationModal'
 
 // Import shared utilities
 import { generateConfigCommands } from '../../utils/configCommandGenerator'

@@ -13,17 +13,15 @@ import {
   useToast,
   Spinner
 } from '@chakra-ui/react'
-import PowerConfigStep from './config-steps/PowerConfigStep'
-import MotorConfigStep from './config-steps/MotorConfigStep'
-import EncoderConfigStep from './config-steps/EncoderConfigStep'
-import ControlConfigStep from './config-steps/ControlConfigStep'
-import InterfaceConfigStep from './config-steps/InterfaceConfigStep'
-import FinalConfigStep from './config-steps/FinalConfigStep'
-import { getAllConfigurationParams } from '../utils/odriveCommands'
-
-// Import shared utilities
-import { convertTorqueConstantToKv } from '../utils/valueHelpers'
-import { applyAndSaveConfiguration } from '../utils/configurationActions'
+import PowerConfigStep from '../config-steps/PowerConfigStep'
+import MotorConfigStep from '../config-steps/MotorConfigStep'
+import EncoderConfigStep from '../config-steps/EncoderConfigStep'
+import ControlConfigStep from '../config-steps/ControlConfigStep'
+import InterfaceConfigStep from '../config-steps/InterfaceConfigStep'
+import FinalConfigStep from '../config-steps/FinalConfigStep'
+import { getAllConfigurationParams } from '../../utils/odriveCommands'
+import { convertTorqueConstantToKv } from '../../utils/valueHelpers'
+import { applyAndSaveConfiguration } from '../../utils/configurationActions'
 
 const ConfigurationTab = () => {
   const dispatch = useDispatch()

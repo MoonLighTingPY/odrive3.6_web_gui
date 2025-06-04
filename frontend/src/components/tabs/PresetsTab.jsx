@@ -27,21 +27,22 @@ import {
   getAllAvailablePresets, 
   createAutoBackup,
   cleanupAutoBackups
-} from '../utils/configurationPresetsManager'
+} from '../../utils/configurationPresetsManager'
 import {
   applyPresetAndSaveAction
-} from '../utils/configurationPresetsActions'
-import PresetManager from './presets/PresetManager'
-import PresetList from './presets/PresetList' // Fixed import name
-import PresetComparison from './presets/PresetComparison'
-import PresetImportExport from './presets/PresetImportExport'
+} from '../../utils/configurationPresetsActions'
+import PresetManager from '../presets/PresetManager'
+import PresetList from '../presets/PresetList'
+import PresetComparison from '../presets/PresetComparison'
+import PresetImportExport from '../presets/PresetImportExport'
 
 const PresetsTab = () => {
   const dispatch = useDispatch()
   const toast = useToast()
   const { isConnected } = useSelector(state => state.device)
   const [deviceConfig, setDeviceConfig] = useState({})
-  const [ setPresets] = useState({})
+  // eslint-disable-next-line no-unused-vars
+  const [presets, setPresets] = useState({})
   const [selectedPreset, setSelectedPreset] = useState('')
   const [setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState(0)
