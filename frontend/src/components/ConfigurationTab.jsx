@@ -199,12 +199,6 @@ const ConfigurationTab = () => {
     // Update local deviceConfig with the loaded preset
     setDeviceConfig(config)
     
-    toast({
-      title: 'Configuration Updated',
-      description: 'Form inputs updated with preset values',
-      status: 'info',
-      duration: 2000,
-    })
   }
 
   window.addEventListener('presetLoaded', handlePresetLoad)

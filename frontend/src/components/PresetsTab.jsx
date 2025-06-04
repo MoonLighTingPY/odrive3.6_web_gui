@@ -141,7 +141,7 @@ const PresetsTab = () => {
   
   toast({
     title: 'Preset Loaded',
-    description: `Configuration "${presetName}" loaded to config tab`,
+    description: `Configuration "${presetName}" selected and loaded to config tab`,
     status: 'success',
     duration: 3000,
   })

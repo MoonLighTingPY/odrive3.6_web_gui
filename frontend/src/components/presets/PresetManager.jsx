@@ -11,7 +11,6 @@ import {
   AlertIcon,
   Collapse,
   IconButton,
-  useDisclosure,
   useToast,
   Divider,
   Card,
@@ -41,7 +40,6 @@ const PresetManager = ({
   const [presets, setPresets] = useState({})
   const [selectedPreset, setSelectedPreset] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const { isOpen, onToggle } = useDisclosure()
   const [showSaveDialog, setShowSaveDialog] = useState(false)
   const toast = useToast()
   const fileInputRef = useRef(null)
@@ -118,12 +116,6 @@ const PresetManager = ({
     
     console.log('Loading preset configuration:', config) // Debug log
     
-    toast({
-      title: 'Preset Loaded',
-      description: `Configuration "${selectedPreset}" loaded`,
-      status: 'success',
-      duration: 3000,
-    })
     
     // Call the parent callback to update the configuration
     if (onPresetLoad) {
@@ -376,185 +368,161 @@ const importPresetFile = async (file) => {
 }, [loadPresets])
 
 
-  return (
-  <Card bg="gray.800" variant="elevated">
-    <CardHeader py={3}>
-      <HStack justify="space-between" align="center">
-        <Heading size="md" color="white">Configuration Presets</Heading>
-        <IconButton
-          icon={isOpen ? <ChevronUpIcon /> : <ChevronDownIcon />}
-          onClick={onToggle}
-          variant="ghost"
-          size="sm"
-          aria-label="Toggle presets panel"
-          color="gray.300"
-        />
-      </HStack>
-    </CardHeader>
+return (
+  <VStack spacing={4} align="stretch">
+    
+    {!isConnected && !(import.meta.env.DEV || import.meta.env.MODE === 'development') && (
+      <Alert status="info" size="sm">
+        <AlertIcon />
+        Connect to ODrive to enable preset functionality
+      </Alert>
+    )}
 
-    <Collapse in={isOpen} animateOpacity>
-      <CardBody py={4}>
-        <VStack spacing={4} align="stretch">
-          
-          {!isConnected && !(import.meta.env.DEV || import.meta.env.MODE === 'development') && (
-            <Alert status="info" size="sm">
-              <AlertIcon />
-              Connect to ODrive to enable preset functionality
-            </Alert>
-          )}
+    {/* Import Section - Drag & Drop */}
+    <Box 
+      p={4} 
+      bg="gray.700" 
+      borderRadius="md"
+      borderWidth="2px"
+      borderStyle="dashed"
+      borderColor="gray.500"
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+      onClick={() => fileInputRef.current?.click()}
+      cursor="pointer"
+      _hover={{ borderColor: "blue.400", bg: "gray.600" }}
+      transition="all 0.2s"
+    >
+      <VStack spacing={2}>
+        <Text fontSize="sm" fontWeight="medium" color="white" textAlign="center">
+          Import Presets
+        </Text>
+        <Text fontSize="xs" color="gray.300" textAlign="center">
+          Click here or drag & drop a preset JSON file to import
+        </Text>
+      </VStack>
+      
+      <Input
+        ref={fileInputRef}
+        type="file"
+        accept=".json"
+        onChange={handleFileImport}
+        style={{ display: 'none' }}
+      />
+    </Box>
 
-          {/* Import Section - Drag & Drop */}
-          <Box 
-            p={4} 
-            bg="gray.700" 
-            borderRadius="md"
-            borderWidth="2px"
-            borderStyle="dashed"
-            borderColor="gray.500"
-            onDragOver={handleDragOver}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-            cursor="pointer"
-            _hover={{ borderColor: "blue.400", bg: "gray.600" }}
-            transition="all 0.2s"
-          >
-            <VStack spacing={2}>
-              <Text fontSize="sm" fontWeight="medium" color="white" textAlign="center">
-                Import Presets
-              </Text>
-              <Text fontSize="xs" color="gray.300" textAlign="center">
-                Click here or drag & drop a preset JSON file to import
-              </Text>
-            </VStack>
-            
-            <Input
-              ref={fileInputRef}
-              type="file"
-              accept=".json"
-              onChange={handleFileImport}
-              style={{ display: 'none' }}
-            />
-          </Box>
-
-          {/* Save Current Configuration - First Priority */}
-          <Box p={4} bg="green.900" borderRadius="md" borderWidth="1px" borderColor="green.500">
-            <HStack justify="space-between" align="center" spacing={4}>
-              <VStack align="start" spacing={1} flex={1}>
-                <Text fontWeight="bold" color="white" fontSize="sm">Save Current Configuration</Text>
-                <Text fontSize="xs" color="gray.300">
-                  Save your current ODrive settings as a new preset
-                </Text>
-              </VStack>
-              <HStack spacing={2}>
-                <Button
-                  leftIcon={<AddIcon />}
-                  colorScheme="green"
-                  size="md"
-                  onClick={() => setShowSaveDialog(true)}
-                  isDisabled={!isConnected && !(import.meta.env.DEV || import.meta.env.MODE === 'development')}
-                  minW="120px"
-                >
-                  Save Preset
-                </Button>
-                <Button
-                  leftIcon={<DownloadIcon />}
-                  colorScheme="blue"
-                  variant="outline"
-                  size="md"
-                  onClick={handleDownloadCurrent}
-                  isDisabled={!isConnected && !(import.meta.env.DEV || import.meta.env.MODE === 'development')}
-                  title="Download current configuration as preset file"
-                >
-                  Download
-                </Button>
-              </HStack>
-            </HStack>
-          </Box>
-
-          
-
-          {/* Load Preset Section - Grid Layout */}
-          <Box p={4} bg="blue.900" borderRadius="md" borderWidth="1px" borderColor="blue.500">
-            <VStack spacing={3} align="stretch">
-              <Text fontWeight="bold" color="white" fontSize="sm">Load Existing Preset</Text>
-              
-              {/* Preset Grid */}
-              <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={2} maxH="200px" overflowY="auto">
-                {presetOptions.map((name) => {
-                  const isFactory = isFactoryPreset(name)
-                  const isSelected = selectedPreset === name
-                  const preset = presets[name]
-                  
-                  return (
-                    <Box
-                      key={name}
-                      p={3}
-                      bg={isSelected ? "blue.600" : "gray.700"}
-                      borderRadius="md"
-                      cursor="pointer"
-                      onClick={() => setSelectedPreset(name)}
-                      borderWidth="1px"
-                      borderColor={isSelected ? "blue.400" : "gray.600"}
-                      _hover={{ bg: isSelected ? "blue.500" : "gray.600" }}
-                      transition="all 0.2s"
-                    >
-                      <VStack spacing={1} align="start">
-                        <HStack spacing={2} w="100%">
-                          <Text fontSize="xs" fontWeight="bold" color="white" noOfLines={1} flex={1}>
-                            {name}
-                          </Text>
-                          <Badge 
-                            colorScheme={isFactory ? 'blue' : 'green'} 
-                            size="xs"
-                          >
-                            {isFactory ? 'Factory' : 'User'}
-                          </Badge>
-                        </HStack>
-                        
-                        {preset?.description && (
-                          <Text fontSize="2xs" color="gray.300" noOfLines={2}>
-                            {preset.description}
-                          </Text>
-                        )}
-                        
-                        {preset?.timestamp && (
-                          <Text fontSize="2xs" color="gray.400">
-                            {new Date(preset.timestamp).toLocaleDateString()}
-                          </Text>
-                        )}
-                      </VStack>
-                    </Box>
-                  )
-                })}
-              </SimpleGrid>
-
-              {/* Load Button */}
-              {selectedPreset && (
-                <HStack spacing={2} pt={2}>
-                  <VStack align="start" spacing={0} flex={1}>
-                    <Text fontSize="xs" color="gray.300">Selected:</Text>
-                    <Text fontSize="sm" fontWeight="bold" color="blue.300" noOfLines={1}>
-                      {selectedPreset}
-                    </Text>
-                  </VStack>
-                  <Button
-                    colorScheme="blue"
-                    size="md"
-                    onClick={handleLoadPreset}
-                    isLoading={isLoading}
-                    minW="120px"
-                  >
-                    Load Preset
-                  </Button>
-                </HStack>
-              )}
-            </VStack>
-          </Box>
-
-          
+    {/* Save Current Configuration */}
+    <Box p={4} bg="green.900" borderRadius="md" borderWidth="1px" borderColor="green.500">
+      <HStack justify="space-between" align="center" spacing={4}>
+        <VStack align="start" spacing={1} flex={1}>
+          <Text fontWeight="bold" color="white" fontSize="sm">Save Current Configuration</Text>
+          <Text fontSize="xs" color="gray.300">
+            Save your current ODrive settings as a new preset
+          </Text>
         </VStack>
-      </CardBody>
-    </Collapse>
+        <HStack spacing={2}>
+          <Button
+            leftIcon={<AddIcon />}
+            colorScheme="green"
+            size="md"
+            onClick={() => setShowSaveDialog(true)}
+            isDisabled={!isConnected && !(import.meta.env.DEV || import.meta.env.MODE === 'development')}
+            minW="120px"
+          >
+            Save Preset
+          </Button>
+          <Button
+            leftIcon={<DownloadIcon />}
+            colorScheme="blue"
+            variant="outline"
+            size="md"
+            onClick={handleDownloadCurrent}
+            isDisabled={!isConnected && !(import.meta.env.DEV || import.meta.env.MODE === 'development')}
+            title="Download current configuration as preset file"
+          >
+            Download
+          </Button>
+        </HStack>
+      </HStack>
+    </Box>
+
+    {/* Load Preset Section - Grid Layout */}
+    <Box p={4} bg="blue.900" borderRadius="md" borderWidth="1px" borderColor="blue.500">
+      <VStack spacing={3} align="stretch">
+        <Text fontWeight="bold" color="white" fontSize="sm">Load Existing Preset</Text>
+        
+        {/* Preset Grid */}
+        <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={2} maxH="200px" overflowY="auto">
+          {presetOptions.map((name) => {
+            const isFactory = isFactoryPreset(name)
+            const isSelected = selectedPreset === name
+            const preset = presets[name]
+            
+            return (
+              <Box
+                key={name}
+                p={3}
+                bg={isSelected ? "blue.600" : "gray.700"}
+                borderRadius="md"
+                cursor="pointer"
+                onClick={() => setSelectedPreset(name)}
+                borderWidth="1px"
+                borderColor={isSelected ? "blue.400" : "gray.600"}
+                _hover={{ bg: isSelected ? "blue.500" : "gray.600" }}
+                transition="all 0.2s"
+              >
+                <VStack spacing={1} align="start">
+                  <HStack spacing={2} w="100%">
+                    <Text fontSize="xs" fontWeight="bold" color="white" noOfLines={1} flex={1}>
+                      {name}
+                    </Text>
+                    <Badge 
+                      colorScheme={isFactory ? 'blue' : 'green'} 
+                      size="xs"
+                    >
+                      {isFactory ? 'Factory' : 'User'}
+                    </Badge>
+                  </HStack>
+                  
+                  {preset?.description && (
+                    <Text fontSize="2xs" color="gray.300" noOfLines={2}>
+                      {preset.description}
+                    </Text>
+                  )}
+                  
+                  {preset?.timestamp && (
+                    <Text fontSize="2xs" color="gray.400">
+                      {new Date(preset.timestamp).toLocaleDateString()}
+                    </Text>
+                  )}
+                </VStack>
+              </Box>
+            )
+          })}
+        </SimpleGrid>
+
+        {/* Load Button */}
+        {selectedPreset && (
+          <HStack spacing={2} pt={2}>
+            <VStack align="start" spacing={0} flex={1}>
+              <Text fontSize="xs" color="gray.300">Selected:</Text>
+              <Text fontSize="sm" fontWeight="bold" color="blue.300" noOfLines={1}>
+                {selectedPreset}
+              </Text>
+            </VStack>
+            <Button
+              colorScheme="blue"
+              size="md"
+              onClick={handleLoadPreset}
+              isLoading={isLoading}
+              minW="120px"
+            >
+              Load Preset
+            </Button>
+          </HStack>
+        )}
+      </VStack>
+    </Box>
 
     {/* Save Dialog */}
     <PresetSaveDialog
@@ -563,7 +531,7 @@ const importPresetFile = async (file) => {
       onSave={handleSavePreset}
       existingPresets={Object.keys(presets)}
     />
-  </Card>
+  </VStack>
 )
 }
 
