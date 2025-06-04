@@ -19,22 +19,35 @@ import {
   ModalHeader,
   ModalCloseButton,
   ModalBody,
-  ModalFooter
+  ModalFooter,
+  Input,
+  Textarea,
+  FormControl,
+  FormLabel,
+  Menu,
+  MenuButton,
+  MenuList,
+  MenuItem
 } from '@chakra-ui/react'
-import { DeleteIcon, DownloadIcon } from '@chakra-ui/icons'
+import { DeleteIcon, DownloadIcon, EditIcon, ChevronDownIcon } from '@chakra-ui/icons'
 import { 
   getAllAvailablePresets, 
   isFactoryPreset, 
   deletePreset,
   exportPresetsToFile,
-  loadPresetConfig
+  loadPresetConfig,
+  getStoredPresets
 } from '../../utils/configurationPresetsManager'
 
 const PresetList = ({ onPresetLoad, onRefreshNeeded }) => {
   const [presets, setPresets] = useState({})
   const [deleteTarget, setDeleteTarget] = useState(null)
+  const [editTarget, setEditTarget] = useState(null)
+  const [editName, setEditName] = useState('')
+  const [editDescription, setEditDescription] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure()
+  const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure()
   const toast = useToast()
   
   // Get connection status from Redux
@@ -121,11 +134,68 @@ const PresetList = ({ onPresetLoad, onRefreshNeeded }) => {
     }
   }
 
-  // Check if we should show presets functionality
-  const shouldShowPresets = () => {
-    const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development'
-    return isDevelopment || isConnected
+  const handleEdit = (presetName) => {
+    const preset = presets[presetName]
+    setEditTarget(presetName)
+    setEditName(presetName)
+    setEditDescription(preset?.description || '')
+    onEditOpen()
   }
+
+  const confirmEdit = () => {
+    if (!editTarget || !editName.trim()) return
+
+    try {
+      // Get the original preset
+      const originalPreset = presets[editTarget]
+      if (!originalPreset) {
+        throw new Error('Preset not found')
+      }
+
+      // Create updated preset with new name/description
+      const updatedPreset = {
+        ...originalPreset,
+        name: editName.trim(),
+        description: editDescription.trim(),
+        timestamp: new Date().toISOString() // Update timestamp when edited
+      }
+
+      // Get existing presets
+      const storedPresets = getStoredPresets()
+
+      // If name changed, remove old and add new
+      if (editTarget !== editName.trim()) {
+        delete storedPresets[editTarget]
+      }
+      storedPresets[editName.trim()] = updatedPreset
+
+      // Save to localStorage
+      localStorage.setItem('odrive_config_presets', JSON.stringify(storedPresets))
+      
+      loadPresets()
+      if (onRefreshNeeded) onRefreshNeeded()
+      
+      toast({
+        title: 'Preset Updated',
+        description: `"${editName}" has been updated`,
+        status: 'success',
+        duration: 3000,
+      })
+    } catch (error) {
+      toast({
+        title: 'Update Failed',
+        description: error.message,
+        status: 'error',
+        duration: 3000,
+      })
+    }
+
+    setEditTarget(null)
+    setEditName('')
+    setEditDescription('')
+    onEditClose()
+  }
+
 
   const presetEntries = Object.entries(presets).sort(([a], [b]) => {
     // Factory presets first, then user presets alphabetically
@@ -138,39 +208,20 @@ const PresetList = ({ onPresetLoad, onRefreshNeeded }) => {
   })
 
   // Show connection warning if not in dev mode and not connected
-  if (!shouldShowPresets()) {
-    return (
-      <Alert status="warning" bg="orange.900" borderColor="orange.500">
-        <AlertIcon />
-        Connect to an ODrive device to access preset management.
-      </Alert>
-    )
-  }
-
-  if (presetEntries.length === 0) {
-    return (
-      <Alert status="info">
-        <AlertIcon />
-        No presets available. Save your current configuration to create your first preset.
-      </Alert>
-    )
-  }
+  {!isConnected && (import.meta.env.DEV || import.meta.env.MODE === 'development') && (
+  <Alert status="info" size="sm" mb={4}>
+    <AlertIcon />
+    <VStack align="start" spacing={1}>
+      <Text fontSize="sm" fontWeight="medium">Development Mode</Text>
+      <Text fontSize="xs">
+        Preset functionality is fully available in development mode. You can load, save, edit, and delete presets for testing.
+      </Text>
+    </VStack>
+  </Alert>
+)}
 
   return (
     <>
-      {/* Development Mode Notice */}
-      {!isConnected && (import.meta.env.DEV || import.meta.env.MODE === 'development') && (
-        <Alert status="info" size="sm" mb={4}>
-          <AlertIcon />
-          <VStack align="start" spacing={1}>
-            <Text fontSize="sm" fontWeight="medium">Development Mode</Text>
-            <Text fontSize="xs">
-              Preset functionality is available in development mode. Factory presets are always available, 
-              and you can test save/load operations with mock configurations.
-            </Text>
-          </VStack>
-        </Alert>
-      )}
 
       <VStack spacing={3} align="stretch">
         {presetEntries.map(([name, preset]) => {
@@ -240,9 +291,9 @@ const PresetList = ({ onPresetLoad, onRefreshNeeded }) => {
                       colorScheme="blue"
                       onClick={() => handleLoad(name)}
                       isLoading={isLoading}
-                      title={!isConnected ? "Load preset configuration for preview" : "Load preset to device configuration"}
+                      title="Load preset configuration"
                     >
-                      {!isConnected ? 'Preview' : 'Load'}
+                      Load
                     </Button>
                     
                     <IconButton
@@ -252,19 +303,45 @@ const PresetList = ({ onPresetLoad, onRefreshNeeded }) => {
                       aria-label="Export preset"
                       title="Export this preset to file"
                     />
-                  </HStack>
 
-                  {!isFactory && (
-                    <IconButton
-                      size="sm"
-                      icon={<DeleteIcon />}
-                      colorScheme="red"
-                      variant="ghost"
-                      onClick={() => handleDelete(name)}
-                      aria-label="Delete preset"
-                      title="Delete this preset"
-                    />
-                  )}
+                    {!isFactory && (
+                      <Menu>
+                        <MenuButton
+                          as={IconButton}
+                          icon={<ChevronDownIcon />}
+                          size="sm"
+                          variant="ghost"
+                          aria-label="More actions"
+                        />
+                        <MenuList>
+                          <MenuItem 
+                            icon={<EditIcon />} 
+                            onClick={() => handleEdit(name)}
+                          >
+                            Edit Preset
+                          </MenuItem>
+                          <MenuItem 
+                            icon={<DeleteIcon />} 
+                            onClick={() => handleDelete(name)}
+                            color="red.400"
+                          >
+                            Delete Preset
+                          </MenuItem>
+                        </MenuList>
+                      </Menu>
+                    )}
+
+                    {isFactory && (
+                      <IconButton
+                        size="sm"
+                        icon={<EditIcon />}
+                        variant="ghost"
+                        onClick={() => handleEdit(name)}
+                        aria-label="View preset details"
+                        title="View preset details (factory presets cannot be modified)"
+                      />
+                    )}
+                  </HStack>
                 </VStack>
               </Flex>
             </Box>
@@ -290,6 +367,58 @@ const PresetList = ({ onPresetLoad, onRefreshNeeded }) => {
             </Button>
             <Button colorScheme="red" onClick={confirmDelete}>
               Delete
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Edit Preset Modal */}
+      <Modal isOpen={isEditOpen} onClose={onEditClose} size="md">
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Edit Preset</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack spacing={4}>
+              <FormControl isRequired>
+                <FormLabel>Preset Name</FormLabel>
+                <Input
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="Enter preset name..."
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel>Description</FormLabel>
+                <Textarea
+                  value={editDescription}
+                  onChange={(e) => setEditDescription(e.target.value)}
+                  placeholder="Enter description..."
+                  rows={3}
+                />
+              </FormControl>
+
+              {isFactoryPreset(editTarget) && (
+                <Alert status="warning" size="sm">
+                  <AlertIcon />
+                  <Text fontSize="sm">
+                    This is a factory preset. You can view but not modify it.
+                  </Text>
+                </Alert>
+              )}
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="ghost" mr={3} onClick={onEditClose}>
+              Cancel
+            </Button>
+            <Button 
+              colorScheme="blue" 
+              onClick={confirmEdit}
+              isDisabled={!editName.trim() || isFactoryPreset(editTarget)}
+            >
+              {isFactoryPreset(editTarget) ? 'View Only' : 'Update Preset'}
             </Button>
           </ModalFooter>
         </ModalContent>

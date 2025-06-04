@@ -226,7 +226,7 @@ const handlePresetSave = (presetName) => {
               <Tab color="gray.300" _selected={{ color: 'blue.300', borderBottomColor: 'blue.300' }}>
                 <HStack spacing={2}>
                   <Text>📋</Text>
-                  <Text>Browse Presets</Text>
+                  <Text>Manage Presets</Text>
                 </HStack>
               </Tab>
             </TabList>
