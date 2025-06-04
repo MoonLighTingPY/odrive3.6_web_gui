@@ -87,12 +87,6 @@ const PresetList = ({ onPresetLoad, onRefreshNeeded }) => {
       const config = loadPresetConfig(presetName)
       if (config && onPresetLoad) {
         onPresetLoad(config, presetName)
-        toast({
-          title: 'Preset Loaded',
-          description: `"${presetName}" loaded successfully`,
-          status: 'success',
-          duration: 3000,
-        })
       } else {
         throw new Error('Preset not found')
       }
@@ -233,6 +227,7 @@ const PresetList = ({ onPresetLoad, onRefreshNeeded }) => {
                         <Text>KV: {preset.config.motor?.motor_kv || 'N/A'}</Text>
                         <Text>Poles: {preset.config.motor?.pole_pairs || 'N/A'}</Text>
                         <Text>CPR: {preset.config.encoder?.cpr || 'N/A'}</Text>
+                        <Text>Encoder: {preset.config.encoder?.encoder_type || 'N/A'}</Text>
                       </HStack>
                     </Box>
                   )}

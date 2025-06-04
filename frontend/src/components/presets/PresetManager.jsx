@@ -13,7 +13,13 @@ import {
   IconButton,
   useDisclosure,
   useToast,
-  Divider
+  Divider,
+  Card,
+  CardHeader,
+  Heading,
+  CardBody,
+  SimpleGrid,
+  Badge 
 } from '@chakra-ui/react'
 import { ChevronDownIcon, ChevronUpIcon, AddIcon } from '@chakra-ui/icons'
 import { 
@@ -201,23 +207,6 @@ const PresetManager = ({
   }
 }
 
-  const formatPresetOption = (name) => {
-    const isFactory = isFactoryPreset(name)
-    const prefix = isFactory ? '[Factory] ' : '[User] '
-    return `${prefix}${name}`
-  }
-
-  const getPresetDescription = (name) => {
-    const preset = presets[name]
-    if (!preset) return ''
-    
-    const isFactory = isFactoryPreset(name)
-    const typeText = isFactory ? 'Factory preset' : 'User preset'
-    const dateText = preset.timestamp ? 
-      ` • Created: ${new Date(preset.timestamp).toLocaleDateString()}` : ''
-    
-    return `${typeText}${dateText}`
-  }
 
   const presetOptions = Object.keys(presets).sort((a, b) => {
     // Factory presets first, then user presets alphabetically
@@ -229,107 +218,154 @@ const PresetManager = ({
     return a.localeCompare(b)
   })
 
-  const hasValidConfig = isConnected && Object.keys(currentConfig).length > 0
 
   return (
-    <Box borderWidth="1px" borderRadius="lg" p={4} bg="gray.50" _dark={{ bg: 'gray.800' }}>
-      <HStack justify="space-between" mb={2}>
-        <Text fontSize="lg" fontWeight="semibold">Configuration Presets</Text>
+  <Card bg="gray.800" variant="elevated">
+    <CardHeader py={3}>
+      <HStack justify="space-between" align="center">
+        <Heading size="md" color="white">Configuration Presets</Heading>
         <IconButton
           icon={isOpen ? <ChevronUpIcon /> : <ChevronDownIcon />}
           onClick={onToggle}
           variant="ghost"
           size="sm"
           aria-label="Toggle presets panel"
+          color="gray.300"
         />
       </HStack>
+    </CardHeader>
 
-      <Collapse in={isOpen} animateOpacity>
+    <Collapse in={isOpen} animateOpacity>
+      <CardBody py={4}>
         <VStack spacing={4} align="stretch">
-          {!isConnected && (
+          
+          {!isConnected && !(import.meta.env.DEV || import.meta.env.MODE === 'development') && (
             <Alert status="info" size="sm">
               <AlertIcon />
               Connect to ODrive to enable preset functionality
             </Alert>
           )}
 
-          {isConnected && !hasValidConfig && (
-            <Alert status="warning" size="sm">
-              <AlertIcon />
-              Loading device configuration...
-            </Alert>
-          )}
+          {/* Save Current Configuration - First Priority */}
+          <Box p={4} bg="green.900" borderRadius="md" borderWidth="1px" borderColor="green.500">
+            <HStack justify="space-between" align="center" spacing={4}>
+              <VStack align="start" spacing={1} flex={1}>
+                <Text fontWeight="bold" color="white" fontSize="sm">Save Current Configuration</Text>
+                <Text fontSize="xs" color="gray.300">
+                  Save your current ODrive settings as a new preset
+                </Text>
+              </VStack>
+              <Button
+                leftIcon={<AddIcon />}
+                colorScheme="green"
+                size="md"
+                onClick={() => setShowSaveDialog(true)}
+                isDisabled={!isConnected && !(import.meta.env.DEV || import.meta.env.MODE === 'development')}
+                minW="140px"
+              >
+                Save Preset
+              </Button>
+            </HStack>
+          </Box>
 
-          {/* Load Preset Section */}
-          <VStack spacing={3} align="stretch">
-            <Text fontSize="sm" fontWeight="medium">Load Preset</Text>
-            <Select
-              placeholder="Select a preset to load..."
-              value={selectedPreset}
-              onChange={(e) => setSelectedPreset(e.target.value)}
-              size="sm"
-            >
-              {presetOptions.map((name) => (
-                <option key={name} value={name}>
-                  {formatPresetOption(name)}
-                </option>
-              ))}
-            </Select>
-            
-            {selectedPreset && (
-              <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }}>
-                {getPresetDescription(selectedPreset)}
-                {presets[selectedPreset]?.description && (
-                  <Text as="span" display="block" mt={1} fontStyle="italic">
-                    {presets[selectedPreset].description}
-                  </Text>
-                )}
-              </Text>
-            )}
+          {/* Load Preset Section - Grid Layout */}
+          <Box p={4} bg="blue.900" borderRadius="md" borderWidth="1px" borderColor="blue.500">
+            <VStack spacing={3} align="stretch">
+              <Text fontWeight="bold" color="white" fontSize="sm">Load Existing Preset</Text>
+              
+              {/* Preset Grid */}
+              <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={2} maxH="200px" overflowY="auto">
+                {presetOptions.map((name) => {
+                  const isFactory = isFactoryPreset(name)
+                  const isSelected = selectedPreset === name
+                  const preset = presets[name]
+                  
+                  return (
+                    <Box
+                      key={name}
+                      p={3}
+                      bg={isSelected ? "blue.600" : "gray.700"}
+                      borderRadius="md"
+                      cursor="pointer"
+                      onClick={() => setSelectedPreset(name)}
+                      borderWidth="1px"
+                      borderColor={isSelected ? "blue.400" : "gray.600"}
+                      _hover={{ bg: isSelected ? "blue.500" : "gray.600" }}
+                      transition="all 0.2s"
+                    >
+                      <VStack spacing={1} align="start">
+                        <HStack spacing={2} w="100%">
+                          <Text fontSize="xs" fontWeight="bold" color="white" noOfLines={1} flex={1}>
+                            {name}
+                          </Text>
+                          <Badge 
+                            colorScheme={isFactory ? 'blue' : 'green'} 
+                            size="xs"
+                          >
+                            {isFactory ? 'Factory' : 'User'}
+                          </Badge>
+                        </HStack>
+                        
+                        {preset?.description && (
+                          <Text fontSize="2xs" color="gray.300" noOfLines={2}>
+                            {preset.description}
+                          </Text>
+                        )}
+                        
+                        {preset?.timestamp && (
+                          <Text fontSize="2xs" color="gray.400">
+                            {new Date(preset.timestamp).toLocaleDateString()}
+                          </Text>
+                        )}
+                      </VStack>
+                    </Box>
+                  )
+                })}
+              </SimpleGrid>
 
-            <Button
-              size="sm"
-              colorScheme="blue"
-              onClick={handleLoadPreset}
-              isDisabled={!selectedPreset || isLoading}
-              isLoading={isLoading}
-            >
-              Load Selected Preset
-            </Button>
-          </VStack>
+              {/* Load Button */}
+              {selectedPreset && (
+                <HStack spacing={2} pt={2}>
+                  <VStack align="start" spacing={0} flex={1}>
+                    <Text fontSize="xs" color="gray.300">Selected:</Text>
+                    <Text fontSize="sm" fontWeight="bold" color="blue.300" noOfLines={1}>
+                      {selectedPreset}
+                    </Text>
+                  </VStack>
+                  <Button
+                    colorScheme="blue"
+                    size="md"
+                    onClick={handleLoadPreset}
+                    isLoading={isLoading}
+                    minW="120px"
+                  >
+                    Load Preset
+                  </Button>
+                </HStack>
+              )}
+            </VStack>
+          </Box>
 
-          <Divider />
-
-          {/* Save Preset Section */}
-          <VStack spacing={3} align="stretch">
-            <Text fontSize="sm" fontWeight="medium">Save Current Configuration</Text>
-            <Button
-              leftIcon={<AddIcon />}
-              colorScheme="green"
-              onClick={() => setShowSaveDialog(true)}
-              isDisabled={!isConnected && !(import.meta.env.DEV || import.meta.env.MODE === 'development')} // Enable in dev mode
-              title={!isConnected && !(import.meta.env.DEV || import.meta.env.MODE === 'development') ? "Connect to ODrive to save presets" : "Save current configuration as new preset"}
-            >
-              Save As New Preset
-            </Button>
-          </VStack>
-
-          <Divider />
-
-          {/* Import/Export Section */}
-          <PresetImportExport onImportComplete={loadPresets} />
+          {/* Import/Export Section - Compact */}
+          <Box p={3} bg="gray.700" borderRadius="md">
+            <HStack justify="space-between" align="center">
+              <Text fontSize="sm" fontWeight="medium" color="white">Import/Export</Text>
+              <PresetImportExport onImportComplete={loadPresets} compact={true} />
+            </HStack>
+          </Box>
         </VStack>
-      </Collapse>
+      </CardBody>
+    </Collapse>
 
-      {/* Save Dialog */}
-      <PresetSaveDialog
-        isOpen={showSaveDialog}
-        onClose={() => setShowSaveDialog(false)}
-        onSave={handleSavePreset}
-        existingPresets={Object.keys(presets)}
-      />
-    </Box>
-  )
+    {/* Save Dialog */}
+    <PresetSaveDialog
+      isOpen={showSaveDialog}
+      onClose={() => setShowSaveDialog(false)}
+      onSave={handleSavePreset}
+      existingPresets={Object.keys(presets)}
+    />
+  </Card>
+)
 }
 
 export default PresetManager

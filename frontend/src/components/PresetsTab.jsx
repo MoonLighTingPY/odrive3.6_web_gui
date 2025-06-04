@@ -25,7 +25,6 @@ import {
 import { RefreshCw, Save, Upload } from 'lucide-react'
 import { 
   getAllAvailablePresets, 
-  isFactoryPreset,
   createAutoBackup,
   cleanupAutoBackups
 } from '../utils/configurationPresetsManager'
@@ -42,11 +41,11 @@ const PresetsTab = () => {
   const toast = useToast()
   const { isConnected } = useSelector(state => state.device)
   const [deviceConfig, setDeviceConfig] = useState({})
-  const [presets, setPresets] = useState({})
+  const [ setPresets] = useState({})
   const [selectedPreset, setSelectedPreset] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+  const [setIsLoading] = useState(false)
   const [activeTab, setActiveTab] = useState(0)
-  const [lastUpdate, setLastUpdate] = useState(null)
+  const [ setLastUpdate] = useState(null)
 
   // Load current device configuration
   const loadDeviceConfig = useCallback(async () => {
@@ -72,7 +71,7 @@ const PresetsTab = () => {
     } finally {
       setIsLoading(false)
     }
-  }, [isConnected, toast])
+  }, [isConnected, toast, setLastUpdate, setIsLoading])
 
   // Load presets
   const loadPresets = useCallback(() => {
@@ -87,7 +86,7 @@ const PresetsTab = () => {
         duration: 3000,
       })
     }
-  }, [toast])
+  }, [toast, setPresets])
 
   // Auto-backup when connected
   useEffect(() => {
@@ -189,9 +188,6 @@ const handlePresetSave = (presetName) => {
     )
   }
 
-  const presetCount = Object.keys(presets).length
-  const factoryCount = Object.keys(presets).filter(name => isFactoryPreset(name)).length
-  const userCount = presetCount - factoryCount
 
   return (
     <VStack spacing={6} align="stretch" p={6} h="100%">
@@ -206,54 +202,7 @@ const handlePresetSave = (presetName) => {
         </Text>
       </Box>
 
-      {/* Stats and Control Panel */}
-      <Card bg="gray.800" variant="elevated">
-        <CardBody>
-          <HStack justify="space-between" wrap="wrap" spacing={4}>
-            <HStack spacing={6}>
-              <VStack spacing={1} align="start">
-                <Text color="gray.300" fontSize="sm">Available Presets</Text>
-                <HStack spacing={4}>
-                  <Badge colorScheme="blue" variant="outline">
-                    {factoryCount} Factory
-                  </Badge>
-                  <Badge colorScheme="green" variant="outline">
-                    {userCount} User
-                  </Badge>
-                  <Badge colorScheme="purple" variant="outline">
-                    {presetCount} Total
-                  </Badge>
-                </HStack>
-              </VStack>
 
-              <Button
-                leftIcon={isLoading ? <Spinner size="sm" /> : <RefreshCw size={16} />}
-                onClick={() => {
-                  loadPresets()
-                  loadDeviceConfig()
-                }}
-                isDisabled={!isConnected}
-                isLoading={isLoading}
-                colorScheme="blue"
-                size="sm"
-              >
-                Refresh
-              </Button>
-            </HStack>
-
-            <HStack spacing={4}>
-              {lastUpdate && (
-                <Text color="gray.400" fontSize="sm">
-                  Config updated: {lastUpdate.toLocaleTimeString()}
-                </Text>
-              )}
-              <Badge colorScheme={isConnected ? 'green' : 'red'}>
-                {isConnected ? 'Connected' : 'Disconnected'}
-              </Badge>
-            </HStack>
-          </HStack>
-        </CardBody>
-      </Card>
 
       {/* Main Preset Management Tabs */}
       <Card bg="gray.800" variant="elevated" flex="1">
@@ -280,18 +229,6 @@ const handlePresetSave = (presetName) => {
                   <Text>Browse Presets</Text>
                 </HStack>
               </Tab>
-              <Tab color="gray.300" _selected={{ color: 'blue.300', borderBottomColor: 'blue.300' }}>
-                <HStack spacing={2}>
-                  <Text>🔍</Text>
-                  <Text>Compare</Text>
-                </HStack>
-              </Tab>
-              <Tab color="gray.300" _selected={{ color: 'blue.300', borderBottomColor: 'blue.300' }}>
-                <HStack spacing={2}>
-                  <Upload size={16} />
-                  <Text>Import/Export</Text>
-                </HStack>
-              </Tab>
             </TabList>
 
             <TabPanels flex="1" h="100%">
@@ -300,43 +237,7 @@ const handlePresetSave = (presetName) => {
               <TabPanel p={6} h="100%">
                 <VStack spacing={6} align="stretch" h="100%">
                   
-                  {/* Current Configuration Summary */}
-                  <Card bg="gray.900" variant="outline">
-                    <CardHeader>
-                      <Heading size="md" color="white">Current Configuration</Heading>
-                    </CardHeader>
-                    <CardBody>
-                      <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
-                        <VStack spacing={2} align="start">
-                          <Text fontSize="sm" color="gray.400">Power Settings</Text>
-                          <Text fontSize="xs" color="white" fontFamily="mono">
-                            Bus Voltage: {deviceConfig.power?.dc_bus_overvoltage_trip_level || 'N/A'}V
-                          </Text>
-                          <Text fontSize="xs" color="white" fontFamily="mono">
-                            Max Current: {deviceConfig.power?.dc_max_positive_current || 'N/A'}A
-                          </Text>
-                        </VStack>
-                        <VStack spacing={2} align="start">
-                          <Text fontSize="sm" color="gray.400">Motor Config</Text>
-                          <Text fontSize="xs" color="white" fontFamily="mono">
-                            Type: {(deviceConfig.motor?.motor_type === 0 ? 'High Current' : 'Gimbal') || 'N/A'}
-                          </Text>
-                          <Text fontSize="xs" color="white" fontFamily="mono">
-                            Pole Pairs: {deviceConfig.motor?.pole_pairs || 'N/A'}
-                          </Text>
-                        </VStack>
-                        <VStack spacing={2} align="start">
-                          <Text fontSize="sm" color="gray.400">Control</Text>
-                          <Text fontSize="xs" color="white" fontFamily="mono">
-                            Mode: {deviceConfig.control?.control_mode || 'N/A'}
-                          </Text>
-                          <Text fontSize="xs" color="white" fontFamily="mono">
-                            Vel Limit: {deviceConfig.control?.vel_limit || 'N/A'}
-                          </Text>
-                        </VStack>
-                      </SimpleGrid>
-                    </CardBody>
-                  </Card>
+            
 
                   {/* Quick Actions */}
                   <PresetManager
@@ -381,36 +282,7 @@ const handlePresetSave = (presetName) => {
                 />
               </TabPanel>
               
-              {/* Compare Tab */}
-              <TabPanel p={6} h="100%">
-                <VStack spacing={6} align="stretch" h="100%">
-                  <Card bg="gray.900" variant="outline">
-                    <CardHeader>
-                      <Heading size="md" color="white">Configuration Comparison</Heading>
-                    </CardHeader>
-                    <CardBody>
-                      <PresetComparison
-                        currentConfig={deviceConfig}
-                        presetName={selectedPreset}
-                      />
-                    </CardBody>
-                  </Card>
-                </VStack>
-              </TabPanel>
               
-              {/* Import/Export Tab */}
-              <TabPanel p={6} h="100%">
-                <VStack spacing={6} align="stretch" h="100%">
-                  <Card bg="gray.900" variant="outline">
-                    <CardHeader>
-                      <Heading size="md" color="white">Import & Export Presets</Heading>
-                    </CardHeader>
-                    <CardBody>
-                      <PresetImportExport onImportComplete={loadPresets} />
-                    </CardBody>
-                  </Card>
-                </VStack>
-              </TabPanel>
             </TabPanels>
           </Tabs>
         </CardBody>

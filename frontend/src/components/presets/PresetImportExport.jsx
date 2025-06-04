@@ -27,7 +27,7 @@ import {
   importPresetsFromFile
 } from '../../utils/configurationPresetsManager'
 
-const PresetImportExport = ({ onImportComplete }) => {
+const PresetImportExport = ({ onImportComplete, compact = false }) => {
   const fileInputRef = useRef(null)
   const [importing, setImporting] = useState(false)
   const [exporting, setExporting] = useState(false)
@@ -119,6 +119,45 @@ const PresetImportExport = ({ onImportComplete }) => {
   const closeResults = () => {
     setShowResults(false)
     setImportResults(null)
+  }
+
+  if (compact) {
+    return (
+      <HStack spacing={2}>
+        <Button
+          size="xs"
+          leftIcon={<AttachmentIcon />}
+          onClick={handleImportClick}
+          isLoading={importing}
+          variant="outline"
+        >
+          Import
+        </Button>
+        
+        <Button
+          size="xs"
+          leftIcon={<DownloadIcon />}
+          onClick={handleExportAll}
+          isLoading={exporting}
+          variant="outline"
+        >
+          Export All
+        </Button>
+
+        <Input
+          ref={fileInputRef}
+          type="file"
+          accept=".json"
+          onChange={handleFileSelect}
+          style={{ display: 'none' }}
+        />
+
+        {/* Keep the existing results modal */}
+        <Modal isOpen={showResults} onClose={closeResults} size="md">
+          {/* ... existing modal content ... */}
+        </Modal>
+      </HStack>
+    )
   }
 
   return (
