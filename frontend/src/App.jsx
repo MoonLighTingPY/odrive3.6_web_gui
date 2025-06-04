@@ -13,20 +13,19 @@ import {
   Heading,
   Spacer,
   Badge,
-  useToast,
 } from '@chakra-ui/react'
 
 import DeviceList from './components/DeviceList'
 import ConfigurationTab from './components/ConfigurationTab'
 import DashboardTab from './components/DashboardTab'
 import InspectorTab from './components/InspectorTab'
+import PresetsTab from './components/PresetsTab'
 
 import { updateOdriveState } from './store/slices/deviceSlice'
 import './App.css'
 
 function App() {
   const dispatch = useDispatch()
-  const toast = useToast()
   const { isConnected, connectedDevice, odriveState } = useSelector(state => state.device)
   const [activeTab, setActiveTab] = useState(0)
 
@@ -115,6 +114,9 @@ function App() {
               <Tab color="gray.300" _selected={{ color: 'odrive.300', borderBottomColor: 'odrive.300' }}>
                 Inspector
               </Tab>
+              <Tab color="gray.300" _selected={{ color: 'odrive.300', borderBottomColor: 'odrive.300' }}>
+                Presets
+              </Tab>
               <Spacer />
               <HStack spacing={4} pr={4}>
                 {isConnected && (
@@ -136,6 +138,10 @@ function App() {
               
               <TabPanel p={0} h="100%">
                 <InspectorTab isConnected={isConnected} odriveState={odriveState} />
+              </TabPanel>
+
+              <TabPanel p={0} h="100%">
+                <PresetsTab />
               </TabPanel>
             </TabPanels>
           </Tabs>

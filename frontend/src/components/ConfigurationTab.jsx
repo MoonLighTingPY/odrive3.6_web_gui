@@ -156,6 +156,20 @@ const ConfigurationTab = () => {
       // Update device config with pulled values
       setDeviceConfig(allConfig)
 
+      Object.entries(allConfig).forEach(([category, config]) => {
+  const actionMap = {
+    power: 'config/updatePowerConfig',
+    motor: 'config/updateMotorConfig',
+    encoder: 'config/updateEncoderConfig', 
+    control: 'config/updateControlConfig',
+    interface: 'config/updateInterfaceConfig'
+  }
+  
+  if (actionMap[category] && Object.keys(config).length > 0) {
+    dispatch({ type: actionMap[category], payload: config })
+  }
+})
+
       toast({
         title: 'Configuration loaded',
         description: `${successCount}/${totalParams} parameters loaded from ODrive`,
@@ -175,7 +189,30 @@ const ConfigurationTab = () => {
       setIsPullingConfig(false)
       setPullProgress(0)
     }
-  }, [isConnected, isPullingConfig, pullBatchParams, toast])
+  }, [isConnected, isPullingConfig, pullBatchParams, toast, dispatch])
+
+  useEffect(() => {
+  const handlePresetLoad = (event) => {
+    const { config } = event.detail
+    console.log('ConfigurationTab: Received preset load event:', config)
+    
+    // Update local deviceConfig with the loaded preset
+    setDeviceConfig(config)
+    
+    toast({
+      title: 'Configuration Updated',
+      description: 'Form inputs updated with preset values',
+      status: 'info',
+      duration: 2000,
+    })
+  }
+
+  window.addEventListener('presetLoaded', handlePresetLoad)
+  
+  return () => {
+    window.removeEventListener('presetLoaded', handlePresetLoad)
+  }
+}, [toast])
 
   // Auto-pull configuration when connected
   useEffect(() => {
@@ -194,14 +231,31 @@ const ConfigurationTab = () => {
   }, [isConnected, pullAllConfigInBackground])
 
   const onUpdateConfig = (category, key, value) => {
-    setDeviceConfig(prev => ({
-      ...prev,
-      [category]: {
-        ...prev[category],
-        [key]: value
-      }
-    }))
+  // Update local device config
+  setDeviceConfig(prev => ({
+    ...prev,
+    [category]: {
+      ...prev[category],
+      [key]: value
+    }
+  }))
+  
+  // Also update Redux store so presets can see the changes
+  const actionMap = {
+    power: 'config/updatePowerConfig',
+    motor: 'config/updateMotorConfig', 
+    encoder: 'config/updateEncoderConfig',
+    control: 'config/updateControlConfig',
+    interface: 'config/updateInterfaceConfig'
   }
+  
+  if (actionMap[category]) {
+    dispatch({ 
+      type: actionMap[category], 
+      payload: { [key]: value } 
+    })
+  }
+}
 
   // Function to read a single parameter from ODrive
   const readParameter = async (odriveParam, configCategory, configKey) => {
