@@ -3,7 +3,7 @@
 
 A modern, web-based desktop application for configuring, monitoring, and controlling ODrive motor controllers running firmware v0.5.6 (aka v3.6-56V).
 
-[![Releases](https://img.shields.io/github/v/release/MoonLighTingPY/odrive3.6_web_gui?logo=github)](https://github.com/MoonLighTingPY/odrive3.6_web_gui/releases)
+[![Latest Release](https://img.shields.io/github/release/MoonLighTingPY/odrive3.6_web_gui.svg?logo=github)](https://github.com/MoonLighTingPY/odrive3.6_web_gui/releases)
 
 ## 🎯 Key Capabilities
 
