@@ -3,3 +3,4 @@ Flask-CORS==4.0.0
 odrive==0.6.10.post0
 pystray
 Pillow
+requests

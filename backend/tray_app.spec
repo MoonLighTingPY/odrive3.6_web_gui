@@ -1,11 +1,13 @@
 # -*- mode: python ; coding: utf-8 -*-
 import os
 import sys
-from PyInstaller.utils.hooks import collect_all
+from PyInstaller.utils.hooks import collect_all, collect_submodules
 
-# Collect pystray and PIL modules properly
+# Collect all necessary modules
 pystray_datas, pystray_binaries, pystray_hiddenimports = collect_all('pystray')
 pil_datas, pil_binaries, pil_hiddenimports = collect_all('PIL')
+flask_datas, flask_binaries, flask_hiddenimports = collect_all('flask')
+odrive_submodules = collect_submodules('odrive')
 
 # ODrive library binaries and data collection
 def get_odrive_paths():
@@ -16,8 +18,18 @@ def get_odrive_paths():
         binaries = []
         datas = []
         
-        # Add ODrive DLLs for Windows
+        # Add ODrive DLLs for Windows - CRITICAL FIX
         if sys.platform == 'win32':
+            # Look for the lib directory in odrive package
+            lib_path = os.path.join(odrive_path, 'lib')
+            if os.path.exists(lib_path):
+                for file in os.listdir(lib_path):
+                    if file.endswith('.dll'):
+                        source_path = os.path.join(lib_path, file)
+                        binaries.append((source_path, 'odrive/lib'))
+                        print(f"Adding ODrive DLL: {source_path} -> odrive/lib")
+            
+            # Also check pyodrive directory
             dll_path = os.path.join(odrive_path, 'pyodrive')
             if os.path.exists(dll_path):
                 for file in os.listdir(dll_path):
@@ -57,22 +69,22 @@ if not icon_file:
     print("Warning: No icon file found")
 
 # Combine all binaries and datas
-all_binaries = odrive_binaries + pystray_binaries + pil_binaries
+all_binaries = odrive_binaries + pystray_binaries + pil_binaries + flask_binaries
 all_datas = [
     ('../frontend/dist', 'static'),
-] + odrive_datas + pystray_datas + pil_datas + ([
+] + odrive_datas + pystray_datas + pil_datas + flask_datas + ([
     (icon_file, '.'),
 ] if icon_file else [])
 
-# Combine all hidden imports - only include modules that actually exist
+# Combine all hidden imports
 all_hiddenimports = [
     'odrive',
     'odrive.utils',
     'odrive.enums',
     'flask',
     'flask_cors',
-    'app',                     # your Flask app module
-    'start_backend',           # backend startup script
+    'app',
+    'start_backend',
     'threading',
     'webbrowser',
     'json',
@@ -81,7 +93,8 @@ all_hiddenimports = [
     'collections',
     'os',
     'sys',
-] + pystray_hiddenimports + pil_hiddenimports
+    'requests',  # Add requests for backend testing
+] + pystray_hiddenimports + pil_hiddenimports + flask_hiddenimports + odrive_submodules
 
 a = Analysis(
     ['tray_app.py'],
@@ -115,8 +128,8 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,  # No console window!
-    windowed=True,  # Windows GUI app
+    console=False,  # Back to False for production
+    windowed=True,
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,

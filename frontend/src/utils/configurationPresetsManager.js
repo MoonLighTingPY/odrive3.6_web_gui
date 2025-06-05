@@ -302,10 +302,40 @@ export const validatePresetConfig = (config) => {
 /**
  * Create a backup of current device configuration
  * This is called automatically when ODrive connects to ensure we have a safe fallback
+ * Checks for existing backup with same values and overwrites if found
  * @param {Object} deviceConfig - Current device configuration
  * @returns {Object} The backup preset
  */
 export const createAutoBackup = (deviceConfig) => {
+  const presets = getStoredPresets()
+  
+  // Check for existing auto backup with same configuration
+  const existingBackup = Object.entries(presets).find(([name, preset]) => {
+    if (!name.startsWith('auto_backup_')) return false
+    
+    // Deep compare ONLY the configuration content, not the preset metadata
+    return JSON.stringify(preset.config) === JSON.stringify(deviceConfig)
+  })
+  
+  if (existingBackup) {
+    const [existingName, existingPreset] = existingBackup
+    console.log(`Found existing auto backup with same config: ${existingName}`)
+    
+    // Update the existing backup's timestamp
+    const updatedPreset = {
+      ...existingPreset,
+      timestamp: new Date().toISOString(),
+      description: 'Automatic backup (updated when ODrive reconnected with same config)'
+    }
+    
+    // Save the updated preset
+    presets[existingName] = updatedPreset
+    localStorage.setItem('odrive_config_presets', JSON.stringify(presets))
+    
+    return updatedPreset
+  }
+  
+  // Create new backup if no matching one exists
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')
   const backupName = `auto_backup_${timestamp[0]}_${timestamp[1].split('.')[0]}`
   

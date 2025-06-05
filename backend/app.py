@@ -1215,18 +1215,22 @@ def health_check():
 if __name__ == '__main__':
     print("🚀 Starting ODrive GUI Backend...")
     
-    # Only open browser if running as executable (not when imported or in development)
-    if is_running_as_executable():
+    # Only open browser if running as executable AND not disabled by tray app AND not running from tray
+    should_open_browser = (is_running_as_executable() and 
+                          os.environ.get('ODRIVE_NO_AUTO_BROWSER') != '1' and
+                          not sys.argv[0].endswith('tray_app.exe'))
+    
+    if should_open_browser:
         print("📦 Running as executable - browser will open automatically")
         browser_thread = threading.Thread(target=open_browser, daemon=True)
         browser_thread.start()
     else:
-        print("🔧 Running in development mode")
+        print("🔧 Running in development mode or browser disabled by tray app")
         print("   Open: http://localhost:5000")
     
     try:
         logger.info("Starting ODrive GUI Backend v0.5.6")
-        app.run(host='0.0.0.0', port=5000, debug=False)  # Set debug=False to avoid the reloader
+        app.run(host='0.0.0.0', port=5000, debug=False)
     except KeyboardInterrupt:
         print("\n👋 ODrive GUI Backend stopped")
     except Exception as e:

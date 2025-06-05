@@ -176,9 +176,14 @@ export const createAutoBackupAction = async (deviceConfig, toast) => {
     const backup = createAutoBackup(deviceConfig)
     const cleanedUp = cleanupAutoBackups()
 
+    // Check if this was an update to existing backup
+    const isUpdate = backup.description && backup.description.includes('updated when ODrive reconnected')
+
     toast({
-      title: 'Auto Backup Created',
-      description: `Configuration backed up as "${backup.name}"${cleanedUp > 0 ? `. Cleaned up ${cleanedUp} old backups.` : ''}`,
+      title: isUpdate ? 'Auto Backup Updated' : 'Auto Backup Created',
+      description: isUpdate 
+        ? `Existing backup updated: "${backup.name}"${cleanedUp > 0 ? `. Cleaned up ${cleanedUp} old backups.` : ''}`
+        : `Configuration backed up as "${backup.name}"${cleanedUp > 0 ? `. Cleaned up ${cleanedUp} old backups.` : ''}`,
       status: 'info',
       duration: 3000,
     })

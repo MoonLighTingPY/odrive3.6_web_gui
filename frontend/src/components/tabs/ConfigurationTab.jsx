@@ -41,6 +41,7 @@ const ConfigurationTab = () => {
   const [isPullingConfig, setIsPullingConfig] = useState(false)
   const [pullProgress, setPullProgress] = useState(0)
   const [isApplyingSave, setIsApplyingSave] = useState(false)
+  const [hasAutoLoaded, setHasAutoLoaded] = useState(false)
 
   const steps = [
     { id: 1, name: 'Power', icon: '⚡', component: PowerConfigStep },
@@ -155,18 +156,20 @@ const ConfigurationTab = () => {
       setDeviceConfig(allConfig)
 
       Object.entries(allConfig).forEach(([category, config]) => {
-  const actionMap = {
-    power: 'config/updatePowerConfig',
-    motor: 'config/updateMotorConfig',
-    encoder: 'config/updateEncoderConfig', 
-    control: 'config/updateControlConfig',
-    interface: 'config/updateInterfaceConfig'
-  }
-  
-  if (actionMap[category] && Object.keys(config).length > 0) {
-    dispatch({ type: actionMap[category], payload: config })
-  }
-})
+        const actionMap = {
+          power: 'config/updatePowerConfig',
+          motor: 'config/updateMotorConfig',
+          encoder: 'config/updateEncoderConfig', 
+          control: 'config/updateControlConfig',
+          interface: 'config/updateInterfaceConfig'
+        }
+        
+        if (actionMap[category] && Object.keys(config).length > 0) {
+          dispatch({ type: actionMap[category], payload: config })
+        }
+      })
+
+      setHasAutoLoaded(true)
 
       toast({
         title: 'Configuration loaded',
@@ -190,28 +193,28 @@ const ConfigurationTab = () => {
   }, [isConnected, isPullingConfig, pullBatchParams, toast, dispatch])
 
   useEffect(() => {
-  const handlePresetLoad = (event) => {
-    const { config } = event.detail
-    console.log('ConfigurationTab: Received preset load event:', config)
-    
-    // Update local deviceConfig with the loaded preset
-    setDeviceConfig(config)
-    
-  }
+    const handlePresetLoad = (event) => {
+      const { config } = event.detail
+      console.log('ConfigurationTab: Received preset load event:', config)
+      
+      // Update local deviceConfig with the loaded preset
+      setDeviceConfig(config)
+      
+    }
 
-  window.addEventListener('presetLoaded', handlePresetLoad)
-  
-  return () => {
-    window.removeEventListener('presetLoaded', handlePresetLoad)
-  }
-}, [toast])
+    window.addEventListener('presetLoaded', handlePresetLoad)
+    
+    return () => {
+      window.removeEventListener('presetLoaded', handlePresetLoad)
+    }
+  }, [toast])
 
-  // Auto-pull configuration when connected
+  // Auto-pull configuration when connected - only once per connection
   useEffect(() => {
-    if (isConnected) {
+    if (isConnected && !hasAutoLoaded && !isPullingConfig) {
       pullAllConfigInBackground()
-    } else {
-      // Clear config when disconnected
+    } else if (!isConnected) {
+      // Clear config and reset auto-load flag when disconnected
       setDeviceConfig({
         power: {},
         motor: {},
@@ -219,35 +222,36 @@ const ConfigurationTab = () => {
         control: {},
         interface: {}
       })
+      setHasAutoLoaded(false)
     }
-  }, [isConnected, pullAllConfigInBackground])
+  }, [isConnected, hasAutoLoaded, isPullingConfig, pullAllConfigInBackground])
 
   const onUpdateConfig = (category, key, value) => {
-  // Update local device config
-  setDeviceConfig(prev => ({
-    ...prev,
-    [category]: {
-      ...prev[category],
-      [key]: value
+    // Update local device config
+    setDeviceConfig(prev => ({
+      ...prev,
+      [category]: {
+        ...prev[category],
+        [key]: value
+      }
+    }))
+    
+    // Also update Redux store so presets can see the changes
+    const actionMap = {
+      power: 'config/updatePowerConfig',
+      motor: 'config/updateMotorConfig', 
+      encoder: 'config/updateEncoderConfig',
+      control: 'config/updateControlConfig',
+      interface: 'config/updateInterfaceConfig'
     }
-  }))
-  
-  // Also update Redux store so presets can see the changes
-  const actionMap = {
-    power: 'config/updatePowerConfig',
-    motor: 'config/updateMotorConfig', 
-    encoder: 'config/updateEncoderConfig',
-    control: 'config/updateControlConfig',
-    interface: 'config/updateInterfaceConfig'
+    
+    if (actionMap[category]) {
+      dispatch({ 
+        type: actionMap[category], 
+        payload: { [key]: value } 
+      })
+    }
   }
-  
-  if (actionMap[category]) {
-    dispatch({ 
-      type: actionMap[category], 
-      payload: { [key]: value } 
-    })
-  }
-}
 
   // Function to read a single parameter from ODrive
   const readParameter = async (odriveParam, configCategory, configKey) => {

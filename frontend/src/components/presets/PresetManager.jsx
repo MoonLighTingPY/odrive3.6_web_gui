@@ -89,12 +89,12 @@ const PresetManager = ({
     loadPresets()
   }, [loadPresets])
 
-  // Auto-backup when connected
-  useEffect(() => {
-    if (isConnected && Object.keys(currentConfig).length > 0) {
-      handleAutoBackup()
-    }
-  }, [isConnected, currentConfig, handleAutoBackup])
+  // Auto-backup when connected - only once per connection
+useEffect(() => {
+  if (isConnected && Object.keys(currentConfig).length > 0) {
+    handleAutoBackup()
+  }
+}, [isConnected]) // Remove currentConfig from dependencies
 
   const handleLoadPreset = async () => {
   if (!selectedPreset) {
