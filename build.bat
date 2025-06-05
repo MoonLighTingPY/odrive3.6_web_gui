@@ -19,6 +19,20 @@ if not exist "backend" (
 )
 
 echo.
+echo Choose build option:
+echo [1] Full install (build frontend + install dependencies + build executable)
+echo [2] Build only (skip frontend build and dependency installation)
+echo.
+set /p choice="Enter your choice (1 or 2): "
+
+if "%choice%"=="1" goto full_install
+if "%choice%"=="2" goto build_only
+echo Invalid choice. Please run the script again and choose 1 or 2.
+pause
+exit /b 1
+
+:full_install
+echo.
 echo [1/6] Stopping any running ODrive GUI processes...
 taskkill /f /im app.exe >nul 2>&1
 taskkill /f /im odrive_v36_gui.exe >nul 2>&1
@@ -91,6 +105,25 @@ if %errorlevel% equ 0 (
     )
 )
 
+goto build_executable
+
+:build_only
+echo.
+echo [1/2] Stopping any running ODrive GUI processes...
+taskkill /f /im app.exe >nul 2>&1
+taskkill /f /im odrive_v36_gui.exe >nul 2>&1
+taskkill /f /im ODrive_GUI_Tray.exe >nul 2>&1
+if %errorlevel% equ 0 (
+    echo ✓ Stopped existing processes
+) else (
+    echo ✓ No existing processes found
+)
+
+echo.
+echo Skipping frontend build and dependency installation...
+cd backend
+
+:build_executable
 echo.
 echo [6/6] Building ODrive GUI Tray Application...
 echo Preparing servo.ico for tray app...

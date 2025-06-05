@@ -3,6 +3,10 @@ import os
 import sys
 from PyInstaller.utils.hooks import collect_all
 
+# Collect pystray and PIL modules properly
+pystray_datas, pystray_binaries, pystray_hiddenimports = collect_all('pystray')
+pil_datas, pil_binaries, pil_hiddenimports = collect_all('PIL')
+
 # ODrive library binaries and data collection
 def get_odrive_paths():
     try:
@@ -52,37 +56,39 @@ for icon_path in possible_icons:
 if not icon_file:
     print("Warning: No icon file found")
 
+# Combine all binaries and datas
+all_binaries = odrive_binaries + pystray_binaries + pil_binaries
+all_datas = [
+    ('../frontend/dist', 'static'),
+] + odrive_datas + pystray_datas + pil_datas + ([
+    (icon_file, '.'),
+] if icon_file else [])
+
+# Combine all hidden imports - only include modules that actually exist
+all_hiddenimports = [
+    'odrive',
+    'odrive.utils',
+    'odrive.enums',
+    'flask',
+    'flask_cors',
+    'app',                     # your Flask app module
+    'start_backend',           # backend startup script
+    'threading',
+    'webbrowser',
+    'json',
+    'time',
+    'logging',
+    'collections',
+    'os',
+    'sys',
+] + pystray_hiddenimports + pil_hiddenimports
+
 a = Analysis(
     ['tray_app.py'],
     pathex=[],
-    binaries=odrive_binaries,
-    datas=[
-        ('../frontend/dist', 'static'),
-    ] + odrive_datas + ([
-        (icon_file, '.'),
-    ] if icon_file else []),
-    hiddenimports=[
-        'odrive',
-        'odrive.utils',
-        'odrive.enums',
-        'usb.backend.libusb1',
-        'usb.backend.openusb',
-        'usb.backend.libusb0',
-        'flask',
-        'flask_cors',
-        'pystray',
-        'PIL',
-        'PIL.Image',
-        'PIL.ImageDraw',
-        'threading',
-        'webbrowser',
-        'json',
-        'time',
-        'logging',
-        'collections',
-        'os',
-        'sys',
-    ],
+    binaries=all_binaries,
+    datas=all_datas,
+    hiddenimports=all_hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

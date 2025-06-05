@@ -12,6 +12,8 @@ import webbrowser
 from PIL import Image
 import pystray
 from pystray import MenuItem as item
+import app             # backend/app.py: Flask app
+import start_backend   # backend/start_backend.py: startup script
 
 # Add the backend directory to the Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
