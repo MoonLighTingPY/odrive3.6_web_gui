@@ -20,7 +20,8 @@ import ConfigurationTab from './components/tabs/ConfigurationTab'
 import DashboardTab from './components/tabs/DashboardTab'
 import InspectorTab from './components/tabs/InspectorTab'
 import PresetsTab from './components/tabs/PresetsTab'
-
+import { useColorMode } from '@chakra-ui/react'
+import { MoonIcon, SunIcon } from '@chakra-ui/icons'
 import { updateOdriveState } from './store/slices/deviceSlice'
 import './App.css'
 
@@ -28,6 +29,7 @@ function App() {
   const dispatch = useDispatch()
   const { isConnected, connectedDevice, odriveState } = useSelector(state => state.device)
   const [activeTab, setActiveTab] = useState(0)
+  const { colorMode, toggleColorMode } = useColorMode()
 
   // Poll device state when connected
   useEffect(() => {
@@ -65,6 +67,13 @@ function App() {
               ODrive GUI v0.5.6
             </Heading>
             <button
+          className="theme-switcher"
+          onClick={toggleColorMode}
+          title="Toggle light / dark"
+        >
+          {colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
+        </button>
+            <button
               className="help-button"
               onClick={() =>
               window.open(
@@ -74,6 +83,7 @@ function App() {
             >
           Help
         </button>
+        
           </HStack>
             
             <DeviceList />
@@ -117,18 +127,78 @@ function App() {
             flexDirection="column"
           >
             <TabList bg="gray.800" borderBottom="1px solid" borderColor="gray.600" px={6}>
-              <Tab color="gray.300" _selected={{ color: 'odrive.300', borderBottomColor: 'odrive.300' }}>
+              {/* Configuration Tab */}
+              <Tab
+                bg="gray.700"
+                color="gray.300"
+                borderRadius="md"
+                _hover={{ bg: 'gray.800' }}
+                _selected={{
+                  bg: 'gray.900',
+                  color: 'odrive.300',
+                  borderBottom: '3px solid',
+                  borderBottomColor: 'odrive.300',
+                  borderBottomLeftRadius: '0px',
+                  borderBottomRightRadius: '0px',
+                }}
+              >
                 Configuration
               </Tab>
-              <Tab color="gray.300" _selected={{ color: 'odrive.300', borderBottomColor: 'odrive.300' }}>
-                Dashboard
-              </Tab>
-              <Tab color="gray.300" _selected={{ color: 'odrive.300', borderBottomColor: 'odrive.300' }}>
+
+              {/* Dashboard Tab */}
+              <Tab
+  bg="gray.700"
+  color="gray.300"
+  borderRadius="md"
+  _hover={{ bg: 'gray.800' }}
+  _selected={{
+    bg: 'gray.900',
+    color: 'odrive.300',
+    borderBottom: '3px solid',
+    borderBottomColor: 'odrive.300',
+    borderBottomLeftRadius: '0px',
+    borderBottomRightRadius: '0px',
+  }}
+>
+  Dashboard
+</Tab>
+
+              {/* Inspector Tab */}
+              <Tab
+                bg="gray.700"
+                color="gray.300"
+                borderRadius="md"
+                _hover={{ bg: 'gray.800' }}
+                _selected={{
+                  bg: 'gray.900',
+                  color: 'odrive.300',
+                  borderBottom: '3px solid',
+                  borderBottomColor: 'odrive.300',
+                  borderBottomLeftRadius: '0px',
+                  borderBottomRightRadius: '0px',
+                }}
+              >
                 Inspector
               </Tab>
-              <Tab color="gray.300" _selected={{ color: 'odrive.300', borderBottomColor: 'odrive.300' }}>
+
+              {/* Presets Tab */}
+              <Tab
+                bg="gray.700"
+                color="gray.300"
+                borderRadius="md"
+                _hover={{ bg: 'gray.800' }}
+                _selected={{
+                  bg: 'gray.900',
+                  color: 'odrive.300',
+                  borderBottom: '3px solid',
+                  borderBottomColor: 'odrive.300',
+                  borderBottomLeftRadius: '0px',
+                  borderBottomRightRadius: '0px',
+                }}
+              >
                 Presets
               </Tab>
+
               <Spacer />
               <HStack spacing={4} pr={4}>
                 {isConnected && (
