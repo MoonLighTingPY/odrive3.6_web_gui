@@ -20,8 +20,6 @@ import ConfigurationTab from './components/tabs/ConfigurationTab'
 import DashboardTab from './components/tabs/DashboardTab'
 import InspectorTab from './components/tabs/InspectorTab'
 import PresetsTab from './components/tabs/PresetsTab'
-import { useColorMode } from '@chakra-ui/react'
-import { MoonIcon, SunIcon } from '@chakra-ui/icons'
 import { updateOdriveState } from './store/slices/deviceSlice'
 import './App.css'
 
@@ -29,7 +27,6 @@ function App() {
   const dispatch = useDispatch()
   const { isConnected, connectedDevice, odriveState } = useSelector(state => state.device)
   const [activeTab, setActiveTab] = useState(0)
-  const { colorMode, toggleColorMode } = useColorMode()
 
   // Poll device state when connected
   useEffect(() => {
@@ -66,23 +63,6 @@ function App() {
             <Heading size="md" color="odrive.300" textAlign="center">
               ODrive GUI v0.5.6
             </Heading>
-            <button
-          className="theme-switcher"
-          onClick={toggleColorMode}
-          title="Toggle light / dark"
-        >
-          {colorMode === 'light' ? <MoonIcon /> : <SunIcon />}
-        </button>
-            <button
-              className="help-button"
-              onClick={() =>
-              window.open(
-                  'https://docs.odriverobotics.com/v/0.5.6/getting-started.html'
-                )
-              }
-            >
-          Help
-        </button>
         
           </HStack>
             
