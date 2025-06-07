@@ -60,9 +60,21 @@ function App() {
         {/* Left Sidebar - Device List */}
         <Box w="300px" bg="gray.800" borderRight="1px solid" borderColor="gray.600" p={4}>
           <VStack spacing={4} align="stretch" h="100%">
+            <HStack justify="space-between" mb={4}>
             <Heading size="md" color="odrive.300" textAlign="center">
               ODrive GUI v0.5.6
             </Heading>
+            <button
+              className="help-button"
+              onClick={() =>
+              window.open(
+                  'https://docs.odriverobotics.com/v/0.5.6/getting-started.html'
+                )
+              }
+            >
+          Help
+        </button>
+          </HStack>
             
             <DeviceList />
             
