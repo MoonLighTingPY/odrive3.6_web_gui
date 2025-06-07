@@ -5,6 +5,19 @@
   color: #ffffff;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
+.help-button {
+  margin-left: auto;
+  padding: 0.5rem 1rem;
+  background-color: #00ccbb;
+  color: #000000;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.help-button:hover {
+  background-color: #009499;
+}
 
 .sidebar {
   width: 300px;
