@@ -212,14 +212,14 @@ const DeviceList = () => {
   }
 
   const getStatusColor = (state) => {
-    if (connectionLost) return 'yellow'
-    if (!state.axis0) return 'gray'
-    const axisState = state.axis0.current_state
-    if (axisState === 8) return 'green' // CLOSED_LOOP_CONTROL
-    if (axisState === 1) return 'blue' // IDLE
-    if (axisState >= 2 && axisState <= 7) return 'yellow' // Calibration states
-    return 'red' // Error or undefined
-  }
+  if (connectionLost) return 'yellow'
+  if (!state.device) return 'gray'
+  const axisState = state.device.axis0?.current_state
+  if (axisState === 8) return 'green'
+  if (axisState === 1) return 'blue'
+  if (axisState >= 2 && axisState <= 7) return 'yellow'
+  return 'red' // Error or undefined
+}
 
   // Helper function to open troubleshooting modal
   const handleErrorClick = (errorCode, errorType) => {
@@ -370,42 +370,42 @@ const DeviceList = () => {
                 <HStack justify="space-between">
                   <Text fontSize="sm" color="gray.300">Vbus Voltage:</Text>
                   <Text fontSize="sm" fontWeight="bold" color="white">
-                    {odriveState.vbus_voltage?.toFixed(1) || '0.0'} V
+                    {odriveState.device?.vbus_voltage?.toFixed(1) || '0.0'} V
                   </Text>
                 </HStack>
                 <HStack justify="space-between">
                   <Text fontSize="sm" color="gray.300">Axis State:</Text>
                   <Text fontSize="sm" fontWeight="bold" color="white">
-                    {odriveState.axis0?.current_state || 0}
+                    {odriveState.device?.axis0?.current_state || 0}
                   </Text>
                 </HStack>
                 <HStack justify="space-between">
                   <Text fontSize="sm" color="gray.300">Motor Current:</Text>
                   <Text fontSize="sm" fontWeight="bold" color="white">
-                    {odriveState.axis0?.motor?.current_control?.Iq_measured?.toFixed(2) || '0.00'} A
+                    {odriveState.device?.axis0?.motor?.current_meas_phB?.toFixed(2) || '0.00'} A
                   </Text>
                 </HStack>
                 <HStack justify="space-between">
                   <Text fontSize="sm" color="gray.300">Encoder Pos:</Text>
                   <Text fontSize="sm" fontWeight="bold" color="white">
-                    {odriveState.axis0?.encoder?.pos_estimate?.toFixed(2) || '0.00'}
+                    {odriveState.device?.axis0?.encoder?.pos_estimate?.toFixed(2) || '0.00'}
                   </Text>
                 </HStack>
 
                 {/* Status Information */}
                 <HStack justify="space-between">
                   <Text fontSize="sm" color="gray.300">Status:</Text>
-                  <Badge colorScheme={getAxisStateColorScheme(odriveState.axis0?.current_state)}>
-                    {getAxisStateName(odriveState.axis0?.current_state)}
+                  <Badge colorScheme={getAxisStateColorScheme(odriveState.device?.axis0?.current_state)}>
+                    {getAxisStateName(odriveState.device?.axis0?.current_state)}
                   </Badge>
                 </HStack>
 
                 {/* Clear Errors Button - only shown if errors exist */}
-                {(odriveState.axis0?.error || 
-                  odriveState.axis0?.motor?.error || 
-                  odriveState.axis0?.encoder?.error || 
-                  odriveState.axis0?.controller?.error ||
-                  odriveState.axis0?.sensorless_estimator?.error) && (
+                {(odriveState.device?.axis0?.error || 
+                  odriveState.device?.axis0?.motor?.error || 
+                  odriveState.device?.axis0?.encoder?.error || 
+                  odriveState.device?.axis0?.controller?.error ||
+                  odriveState.device?.axis0?.sensorless_estimator?.error) && (
                   <Button
                     size="xs"
                     colorScheme="red"
@@ -447,41 +447,41 @@ const DeviceList = () => {
                 )}
 
                 {/* Axis Error */}
-                {renderErrorInfo(odriveState.axis0?.error, 'axis')}
+                {renderErrorInfo(odriveState.device?.axis0?.error, 'axis')}
 
                 {/* Motor Error */}
-                {odriveState.axis0?.motor?.error && odriveState.axis0.motor.error !== 0 && (
+                {odriveState.device?.axis0?.motor?.error && odriveState.device.axis0.motor.error !== 0 && (
                   <>
                     <Divider my={2} />
                     <Text fontSize="sm" fontWeight="bold" color="orange.300">Motor Errors:</Text>
-                    {renderErrorInfo(odriveState.axis0.motor.error, 'motor')}
+                    {renderErrorInfo(odriveState.device.axis0.motor.error, 'motor')}
                   </>
                 )}
 
                 {/* Encoder Error */}
-                {odriveState.axis0?.encoder?.error && odriveState.axis0.encoder.error !== 0 && (
+                {odriveState.device?.axis0?.encoder?.error && odriveState.device.axis0.encoder.error !== 0 && (
                   <>
                     <Divider my={2} />
                     <Text fontSize="sm" fontWeight="bold" color="orange.300">Encoder Errors:</Text>
-                    {renderErrorInfo(odriveState.axis0.encoder.error, 'encoder')}
+                    {renderErrorInfo(odriveState.device.axis0.encoder.error, 'encoder')}
                   </>
                 )}
 
                 {/* Controller Error */}
-                {odriveState.axis0?.controller?.error && odriveState.axis0.controller.error !== 0 && (
+                {odriveState.device?.axis0?.controller?.error && odriveState.device.axis0.controller.error !== 0 && (
                   <>
                     <Divider my={2} />
                     <Text fontSize="sm" fontWeight="bold" color="orange.300">Controller Errors:</Text>
-                    {renderErrorInfo(odriveState.axis0.controller.error, 'controller')}
+                    {renderErrorInfo(odriveState.device.axis0.controller.error, 'controller')}
                   </>
                 )}
 
                 {/* Sensorless Estimator Error */}
-                {odriveState.axis0?.sensorless_estimator?.error && odriveState.axis0.sensorless_estimator.error !== 0 && (
+                {odriveState.device?.axis0?.sensorless_estimator?.error && odriveState.device.axis0.sensorless_estimator.error !== 0 && (
                   <>
                     <Divider my={2} />
                     <Text fontSize="sm" fontWeight="bold" color="orange.300">Sensorless Errors:</Text>
-                    {renderErrorInfo(odriveState.axis0.sensorless_estimator.error, 'sensorless')}
+                    {renderErrorInfo(odriveState.device.axis0.sensorless_estimator.error, 'sensorless')}
                   </>
                 )}
               </VStack>

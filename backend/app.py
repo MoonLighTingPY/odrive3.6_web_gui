@@ -12,6 +12,11 @@ from collections import defaultdict
 import os
 import sys
 import webbrowser
+from odrive_telemetry_config import (
+    get_high_frequency_telemetry,
+    get_configuration_data,
+    get_full_device_state
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -114,6 +119,7 @@ class ODriveManager:
         self.reboot_start_time = None
         self.reconnection_attempts = 0
         self.max_reconnection_attempts = 10
+        
 
     def scan_for_devices(self) -> List[Dict[str, Any]]:
         """Scan for ODrive devices"""
@@ -227,6 +233,16 @@ class ODriveManager:
                 logger.warning(f"Device connection lost: {e}")
                 self.connection_lost = True
             return False
+    
+    def is_connected(self) -> bool:
+        """Check if a device is currently connected"""
+        return self.current_device is not None and not self.connection_lost
+
+    # Also add this property for easier access to the current device
+    @property  
+    def odrv(self):
+        """Get the current ODrive device for telemetry functions"""
+        return self.current_device
 
     def try_reconnect(self) -> bool:
         """Try to reconnect to the same device"""
@@ -591,26 +607,6 @@ def disconnect_device():
         logger.error(f"Error in disconnect_device: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/odrive/state', methods=['GET'])
-def get_device_state():
-    """Get current device state"""
-    try:
-        state = odrive_manager.get_device_state()
-        return jsonify(state)
-    except Exception as e:
-        logger.error(f"Error in get_device_state: {e}")
-        return jsonify({'error': str(e)}), 500
-
-@app.route('/api/odrive/telemetry', methods=['GET'])
-def get_telemetry():
-    """Get high-frequency telemetry data"""
-    try:
-        # Return the same state data but optimized for high frequency
-        state = odrive_manager.get_device_state()
-        return jsonify(state)
-    except Exception as e:
-        logger.error(f"Error in get_telemetry: {e}")
-        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/odrive/command', methods=['POST'])
 def execute_command():
@@ -1284,6 +1280,51 @@ def get_config_batch():
     except Exception as e:
         logger.error(f"Error in get_config_batch: {e}")
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500
+
+# Update your /api/odrive/telemetry endpoint
+@app.route('/api/odrive/telemetry', methods=['GET'])
+def get_telemetry():
+    try:
+        if not odrive_manager.is_connected():
+            return jsonify({"error": "No ODrive connected"}), 404
+        
+        # Use the new high-frequency telemetry function
+        telemetry_data = get_high_frequency_telemetry(odrive_manager.odrv)
+        
+        return jsonify(telemetry_data)
+    except Exception as e:
+        logger.error(f"Error getting telemetry: {e}")
+        return jsonify({"error": str(e)}), 500
+
+# Update your /api/odrive/state endpoint  
+@app.route('/api/odrive/state', methods=['GET'])
+def get_device_state():
+    try:
+        if not odrive_manager.is_connected():
+            return jsonify({"error": "No ODrive connected"}), 404
+        
+        # For state endpoint, get full configuration data
+        state_data = get_configuration_data(odrive_manager.odrv)
+        
+        return jsonify(state_data)
+    except Exception as e:
+        logger.error(f"Error getting device state: {e}")
+        return jsonify({"error": str(e)}), 500
+
+# Add a new endpoint for complete device snapshot
+@app.route('/api/odrive/full-state', methods=['GET'])  
+def get_full_state():
+    try:
+        if not odrive_manager.is_connected():
+            return jsonify({"error": "No ODrive connected"}), 404
+        
+        # Get everything
+        full_data = get_full_device_state(odrive_manager.odrv)
+        
+        return jsonify(full_data)
+    except Exception as e:
+        logger.error(f"Error getting full state: {e}")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     print("🚀 Starting ODrive GUI Backend...")

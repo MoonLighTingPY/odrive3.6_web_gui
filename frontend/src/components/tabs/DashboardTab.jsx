@@ -73,11 +73,89 @@ const DashboardTab = ({ isConnected, odriveState }) => {
     )
   }
 
-  const axisState = odriveState.axis0?.current_state || 0
+  const getAxisData = (odriveState, axisNum = 0) => {
+    // Add safety check for odriveState structure
+    if (!odriveState || !odriveState.device) {
+      return {
+        state: 0,
+        error: 0,
+        motor: { error: 0, current_phB: 0, current_phC: 0, is_calibrated: false },
+        encoder: { error: 0, pos_estimate: 0, vel_estimate: 0, is_ready: false, index_found: false },
+        controller: { error: 0, pos_setpoint: 0, vel_setpoint: 0, torque_setpoint: 0 }
+      }
+    }
+
+    const axis = odriveState.device[`axis${axisNum}`]
+    if (!axis) {
+      return {
+        state: 0,
+        error: 0,
+        motor: { error: 0, current_phB: 0, current_phC: 0, is_calibrated: false },
+        encoder: { error: 0, pos_estimate: 0, vel_estimate: 0, is_ready: false, index_found: false },
+        controller: { error: 0, pos_setpoint: 0, vel_setpoint: 0, torque_setpoint: 0 }
+      }
+    }
+    
+    return {
+      state: axis.current_state || 0,
+      error: axis.error || 0,
+      motor: {
+        error: axis.motor?.error || 0,
+        current_phB: axis.motor?.current_meas_phB || 0,
+        current_phC: axis.motor?.current_meas_phC || 0,
+        is_calibrated: axis.motor?.is_calibrated || false
+      },
+      encoder: {
+        error: axis.encoder?.error || 0,
+        pos_estimate: axis.encoder?.pos_estimate || 0,
+        vel_estimate: axis.encoder?.vel_estimate || 0,
+        is_ready: axis.encoder?.is_ready || false,
+        index_found: axis.encoder?.index_found || false
+      },
+      controller: {
+        error: axis.controller?.error || 0,
+        pos_setpoint: axis.controller?.pos_setpoint || 0,
+        vel_setpoint: axis.controller?.vel_setpoint || 0,
+        torque_setpoint: axis.controller?.torque_setpoint || 0
+      }
+    }
+  }
+
+  const getSystemData = (odriveState) => {
+    // Add safety check
+    if (!odriveState || !odriveState.device) {
+      return {
+        vbus_voltage: 0,
+        ibus: 0,
+        hw_version_major: 0,
+        hw_version_minor: 0,
+        fw_version_major: 0,
+        fw_version_minor: 0,
+        serial_number: 'Unknown'
+      }
+    }
+
+    const device = odriveState.device
+    return {
+      vbus_voltage: device.vbus_voltage || 0,
+      ibus: device.ibus || 0,
+      hw_version_major: device.hw_version_major || 0,
+      hw_version_minor: device.hw_version_minor || 0,
+      fw_version_major: device.fw_version_major || 0,
+      fw_version_minor: device.fw_version_minor || 0,
+      serial_number: device.serial_number || 'Unknown'
+    }
+  }
+
+  const axis0Data = getAxisData(odriveState, 0)
+  const systemData = getSystemData(odriveState)
+
+  // Add null checks before accessing properties
+  const axisState = axis0Data?.state || 0
   const motorCurrent = realTimeData.axis0?.motor?.current_control?.Iq_measured || 0
-  const encoderPos = realTimeData.axis0?.encoder?.pos_estimate || 0
-  const encoderVel = realTimeData.axis0?.encoder?.vel_estimate || 0
-  const vbusVoltage = realTimeData.vbus_voltage || 0
+  const encoderPos = realTimeData.axis0?.encoder?.pos_estimate || axis0Data?.encoder?.pos_estimate || 0
+  const encoderVel = realTimeData.axis0?.encoder?.vel_estimate || axis0Data?.encoder?.vel_estimate || 0
+  const vbusVoltage = realTimeData.vbus_voltage || systemData?.vbus_voltage || 0
   const motorTemp = realTimeData.axis0?.motor?.motor_thermistor?.temperature || 0
   const fetTemp = realTimeData.axis0?.motor?.fet_thermistor?.temperature || 0
 
@@ -161,10 +239,19 @@ const DashboardTab = ({ isConnected, odriveState }) => {
               <Stat>
                 <StatLabel color="gray.300">Firmware</StatLabel>
                 <StatNumber color="white" fontSize="md">
-                  v0.5.6
+                  v{systemData?.fw_version_major || 0}.{systemData?.fw_version_minor || 5}.{systemData?.fw_version_revision || 6}
                 </StatNumber>
                 <StatHelpText color="gray.400">
-                  ODrive v3.6 56V
+                  HW: v{systemData?.hw_version_major || 3}.{systemData?.hw_version_minor || 6}
+                </StatHelpText>
+              </Stat>
+              <Stat>
+                <StatLabel color="gray.300">Serial Number</StatLabel>
+                <StatNumber color="white" fontSize="md">
+                  {systemData?.serial_number || connectedDevice?.serial || 'Unknown'}
+                </StatNumber>
+                <StatHelpText color="gray.400">
+                  VBus: {systemData?.vbus_voltage?.toFixed(1) || '0.0'} V
                 </StatHelpText>
               </Stat>
               <Stat>
@@ -196,25 +283,25 @@ const DashboardTab = ({ isConnected, odriveState }) => {
         </Card>
 
         {/* Error Status Section */}
-        {(odriveState.axis0?.error || 
-          odriveState.axis0?.motor?.error || 
-          odriveState.axis0?.encoder?.error || 
-          odriveState.axis0?.controller?.error ||
-          odriveState.axis0?.sensorless_estimator?.error) && (
+        {(axis0Data?.error || 
+          axis0Data?.motor?.error || 
+          axis0Data?.encoder?.error || 
+          axis0Data?.controller?.error ||
+          odriveState.device?.axis0?.sensorless_estimator?.error) && (
           <Card bg="red.900" variant="elevated">
             <CardHeader>
               <HStack>
                 <Icon as={WarningIcon} color="red.300" />
-                <Heading size="md" color="red.0">System Errors - Click for Help</Heading>
+                <Heading size="md" color="red.300">System Errors - Click for Help</Heading>
               </HStack>
             </CardHeader>
             <CardBody>
               <VStack spacing={3} align="stretch">
-                {renderErrorCard("Axis Error", odriveState.axis0?.error, 'axis', 'red')}
-                {renderErrorCard("Motor Error", odriveState.axis0?.motor?.error, 'motor', 'orange')}
-                {renderErrorCard("Encoder Error", odriveState.axis0?.encoder?.error, 'encoder', 'yellow')}
-                {renderErrorCard("Controller Error", odriveState.axis0?.controller?.error, 'controller', 'purple')}
-                {renderErrorCard("Sensorless Error", odriveState.axis0?.sensorless_estimator?.error, 'sensorless', 'blue')}
+                {renderErrorCard("Axis Error", axis0Data?.error, 'axis', 'red')}
+                {renderErrorCard("Motor Error", axis0Data?.motor?.error, 'motor', 'orange')}
+                {renderErrorCard("Encoder Error", axis0Data?.encoder?.error, 'encoder', 'yellow')}
+                {renderErrorCard("Controller Error", axis0Data?.controller?.error, 'controller', 'purple')}
+                {renderErrorCard("Sensorless Error", odriveState.device?.axis0?.sensorless_estimator?.error, 'sensorless', 'blue')}
               </VStack>
             </CardBody>
           </Card>

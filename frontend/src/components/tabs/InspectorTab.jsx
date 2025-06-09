@@ -7,7 +7,6 @@ import {
   Box,
   Card,
   CardBody,
-  CardHeader,
   Heading,
   Alert,
   AlertIcon,
@@ -15,18 +14,12 @@ import {
   useToast,
   Badge,
   Spinner,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
+  Grid,
+  GridItem,
 } from '@chakra-ui/react'
 import { RefreshCw } from 'lucide-react'
 import PropertyTree from '../inspector/PropertyTree'
-import ErrorDisplay from '../inspector/ErrorDisplay'
-import LiveMonitor from '../inspector/LiveMonitor'
-import LiveDataView from '../inspector/LiveDataView'
-import CommandConsole from '../inspector/CommandConsole'
+import LiveCharts from '../inspector/LiveCharts'
 
 const InspectorTab = () => {
   const toast = useToast()
@@ -37,7 +30,7 @@ const InspectorTab = () => {
   const [searchFilter, setSearchFilter] = useState('')
   const [autoRefresh, setAutoRefresh] = useState(false)
   const [refreshRate, setRefreshRate] = useState(1000) // ms
-  const [activeInspectorTab, setActiveInspectorTab] = useState(0)
+  const [selectedProperties, setSelectedProperties] = useState([])
 
   // Use Redux state as primary source, fallback to local state
   const currentOdriveState = Object.keys(odriveState).length > 0 ? odriveState : localOdriveState
@@ -63,17 +56,15 @@ const InspectorTab = () => {
         status: 'error',
         duration: 3000,
       })
+    } finally {
+      setIsLoading(false)
     }
-    setIsLoading(false)
   }, [isConnected, toast])
 
-  // Auto-refresh when enabled
   useEffect(() => {
-    let interval = null
+    let interval
     if (autoRefresh && isConnected) {
-      interval = setInterval(() => {
-        refreshAllData()
-      }, refreshRate)
+      interval = setInterval(refreshAllData, refreshRate)
     }
     return () => {
       if (interval) clearInterval(interval)
@@ -81,16 +72,13 @@ const InspectorTab = () => {
   }, [autoRefresh, isConnected, refreshRate, refreshAllData])
 
   const updateProperty = async (path, value) => {
-    if (!isConnected) return
-
     try {
-      const command = `odrv0.${path} = ${value}`
-      const response = await fetch('/api/odrive/command', {
+      const response = await fetch('/api/odrive/set', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ command })
+        body: JSON.stringify({ path, value })
       })
-
+      
       if (response.ok) {
         toast({
           title: 'Success',
@@ -114,6 +102,16 @@ const InspectorTab = () => {
     }
   }
 
+  const togglePropertyChart = (propertyPath) => {
+    setSelectedProperties(prev => {
+      if (prev.includes(propertyPath)) {
+        return prev.filter(p => p !== propertyPath)
+      } else {
+        return [...prev, propertyPath]
+      }
+    })
+  }
+
   const shouldShowInspector = () => {
     const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development'
     return isDevelopment || isConnected
@@ -132,13 +130,13 @@ const InspectorTab = () => {
 
   return (
     <VStack spacing={6} align="stretch" p={6} h="100%">
-
+      
       <Box>
         <Heading size="lg" color="white" mb={2}>
           ODrive Inspector
         </Heading>
         <Text color="gray.300" mb={4}>
-          Real-time monitoring, debugging, and control of all ODrive properties and states
+          Monitor properties in real-time and create live charts by selecting properties from the tree
         </Text>
       </Box>
 
@@ -172,6 +170,11 @@ const InspectorTab = () => {
             </HStack>
 
             <HStack spacing={4}>
+              {selectedProperties.length > 0 && (
+                <Badge colorScheme="blue">
+                  {selectedProperties.length} properties charted
+                </Badge>
+              )}
               {lastUpdate && (
                 <Text color="gray.400" fontSize="sm">
                   Last updated: {lastUpdate.toLocaleTimeString()}
@@ -185,66 +188,32 @@ const InspectorTab = () => {
         </CardBody>
       </Card>
 
-      {/* Inspector Tabs */}
-      <Card bg="gray.800" variant="elevated" flex="1">
-        <CardBody p={0} h="100%">
-          <Tabs 
-            index={activeInspectorTab} 
-            onChange={setActiveInspectorTab}
-            variant="enclosed" 
-            colorScheme="blue"
-            h="100%"
-            display="flex"
-            flexDirection="column"
-          >
-            <TabList bg="gray.700" borderColor="gray.600">
-              <Tab color="gray.300" _selected={{ color: 'blue.300', borderBottomColor: 'blue.300' }}>
-                Property Tree
-              </Tab>
-              <Tab color="gray.300" _selected={{ color: 'blue.300', borderBottomColor: 'blue.300' }}>
-                Live Monitor
-              </Tab>
-              <Tab color="gray.300" _selected={{ color: 'blue.300', borderBottomColor: 'blue.300' }}>
-                Data Logger
-              </Tab>
-              <Tab color="gray.300" _selected={{ color: 'blue.300', borderBottomColor: 'blue.300' }}>
-                Command Console
-              </Tab>
-            </TabList>
+      {/* Main Content Grid */}
+      <Grid templateColumns="1fr 1fr" gap={6} flex="1" h="100%">
+        
+        {/* Left Side - Property Tree */}
+        <GridItem>
+          <PropertyTree
+            odriveState={currentOdriveState}
+            searchFilter={searchFilter}
+            setSearchFilter={setSearchFilter}
+            updateProperty={updateProperty}
+            isConnected={isConnected}
+            selectedProperties={selectedProperties}
+            togglePropertyChart={togglePropertyChart}
+          />
+        </GridItem>
 
-            <TabPanels flex="1" h="100%">
-              <TabPanel p={4} h="100%">
-                <PropertyTree
-                  odriveState={currentOdriveState}
-                  searchFilter={searchFilter}
-                  setSearchFilter={setSearchFilter}
-                  updateProperty={updateProperty}
-                  isConnected={isConnected}
-                />
-              </TabPanel>
-              
-              <TabPanel p={4} h="100%">
-                <LiveMonitor 
-                  odriveState={currentOdriveState} 
-                  refreshRate={refreshRate}
-                  setRefreshRate={setRefreshRate}
-                />
-              </TabPanel>
-              
-              <TabPanel p={4} h="100%">
-                <LiveDataView 
-                  odriveState={currentOdriveState}
-                  isConnected={isConnected}
-                />
-              </TabPanel>
-              
-              <TabPanel p={4} h="100%">
-                <CommandConsole isConnected={isConnected} />
-              </TabPanel>
-            </TabPanels>
-          </Tabs>
-        </CardBody>
-      </Card>
+        {/* Right Side - Live Charts */}
+        <GridItem>
+          <LiveCharts
+            selectedProperties={selectedProperties}
+            odriveState={currentOdriveState}
+            isConnected={isConnected}
+          />
+        </GridItem>
+
+      </Grid>
     </VStack>
   )
 }
