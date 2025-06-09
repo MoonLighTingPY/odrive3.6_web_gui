@@ -20,6 +20,7 @@ import ConfigurationTab from './components/tabs/ConfigurationTab'
 import DashboardTab from './components/tabs/DashboardTab'
 import InspectorTab from './components/tabs/InspectorTab'
 import PresetsTab from './components/tabs/PresetsTab'
+import CommandConsoleTab from './components/tabs/CommandConsoleTab'
 import { updateOdriveState } from './store/slices/deviceSlice'
 import './App.css'
 
@@ -127,21 +128,21 @@ function App() {
 
               {/* Dashboard Tab */}
               <Tab
-  bg="gray.700"
-  color="gray.300"
-  borderRadius="md"
-  _hover={{ bg: 'gray.800' }}
-  _selected={{
-    bg: 'gray.900',
-    color: 'odrive.300',
-    borderBottom: '3px solid',
-    borderBottomColor: 'odrive.300',
-    borderBottomLeftRadius: '0px',
-    borderBottomRightRadius: '0px',
-  }}
->
-  Dashboard
-</Tab>
+                bg="gray.700"
+                color="gray.300"
+                borderRadius="md"
+                _hover={{ bg: 'gray.800' }}
+                _selected={{
+                  bg: 'gray.900',
+                  color: 'odrive.300',
+                  borderBottom: '3px solid',
+                  borderBottomColor: 'odrive.300',
+                  borderBottomLeftRadius: '0px',
+                  borderBottomRightRadius: '0px',
+                }}
+              >
+                Dashboard
+              </Tab>
 
               {/* Inspector Tab */}
               <Tab
@@ -179,6 +180,24 @@ function App() {
                 Presets
               </Tab>
 
+              { /* Command Console Tab */}
+              <Tab
+                bg="gray.700"
+                color="gray.300"
+                borderRadius="md"
+                _hover={{ bg: 'gray.800' }}
+                _selected={{
+                  bg: 'gray.900',
+                  color: 'odrive.300',
+                  borderBottom: '3px solid',
+                  borderBottomColor: 'odrive.300',
+                  borderBottomLeftRadius: '0px',
+                  borderBottomRightRadius: '0px',
+                }}
+              >
+                Command Console
+              </Tab>
+
               <Spacer />
               <HStack spacing={4} pr={4}>
                 {isConnected && (
@@ -205,7 +224,12 @@ function App() {
               <TabPanel p={0} h="100%">
                 <PresetsTab />
               </TabPanel>
+
+              <TabPanel p={0} h="100%">
+                <CommandConsoleTab />
+              </TabPanel>
             </TabPanels>
+
           </Tabs>
         </Box>
       </Flex>
