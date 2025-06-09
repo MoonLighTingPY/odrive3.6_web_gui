@@ -1,214 +1,110 @@
 @echo off
+setlocal enabledelayedexpansion
+
 echo ============================================
-echo ODrive v0.5.6 Web GUI Build Script
+echo ODrive v0.5.6 Web GUI Build Script (Optimized)
 echo ============================================
 
-REM Check if we're in the correct directory
+REM Quick directory check
 if not exist "frontend" (
-    echo Error: frontend directory not found!
-    echo Please run this script from the project root directory.
-    pause
-    exit /b 1
+    echo Error: Run from project root directory.
+    pause & exit /b 1
 )
 
-if not exist "backend" (
-    echo Error: backend directory not found!
-    echo Please run this script from the project root directory.
-    pause
-    exit /b 1
-)
-
-echo.
 echo Choose build option:
-echo [1] Full install (build frontend + install dependencies + build executable)
-echo [2] Build only (skip frontend build and dependency installation)
+echo [1] Full build (clean + dependencies + build)
+echo [2] Quick build (skip dependencies, reuse cache)
+echo [3] Dependencies only
 echo.
-set /p choice="Enter your choice (1 or 2): "
+set /p choice="Enter choice (1-3): "
 
-if "%choice%"=="1" goto full_install
-if "%choice%"=="2" goto build_only
-echo Invalid choice. Please run the script again and choose 1 or 2.
-pause
-exit /b 1
+if "%choice%"=="3" goto install_deps_only
+if "%choice%"=="2" goto quick_build
+if "%choice%"=="1" goto full_build
+echo Invalid choice.
+pause & exit /b 1
 
-:full_install
-echo.
-echo [1/6] Stopping any running ODrive GUI processes...
-taskkill /f /im app.exe >nul 2>&1
-taskkill /f /im odrive_v36_gui.exe >nul 2>&1
-taskkill /f /im ODrive_GUI_Tray.exe >nul 2>&1
-if %errorlevel% equ 0 (
-    echo ✓ Stopped existing processes
-) else (
-    echo ✓ No existing processes found
-)
-
-echo.
-echo [2/6] Installing frontend dependencies...
-cd frontend
-call npm install
-if %errorlevel% neq 0 (
-    echo Error: Failed to install frontend dependencies!
-    cd ..
-    pause
-    exit /b 1
-)
-
-echo.
-echo [3/6] Building frontend production bundle...
-call npm run build
-if %errorlevel% neq 0 (
-    echo Error: Failed to build frontend!
-    cd ..
-    pause
-    exit /b 1
-)
-
-cd ..
-
-echo.
-echo [4/6] Installing backend dependencies...
-cd backend
-echo Installing/updating backend dependencies...
-python -m pip install -r requirements.txt
-if %errorlevel% neq 0 (
-    echo Error: Failed to install backend dependencies!
-    cd ..
-    pause
-    exit /b 1
-)
-
-echo.
-echo Installing tray app dependencies...
-python -m pip install pystray Pillow
-if %errorlevel% neq 0 (
-    echo Error: Failed to install tray dependencies!
-    cd ..
-    pause
-    exit /b 1
-)
-
-echo.
-echo [5/6] Installing PyInstaller...
-echo Checking if PyInstaller is installed...
-python -m pip show pyinstaller >nul 2>&1
-if %errorlevel% equ 0 (
-    echo ✓ PyInstaller is already installed
-) else (
-    echo Installing PyInstaller...
-    python -m pip install pyinstaller
-    if %errorlevel% neq 0 (
-        echo Error: Failed to install PyInstaller!
-        cd ..
-        pause
-        exit /b 1
-    )
-)
-
+:full_build
+echo [FULL BUILD] Starting...
+call :stop_processes
+call :build_frontend
+call :install_backend_deps
 goto build_executable
 
-:build_only
-echo.
-echo [1/2] Stopping any running ODrive GUI processes...
-taskkill /f /im app.exe >nul 2>&1
-taskkill /f /im odrive_v36_gui.exe >nul 2>&1
-taskkill /f /im ODrive_GUI_Tray.exe >nul 2>&1
-if %errorlevel% equ 0 (
-    echo ✓ Stopped existing processes
+:quick_build
+echo [QUICK BUILD] Skipping dependencies...
+call :stop_processes
+REM Skip frontend build if dist exists and is recent
+if exist "frontend\dist" (
+    echo ✓ Using existing frontend build
 ) else (
-    echo ✓ No existing processes found
+    echo Frontend build missing, building...
+    call :build_frontend
 )
+goto build_executable
 
-echo.
-echo Skipping frontend build and dependency installation...
+:install_deps_only
+echo [DEPS ONLY] Installing dependencies...
+call :install_backend_deps
+echo Dependencies installed.
+pause & exit /b 0
+
+:stop_processes
+echo Stopping existing processes...
+taskkill /f /im ODrive_GUI_Tray.exe >nul 2>&1
+exit /b 0
+
+:build_frontend
+echo Building frontend...
+cd frontend
+call npm ci --silent 2>nul || call npm install --silent
+if !errorlevel! neq 0 (echo Frontend deps failed & pause & exit /b 1)
+call npm run build --silent
+if !errorlevel! neq 0 (echo Frontend build failed & pause & exit /b 1)
+cd ..
+exit /b 0
+
+:install_backend_deps
+echo Installing backend dependencies...
 cd backend
+python -m pip install --quiet --no-warn-script-location -r requirements.txt
+if !errorlevel! neq 0 (echo Backend deps failed & pause & exit /b 1)
+cd ..
+exit /b 0
 
 :build_executable
-echo.
-echo [6/6] Building ODrive GUI Tray Application...
-echo Preparing servo.ico for tray app...
+cd backend
+echo Building executable...
 
-REM Always ensure servo.ico is available for tray app
-if exist "..\frontend\public\servo.ico" (
-    copy "..\frontend\public\servo.ico" "servo.ico" /Y >nul 2>&1
-    echo ✓ Copied servo.ico to backend directory
-) else (
-    echo ⚠️ Warning: servo.ico not found in frontend\public\
+REM Copy icon if needed
+if exist "..\frontend\public\servo.ico" copy "..\frontend\public\servo.ico" "servo.ico" /Y >nul
+
+REM Clean only if full build
+if "%choice%"=="1" (
+    if exist "dist" rmdir /s /q dist >nul 2>&1
+    if exist "build" rmdir /s /q build >nul 2>&1
+    echo ✓ Cleaned build cache
 )
 
-REM Verify the icon exists
-if exist "servo.ico" (
-    echo ✓ servo.ico ready for tray app
-    for %%A in (servo.ico) do echo    Size: %%~zA bytes
-) else (
-    echo ⚠️ Warning: No servo.ico found, tray will use fallback icon
+echo Running PyInstaller...
+pyinstaller tray_app.spec --noconfirm %~1
+if !errorlevel! neq 0 (
+    echo Build failed!
+    pause & exit /b 1
 )
 
-if exist "dist" rmdir /s /q dist
-if exist "build" rmdir /s /q build
-
-echo.
-echo Building System Tray Application...
-echo Running PyInstaller with tray_app.spec...
-pyinstaller tray_app.spec --clean --noconfirm
-set PYINSTALLER_EXIT_CODE=%errorlevel%
-
-echo PyInstaller exit code: %PYINSTALLER_EXIT_CODE%
-
-if %PYINSTALLER_EXIT_CODE% neq 0 (
-    echo Error: PyInstaller build failed with exit code %PYINSTALLER_EXIT_CODE%!
-    echo.
-    echo Troubleshooting steps:
-    echo 1. Make sure PyInstaller is installed: pip install pyinstaller
-    echo 2. Check that tray_app.spec file exists in backend directory
-    echo 3. Verify all dependencies are installed: pystray, Pillow
-    echo 4. Check for any error messages above
-    cd ..
-    pause
-    exit /b 1
-)
-
-REM Check if the tray executable was actually created
 if not exist "dist\ODrive_GUI_Tray.exe" (
-    echo Error: Tray executable was not created!
-    echo Expected location: backend\dist\ODrive_GUI_Tray.exe
-    echo.
-    echo Please check the PyInstaller output above for errors.
-    cd ..
-    pause
-    exit /b 1
+    echo Executable not created!
+    pause & exit /b 1
 )
 
-echo ✓ Tray executable created successfully
-
-REM Go back to project root
 cd ..
-
 echo.
 echo ============================================
 echo BUILD COMPLETED SUCCESSFULLY!
 echo ============================================
+echo Executable: backend\dist\ODrive_GUI_Tray.exe
+for %%A in ("backend\dist\ODrive_GUI_Tray.exe") do echo Size: %%~zA bytes
 echo.
-echo 🎉 ODrive GUI Tray Application Built Successfully!
-echo.
-echo Executable location: backend\dist\ODrive_GUI_Tray.exe
-echo File size: 
-for %%A in ("backend\dist\ODrive_GUI_Tray.exe") do echo    %%~zA bytes
-echo.
-echo 🚀 How to use:
-echo   1. Run: backend\dist\ODrive_GUI_Tray.exe
-echo   2. Look for the ODrive icon in your system tray
-echo   3. Left click the tray icon to open the GUI
-echo   4. Right click for menu options (Open GUI / Exit)
-echo.
-echo ✨ Features:
-echo   • No console window - clean professional appearance
-echo   • System tray icon with your servo.ico
-echo   • Auto-opens GUI in browser on startup
-echo   • Right-click menu for easy access
-echo   • Clean shutdown and resource management
-echo.
-echo The GUI will automatically open in your browser when started.
-echo ============================================
-
+echo Quick start: backend\dist\ODrive_GUI_Tray.exe
 pause

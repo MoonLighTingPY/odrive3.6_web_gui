@@ -17,7 +17,21 @@ import webbrowser
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-app = Flask(__name__)
+# Handle static files for PyInstaller
+if hasattr(sys, '_MEIPASS'):
+    # Running as PyInstaller bundle
+    static_folder = os.path.join(sys._MEIPASS, 'static')
+    template_folder = os.path.join(sys._MEIPASS, 'static')
+else:
+    # Running in development
+    static_folder = '../frontend/dist'
+    template_folder = '../frontend/dist'
+
+app = Flask(__name__, 
+            static_folder=static_folder,
+            static_url_path='/static',
+            template_folder=template_folder)
+
 CORS(app, origins=["http://localhost:3000"])
 last_api_call = defaultdict(float)
 API_RATE_LIMIT = 0.1  # Minimum 100ms between same API calls
@@ -57,32 +71,35 @@ def get_static_folder():
 
 # Add these routes before the health check endpoint
 @app.route('/')
-def serve_frontend():
+def index():
     """Serve the main frontend application"""
     try:
-        static_folder = get_static_folder()
-        return send_file(os.path.join(static_folder, 'index.html'))
-    except Exception as e:
-        logger.error(f"Error serving frontend: {e}")
-        return jsonify({'error': 'Frontend not available'}), 404
-
-@app.route('/<path:path>')
-def serve_static(path):
-    """Serve static frontend files"""
-    try:
-        static_folder = get_static_folder()
-        # Check if the requested file exists
-        if os.path.exists(os.path.join(static_folder, path)):
-            return send_from_directory(static_folder, path)
+        if hasattr(sys, '_MEIPASS'):
+            # Serve from bundled static files
+            return send_from_directory(app.static_folder, 'index.html')
         else:
-            # For SPA routing, return index.html for non-API routes
-            if not path.startswith('api/'):
-                return send_file(os.path.join(static_folder, 'index.html'))
-            else:
-                return jsonify({'error': 'Not found'}), 404
+            # Development mode
+            return send_from_directory('../frontend/dist', 'index.html')
     except Exception as e:
-        logger.error(f"Error serving static file {path}: {e}")
-        return jsonify({'error': 'File not found'}), 404
+        return f"Error serving index: {e}", 500
+
+# Catch-all route for React Router
+@app.route('/<path:path>')
+def catch_all(path):
+    try:
+        # First try to serve the requested file
+        if hasattr(sys, '_MEIPASS'):
+            file_path = os.path.join(app.static_folder, path)
+        else:
+            file_path = os.path.join('../frontend/dist', path)
+            
+        if os.path.exists(file_path):
+            return send_from_directory(os.path.dirname(file_path), os.path.basename(file_path))
+        else:
+            # Fallback to index.html for React Router
+            return index()
+    except Exception as e:
+        return f"Error serving file: {e}", 500
 
 
 class ODriveManager:

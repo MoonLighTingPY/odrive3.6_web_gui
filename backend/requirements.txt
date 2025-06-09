@@ -4,3 +4,4 @@ odrive==0.6.10.post0
 pystray
 Pillow
 requests
+pyinstaller
