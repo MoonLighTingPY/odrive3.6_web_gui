@@ -27,26 +27,41 @@ class ODriveTrayApp:
         self.icon = None
         self.backend_started = False
         self.gui_opened = False
+        self.backend_starting = False
+        self.status = "Starting..."
         logger.info("ODrive Tray App initialized")
+
+    def update_status(self, new_status):
+        """Update the status and refresh the menu"""
+        self.status = new_status
+        logger.info(f"Status updated: {new_status}")
+        if self.icon:
+            # Update the menu and tooltip to reflect new status
+            self.icon.menu = self.create_menu()
+            self.icon.title = f"ODrive GUI - {self.status}"
 
     def start_backend(self):
         """Start the Flask backend in a separate thread - non-blocking"""
         try:
+            self.backend_starting = True
+            self.update_status("Starting Backend...")
             logger.info("Starting Flask backend...")
             
             def run_backend():
                 try:
                     # Import Flask modules in the background thread to avoid blocking UI
+                    self.update_status("Loading Modules...")
                     import app
-                    import start_backend
                     logger.info("Flask app imported successfully")
                     
                     # Disable auto-browser opening in the backend
                     os.environ['ODRIVE_NO_AUTO_BROWSER'] = '1'
                     
+                    self.update_status("Backend Starting...")
                     app.app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
                 except Exception as e:
                     logger.error(f"Error running Flask backend: {e}")
+                    self.update_status("Backend Failed")
             
             self.backend_thread = threading.Thread(target=run_backend, daemon=True)
             self.backend_thread.start()
@@ -57,6 +72,7 @@ class ODriveTrayApp:
             
         except Exception as e:
             logger.error(f"Failed to start backend: {e}")
+            self.update_status("Start Failed")
             return False
 
     def check_backend_ready(self):
@@ -70,6 +86,8 @@ class ODriveTrayApp:
                     if response.status_code == 200:
                         logger.info(f"Backend ready after {attempt + 1} seconds")
                         self.backend_started = True
+                        self.backend_starting = False
+                        self.update_status("Ready")
                         
                         # Auto-open GUI after backend is ready
                         if not self.gui_opened:
@@ -80,9 +98,18 @@ class ODriveTrayApp:
                 except:
                     pass  # Continue waiting
                 
+                # Update status during wait
+                if attempt < 10:
+                    self.update_status(f"Backend Starting... ({attempt + 1}s)")
+                elif attempt < 20:
+                    self.update_status(f"Loading ODrive... ({attempt + 1}s)")
+                else:
+                    self.update_status(f"Almost Ready... ({attempt + 1}s)")
+                
                 time.sleep(1)
             
             logger.warning("Backend did not become ready within 30 seconds")
+            self.update_status("Backend Timeout")
         
         # Check readiness in background thread
         threading.Thread(target=check_ready, daemon=True).start()
@@ -92,18 +119,36 @@ class ODriveTrayApp:
         try:
             if not self.backend_started:
                 logger.warning("Backend not ready yet, please wait...")
+                self.update_status("Backend Not Ready")
                 return
                     
             url = "http://localhost:5000"
             logger.info(f"Opening GUI at {url}")
             webbrowser.open(url)
             self.gui_opened = True
+            self.update_status("GUI Opened")
         except Exception as e:
             logger.error(f"Failed to open GUI: {e}")
+            self.update_status("GUI Failed")
+
+    def restart_backend(self, icon=None, item=None):
+        """Restart the backend"""
+        try:
+            self.update_status("Restarting...")
+            self.backend_started = False
+            self.gui_opened = False
+            # Note: The existing backend thread will continue running
+            # This starts a new attempt - in a real implementation you'd want to stop the old one
+            self.start_backend()
+            self.check_backend_ready()
+        except Exception as e:
+            logger.error(f"Failed to restart backend: {e}")
+            self.update_status("Restart Failed")
 
     def quit_app(self, icon=None, item=None):
         """Quit the application"""
         logger.info("Shutting down ODrive Tray App")
+        self.update_status("Shutting Down...")
         if self.icon:
             self.icon.stop()
 
@@ -136,6 +181,19 @@ class ODriveTrayApp:
             # Fallback to a simple colored square
             return Image.new('RGB', (32, 32), color='#E74C3C')
 
+    def create_menu(self):
+        """Create the tray menu without status line"""
+        return pystray.Menu(
+            item('Open ODrive GUI', 
+                 self.open_gui, 
+                 enabled=self.backend_started and not self.backend_starting),
+            item('Restart Backend', 
+                 self.restart_backend, 
+                 enabled=not self.backend_starting),
+            pystray.Menu.SEPARATOR,
+            item('Exit', self.quit_app)
+        )
+
     def run(self):
         """Run the tray application - optimized startup"""
         try:
@@ -144,14 +202,13 @@ class ODriveTrayApp:
             # Create the tray icon immediately (don't wait for backend)
             image = self.create_image()
             
-            # Create menu with initial disabled state
-            def create_menu():
-                return pystray.Menu(
-                    item('Open ODrive GUI', self.open_gui, enabled=lambda item: self.backend_started),
-                    item('Exit', self.quit_app)
-                )
-            
-            self.icon = pystray.Icon("ODrive GUI", image, menu=create_menu())
+            # Create initial menu with tooltip
+            self.icon = pystray.Icon(
+                "ODrive GUI", 
+                image, 
+                menu=self.create_menu(),
+                title=f"ODrive GUI - {self.status}"  # Set initial tooltip
+            )
             
             # Start backend in background immediately
             self.start_backend()
