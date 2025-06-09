@@ -1,9 +1,16 @@
 # -*- mode: python ; coding: utf-8 -*-
 import os
 import sys
+from PyInstaller.utils.hooks import collect_all, collect_submodules
 
-# Minimal ODrive path collection - only get essential files
-def get_odrive_essentials():
+# Collect all necessary modules
+pystray_datas, pystray_binaries, pystray_hiddenimports = collect_all('pystray')
+pil_datas, pil_binaries, pil_hiddenimports = collect_all('PIL')
+flask_datas, flask_binaries, flask_hiddenimports = collect_all('flask')
+odrive_submodules = collect_submodules('odrive')
+
+# ODrive library binaries and data collection
+def get_odrive_paths():
     try:
         import odrive
         odrive_path = os.path.dirname(odrive.__file__)
@@ -11,65 +18,94 @@ def get_odrive_essentials():
         binaries = []
         datas = []
         
-        # Only collect essential DLLs for Windows
+        # Add ODrive DLLs for Windows - CRITICAL FIX
         if sys.platform == 'win32':
+            # Look for the lib directory in odrive package
             lib_path = os.path.join(odrive_path, 'lib')
             if os.path.exists(lib_path):
-                for file in ['libusb-1.0.dll', 'odrive.dll']:  # Only essential DLLs
-                    dll_path = os.path.join(lib_path, file)
-                    if os.path.exists(dll_path):
-                        binaries.append((dll_path, 'odrive/lib'))
+                for file in os.listdir(lib_path):
+                    if file.endswith('.dll'):
+                        source_path = os.path.join(lib_path, file)
+                        binaries.append((source_path, 'odrive/lib'))
+                        print(f"Adding ODrive DLL: {source_path} -> odrive/lib")
+            
+            # Also check pyodrive directory
+            dll_path = os.path.join(odrive_path, 'pyodrive')
+            if os.path.exists(dll_path):
+                for file in os.listdir(dll_path):
+                    if file.endswith('.dll'):
+                        binaries.append((os.path.join(dll_path, file), 'odrive/pyodrive'))
         
-        # Only essential config files
-        for config_file in ['odrive_config.json']:
-            config_path = os.path.join(odrive_path, config_file)
-            if os.path.exists(config_path):
-                datas.append((config_path, 'odrive'))
+        # Add ODrive data files
+        for root, dirs, files in os.walk(odrive_path):
+            for file in files:
+                if file.endswith(('.json', '.yaml', '.yml')):
+                    file_path = os.path.join(root, file)
+                    arc_path = os.path.relpath(file_path, os.path.dirname(odrive_path))
+                    datas.append((file_path, os.path.dirname(arc_path)))
         
         return binaries, datas
     except ImportError:
         return [], []
 
-odrive_binaries, odrive_datas = get_odrive_essentials()
+odrive_binaries, odrive_datas = get_odrive_paths()
 
-# Icon file detection - simplified
+# Icon file path
 icon_file = None
-for icon_path in ['servo.ico', '../frontend/public/servo.ico']:
-    if os.path.exists(icon_path):
-        icon_file = os.path.abspath(icon_path)
+possible_icons = [
+    'servo.ico',
+    'servo.png',
+    '../frontend/public/servo.ico',
+    '../frontend/public/servo.png'
+]
+
+for icon_path in possible_icons:
+    full_path = os.path.abspath(icon_path)
+    if os.path.exists(full_path):
+        icon_file = full_path
         break
 
-# Minimal hidden imports - only what's actually needed
-minimal_hiddenimports = [
+if not icon_file:
+    print("Warning: No icon file found")
+
+# Combine all binaries and datas
+all_binaries = odrive_binaries + pystray_binaries + pil_binaries + flask_binaries
+all_datas = [
+    ('../frontend/dist', 'static'),
+] + odrive_datas + pystray_datas + pil_datas + flask_datas + ([
+    (icon_file, '.'),
+] if icon_file else [])
+
+# Combine all hidden imports
+all_hiddenimports = [
     'odrive',
+    'odrive.utils',
+    'odrive.enums',
     'flask',
     'flask_cors',
-    'PIL',
-    'pystray',
-    'requests'
-]
+    'app',
+    'start_backend',
+    'threading',
+    'webbrowser',
+    'json',
+    'time',
+    'logging',
+    'collections',
+    'os',
+    'sys',
+    'requests',  # Add requests for backend testing
+] + pystray_hiddenimports + pil_hiddenimports + flask_hiddenimports + odrive_submodules
 
 a = Analysis(
     ['tray_app.py'],
     pathex=[],
-    binaries=odrive_binaries,
-    datas=[
-        ('../frontend/dist', 'static'),
-    ] + odrive_datas + ([
-        (icon_file, '.'),
-    ] if icon_file else []),
-    hiddenimports=minimal_hiddenimports,
+    binaries=all_binaries,
+    datas=all_datas,
+    hiddenimports=all_hiddenimports,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[
-        'matplotlib',  # Exclude heavy unused packages
-        'numpy',
-        'scipy',
-        'tkinter',
-        'PyQt5',
-        'PyQt6'
-    ],
+    excludes=[],
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=None,
@@ -89,10 +125,10 @@ exe = EXE(
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
-    upx=False,  # Disable UPX for faster builds
+    upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,
+    console=False,  # Back to False for production
     windowed=True,
     disable_windowed_traceback=False,
     argv_emulation=False,

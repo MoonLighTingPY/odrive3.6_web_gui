@@ -51,67 +51,31 @@ class ODriveTrayApp:
                     # Disable auto-browser opening in the backend
                     os.environ['ODRIVE_NO_AUTO_BROWSER'] = '1'
                     
-                    # For PyInstaller compatibility, we need to serve static files differently
-                    if hasattr(sys, '_MEIPASS'):
-                        # Running as PyInstaller bundle
-                        static_folder = os.path.join(sys._MEIPASS, 'static')
-                        logger.info(f"PyInstaller detected, using static folder: {static_folder}")
-                        
-                        # Update Flask app to use the correct static folder
-                        flask_app.static_folder = static_folder
-                        flask_app.static_url_path = '/static'
-                    
-                    # Configure Flask for production when bundled
-                    flask_app.config['ENV'] = 'production'
-                    flask_app.config['DEBUG'] = False
-                    
-                    logger.info("Starting Flask server on http://localhost:5000")
-                    flask_app.run(host='127.0.0.1', port=5000, debug=False, use_reloader=False, threaded=True)
-                    
+                    flask_app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
                 except Exception as e:
                     logger.error(f"Error running Flask backend: {e}")
-                    import traceback
-                    logger.error(traceback.format_exc())
                     
             self.backend_thread = threading.Thread(target=run_backend, daemon=True)
             self.backend_thread.start()
             
-            # Wait longer for backend to start
-            logger.info("Waiting for backend to start...")
-            time.sleep(5)
+            # Wait a moment for backend to start
+            time.sleep(3)
             
             # Test if backend is responding
             try:
                 import requests
-                
-                # First check if the main page loads
-                logger.info("Testing backend connection...")
-                response = requests.get('http://localhost:5000/', timeout=10)
+                response = requests.get('http://localhost:5000/api/odrive/scan', timeout=5)
                 if response.status_code == 200:
-                    logger.info("Backend started successfully and serving main page")
+                    logger.info("Backend started successfully and responding")
                     self.backend_started = True
                     return True
                 else:
-                    logger.error(f"Backend main page responding with status code: {response.status_code}")
-                    
-                # Fallback: check API endpoint
-                response = requests.get('http://localhost:5000/api/odrive/scan', timeout=10)
-                if response.status_code in [200, 404, 500]:  # Any response means Flask is running
-                    logger.info("Backend started successfully (API responding)")
-                    self.backend_started = True
-                    return True
-                else:
-                    logger.error(f"Backend API responding with status code: {response.status_code}")
-                    
-            except requests.exceptions.ConnectionError:
-                logger.error("Backend not responding - connection refused")
+                    logger.error(f"Backend responding with status code: {response.status_code}")
             except Exception as e:
-                logger.error(f"Backend connection test failed: {e}")
+                logger.error(f"Backend not responding: {e}")
                 
         except Exception as e:
             logger.error(f"Failed to start backend: {e}")
-            import traceback
-            logger.error(traceback.format_exc())
             
         return False
     
