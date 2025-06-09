@@ -46,8 +46,10 @@ const deviceSlice = createSlice({
       state.reconnecting = action.payload
     },
     updateOdriveState: (state, action) => {
+      // Completely replace the state to prevent partial updates causing flicker
       state.odriveState = action.payload
       state.lastUpdateTime = Date.now()
+      
       // If we successfully got state, connection is restored
       if (Object.keys(action.payload).length > 0 && state.connectionLost) {
         state.connectionLost = false

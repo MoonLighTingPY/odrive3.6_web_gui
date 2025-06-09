@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { useSelector } from 'react-redux'
 import {
   VStack,
@@ -13,7 +13,6 @@ import {
   Button,
   useToast,
   Badge,
-  Spinner,
   Grid,
   GridItem,
 } from '@chakra-ui/react'
@@ -24,52 +23,14 @@ import LiveCharts from '../inspector/LiveCharts'
 const InspectorTab = () => {
   const toast = useToast()
   const { isConnected, odriveState } = useSelector(state => state.device)
-  const [localOdriveState, setLocalOdriveState] = useState({})
-  const [isLoading, setIsLoading] = useState(false)
-  const [lastUpdate, setLastUpdate] = useState(null)
   const [searchFilter, setSearchFilter] = useState('')
-  const [autoRefresh, setAutoRefresh] = useState(false)
-  const [refreshRate, setRefreshRate] = useState(1000) // ms
   const [selectedProperties, setSelectedProperties] = useState([])
 
-  // Use Redux state as primary source, fallback to local state
-  const currentOdriveState = Object.keys(odriveState).length > 0 ? odriveState : localOdriveState
-
-  // Auto-refresh when enabled
-  const refreshAllData = useCallback(async () => {
-    if (!isConnected) return
-
-    setIsLoading(true)
-    try {
-      const response = await fetch('/api/odrive/state')
-      if (response.ok) {
-        const data = await response.json()
-        setLocalOdriveState(data)
-        setLastUpdate(new Date())
-      } else {
-        throw new Error('Failed to read properties')
-      }
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: `Failed to refresh data: ${error.message}`,
-        status: 'error',
-        duration: 3000,
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }, [isConnected, toast])
-
-  useEffect(() => {
-    let interval
-    if (autoRefresh && isConnected) {
-      interval = setInterval(refreshAllData, refreshRate)
-    }
-    return () => {
-      if (interval) clearInterval(interval)
-    }
-  }, [autoRefresh, isConnected, refreshRate, refreshAllData])
+  // Simple refresh that just updates timestamp - no API calls
+  const refreshAllData = useCallback(() => {
+    // Just update timestamp - data comes from DeviceList polling
+    console.log('Manual refresh triggered - using live data from DeviceList')
+  }, [])
 
   const updateProperty = async (path, value) => {
     try {
@@ -86,8 +47,6 @@ const InspectorTab = () => {
           status: 'success',
           duration: 2000,
         })
-        // Refresh data to show the change
-        setTimeout(() => refreshAllData(), 100)
       } else {
         const error = await response.json()
         throw new Error(error.error || 'Update failed')
@@ -136,7 +95,7 @@ const InspectorTab = () => {
           ODrive Inspector
         </Heading>
         <Text color="gray.300" mb={4}>
-          Monitor properties in real-time and create live charts by selecting properties from the tree
+          Monitor properties in real-time using live data from connected ODrive
         </Text>
       </Box>
 
@@ -146,27 +105,17 @@ const InspectorTab = () => {
           <HStack justify="space-between" wrap="wrap" spacing={4}>
             <HStack spacing={4}>
               <Button
-                leftIcon={isLoading ? <Spinner size="sm" /> : <RefreshCw size={16} />}
+                leftIcon={<RefreshCw size={16} />}
                 onClick={refreshAllData}
                 isDisabled={!isConnected}
-                isLoading={isLoading}
                 colorScheme="blue"
               >
-                Refresh All
+                Refresh View
               </Button>
               
-              <HStack>
-                <Text color="gray.300" fontSize="sm">Auto-refresh:</Text>
-                <Button
-                  size="sm"
-                  variant={autoRefresh ? "solid" : "outline"}
-                  colorScheme="green"
-                  onClick={() => setAutoRefresh(!autoRefresh)}
-                  isDisabled={!isConnected}
-                >
-                  {autoRefresh ? 'ON' : 'OFF'}
-                </Button>
-              </HStack>
+              <Text color="gray.300" fontSize="sm">
+                Live data from DeviceList (1Hz)
+              </Text>
             </HStack>
 
             <HStack spacing={4}>
@@ -175,13 +124,8 @@ const InspectorTab = () => {
                   {selectedProperties.length} properties charted
                 </Badge>
               )}
-              {lastUpdate && (
-                <Text color="gray.400" fontSize="sm">
-                  Last updated: {lastUpdate.toLocaleTimeString()}
-                </Text>
-              )}
               <Badge colorScheme={isConnected ? 'green' : 'red'}>
-                {isConnected ? 'Connected' : 'Disconnected'}
+                {isConnected ? 'Live Data' : 'Disconnected'}
               </Badge>
             </HStack>
           </HStack>
@@ -194,7 +138,7 @@ const InspectorTab = () => {
         {/* Left Side - Property Tree */}
         <GridItem>
           <PropertyTree
-            odriveState={currentOdriveState}
+            odriveState={odriveState}
             searchFilter={searchFilter}
             setSearchFilter={setSearchFilter}
             updateProperty={updateProperty}
@@ -208,7 +152,7 @@ const InspectorTab = () => {
         <GridItem>
           <LiveCharts
             selectedProperties={selectedProperties}
-            odriveState={currentOdriveState}
+            odriveState={odriveState}
             isConnected={isConnected}
           />
         </GridItem>

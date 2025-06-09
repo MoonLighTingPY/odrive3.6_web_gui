@@ -1255,93 +1255,74 @@ def health_check():
 
 @app.route('/api/odrive/config/batch', methods=['POST'])
 def get_config_batch():
-    """Get multiple configuration values in a single request"""
+    """Get multiple configuration values from telemetry data instead of individual calls"""
     try:
         data = request.get_json()
         if not data:
-            logger.error("No JSON data received in batch request")
             return jsonify({'error': 'No JSON data provided'}), 400
             
         config_paths = data.get('paths', [])
-        logger.info(f"Batch request for {len(config_paths)} paths: {config_paths[:5]}...")  # Log first 5 paths
         
         if not config_paths:
             return jsonify({'error': 'No configuration paths provided'}), 400
             
-        if not odrive_manager.current_device:
+        if not odrive_manager.is_connected():
             return jsonify({'error': 'No ODrive device connected'}), 400
-            
+        
+        # Get data from telemetry instead of individual API calls
+        telemetry_data = get_high_frequency_telemetry(odrive_manager.odrv)
+        serializable_data = sanitize_for_json(telemetry_data)
+        
         results = {}
-        successful_reads = 0
         
-        for i, path in enumerate(config_paths):
+        # Extract requested paths from telemetry data
+        for path in config_paths:
             try:
-                logger.debug(f"Reading path {i+1}/{len(config_paths)}: {path}")
-                result = odrive_manager.execute_command(path)
+                # Convert device.config.something to device/config/something for path traversal
+                normalized_path = path.replace('device.', '').split('.')
                 
-                if 'error' not in result:
-                    results[path] = result.get('result')
-                    successful_reads += 1
-                else:
-                    results[path] = {'error': result['error']}
-                    logger.warning(f"Error reading {path}: {result['error']}")
-                    
+                current = serializable_data.get('device', {})
+                for part in normalized_path:
+                    if isinstance(current, dict) and part in current:
+                        current = current[part]
+                    else:
+                        current = None
+                        break
+                
+                results[path] = current
+                
             except Exception as e:
-                error_msg = str(e)
-                results[path] = {'error': error_msg}
-                logger.error(f"Exception reading {path}: {error_msg}")
+                results[path] = {'error': str(e)}
         
-        logger.info(f"Batch request completed: {successful_reads}/{len(config_paths)} successful")
         return jsonify({'results': results})
         
     except Exception as e:
         logger.error(f"Error in get_config_batch: {e}")
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
-# Update your /api/odrive/telemetry endpoint
-# Update your telemetry endpoints:
+@app.route('/api/odrive/state', methods=['GET'])
+def get_device_state():
+    # Redirect to telemetry endpoint to prevent duplicated calls
+    logger.warning("State endpoint called - redirecting to telemetry")
+    return get_telemetry()  # Changed from get_config_batch to get_telemetry
 
+# Also add the telemetry endpoint if it's missing:
 @app.route('/api/odrive/telemetry', methods=['GET'])
 def get_telemetry():
     try:
         if not odrive_manager.is_connected():
             return jsonify({"error": "No ODrive connected"}), 404
         
-        # Use the new high-frequency telemetry function
+        # Use the telemetry function to get real-time data
         telemetry_data = get_high_frequency_telemetry(odrive_manager.odrv)
         
         # Sanitize data to handle Infinity, NaN, and other problematic values
         serializable_data = sanitize_for_json(telemetry_data)
         
-        # Test JSON serialization before returning
-        try:
-            json.dumps(serializable_data)
-        except (TypeError, ValueError) as e:
-            logger.error(f"Failed to serialize telemetry data after sanitization: {e}")
-            return jsonify({"error": "Data serialization failed"}), 500
-        
         return jsonify(serializable_data)
         
     except Exception as e:
         logger.error(f"Error getting telemetry: {e}")
-        return jsonify({"error": str(e)}), 500
-
-@app.route('/api/odrive/state', methods=['GET'])
-def get_device_state():
-    try:
-        if not odrive_manager.is_connected():
-            return jsonify({"error": "No ODrive connected"}), 404
-        
-        # For state endpoint, get full configuration data
-        state_data = get_configuration_data(odrive_manager.odrv)
-        
-        # Sanitize data to handle Infinity, NaN, and other problematic values
-        serializable_data = sanitize_for_json(state_data)
-        
-        return jsonify(serializable_data)
-        
-    except Exception as e:
-        logger.error(f"Error getting device state: {e}")
         return jsonify({"error": str(e)}), 500
 
 # Add a new endpoint for complete device snapshot
@@ -1362,7 +1343,7 @@ def get_full_state():
         logger.error(f"Error getting full state: {e}")
         return jsonify({"error": str(e)}), 500
     
-    
+
 if __name__ == '__main__':
     print("🚀 Starting ODrive GUI Backend...")
     
