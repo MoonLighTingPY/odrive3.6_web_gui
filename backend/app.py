@@ -1282,6 +1282,8 @@ def get_config_batch():
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
 # Update your /api/odrive/telemetry endpoint
+# Update your telemetry endpoints:
+
 @app.route('/api/odrive/telemetry', methods=['GET'])
 def get_telemetry():
     try:
@@ -1291,12 +1293,27 @@ def get_telemetry():
         # Use the new high-frequency telemetry function
         telemetry_data = get_high_frequency_telemetry(odrive_manager.odrv)
         
-        return jsonify(telemetry_data)
+        # Ensure all data is JSON serializable
+        def make_serializable(obj):
+            if obj is None:
+                return None
+            elif isinstance(obj, (int, float, str, bool)):
+                return obj
+            elif isinstance(obj, dict):
+                return {k: make_serializable(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [make_serializable(item) for item in obj]
+            else:
+                # Convert any other type to string
+                return str(obj)
+        
+        serializable_data = make_serializable(telemetry_data)
+        return jsonify(serializable_data)
+        
     except Exception as e:
         logger.error(f"Error getting telemetry: {e}")
         return jsonify({"error": str(e)}), 500
 
-# Update your /api/odrive/state endpoint  
 @app.route('/api/odrive/state', methods=['GET'])
 def get_device_state():
     try:
@@ -1306,7 +1323,23 @@ def get_device_state():
         # For state endpoint, get full configuration data
         state_data = get_configuration_data(odrive_manager.odrv)
         
-        return jsonify(state_data)
+        # Ensure all data is JSON serializable
+        def make_serializable(obj):
+            if obj is None:
+                return None
+            elif isinstance(obj, (int, float, str, bool)):
+                return obj
+            elif isinstance(obj, dict):
+                return {k: make_serializable(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [make_serializable(item) for item in obj]
+            else:
+                # Convert any other type to string
+                return str(obj)
+        
+        serializable_data = make_serializable(state_data)
+        return jsonify(serializable_data)
+        
     except Exception as e:
         logger.error(f"Error getting device state: {e}")
         return jsonify({"error": str(e)}), 500

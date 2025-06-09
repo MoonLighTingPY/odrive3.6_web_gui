@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import {
   VStack,
   HStack,
@@ -106,7 +106,7 @@ const saveEdit = async () => {
     })
   }
 
-  const getValueFromState = (path) => {
+  const getValueFromState = useCallback((path) => {
   // The odriveState should contain the device data structure
   if (!odriveState || !odriveState.device) {
     console.log('No device data in odriveState:', odriveState)
@@ -148,14 +148,14 @@ const saveEdit = async () => {
   
   console.log(`Found value for ${fullPath}:`, current)
   return current
-}
+}, [odriveState])
 
-  const hasError = (sectionPath) => {
+  const hasError = useCallback((sectionPath) => {
     if (!odriveState) return false
     
     const errorValue = getValueFromState(`${sectionPath}.error`)
     return errorValue !== undefined && errorValue !== 0
-  }
+  }, [odriveState, getValueFromState])
 
   const isPropertyChartable = (value, prop) => {
     return typeof value === 'number' && prop.type === 'number'
@@ -304,12 +304,23 @@ const saveEdit = async () => {
         let hasMatchingProps = false
         
         Object.entries(section.properties).forEach(([propName, prop]) => {
+          // Add safety check for prop structure
+          if (!prop || typeof prop !== 'object') {
+            console.warn(`Invalid property structure for ${propName}:`, prop)
+            return
+          }
+          
           const searchTerm = searchFilter.toLowerCase()
+          const propNameLower = propName.toLowerCase()
+          const sectionNameLower = sectionName.toLowerCase()
+          const propDisplayName = prop.name ? prop.name.toLowerCase() : propNameLower
+          const propDescription = prop.description ? prop.description.toLowerCase() : ''
+          
           if (
-            prop.name.toLowerCase().includes(searchTerm) ||
-            prop.description.toLowerCase().includes(searchTerm) ||
-            propName.toLowerCase().includes(searchTerm) ||
-            sectionName.toLowerCase().includes(searchTerm)
+            propDisplayName.includes(searchTerm) ||
+            propDescription.includes(searchTerm) ||
+            propNameLower.includes(searchTerm) ||
+            sectionNameLower.includes(searchTerm)
           ) {
             filteredSection.properties[propName] = prop
             hasMatchingProps = true
@@ -333,6 +344,9 @@ const saveEdit = async () => {
         let hasWritableProps = false
         
         Object.entries(section.properties).forEach(([propName, prop]) => {
+          // Add safety check
+          if (!prop || typeof prop !== 'object') return
+          
           if (prop.writable) {
             writableSection.properties[propName] = prop
             hasWritableProps = true
@@ -358,7 +372,7 @@ const saveEdit = async () => {
     }
     
     return filtered
-  }, [searchFilter, viewMode, odriveState])
+  }, [searchFilter, viewMode, hasError])
 
   const errorCount = useMemo(() => {
     let count = 0
@@ -366,7 +380,7 @@ const saveEdit = async () => {
       if (hasError(sectionName)) count++
     })
     return count
-  }, [odriveState])
+  }, [hasError])
 
   return (
     <VStack spacing={4} align="stretch" h="100%">
