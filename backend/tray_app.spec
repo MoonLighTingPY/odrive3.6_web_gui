@@ -3,13 +3,32 @@ import os
 import sys
 from PyInstaller.utils.hooks import collect_all, collect_submodules
 
-# Collect all necessary modules
+# Optimize imports by excluding unnecessary modules
+excludes = [
+    'matplotlib',
+    'numpy.random._examples',
+    'tornado',
+    'IPython',
+    'jupyter',
+    'notebook',
+    'tkinter',
+    'PyQt5',
+    'PyQt6',
+    'PySide2',
+    'PySide6',
+    'cv2',
+    'scipy',
+    'pandas',
+    'sympy'
+]
+
+# Collect necessary modules with optimizations
 pystray_datas, pystray_binaries, pystray_hiddenimports = collect_all('pystray')
 pil_datas, pil_binaries, pil_hiddenimports = collect_all('PIL')
 flask_datas, flask_binaries, flask_hiddenimports = collect_all('flask')
 odrive_submodules = collect_submodules('odrive')
 
-# ODrive library binaries and data collection
+# ODrive library binaries and data collection (optimized)
 def get_odrive_paths():
     try:
         import odrive
@@ -18,28 +37,20 @@ def get_odrive_paths():
         binaries = []
         datas = []
         
-        # Add ODrive DLLs for Windows - CRITICAL FIX
+        # Add only essential ODrive DLLs for Windows
         if sys.platform == 'win32':
-            # Look for the lib directory in odrive package
             lib_path = os.path.join(odrive_path, 'lib')
             if os.path.exists(lib_path):
                 for file in os.listdir(lib_path):
                     if file.endswith('.dll'):
                         source_path = os.path.join(lib_path, file)
                         binaries.append((source_path, 'odrive/lib'))
-                        print(f"Adding ODrive DLL: {source_path} -> odrive/lib")
-            
-            # Also check pyodrive directory
-            dll_path = os.path.join(odrive_path, 'pyodrive')
-            if os.path.exists(dll_path):
-                for file in os.listdir(dll_path):
-                    if file.endswith('.dll'):
-                        binaries.append((os.path.join(dll_path, file), 'odrive/pyodrive'))
         
-        # Add ODrive data files
+        # Add only essential data files
+        essential_files = ['version']
         for root, dirs, files in os.walk(odrive_path):
             for file in files:
-                if file.endswith(('.json', '.yaml', '.yml')):
+                if any(essential in file for essential in essential_files) or file.endswith('.json'):
                     file_path = os.path.join(root, file)
                     arc_path = os.path.relpath(file_path, os.path.dirname(odrive_path))
                     datas.append((file_path, os.path.dirname(arc_path)))
@@ -54,9 +65,7 @@ odrive_binaries, odrive_datas = get_odrive_paths()
 icon_file = None
 possible_icons = [
     'servo.ico',
-    'servo.png',
-    '../frontend/public/servo.ico',
-    '../frontend/public/servo.png'
+    '../frontend/public/servo.ico'
 ]
 
 for icon_path in possible_icons:
@@ -64,9 +73,6 @@ for icon_path in possible_icons:
     if os.path.exists(full_path):
         icon_file = full_path
         break
-
-if not icon_file:
-    print("Warning: No icon file found")
 
 # Combine all binaries and datas
 all_binaries = odrive_binaries + pystray_binaries + pil_binaries + flask_binaries
@@ -76,25 +82,20 @@ all_datas = [
     (icon_file, '.'),
 ] if icon_file else [])
 
-# Combine all hidden imports
+# Essential hidden imports only
 all_hiddenimports = [
     'odrive',
     'odrive.utils',
-    'odrive.enums',
     'flask',
     'flask_cors',
     'app',
-    'start_backend',
     'threading',
     'webbrowser',
     'json',
     'time',
     'logging',
-    'collections',
-    'os',
-    'sys',
-    'requests',  # Add requests for backend testing
-] + pystray_hiddenimports + pil_hiddenimports + flask_hiddenimports + odrive_submodules
+    'requests'
+] + pystray_hiddenimports + pil_hiddenimports + flask_hiddenimports
 
 a = Analysis(
     ['tray_app.py'],
@@ -105,7 +106,7 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=excludes,  # Add excludes for better performance
     win_no_prefer_redirects=False,
     win_private_assemblies=False,
     cipher=None,
@@ -128,7 +129,7 @@ exe = EXE(
     upx=True,
     upx_exclude=[],
     runtime_tmpdir=None,
-    console=False,  # Back to False for production
+    console=False,
     windowed=True,
     disable_windowed_traceback=False,
     argv_emulation=False,

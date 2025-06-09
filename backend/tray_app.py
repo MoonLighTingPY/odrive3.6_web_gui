@@ -20,90 +20,97 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Force import the Flask backend modules
-try:
-    import app
-    import start_backend
-    logger.info("Successfully imported Flask backend modules")
-except ImportError as e:
-    logger.error(f"Failed to import Flask backend modules: {e}")
-    sys.exit(1)
-
 class ODriveTrayApp:
     def __init__(self):
         self.backend_process = None
         self.backend_thread = None
         self.icon = None
         self.backend_started = False
+        self.gui_opened = False
         logger.info("ODrive Tray App initialized")
-        
+
     def start_backend(self):
-        """Start the Flask backend in a separate thread"""
+        """Start the Flask backend in a separate thread - non-blocking"""
         try:
             logger.info("Starting Flask backend...")
             
             def run_backend():
                 try:
-                    # Import and run the Flask app directly (avoid start_backend.py auto-browser)
-                    from app import app as flask_app
+                    # Import Flask modules in the background thread to avoid blocking UI
+                    import app
+                    import start_backend
                     logger.info("Flask app imported successfully")
                     
                     # Disable auto-browser opening in the backend
                     os.environ['ODRIVE_NO_AUTO_BROWSER'] = '1'
                     
-                    flask_app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+                    app.app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
                 except Exception as e:
                     logger.error(f"Error running Flask backend: {e}")
-                    
+            
             self.backend_thread = threading.Thread(target=run_backend, daemon=True)
             self.backend_thread.start()
             
-            # Wait a moment for backend to start
-            time.sleep(3)
+            # Don't wait for backend to start - let it start in background
+            logger.info("Backend thread started")
+            return True
             
-            # Test if backend is responding
-            try:
-                import requests
-                response = requests.get('http://localhost:5000/api/odrive/scan', timeout=5)
-                if response.status_code == 200:
-                    logger.info("Backend started successfully and responding")
-                    self.backend_started = True
-                    return True
-                else:
-                    logger.error(f"Backend responding with status code: {response.status_code}")
-            except Exception as e:
-                logger.error(f"Backend not responding: {e}")
-                
         except Exception as e:
             logger.error(f"Failed to start backend: {e}")
+            return False
+
+    def check_backend_ready(self):
+        """Check if backend is ready in background"""
+        def check_ready():
+            max_attempts = 30  # 30 seconds max wait
+            for attempt in range(max_attempts):
+                try:
+                    import requests
+                    response = requests.get('http://localhost:5000/api/health', timeout=2)
+                    if response.status_code == 200:
+                        logger.info(f"Backend ready after {attempt + 1} seconds")
+                        self.backend_started = True
+                        
+                        # Auto-open GUI after backend is ready
+                        if not self.gui_opened:
+                            self.gui_opened = True
+                            time.sleep(0.5)  # Small delay to ensure backend is fully ready
+                            self.open_gui()
+                        return
+                except:
+                    pass  # Continue waiting
+                
+                time.sleep(1)
             
-        return False
-    
+            logger.warning("Backend did not become ready within 30 seconds")
+        
+        # Check readiness in background thread
+        threading.Thread(target=check_ready, daemon=True).start()
+
     def open_gui(self, icon=None, item=None):
         """Open the GUI in the default browser"""
         try:
             if not self.backend_started:
-                logger.warning("Backend not started, attempting to start...")
-                if not self.start_backend():
-                    logger.error("Failed to start backend")
-                    return
+                logger.warning("Backend not ready yet, please wait...")
+                return
                     
             url = "http://localhost:5000"
             logger.info(f"Opening GUI at {url}")
             webbrowser.open(url)
+            self.gui_opened = True
         except Exception as e:
             logger.error(f"Failed to open GUI: {e}")
-    
+
     def quit_app(self, icon=None, item=None):
         """Quit the application"""
         logger.info("Shutting down ODrive Tray App")
         if self.icon:
             self.icon.stop()
-    
+
     def create_image(self):
-        """Create the tray icon image"""
+        """Create the tray icon image - optimized for speed"""
         try:
-            # Try to load the custom icon
+            # Try to load the custom icon with faster method
             icon_paths = [
                 'servo.ico',
                 os.path.join(os.path.dirname(__file__), 'servo.ico'),
@@ -113,38 +120,44 @@ class ODriveTrayApp:
             for icon_path in icon_paths:
                 if icon_path and os.path.exists(icon_path):
                     logger.info(f"Loading icon from {icon_path}")
-                    return Image.open(icon_path)
+                    # Load icon with specific size for better performance
+                    img = Image.open(icon_path)
+                    # Resize to standard tray icon size if needed
+                    if img.size != (32, 32):
+                        img = img.resize((32, 32), Image.Resampling.LANCZOS)
+                    return img
             
             logger.warning("Custom icon not found, creating default icon")
-            # Create a simple default icon
-            image = Image.new('RGB', (64, 64), color='blue')
-            return image
+            # Create a simple default icon quickly
+            return Image.new('RGB', (32, 32), color='#4A90E2')
             
         except Exception as e:
             logger.error(f"Failed to create icon: {e}")
             # Fallback to a simple colored square
-            return Image.new('RGB', (64, 64), color='red')
-    
+            return Image.new('RGB', (32, 32), color='#E74C3C')
+
     def run(self):
-        """Run the tray application"""
+        """Run the tray application - optimized startup"""
         try:
             logger.info("Starting ODrive Tray Application")
             
-            # Start the backend first
-            if not self.start_backend():
-                logger.error("Failed to start backend, continuing anyway...")
-            
-            # Create the tray icon
+            # Create the tray icon immediately (don't wait for backend)
             image = self.create_image()
-            menu = pystray.Menu(
-                item('Open ODrive GUI', self.open_gui),
-                item('Exit', self.quit_app)
-            )
             
-            self.icon = pystray.Icon("ODrive GUI", image, menu=menu)
+            # Create menu with initial disabled state
+            def create_menu():
+                return pystray.Menu(
+                    item('Open ODrive GUI', self.open_gui, enabled=lambda item: self.backend_started),
+                    item('Exit', self.quit_app)
+                )
             
-            # Auto-open GUI on startup (only once from tray app)
-            threading.Timer(2.0, self.open_gui).start()
+            self.icon = pystray.Icon("ODrive GUI", image, menu=create_menu())
+            
+            # Start backend in background immediately
+            self.start_backend()
+            
+            # Check backend readiness in background
+            self.check_backend_ready()
             
             logger.info("Tray icon created, starting main loop")
             self.icon.run()
@@ -154,5 +167,10 @@ class ODriveTrayApp:
             input("Press Enter to close...")
 
 if __name__ == '__main__':
-    app = ODriveTrayApp()
-    app.run()
+    # Move slow imports to after tray icon creation
+    try:
+        app = ODriveTrayApp()
+        app.run()
+    except Exception as e:
+        logger.error(f"Failed to start tray app: {e}")
+        input("Press Enter to close...")
