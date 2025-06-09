@@ -171,22 +171,22 @@ const MotorConfigStep = ({
                   />
                 </FormControl>
 
-                {motorConfig.motor_type === 1 && (
-                  <FormControl flex="1">
-                    <FormLabel color="white" mb={1} fontSize="sm">Phase Resistance</FormLabel>
-                    <ParameterInput
-                      value={motorConfig.phase_resistance}
-                      onChange={(value) => handleConfigChange('phase_resistance', parseFloat(value) || 0)}
-                      onRefresh={() => handleRefresh('phase_resistance')}
-                      isLoading={isLoading('phase_resistance')}
-                      unit="Ω"
-                      step={0.001}
-                      precision={6}
-                      min={0}
-                      max={10}
-                    />
-                  </FormControl>
-                )}
+                
+                <FormControl flex="1">
+                  <FormLabel color="white" mb={1} fontSize="sm">Phase Resistance</FormLabel>
+                  <ParameterInput
+                    value={motorConfig.phase_resistance}
+                    onChange={(value) => handleConfigChange('phase_resistance', parseFloat(value) || 0)}
+                    onRefresh={() => handleRefresh('phase_resistance')}
+                    isLoading={isLoading('phase_resistance')}
+                    unit="Ω"
+                    step={0.001}
+                    precision={6}
+                    min={0}
+                    max={10}
+                  />
+                </FormControl>
+
               </HStack>
             </VStack>
           </CardBody>

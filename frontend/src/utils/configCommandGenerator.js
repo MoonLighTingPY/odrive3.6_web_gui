@@ -65,7 +65,7 @@ export const generateConfigCommands = (config) => {
   commands.push(`odrv0.axis0.encoder.config.enable_phase_interpolation = ${safeBool(encoder.enable_phase_interpolation) ? 'True' : 'False'}`)
   commands.push(`odrv0.axis0.encoder.config.hall_polarity = ${safeValue(encoder.hall_polarity, 0)}`)
   commands.push(`odrv0.axis0.encoder.config.hall_polarity_calibrated = ${safeBool(encoder.hall_polarity_calibrated) ? 'True' : 'False'}`)
-
+  commands.push(`odrv0.axis0.encoder.config.use_separate_commutation_encoder = ${safeBool(encoder.use_separate_commutation_encoder) ? 'True' : 'False'}`)
   // Control configuration commands
   commands.push(`odrv0.axis0.controller.config.control_mode = ${safeValue(control.control_mode, 3)}`)
   commands.push(`odrv0.axis0.controller.config.input_mode = ${safeValue(control.input_mode, 1)}`)
@@ -86,7 +86,7 @@ export const generateConfigCommands = (config) => {
   commands.push(`odrv0.axis0.config.can.node_id = ${safeValue(interfaceConfig.can_node_id, 0)}`)
   commands.push(`odrv0.axis0.config.can.is_extended = ${safeBool(interfaceConfig.can_node_id_extended) ? 'True' : 'False'}`)
   commands.push(`odrv0.can.config.baud_rate = ${safeValue(interfaceConfig.can_baudrate, 250000)}`)
-  commands.push(`odrv0.axis0.config.can.heartbeat_rate_ms = ${safeValue(interfaceConfig.can_heartbeat_rate_ms, 100)}`)
+  commands.push(`odrv0.axis0.config.can.heartbeat_rate_ms = ${safeValue(interfaceConfig.heartbeat_rate_ms, 100)}`)
   
   // UART settings
   commands.push(`odrv0.config.enable_uart_a = ${safeBool(interfaceConfig.enable_uart_a) ? 'True' : 'False'}`)

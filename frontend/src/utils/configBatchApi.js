@@ -117,7 +117,7 @@ export const loadAllConfigurationBatch = async () => {
     'device.axis0.controller.config.inertia',
     'device.axis0.controller.config.homing_speed',
     
-    // Interface configuration (19 parameters)
+    // Interface configuration (20 parameters)
     'device.axis0.config.can.node_id',
     'device.axis0.config.can.is_extended',
     'device.can.config.baud_rate',
@@ -136,7 +136,8 @@ export const loadAllConfigurationBatch = async () => {
     'device.axis0.config.watchdog_timeout',
     'device.axis0.config.enable_step_dir',
     'device.axis0.config.step_dir_always_on',
-    'device.axis0.config.enable_sensorless_mode'
+    'device.axis0.config.enable_sensorless_mode',
+    'device.axis0.encoder.config.use_separate_commutation_encoder'
   ];
   
   // Load all parameters in one batch request
@@ -206,19 +207,25 @@ export const loadAllConfigurationBatch = async () => {
           categorizedResults.interface['can_node_id'] = value;
         } else if (configKey === 'is_extended') {
           categorizedResults.interface['can_node_id_extended'] = value;
-        } else if (configKey === 'enable_sensorless_mode') {
-          categorizedResults.interface['enable_sensorless'] = value;
-        } else if (path.includes('.config.uart_')) {
-        // handle UART protocols and baudrates
-        if (configKey === 'uart0_protocol') {
-          categorizedResults.interface['uart0_protocol'] = value
-        } else if (configKey === 'uart1_protocol') {
-          categorizedResults.interface['uart1_protocol'] = value
+          } else if (configKey === 'heartbeat_rate_ms') {
+            categorizedResults.interface['heartbeat_rate_ms'] = value;
+          } else if (configKey === 'enable_sensorless_mode') {
+            categorizedResults.interface['enable_sensorless'] = value;
+          } else if (configKey === 'uart0_protocol') {
+            categorizedResults.interface['uart0_protocol'] = value;
+          } else if (configKey === 'uart1_protocol') {
+            categorizedResults.interface['uart1_protocol'] = value;
+          } else {
+            categorizedResults.interface[configKey] = value;
+          }
         } else {
-          categorizedResults.interface[configKey] = value
+          // Handle all other interface parameters including use_separate_commutation_encoder
+          if (configKey === 'use_separate_commutation_encoder') {
+            categorizedResults.encoder['use_separate_commutation_encoder'] = value;
+          } else {
+            categorizedResults.interface[configKey] = value;
+          }
         }
-        }
-      }
     }
   }
   
