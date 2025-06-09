@@ -615,7 +615,7 @@ export const getConfigurationParams = (category) => {
   if (!categoryData) return {}
   
   // Extract just the parameter mappings (exclude 'name')
-  const { name, ...params } = categoryData
+  const { _, ...params } = categoryData
   return params
 }
 

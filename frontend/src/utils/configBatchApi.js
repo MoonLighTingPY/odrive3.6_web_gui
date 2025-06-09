@@ -9,10 +9,24 @@ export const loadConfigurationBatch = async (configPaths) => {
     if (!response.ok) {
       const errorText = await response.text();
       console.error('Batch API error response:', errorText);
-      throw new Error(`HTTP error! status: ${response.status}`);
+      throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+    }
+    
+    // Check if response is actually JSON
+    const contentType = response.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      const responseText = await response.text();
+      console.error('Non-JSON response received:', responseText);
+      throw new Error(`Expected JSON response but got: ${contentType || 'unknown'}. Response: ${responseText.substring(0, 200)}`);
     }
     
     const data = await response.json();
+    
+    // Validate response structure
+    if (!data || typeof data !== 'object' || !data.results) {
+      console.error('Invalid response structure:', data);
+      throw new Error('Invalid response structure: missing results field');
+    }
     
     // Convert string values to proper types
     const results = {};
@@ -37,6 +51,10 @@ export const loadConfigurationBatch = async (configPaths) => {
     return results;
   } catch (error) {
     console.error('Error loading configuration batch:', error);
+    // Provide more specific error information
+    if (error.message.includes('JSON.parse')) {
+      throw new Error('Backend returned invalid JSON response. Check if ODrive is connected and backend is running properly.');
+    }
     throw error;
   }
 };
@@ -45,8 +63,8 @@ export const loadConfigurationBatch = async (configPaths) => {
  * Load ALL ODrive v0.5.6 configuration parameters in a single batch request
  * @returns {Promise<Object>} All configuration parameters organized by category
  */
-eexport const loadAllConfigurationBatch = async () => {
-  // ALL ODrive v0.5.6 configuration paths in one array
+export const loadAllConfigurationBatch = async () => {
+  // ALL ODrive v0.5.6 configuration paths in one array - Updated to match configurationMappings
   const allPaths = [
     // Power configuration (6 parameters)
     'device.config.dc_bus_overvoltage_trip_level',
@@ -56,7 +74,7 @@ eexport const loadAllConfigurationBatch = async () => {
     'device.config.enable_brake_resistor',
     'device.config.brake_resistance',
     
-    // Motor configuration (9 parameters) - Added missing lock_in_spin_current
+    // Motor configuration (9 parameters)
     'device.axis0.motor.config.motor_type',
     'device.axis0.motor.config.pole_pairs',
     'device.axis0.motor.config.current_lim',
@@ -84,7 +102,7 @@ eexport const loadAllConfigurationBatch = async () => {
     'device.axis0.encoder.config.hall_polarity',
     'device.axis0.encoder.config.hall_polarity_calibrated',
     
-    // Control configuration (13 parameters) - Added missing homing_speed
+    // Control configuration (13 parameters)
     'device.axis0.controller.config.input_mode',
     'device.axis0.controller.config.control_mode',
     'device.axis0.controller.config.pos_gain',
@@ -97,19 +115,19 @@ eexport const loadAllConfigurationBatch = async () => {
     'device.axis0.controller.config.torque_ramp_rate',
     'device.axis0.controller.config.input_filter_bandwidth',
     'device.axis0.controller.config.inertia',
-    'device.axis0.controller.config.homing_speed', // Added missing parameter
+    'device.axis0.controller.config.homing_speed',
     
-    // Interface configuration (18 parameters) - Added missing UART protocol parameters
+    // Interface configuration (19 parameters)
     'device.axis0.config.can.node_id',
     'device.axis0.config.can.is_extended',
     'device.can.config.baud_rate',
     'device.axis0.config.can.heartbeat_rate_ms',
     'device.config.enable_uart_a',
+    'device.config.uart0_protocol',
     'device.config.uart_a_baudrate',
-    'device.config.uart0_protocol',        // Added missing UART A protocol
     'device.config.enable_uart_b',
+    'device.config.uart1_protocol',
     'device.config.uart_b_baudrate',
-    'device.config.uart1_protocol',        // Added missing UART B protocol
     'device.config.gpio1_mode',
     'device.config.gpio2_mode',
     'device.config.gpio3_mode',
@@ -117,7 +135,8 @@ eexport const loadAllConfigurationBatch = async () => {
     'device.axis0.config.enable_watchdog',
     'device.axis0.config.watchdog_timeout',
     'device.axis0.config.enable_step_dir',
-    'device.axis0.config.step_dir_always_on'
+    'device.axis0.config.step_dir_always_on',
+    'device.axis0.config.enable_sensorless_mode'
   ];
   
   // Load all parameters in one batch request
@@ -148,7 +167,12 @@ eexport const loadAllConfigurationBatch = async () => {
       
       // Categorize by path pattern with special handling for specific parameters
       if (path.includes('.config.dc_') || path.includes('.config.brake_') || path.includes('.config.enable_brake_')) {
-        categorizedResults.power[configKey] = value;
+        // Handle power configuration mappings
+        if (configKey === 'enable_brake_resistor') {
+          categorizedResults.power['brake_resistor_enabled'] = value;
+        } else {
+          categorizedResults.power[configKey] = value;
+        }
       } else if (path.includes('.motor.config.') || path.includes('.calibration_lockin.')) {
         // Handle special motor parameter mappings
         if (configKey === 'torque_constant') {
@@ -162,14 +186,38 @@ eexport const loadAllConfigurationBatch = async () => {
           categorizedResults.motor[configKey] = value;
         }
       } else if (path.includes('.encoder.config.')) {
-        categorizedResults.encoder[configKey] = value;
+        // Handle encoder configuration mappings
+        if (configKey === 'mode') {
+          categorizedResults.encoder['encoder_type'] = value;
+        } else {
+          categorizedResults.encoder[configKey] = value;
+        }
       } else if (path.includes('.controller.config.')) {
         categorizedResults.control[configKey] = value;
       } else if (path.includes('.can.') || path.includes('.config.enable_uart') || 
                  path.includes('.config.uart_') || path.includes('.config.gpio') ||
                  path.includes('.config.enable_watchdog') || path.includes('.config.watchdog_') ||
-                 path.includes('.config.enable_step_dir') || path.includes('.config.step_dir_')) {
-        categorizedResults.interface[configKey] = value;
+                 path.includes('.config.enable_step_dir') || path.includes('.config.step_dir_') ||
+                 path.includes('.config.enable_sensorless_mode')) {
+        // Handle interface configuration mappings
+        if (configKey === 'baud_rate') {
+          categorizedResults.interface['can_baudrate'] = value;
+        } else if (configKey === 'node_id') {
+          categorizedResults.interface['can_node_id'] = value;
+        } else if (configKey === 'is_extended') {
+          categorizedResults.interface['can_node_id_extended'] = value;
+        } else if (configKey === 'enable_sensorless_mode') {
+          categorizedResults.interface['enable_sensorless'] = value;
+        } else if (path.includes('.config.uart_')) {
+        // handle UART protocols and baudrates
+        if (configKey === 'uart0_protocol') {
+          categorizedResults.interface['uart0_protocol'] = value
+        } else if (configKey === 'uart1_protocol') {
+          categorizedResults.interface['uart1_protocol'] = value
+        } else {
+          categorizedResults.interface[configKey] = value
+        }
+        }
       }
     }
   }

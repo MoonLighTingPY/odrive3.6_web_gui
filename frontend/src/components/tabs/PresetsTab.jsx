@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import {
   Box,
@@ -40,39 +40,22 @@ const PresetsTab = () => {
   const dispatch = useDispatch()
   const toast = useToast()
   const { isConnected } = useSelector(state => state.device)
-  const [deviceConfig, setDeviceConfig] = useState({})
+  
+  // Get current configuration from Redux store instead of fetching separately
+  const { powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig } = useSelector(state => state.config)
+  
+  const deviceConfig = useMemo(() => ({
+    power: powerConfig || {},
+    motor: motorConfig || {},
+    encoder: encoderConfig || {},
+    control: controlConfig || {},
+    interface: interfaceConfig || {}
+  }), [powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig])
+  
   // eslint-disable-next-line no-unused-vars
   const [presets, setPresets] = useState({})
   const [selectedPreset, setSelectedPreset] = useState('')
-  const [isLoading, setIsLoading] = useState(false) // Fixed: removed array destructuring
   const [activeTab, setActiveTab] = useState(0)
-  const [lastUpdate, setLastUpdate] = useState(null) // Fixed: removed array destructuring
-
-  // Load current device configuration
-  const loadDeviceConfig = useCallback(async () => {
-    if (!isConnected) return
-
-    setIsLoading(true)
-    try {
-      const response = await fetch('/api/odrive/configuration')
-      if (response.ok) {
-        const config = await response.json()
-        setDeviceConfig(config)
-        setLastUpdate(new Date())
-      } else {
-        throw new Error('Failed to load device configuration')
-      }
-    } catch (error) {
-      toast({
-        title: 'Failed to Load Configuration',
-        description: error.message,
-        status: 'error',
-        duration: 3000,
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }, [isConnected, toast, setLastUpdate, setIsLoading])
 
   // Load presets
   const loadPresets = useCallback(() => {
@@ -87,11 +70,11 @@ const PresetsTab = () => {
         duration: 3000,
       })
     }
-  }, [toast, setPresets])
+  }, [toast])
 
-  // Auto-backup when connected
+  // Auto-backup when connected and we have configuration data
   useEffect(() => {
-    if (isConnected && Object.keys(deviceConfig).length > 0) {
+    if (isConnected && Object.keys(deviceConfig.power || {}).length > 0) {
       try {
         createAutoBackup(deviceConfig)
         cleanupAutoBackups()
@@ -100,74 +83,68 @@ const PresetsTab = () => {
         console.error('Auto backup failed:', error)
       }
     }
-  }, [isConnected, deviceConfig, loadPresets])
+  }, [isConnected, powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig, loadPresets, deviceConfig])
 
-  // Load data on mount and connection
+  // Load presets on mount
   useEffect(() => {
     loadPresets()
-    if (isConnected) {
-      loadDeviceConfig()
-    } else {
-      setDeviceConfig({})
-    }
-  }, [isConnected, loadDeviceConfig, loadPresets])
+  }, [loadPresets])
 
   const handlePresetLoad = (config, presetName) => {
-  console.log('PresetsTab: Loading preset config:', config) // Debug log
-  
-  // Update Redux store with the loaded configuration
-  if (config.power) {
-    dispatch({ type: 'config/updatePowerConfig', payload: config.power })
+    console.log('PresetsTab: Loading preset config:', config) // Debug log
+    
+    // Update Redux store with the loaded configuration
+    if (config.power) {
+      dispatch({ type: 'config/updatePowerConfig', payload: config.power })
+    }
+    if (config.motor) {
+      dispatch({ type: 'config/updateMotorConfig', payload: config.motor })
+    }
+    if (config.encoder) {
+      dispatch({ type: 'config/updateEncoderConfig', payload: config.encoder })
+    }
+    if (config.control) {
+      dispatch({ type: 'config/updateControlConfig', payload: config.control })
+    }
+    if (config.interface) {
+      dispatch({ type: 'config/updateInterfaceConfig', payload: config.interface })
+    }
+    
+    // IMPORTANT: Also trigger an event that ConfigurationTab can listen to
+    // This will update the local deviceConfig state
+    window.dispatchEvent(new CustomEvent('presetLoaded', { 
+      detail: { config, presetName } 
+    }))
+    
+    setSelectedPreset(presetName)
+    
+    toast({
+      title: 'Preset Loaded',
+      description: `Configuration "${presetName}" selected and loaded to config tab`,
+      status: 'success',
+      duration: 3000,
+    })
   }
-  if (config.motor) {
-    dispatch({ type: 'config/updateMotorConfig', payload: config.motor })
-  }
-  if (config.encoder) {
-    dispatch({ type: 'config/updateEncoderConfig', payload: config.encoder })
-  }
-  if (config.control) {
-    dispatch({ type: 'config/updateControlConfig', payload: config.control })
-  }
-  if (config.interface) {
-    dispatch({ type: 'config/updateInterfaceConfig', payload: config.interface })
-  }
-  
-  // IMPORTANT: Also trigger an event that ConfigurationTab can listen to
-  // This will update the local deviceConfig state
-  window.dispatchEvent(new CustomEvent('presetLoaded', { 
-    detail: { config, presetName } 
-  }))
-  
-  setSelectedPreset(presetName)
-  
-  toast({
-    title: 'Preset Loaded',
-    description: `Configuration "${presetName}" selected and loaded to config tab`,
-    status: 'success',
-    duration: 3000,
-  })
-}
 
-// Also update the handlePresetSave function around line 170:
-
-const handlePresetSave = (presetName) => {
-  loadPresets() // Refresh preset list
-  setSelectedPreset(presetName)
-  
-  toast({
-    title: 'Preset Saved',
-    description: `Current configuration saved as "${presetName}"`,
-    status: 'success',
-    duration: 3000,
-  })
-}
+  const handlePresetSave = (presetName) => {
+    loadPresets() // Refresh preset list
+    setSelectedPreset(presetName)
+    
+    toast({
+      title: 'Preset Saved',
+      description: `Current configuration saved as "${presetName}"`,
+      status: 'success',
+      duration: 3000,
+    })
+  }
 
   const handleApplyPreset = async (presetName) => {
     if (!presetName) return
 
     try {
       await applyPresetAndSaveAction(presetName, toast)
-      await loadDeviceConfig() // Refresh current config
+      // No need to manually reload config - it will be updated automatically
+      // when the ODrive configuration changes are detected
     } catch (error) {
       console.error('Failed to apply preset:', error)
     }
@@ -189,7 +166,6 @@ const handlePresetSave = (presetName) => {
     )
   }
 
-
   return (
     <VStack spacing={6} align="stretch" p={6} h="100%">
       
@@ -202,8 +178,6 @@ const handlePresetSave = (presetName) => {
           Manage, save, load, and share ODrive configuration presets
         </Text>
       </Box>
-
-
 
       {/* Main Preset Management Tabs */}
       <Card bg="gray.800" variant="elevated" flex="1">
@@ -224,7 +198,7 @@ const handlePresetSave = (presetName) => {
                   <Text>Save/Load</Text>
                 </HStack>
               </Tab>
-              <Tab color="gray.300" _selected={{ color: 'blue.300', borderBottomColor: 'blue.300' }}>
+              <Tab color="gray.300" _selected={{ color: 'blue.300', borderBottomColor: 'blue.3003' }}>
                 <HStack spacing={2}>
                   <Text>📋</Text>
                   <Text>Manage Presets</Text>
@@ -237,8 +211,6 @@ const handlePresetSave = (presetName) => {
               {/* Quick Actions Tab */}
               <TabPanel p={6} h="100%">
                 <VStack spacing={6} align="stretch" h="100%">
-                  
-            
 
                   {/* Quick Actions */}
                   <PresetManager
@@ -282,7 +254,6 @@ const handlePresetSave = (presetName) => {
                   onRefreshNeeded={loadPresets}
                 />
               </TabPanel>
-              
               
             </TabPanels>
           </Tabs>

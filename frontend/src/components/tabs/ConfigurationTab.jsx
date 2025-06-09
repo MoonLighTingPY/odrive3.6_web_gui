@@ -19,7 +19,6 @@ import EncoderConfigStep from '../config-steps/EncoderConfigStep'
 import ControlConfigStep from '../config-steps/ControlConfigStep'
 import InterfaceConfigStep from '../config-steps/InterfaceConfigStep'
 import FinalConfigStep from '../config-steps/FinalConfigStep'
-import { getAllConfigurationParams } from '../../utils/odriveCommands'
 import { convertTorqueConstantToKv } from '../../utils/valueHelpers'
 import { applyAndSaveConfiguration } from '../../utils/configurationActions'
 import { 
@@ -92,15 +91,7 @@ const ConfigurationTab = () => {
 
       setHasAutoLoaded(true)
       setPullProgress(100)
-
-      const totalLoaded = Object.values(allConfig).reduce((sum, config) => sum + Object.keys(config).length, 0)
       
-      toast({
-        title: 'Configuration loaded',
-        description: `${totalLoaded} parameters loaded from ODrive in ONE batch request!`,
-        status: 'success',
-        duration: 3000,
-      })
 
     } catch (error) {
       console.error('Failed to pull configuration:', error)
