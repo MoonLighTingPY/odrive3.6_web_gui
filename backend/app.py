@@ -74,6 +74,45 @@ def get_static_folder():
     else:
         # Running in development
         return os.path.join(os.path.dirname(__file__), '..', 'frontend', 'dist')
+    
+def sanitize_for_json(obj, path=""):
+        """Recursively sanitize data to handle problematic values like Infinity and NaN"""
+        try:
+            if obj is None:
+                return None
+            elif isinstance(obj, (int, str, bool)):
+                return obj
+            elif isinstance(obj, float):
+                if math.isnan(obj):
+                    return None  # Convert NaN to null
+                elif math.isinf(obj):
+                    if obj > 0:
+                        return 1e10  # Replace positive infinity with large number
+                    else:
+                        return -1e10  # Replace negative infinity with large negative number
+                else:
+                    return obj
+            elif isinstance(obj, dict):
+                result = {}
+                for k, v in obj.items():
+                    try:
+                        result[k] = sanitize_for_json(v, f"{path}.{k}")
+                    except Exception as e:
+                        logger.warning(f"Error sanitizing key {k} at {path}: {e}")
+                        result[k] = None
+                return result
+            elif isinstance(obj, list):
+                return [sanitize_for_json(item, f"{path}[{i}]") for i, item in enumerate(obj)]
+            else:
+                # Convert any other type to string
+                str_val = str(obj)
+                if len(str_val) > 1000:  # Prevent extremely long strings
+                    logger.warning(f"Truncating long string at {path}")
+                    return str_val[:1000] + "..."
+                return str_val
+        except Exception as e:
+            logger.warning(f"Error sanitizing object at {path}: {e}")
+            return None
 
 # Add these routes before the health check endpoint
 @app.route('/')
@@ -385,30 +424,7 @@ class ODriveManager:
             
         return command
 
-    def _sanitize_value(self, value_str: str):
-        """Sanitize and convert value string to appropriate Python type"""
-        value_str = str(value_str).strip()
-        
-        # Handle undefined/null values
-        if value_str.lower() in ['undefined', 'null', 'none', '']:
-            return None
-            
-        # Handle boolean values
-        if value_str in ['True', 'true', 'TRUE']:
-            return True
-        elif value_str in ['False', 'false', 'FALSE']:
-            return False
-        
-        # Handle numeric values
-        try:
-            # Try integer first
-            if '.' not in value_str and 'e' not in value_str.lower():
-                return int(value_str)
-            else:
-                return float(value_str)
-        except ValueError:
-            # If all else fails, return as string
-            return value_str
+    
 
     def execute_command(self, command: str) -> Dict[str, Any]:
         """Execute a command on the ODrive"""
@@ -1294,42 +1310,14 @@ def get_telemetry():
         # Use the new high-frequency telemetry function
         telemetry_data = get_high_frequency_telemetry(odrive_manager.odrv)
         
-        # Ensure all data is JSON serializable with better error handling
-        def make_serializable(obj, path=""):
-            try:
-                if obj is None:
-                    return None
-                elif isinstance(obj, (int, float, str, bool)):
-                    # Validate numbers aren't NaN or infinite
-                    if isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)):
-                        logger.warning(f"Invalid float value at {path}: {obj}")
-                        return None
-                    return obj
-                elif isinstance(obj, dict):
-                    result = {}
-                    for k, v in obj.items():
-                        result[k] = make_serializable(v, f"{path}.{k}")
-                    return result
-                elif isinstance(obj, list):
-                    return [make_serializable(item, f"{path}[{i}]") for i, item in enumerate(obj)]
-                else:
-                    # Convert any other type to string
-                    str_val = str(obj)
-                    if len(str_val) > 1000:  # Prevent extremely long strings
-                        logger.warning(f"Truncating long string at {path}")
-                        return str_val[:1000] + "..."
-                    return str_val
-            except Exception as e:
-                logger.warning(f"Error serializing object at {path}: {e}")
-                return None
-        
-        serializable_data = make_serializable(telemetry_data)
+        # Sanitize data to handle Infinity, NaN, and other problematic values
+        serializable_data = sanitize_for_json(telemetry_data)
         
         # Test JSON serialization before returning
         try:
             json.dumps(serializable_data)
         except (TypeError, ValueError) as e:
-            logger.error(f"Failed to serialize telemetry data: {e}")
+            logger.error(f"Failed to serialize telemetry data after sanitization: {e}")
             return jsonify({"error": "Data serialization failed"}), 500
         
         return jsonify(serializable_data)
@@ -1347,21 +1335,9 @@ def get_device_state():
         # For state endpoint, get full configuration data
         state_data = get_configuration_data(odrive_manager.odrv)
         
-        # Ensure all data is JSON serializable
-        def make_serializable(obj):
-            if obj is None:
-                return None
-            elif isinstance(obj, (int, float, str, bool)):
-                return obj
-            elif isinstance(obj, dict):
-                return {k: make_serializable(v) for k, v in obj.items()}
-            elif isinstance(obj, list):
-                return [make_serializable(item) for item in obj]
-            else:
-                # Convert any other type to string
-                return str(obj)
+        # Sanitize data to handle Infinity, NaN, and other problematic values
+        serializable_data = sanitize_for_json(state_data)
         
-        serializable_data = make_serializable(state_data)
         return jsonify(serializable_data)
         
     except Exception as e:
@@ -1378,11 +1354,15 @@ def get_full_state():
         # Get everything
         full_data = get_full_device_state(odrive_manager.odrv)
         
-        return jsonify(full_data)
+        # Sanitize data to handle Infinity, NaN, and other problematic values
+        sanitizable_data = sanitize_for_json(full_data)
+        
+        return jsonify(sanitizable_data)
     except Exception as e:
         logger.error(f"Error getting full state: {e}")
         return jsonify({"error": str(e)}), 500
-
+    
+    
 if __name__ == '__main__':
     print("🚀 Starting ODrive GUI Backend...")
     
