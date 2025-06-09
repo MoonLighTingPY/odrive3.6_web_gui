@@ -30,35 +30,53 @@ def safe_get_property(odrv, property_path):
                 logger.debug(f"Property {part} not found in path {property_path}")
                 return None
         
-        # Convert ODrive objects to basic Python types
+        # Convert ODrive objects to basic Python types with more robust handling
         if obj is None:
             return None
-        elif hasattr(obj, '__float__'):
-            return float(obj)
-        elif hasattr(obj, '__int__'):
-            return int(obj)
-        elif hasattr(obj, '__bool__'):
-            return bool(obj)
-        elif isinstance(obj, str):
-            return str(obj)
-        else:
-            # For any other type, try to convert to string, then to appropriate type
-            try:
+        
+        # Handle different object types more carefully
+        try:
+            # First try direct type conversion
+            if isinstance(obj, (int, float, bool, str)):
+                return obj
+            elif hasattr(obj, '__float__'):
+                return float(obj)
+            elif hasattr(obj, '__int__'):
+                return int(obj)
+            elif hasattr(obj, '__bool__'):
+                return bool(obj)
+            else:
+                # For any other type, try to convert to string, then parse
                 str_val = str(obj)
+                
+                # Skip obvious non-numeric strings
+                if str_val in ['True', 'False']:
+                    return str_val == 'True'
+                elif str_val == 'None':
+                    return None
+                elif str_val.startswith('<') or str_val.startswith('0x'):
+                    # Skip object representations and hex addresses
+                    return None
+                
                 # Try to parse as number
-                if '.' in str_val:
-                    return float(str_val)
-                else:
-                    return int(str_val)
-            except ValueError:
-                # If it can't be parsed as number, check for boolean
-                if str_val.lower() in ['true', 'false']:
-                    return str_val.lower() == 'true'
-                return str_val
+                try:
+                    if '.' in str_val:
+                        return float(str_val)
+                    else:
+                        return int(str_val)
+                except ValueError:
+                    # If it can't be parsed as number, return as string
+                    return str_val
+                    
+        except (ValueError, TypeError, AttributeError) as e:
+            logger.debug(f"Error converting value for {property_path}: {e}")
+            return None
                 
     except Exception as e:
         logger.debug(f"Error getting property {property_path}: {e}")
         return None
+
+# Update the get_high_frequency_telemetry function to also include some config data:
 
 def get_high_frequency_telemetry(odrv):
     """Get high-frequency telemetry data for real-time monitoring"""
@@ -71,6 +89,14 @@ def get_high_frequency_telemetry(odrv):
     high_freq_properties = [
         ('vbus_voltage', 'vbus_voltage'),
         ('ibus', 'ibus'),
+        
+        # Add some basic config properties that are needed by PropertyTree
+        ('config.dc_bus_overvoltage_trip_level', 'config.dc_bus_overvoltage_trip_level'),
+        ('config.dc_bus_undervoltage_trip_level', 'config.dc_bus_undervoltage_trip_level'),
+        ('config.dc_max_positive_current', 'config.dc_max_positive_current'),
+        ('config.dc_max_negative_current', 'config.dc_max_negative_current'),
+        ('config.enable_brake_resistor', 'config.enable_brake_resistor'),
+        ('config.brake_resistance', 'config.brake_resistance'),
         
         # Axis 0 live data
         ('axis0.encoder.pos_estimate', 'axis0.encoder.pos_estimate'),

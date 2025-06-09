@@ -1,5 +1,6 @@
 import asyncio
 import json
+import math
 import time
 from typing import Dict, Any, List, Optional
 from flask import Flask, request, jsonify, send_from_directory, send_file
@@ -1293,21 +1294,44 @@ def get_telemetry():
         # Use the new high-frequency telemetry function
         telemetry_data = get_high_frequency_telemetry(odrive_manager.odrv)
         
-        # Ensure all data is JSON serializable
-        def make_serializable(obj):
-            if obj is None:
+        # Ensure all data is JSON serializable with better error handling
+        def make_serializable(obj, path=""):
+            try:
+                if obj is None:
+                    return None
+                elif isinstance(obj, (int, float, str, bool)):
+                    # Validate numbers aren't NaN or infinite
+                    if isinstance(obj, float) and (math.isnan(obj) or math.isinf(obj)):
+                        logger.warning(f"Invalid float value at {path}: {obj}")
+                        return None
+                    return obj
+                elif isinstance(obj, dict):
+                    result = {}
+                    for k, v in obj.items():
+                        result[k] = make_serializable(v, f"{path}.{k}")
+                    return result
+                elif isinstance(obj, list):
+                    return [make_serializable(item, f"{path}[{i}]") for i, item in enumerate(obj)]
+                else:
+                    # Convert any other type to string
+                    str_val = str(obj)
+                    if len(str_val) > 1000:  # Prevent extremely long strings
+                        logger.warning(f"Truncating long string at {path}")
+                        return str_val[:1000] + "..."
+                    return str_val
+            except Exception as e:
+                logger.warning(f"Error serializing object at {path}: {e}")
                 return None
-            elif isinstance(obj, (int, float, str, bool)):
-                return obj
-            elif isinstance(obj, dict):
-                return {k: make_serializable(v) for k, v in obj.items()}
-            elif isinstance(obj, list):
-                return [make_serializable(item) for item in obj]
-            else:
-                # Convert any other type to string
-                return str(obj)
         
         serializable_data = make_serializable(telemetry_data)
+        
+        # Test JSON serialization before returning
+        try:
+            json.dumps(serializable_data)
+        except (TypeError, ValueError) as e:
+            logger.error(f"Failed to serialize telemetry data: {e}")
+            return jsonify({"error": "Data serialization failed"}), 500
+        
         return jsonify(serializable_data)
         
     except Exception as e:
