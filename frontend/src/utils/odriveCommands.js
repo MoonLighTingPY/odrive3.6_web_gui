@@ -587,9 +587,9 @@ export const configurationMappings = {
   },
   interface: {
     name: 'Interface Configuration',
-    can_node_id: 'axis0.config.can.node_id',
-    can_node_id_extended: 'axis0.config.can.is_extended',
-    can_baudrate: 'can.config.baud_rate',
+    can_node_id: 'axis0.config.can.node_id',           // Fixed path
+    can_node_id_extended: 'axis0.config.can.is_extended', // Fixed path  
+    can_baudrate: 'can.config.baud_rate',              // Fixed path
     can_heartbeat_rate_ms: 'axis0.config.can.heartbeat_rate_ms',
     enable_uart_a: 'config.enable_uart_a',
     uart_a_baudrate: 'config.uart_a_baudrate',

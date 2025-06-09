@@ -14,6 +14,7 @@ export default defineConfig({
       }
     },
     // Add a small delay to allow backend to start
+    
     middlewareMode: false,
   },
   build: {

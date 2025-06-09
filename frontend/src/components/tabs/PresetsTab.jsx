@@ -44,9 +44,9 @@ const PresetsTab = () => {
   // eslint-disable-next-line no-unused-vars
   const [presets, setPresets] = useState({})
   const [selectedPreset, setSelectedPreset] = useState('')
-  const [setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false) // Fixed: removed array destructuring
   const [activeTab, setActiveTab] = useState(0)
-  const [ setLastUpdate] = useState(null)
+  const [lastUpdate, setLastUpdate] = useState(null) // Fixed: removed array destructuring
 
   // Load current device configuration
   const loadDeviceConfig = useCallback(async () => {

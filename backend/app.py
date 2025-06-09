@@ -398,14 +398,16 @@ class ODriveManager:
         if not self.current_device:
             return {'error': 'No device connected'}
         
-        # Rate limiting - prevent spamming the same command
-        current_time = time.time()
-        if current_time - last_api_call[command] < API_RATE_LIMIT:
-            # Return cached result if available, otherwise skip
-            return {'error': 'Rate limited - too many requests'}
-        
-        last_api_call[command] = current_time
-    
+        # For batch operations, reduce rate limiting
+        if not hasattr(self, '_batch_mode'):
+            # Rate limiting - prevent spamming the same command
+            current_time = time.time()
+            if current_time - last_api_call[command] < API_RATE_LIMIT:
+                # Return cached result if available, otherwise skip
+                return {'error': 'Rate limited - too many requests'}
+            
+            last_api_call[command] = current_time
+
         # Check connection and try to reconnect if needed (but not during reboot)
         if not self.is_rebooting:
             if not self.check_connection():
@@ -430,7 +432,7 @@ class ODriveManager:
                 'odrive': self.current_device,
             }
             
-            logger.info(f"Executing command: {command} -> {normalized_command}")
+            logger.debug(f"Executing command: {command} -> {normalized_command}")
             
             # Special handling for reboot-related commands
             if 'erase_configuration' in normalized_command or 'reboot' in normalized_command:
@@ -468,7 +470,7 @@ class ODriveManager:
                         logger.error(f"Error in assignment execution: {e}")
                         return {'error': str(e)}
             else:
-                # Handle function calls
+                # Handle function calls and property reads
                 try:
                     result = eval(normalized_command, {}, local_context)
                     
@@ -476,7 +478,15 @@ class ODriveManager:
                     if 'erase_configuration' in normalized_command or 'reboot' in normalized_command:
                         return {'result': 'Command executed successfully - device will reboot'}
                     
-                    return {'result': str(result) if result is not None else 'Command executed successfully'}
+                    # Convert result to a JSON-serializable format
+                    if result is None:
+                        return {'result': None}
+                    elif isinstance(result, (int, float, str, bool)):
+                        return {'result': result}
+                    else:
+                        # For complex objects, convert to string
+                        return {'result': str(result)}
+                        
                 except Exception as e:
                     # If eval fails, try exec for commands that don't return values
                     try:
@@ -706,6 +716,7 @@ def erase_config():
     except Exception as e:
         logger.error(f"Error in erase_config: {e}")
         return jsonify({'error': str(e)}), 500
+    
 
 @app.route('/api/odrive/save_and_reboot', methods=['POST'])
 def save_and_reboot():
@@ -1229,6 +1240,51 @@ def health_check():
     """Health check endpoint"""
     return jsonify({'status': 'ok', 'version': '0.5.6'})
 
+@app.route('/api/odrive/config/batch', methods=['POST'])
+def get_config_batch():
+    """Get multiple configuration values in a single request"""
+    try:
+        data = request.get_json()
+        if not data:
+            logger.error("No JSON data received in batch request")
+            return jsonify({'error': 'No JSON data provided'}), 400
+            
+        config_paths = data.get('paths', [])
+        logger.info(f"Batch request for {len(config_paths)} paths: {config_paths[:5]}...")  # Log first 5 paths
+        
+        if not config_paths:
+            return jsonify({'error': 'No configuration paths provided'}), 400
+            
+        if not odrive_manager.current_device:
+            return jsonify({'error': 'No ODrive device connected'}), 400
+            
+        results = {}
+        successful_reads = 0
+        
+        for i, path in enumerate(config_paths):
+            try:
+                logger.debug(f"Reading path {i+1}/{len(config_paths)}: {path}")
+                result = odrive_manager.execute_command(path)
+                
+                if 'error' not in result:
+                    results[path] = result.get('result')
+                    successful_reads += 1
+                else:
+                    results[path] = {'error': result['error']}
+                    logger.warning(f"Error reading {path}: {result['error']}")
+                    
+            except Exception as e:
+                error_msg = str(e)
+                results[path] = {'error': error_msg}
+                logger.error(f"Exception reading {path}: {error_msg}")
+        
+        logger.info(f"Batch request completed: {successful_reads}/{len(config_paths)} successful")
+        return jsonify({'results': results})
+        
+    except Exception as e:
+        logger.error(f"Error in get_config_batch: {e}")
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
+
 if __name__ == '__main__':
     print("🚀 Starting ODrive GUI Backend...")
     
@@ -1254,3 +1310,4 @@ if __name__ == '__main__':
         print(f"\n❌ Error: {e}")
         if is_running_as_executable():
             input("Press Enter to close...")
+

@@ -22,6 +22,9 @@ import FinalConfigStep from '../config-steps/FinalConfigStep'
 import { getAllConfigurationParams } from '../../utils/odriveCommands'
 import { convertTorqueConstantToKv } from '../../utils/valueHelpers'
 import { applyAndSaveConfiguration } from '../../utils/configurationActions'
+import { 
+  loadAllConfigurationBatch
+} from '../../utils/configBatchApi'
 
 const ConfigurationTab = () => {
   const dispatch = useDispatch()
@@ -55,106 +58,24 @@ const ConfigurationTab = () => {
   const currentStep = steps.find(step => step.id === activeConfigStep)
   const CurrentStepComponent = currentStep?.component
 
-  const pullBatchParams = useCallback(async (odriveParams) => {
-    const promises = odriveParams.map(async (odriveParam) => {
-      try {
-        const response = await fetch('/api/odrive/command', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ command: `odrv0.${odriveParam}` })
-        })
-
-        if (response.ok) {
-          const result = await response.json()
-          return { param: odriveParam, value: result.result, success: true }
-        } else {
-          throw new Error('Failed to read parameter')
-        }
-      } catch (error) {
-        return { param: odriveParam, error: error.message, success: false }
-      }
-    })
-
-    const batchResults = await Promise.allSettled(promises)
-    
-    return batchResults.map(result => {
-      if (result.status === 'fulfilled') {
-        return result.value
-      } else {
-        return { param: 'unknown', error: result.reason.message, success: false }
-      }
-    })
-  }, [])
-
-  const pullAllConfigInBackground = useCallback(async () => {
+  const pullBatchParams = useCallback(async () => {
     if (!isConnected || isPullingConfig) return
 
     setIsPullingConfig(true)
     setPullProgress(0)
 
     try {
-      const configParamMaps = getAllConfigurationParams()
-      const totalParams = Object.values(configParamMaps).reduce((total, category) => {
-        return total + Object.keys(category.params).length
-      }, 0)
-
-      let currentProgress = 0
-      let successCount = 0
-      const allConfig = {}
-
-      for (const [categoryKey, category] of Object.entries(configParamMaps)) {
-        const categoryConfig = {}
-        const paramEntries = Object.entries(category.params)
-        const batchSize = 10
-        
-        for (let i = 0; i < paramEntries.length; i += batchSize) {
-          const batch = paramEntries.slice(i, i + batchSize)
-          const odriveParams = batch.map(([, odriveParam]) => odriveParam)
-          
-          try {
-            const batchResults = await pullBatchParams(odriveParams)
-            
-            batchResults.forEach((result, index) => {
-              const [configKey, odriveParam] = batch[index]
-              
-              if (result.success) {
-                let value = result.value
-                
-                // Handle special conversions
-                if (configKey === 'motor_kv' && odriveParam.includes('torque_constant')) {
-                  const kvValue = convertTorqueConstantToKv(value)
-                  categoryConfig[configKey] = kvValue
-                } else {
-                  categoryConfig[configKey] = value
-                }
-                
-                successCount++
-              }
-
-              currentProgress++
-              setPullProgress((currentProgress / totalParams) * 100)
-            })
-                    
-          } catch (error) {
-            console.error('Batch pull error:', error)
-            currentProgress += batch.length
-            setPullProgress((currentProgress / totalParams) * 100)
-          }
-          
-          // Small delay between batches
-          if (i + batchSize < paramEntries.length) {
-            await new Promise(resolve => setTimeout(resolve, 10))
-          }
-        }
-
-        if (Object.keys(categoryConfig).length > 0) {
-          allConfig[categoryKey] = categoryConfig
-        }
-      }
-
+      setPullProgress(50) // Show progress
+      
+      // Load ALL configuration in ONE batch request
+      const allConfig = await loadAllConfigurationBatch()
+      
+      setPullProgress(90)
+      
       // Update device config with pulled values
       setDeviceConfig(allConfig)
 
+      // Update Redux store
       Object.entries(allConfig).forEach(([category, config]) => {
         const actionMap = {
           power: 'config/updatePowerConfig',
@@ -170,11 +91,14 @@ const ConfigurationTab = () => {
       })
 
       setHasAutoLoaded(true)
+      setPullProgress(100)
 
+      const totalLoaded = Object.values(allConfig).reduce((sum, config) => sum + Object.keys(config).length, 0)
+      
       toast({
         title: 'Configuration loaded',
-        description: `${successCount}/${totalParams} parameters loaded from ODrive`,
-        status: successCount > totalParams * 0.8 ? 'success' : 'warning',
+        description: `${totalLoaded} parameters loaded from ODrive in ONE batch request!`,
+        status: 'success',
         duration: 3000,
       })
 
@@ -190,7 +114,7 @@ const ConfigurationTab = () => {
       setIsPullingConfig(false)
       setPullProgress(0)
     }
-  }, [isConnected, isPullingConfig, pullBatchParams, toast, dispatch])
+  }, [isConnected, isPullingConfig, toast, dispatch])
 
   useEffect(() => {
     const handlePresetLoad = (event) => {
@@ -211,20 +135,20 @@ const ConfigurationTab = () => {
 
   // Auto-pull configuration when connected - only once per connection
   useEffect(() => {
-    if (isConnected && !hasAutoLoaded && !isPullingConfig) {
-      pullAllConfigInBackground()
-    } else if (!isConnected) {
-      // Clear config and reset auto-load flag when disconnected
-      setDeviceConfig({
-        power: {},
-        motor: {},
-        encoder: {},
-        control: {},
-        interface: {}
-      })
-      setHasAutoLoaded(false)
-    }
-  }, [isConnected, hasAutoLoaded, isPullingConfig, pullAllConfigInBackground])
+  if (isConnected && !hasAutoLoaded && !isPullingConfig) {
+    pullBatchParams() // Changed from pullAllConfigInBackground
+  } else if (!isConnected) {
+    // Clear config and reset auto-load flag when disconnected
+    setDeviceConfig({
+      power: {},
+      motor: {},
+      encoder: {},
+      control: {},
+      interface: {}
+    })
+    setHasAutoLoaded(false)
+  }
+}, [isConnected, hasAutoLoaded, isPullingConfig, pullBatchParams]) 
 
   const onUpdateConfig = (category, key, value) => {
     // Update local device config
