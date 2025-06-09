@@ -137,7 +137,6 @@ export const loadAllConfigurationBatch = async () => {
     'device.axis0.config.enable_step_dir',
     'device.axis0.config.step_dir_always_on',
     'device.axis0.config.enable_sensorless_mode',
-    'device.axis0.encoder.config.use_separate_commutation_encoder'
   ];
   
   // Load all parameters in one batch request
@@ -219,12 +218,7 @@ export const loadAllConfigurationBatch = async () => {
             categorizedResults.interface[configKey] = value;
           }
         } else {
-          // Handle all other interface parameters including use_separate_commutation_encoder
-          if (configKey === 'use_separate_commutation_encoder') {
-            categorizedResults.encoder['use_separate_commutation_encoder'] = value;
-          } else {
             categorizedResults.interface[configKey] = value;
-          }
         }
     }
   }

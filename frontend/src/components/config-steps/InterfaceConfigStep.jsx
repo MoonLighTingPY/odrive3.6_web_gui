@@ -112,10 +112,10 @@ const InterfaceConfigStep = ({
                     <FormControl flex="1">
                       <FormLabel color="white" mb={1} fontSize="sm">Heartbeat Rate</FormLabel>
                       <ParameterInput
-                        value={interfaceConfig.can_heartbeat_rate_ms}
-                        onChange={(value) => handleConfigChange('can_heartbeat_rate_ms', parseInt(value) || 0)}
-                        onRefresh={() => handleRefresh('can_heartbeat_rate_ms')}
-                        isLoading={isLoading('can_heartbeat_rate_ms')}
+                        value={interfaceConfig.heartbeat_rate_ms} // Fixed: was can_heartbeat_rate_ms
+                        onChange={(value) => handleConfigChange('heartbeat_rate_ms', parseInt(value) || 0)} // Fixed
+                        onRefresh={() => handleRefresh('heartbeat_rate_ms')} // Fixed
+                        isLoading={isLoading('heartbeat_rate_ms')} // Fixed
                         unit="ms"
                         step={10}
                         precision={0}

@@ -590,7 +590,7 @@ export const configurationMappings = {
     can_node_id: 'axis0.config.can.node_id',           // Fixed path
     can_node_id_extended: 'axis0.config.can.is_extended', // Fixed path  
     can_baudrate: 'can.config.baud_rate',              // Fixed path
-    can_heartbeat_rate_ms: 'axis0.config.can.heartbeat_rate_ms',
+    heartbeat_rate_ms: 'axis0.config.can.heartbeat_rate_ms', // Fixed: was can_heartbeat_rate_ms
     enable_uart_a: 'config.enable_uart_a',
     uart_a_baudrate: 'config.uart_a_baudrate',
     uart0_protocol: 'config.uart0_protocol',

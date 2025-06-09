@@ -63,7 +63,6 @@ export const odrivePropertyTree = {
       phase_resistance: { name: 'Phase Resistance', description: 'Motor phase resistance (Ω)', writable: true, type: 'number', min: 0, max: 10, step: 0.001, decimals: 3 },
       torque_constant: { name: 'Torque Constant', description: 'Motor torque constant (Nm/A)', writable: true, type: 'number', min: 0, max: 1, step: 0.001, decimals: 6 },
       direction: { name: 'Direction', description: 'Motor direction (1 or -1)', writable: true, type: 'number', min: -1, max: 1 },
-      motor_type: { name: 'Motor Type', description: 'Motor type configuration', writable: true, type: 'number', min: 0, max: 1 },
       current_lim: { name: 'Current Limit', description: 'Motor current limit (A)', writable: true, type: 'number', min: 0, max: 60, step: 0.1, decimals: 1 },
       current_lim_margin: { name: 'Current Limit Margin', description: 'Current limit safety margin (A)', writable: true, type: 'number', min: 0, max: 10, step: 0.1, decimals: 1 },
       torque_lim: { name: 'Torque Limit', description: 'Motor torque limit (Nm)', writable: true, type: 'number', min: 0, max: 100, step: 0.1, decimals: 3 },
@@ -146,7 +145,6 @@ export const odrivePropertyTree = {
       pm_flux_linkage: { name: 'PM Flux Linkage', description: 'Permanent magnet flux linkage (Wb)', writable: true, type: 'number', min: 0, max: 1, step: 0.001, decimals: 6 },
       observer_gain: { name: 'Observer Gain', description: 'Sensorless observer gain', writable: true, type: 'number', min: 0, max: 10000, step: 1 },
       pll_bandwidth: { name: 'PLL Bandwidth', description: 'PLL bandwidth (Hz)', writable: true, type: 'number', min: 10, max: 1000, step: 1 },
-      pm_flux_linkage: { name: 'PM Flux Linkage', description: 'Permanent magnet flux linkage', writable: true, type: 'number', min: 0, max: 1, step: 0.000001, decimals: 6 },
     }
   },
 
@@ -192,14 +190,25 @@ export const odrivePropertyTree = {
     }
   },
 
-  can: {
-    name: 'CAN Bus Configuration',
-    description: 'CAN bus communication settings',
+  'axis0.can': {
+    name: 'CAN Bus Configuration', 
+    description: 'CAN bus communication settings for axis0',
     properties: {
       node_id: { name: 'Node ID', description: 'CAN node ID for axis0', writable: true, type: 'number', min: 0, max: 63 },
-      node_id_extended: { name: 'Extended Node ID', description: 'Extended CAN node ID', writable: true, type: 'boolean' },
       is_extended: { name: 'Is Extended', description: 'Use extended CAN frames', writable: true, type: 'boolean' },
       heartbeat_rate_ms: { name: 'Heartbeat Rate', description: 'CAN heartbeat rate (ms)', writable: true, type: 'number', min: 0, max: 1000, step: 10 },
+      encoder_rate_ms: { name: 'Encoder Rate', description: 'Encoder data broadcast rate (ms)', writable: true, type: 'number', min: 0, max: 1000, step: 10 },
+      motor_error_rate_ms: { name: 'Motor Error Rate', description: 'Motor error broadcast rate (ms)', writable: true, type: 'number', min: 0, max: 1000, step: 10 },
+      encoder_error_rate_ms: { name: 'Encoder Error Rate', description: 'Encoder error broadcast rate (ms)', writable: true, type: 'number', min: 0, max: 1000, step: 10 },
+      controller_error_rate_ms: { name: 'Controller Error Rate', description: 'Controller error broadcast rate (ms)', writable: true, type: 'number', min: 0, max: 1000, step: 10 },
+    }
+  },
+
+  can: {
+    name: 'CAN Bus Global Configuration',
+    description: 'Global CAN bus settings',
+    properties: {
+      baud_rate: { name: 'Baud Rate', description: 'CAN bus baud rate', writable: true, type: 'number', min: 125000, max: 1000000 },
     }
   },
 

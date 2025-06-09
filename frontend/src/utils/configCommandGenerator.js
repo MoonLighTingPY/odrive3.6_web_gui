@@ -3,7 +3,7 @@
  * Generates ODrive v0.5.6 configuration commands from configuration objects
  */
 
-import { safeValue, safeBool, convertKvToTorqueConstant } from './valueHelpers'
+import { safeValue, safeBool, convertKvToTorqueConstant} from './valueHelpers'
 
 /**
  * Generate all configuration commands for ODrive v0.5.6
@@ -37,17 +37,21 @@ export const generateConfigCommands = (config) => {
   
   // Convert motor KV to torque constant if needed
   if (motor.motor_kv !== undefined && motor.motor_kv !== null) {
-    const torqueConstant = convertKvToTorqueConstant(motor.motor_kv)
+    const torqueConstant = convertKvToTorqueConstant(motor.motor_kv)  // Use direct calculation instead
     commands.push(`odrv0.axis0.motor.config.torque_constant = ${torqueConstant}`)
   }
   
   // Lock-in spin current (calibration_lockin.current)
   commands.push(`odrv0.axis0.config.calibration_lockin.current = ${safeValue(motor.lock_in_spin_current, 10)}`)
   
-  // Phase resistance (for gimbal motors)
+  // Phase resistance and inductance (for gimbal motors)
   if (motor.phase_resistance !== undefined && motor.phase_resistance !== null && motor.phase_resistance > 0) {
     commands.push(`odrv0.axis0.motor.config.phase_resistance = ${motor.phase_resistance}`)
   }
+  if (motor.phase_inductance !== undefined && motor.phase_inductance !== null && motor.phase_inductance > 0) {
+    commands.push(`odrv0.axis0.motor.config.phase_inductance = ${motor.phase_inductance}`)
+  }
+
 
   // Encoder configuration commands
   commands.push(`odrv0.axis0.encoder.config.mode = ${safeValue(encoder.encoder_type, 1)}`)
@@ -65,7 +69,6 @@ export const generateConfigCommands = (config) => {
   commands.push(`odrv0.axis0.encoder.config.enable_phase_interpolation = ${safeBool(encoder.enable_phase_interpolation) ? 'True' : 'False'}`)
   commands.push(`odrv0.axis0.encoder.config.hall_polarity = ${safeValue(encoder.hall_polarity, 0)}`)
   commands.push(`odrv0.axis0.encoder.config.hall_polarity_calibrated = ${safeBool(encoder.hall_polarity_calibrated) ? 'True' : 'False'}`)
-  commands.push(`odrv0.axis0.encoder.config.use_separate_commutation_encoder = ${safeBool(encoder.use_separate_commutation_encoder) ? 'True' : 'False'}`)
   // Control configuration commands
   commands.push(`odrv0.axis0.controller.config.control_mode = ${safeValue(control.control_mode, 3)}`)
   commands.push(`odrv0.axis0.controller.config.input_mode = ${safeValue(control.input_mode, 1)}`)
@@ -163,7 +166,7 @@ export const generateMotorCommands = (motorConfig = {}) => {
   
   // Convert motor KV to torque constant if needed
   if (motorConfig.motor_kv !== undefined && motorConfig.motor_kv !== null) {
-    const torqueConstant = 8.27 / motorConfig.motor_kv
+    const torqueConstant = convertKvToTorqueConstant(motorConfig.motor_kv)
     commands.push(`odrv0.axis0.motor.config.torque_constant = ${torqueConstant}`)
   }
   
@@ -243,7 +246,7 @@ export const generateInterfaceCommands = (interfaceConfig = {}) => {
   commands.push(`odrv0.axis0.config.can.node_id = ${safeValue(interfaceConfig.can_node_id, 0)}`)
   commands.push(`odrv0.axis0.config.can.is_extended = ${safeBool(interfaceConfig.can_node_id_extended) ? 'True' : 'False'}`)
   commands.push(`odrv0.can.config.baud_rate = ${safeValue(interfaceConfig.can_baudrate, 250000)}`)
-  commands.push(`odrv0.axis0.config.can.heartbeat_rate_ms = ${safeValue(interfaceConfig.can_heartbeat_rate_ms, 100)}`)
+  commands.push(`odrv0.axis0.config.can.heartbeat_rate_ms = ${safeValue(interfaceConfig.heartbeat_rate_ms, 100)}`)
   
   // UART settings
   commands.push(`odrv0.config.enable_uart_a = ${safeBool(interfaceConfig.enable_uart_a) ? 'True' : 'False'}`)

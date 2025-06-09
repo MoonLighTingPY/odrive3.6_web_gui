@@ -249,18 +249,6 @@ const EncoderConfigStep = ({
               <Box>
                 <Text fontWeight="bold" color="purple.300" mb={2} fontSize="sm">Advanced Settings</Text>
                 <VStack spacing={2} align="stretch">
-                  <HStack spacing={2}>
-                    <Switch
-                      isChecked={encoderConfig.use_separate_commutation_encoder}
-                      onChange={(e) => handleConfigChange('use_separate_commutation_encoder', e.target.checked)}
-                      colorScheme="odrive"
-                      size="sm"
-                    />
-                    <FormLabel color="white" mb={0} fontSize="xs">Use Separate Commutation Encoder</FormLabel>
-                    <Tooltip label="Enable if you have a separate low-resolution encoder for commutation.">
-                      <Icon as={InfoIcon} color="gray.400" boxSize={3} />
-                    </Tooltip>
-                  </HStack>
 
                   <HStack spacing={2}>
                     <Switch
@@ -327,18 +315,6 @@ const EncoderConfigStep = ({
                     </Tooltip>
                   </HStack>
 
-                  <HStack spacing={2}>
-                    <Switch
-                      isChecked={encoderConfig.pre_calibrated}
-                      onChange={(e) => handleConfigChange('pre_calibrated', e.target.checked)}
-                      colorScheme="odrive"
-                      size="sm"
-                    />
-                    <FormLabel color="white" mb={0} fontSize="xs">Pre-Calibrated</FormLabel>
-                    <Tooltip label="Set to true after successful calibration to skip calibration on startup.">
-                      <Icon as={InfoIcon} color="gray.400" boxSize={3} />
-                    </Tooltip>
-                  </HStack>
                 </VStack>
               </Box>
             </SimpleGrid>
