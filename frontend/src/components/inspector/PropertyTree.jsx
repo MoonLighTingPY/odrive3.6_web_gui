@@ -108,29 +108,28 @@ const PropertyTree = ({
 
   const getValueFromState = useCallback((path) => {
   if (!odriveState || !odriveState.device) {
-    console.log('No device data in odriveState:', odriveState)
     return undefined
   }
   
   // Build the correct path for the data structure
   let fullPath
   if (path.startsWith('system.')) {
-    // System properties map directly to device.* properties
     const systemProp = path.replace('system.', '')
-    // All system properties are directly under device.*
-    fullPath = `device.${systemProp}`
+    // Handle properties that are under device.config.*
+    if (['dc_bus_overvoltage_trip_level', 'dc_bus_undervoltage_trip_level', 'dc_max_positive_current', 
+         'dc_max_negative_current', 'enable_brake_resistor', 'brake_resistance'].includes(systemProp)) {
+      fullPath = `device.config.${systemProp}`
+    } else {
+      // Properties directly under device.*
+      fullPath = `device.${systemProp}`
+    }
   } else if (path.startsWith('axis0.') || path.startsWith('axis1.')) {
     // Axis properties map to device.axis0.* or device.axis1.*
-    fullPath = `device.${path}`
-  } else if (path.startsWith('config.')) {
-    // Config properties map to device.config.*
     fullPath = `device.${path}`
   } else {
     // Direct device path
     fullPath = `device.${path}`
   }
-  
-  console.log('Looking for path:', fullPath, 'in state:', odriveState)
   
   const parts = fullPath.split('.')
   let current = odriveState
@@ -139,12 +138,10 @@ const PropertyTree = ({
     if (current && current[part] !== undefined) {
       current = current[part]
     } else {
-      console.log(`Part ${part} not found in current object:`, current)
       return undefined
     }
   }
   
-  console.log(`Found value for ${fullPath}:`, current)
   return current
 }, [odriveState])
 
