@@ -176,10 +176,10 @@ export const loadAllConfigurationBatch = async () => {
       } else if (path.includes('.motor.config.') || path.includes('.calibration_lockin.')) {
         // Handle special motor parameter mappings
         if (configKey === 'torque_constant') {
-          // Convert torque constant to motor KV for display
+          // Convert torque constant to motor KV for display AND store original
           categorizedResults.motor['motor_kv'] = convertTorqueConstantToKv(value);
-        }
-        if (configKey === 'current' && path.includes('calibration_lockin')) {
+          categorizedResults.motor[configKey] = value; // Store original too
+        } else if (configKey === 'current' && path.includes('calibration_lockin')) {
           // Map calibration_lockin.current to lock_in_spin_current
           categorizedResults.motor['lock_in_spin_current'] = value;
         } else {
@@ -198,7 +198,8 @@ export const loadAllConfigurationBatch = async () => {
                  path.includes('.config.uart_') || path.includes('.config.gpio') ||
                  path.includes('.config.enable_watchdog') || path.includes('.config.watchdog_') ||
                  path.includes('.config.enable_step_dir') || path.includes('.config.step_dir_') ||
-                 path.includes('.config.enable_sensorless_mode')) {
+                 path.includes('.config.enable_sensorless_mode') || path.includes('.config.uart0_protocol') || 
+                 path.includes('.config.uart1_protocol')) {
         // Handle interface configuration mappings
         if (configKey === 'baud_rate') {
           categorizedResults.interface['can_baudrate'] = value;
@@ -206,20 +207,22 @@ export const loadAllConfigurationBatch = async () => {
           categorizedResults.interface['can_node_id'] = value;
         } else if (configKey === 'is_extended') {
           categorizedResults.interface['can_node_id_extended'] = value;
-          } else if (configKey === 'heartbeat_rate_ms') {
-            categorizedResults.interface['heartbeat_rate_ms'] = value;
-          } else if (configKey === 'enable_sensorless_mode') {
-            categorizedResults.interface['enable_sensorless'] = value;
-          } else if (configKey === 'uart0_protocol') {
-            categorizedResults.interface['uart0_protocol'] = value;
-          } else if (configKey === 'uart1_protocol') {
-            categorizedResults.interface['uart1_protocol'] = value;
-          } else {
-            categorizedResults.interface[configKey] = value;
-          }
+        } else if (configKey === 'heartbeat_rate_ms') {
+          categorizedResults.interface['heartbeat_rate_ms'] = value;
+        } else if (configKey === 'enable_sensorless_mode') {
+          categorizedResults.interface['enable_sensorless'] = value;
+        } else if (configKey === 'uart0_protocol') {
+          categorizedResults.interface['uart0_protocol'] = value;
+        } else if (configKey === 'uart1_protocol') {
+          categorizedResults.interface['uart1_protocol'] = value;
         } else {
-            categorizedResults.interface[configKey] = value;
+          categorizedResults.interface[configKey] = value;
         }
+      } else {
+        // Catch any uncategorized parameters
+        console.warn(`Uncategorized parameter: ${path} = ${value}`);
+        categorizedResults.interface[configKey] = value; // Default to interface
+      }
     }
   }
   

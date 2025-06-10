@@ -474,7 +474,7 @@ const ControlConfigStep = ({
                       </Tooltip>
                     </HStack>
                     <ParameterInput
-                      value={controlConfig.inertia}
+                      value={controlConfig.inertia ?? 0}
                       onChange={(value) => handleConfigChange('inertia', parseFloat(value) || 0)}
                       onRefresh={() => handleRefresh('inertia')}
                       isLoading={isLoading('inertia')}

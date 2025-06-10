@@ -63,7 +63,7 @@ const InterfaceConfigStep = ({
                     <FormControl flex="1">
                       <FormLabel color="white" mb={1} fontSize="sm">CAN Node ID</FormLabel>
                       <ParameterInput
-                        value={interfaceConfig.can_node_id}
+                        value={interfaceConfig.can_node_id ?? 0}
                         onChange={(value) => handleConfigChange('can_node_id', parseInt(value) || 0)}
                         onRefresh={() => handleRefresh('can_node_id')}
                         isLoading={isLoading('can_node_id')}
