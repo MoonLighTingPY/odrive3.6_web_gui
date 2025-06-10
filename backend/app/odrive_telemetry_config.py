@@ -82,6 +82,11 @@ def safe_get_property(odrv, property_path):
 def get_high_frequency_telemetry(odrv):
     """Get high-frequency telemetry data for live charts and real-time monitoring"""
     try:
+        # Quick connection test first
+        vbus = odrv.vbus_voltage
+        if vbus <= 0:
+            raise Exception("Device appears disconnected - no power detected")
+            
         return {
             'device': {
                 # System-level properties that PropertyTree expects
@@ -93,7 +98,7 @@ def get_high_frequency_telemetry(odrv):
                 'fw_version_unreleased': getattr(odrv, 'fw_version_unreleased', 0),
                 'serial_number': odrv.serial_number,
                 'user_config_loaded': getattr(odrv, 'user_config_loaded', 0),
-                'vbus_voltage': odrv.vbus_voltage,
+                'vbus_voltage': vbus,
                 'ibus': getattr(odrv, 'ibus', 0),
                 'axis0': {
                     'current_state': odrv.axis0.current_state,
@@ -353,9 +358,14 @@ def set_nested_property(obj, path, value):
 def get_dashboard_telemetry(odrv):
     """Get minimal telemetry data specifically for dashboard display"""
     try:
+        # Quick connection test
+        vbus = odrv.vbus_voltage
+        if vbus <= 0:
+            raise Exception("Device appears disconnected - no power detected")
+            
         return {
             'device': {
-                'vbus_voltage': odrv.vbus_voltage,
+                'vbus_voltage': vbus,
                 'ibus': getattr(odrv, 'ibus', 0),
                 'hw_version_major': odrv.hw_version_major,
                 'hw_version_minor': odrv.hw_version_minor,

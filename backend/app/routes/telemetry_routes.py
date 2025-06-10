@@ -70,36 +70,87 @@ def get_selective_telemetry():
         if not odrive_manager.is_connected():
             return jsonify({"error": "No ODrive connected"}), 404
         
+        # Additional connection health check
+        try:
+            # Quick health check - try to read vbus_voltage
+            vbus = odrive_manager.odrv.vbus_voltage
+            if vbus <= 0:
+                # This indicates a disconnected device
+                odrive_manager.connection_lost = True
+                return jsonify({"error": "Device disconnected - no power detected"}), 404
+        except Exception as health_check_error:
+            # Connection check failed - device is likely disconnected
+            odrive_manager.connection_lost = True
+            logger.warning(f"Device connection lost during health check: {health_check_error}")
+            return jsonify({"error": "Device disconnected"}), 404
+        
         data = request.get_json()
         if not data:
             # Default to high frequency data if no selection provided
-            telemetry_data = get_high_frequency_telemetry(odrive_manager.odrv)
-            return jsonify(sanitize_for_json(telemetry_data))
+            try:
+                telemetry_data = get_high_frequency_telemetry(odrive_manager.odrv)
+                if not telemetry_data or not telemetry_data.get('device'):
+                    return jsonify({"error": "Failed to get telemetry data"}), 404
+                return jsonify(sanitize_for_json(telemetry_data))
+            except Exception as e:
+                logger.error(f"Error getting default telemetry: {e}")
+                return jsonify({"error": "Device disconnected"}), 404
         
         # Get the data selection mode
-        mode = data.get('mode', 'default')  # 'dashboard', 'charts', 'inspector', 'config', 'default'
-        specific_paths = data.get('paths', [])  # Specific property paths to fetch
+        mode = data.get('mode', 'default')
+        specific_paths = data.get('paths', [])
         
         if mode == 'charts' and specific_paths:
             # Chart mode - only fetch specific properties for maximum performance
             result = {'device': {}}
+            
+            # Always include vbus_voltage for health check
+            try:
+                vbus_result = odrive_manager.execute_command('odrv0.vbus_voltage')
+                if 'result' in vbus_result and 'error' not in vbus_result:
+                    if vbus_result['result'] <= 0:
+                        return jsonify({"error": "Device disconnected - no power detected"}), 404
+                    result['device']['vbus_voltage'] = vbus_result['result']
+                else:
+                    return jsonify({"error": "Device disconnected during health check"}), 404
+            except Exception as e:
+                logger.warning(f"Health check failed: {e}")
+                return jsonify({"error": "Device disconnected"}), 404
+            
+            # Fetch each requested path
             for path in specific_paths:
                 try:
-                    value = odrive_manager.execute_command(f'device.{path}')
+                    # Convert frontend path to ODrive command
+                    odrv_path = f'odrv0.{path}'
+                    logger.debug(f"Fetching chart data for path: {odrv_path}")
+                    
+                    value = odrive_manager.execute_command(odrv_path)
                     if 'result' in value and 'error' not in value:
-                        # Set the nested property in the result
+                        # Set the nested property in the result using the original path
                         set_nested_property(result['device'], path, value['result'])
+                        logger.debug(f"Successfully fetched {path}: {value['result']}")
+                    else:
+                        logger.warning(f"Failed to get path {path}: {value.get('error', 'Unknown error')}")
+                        
                 except Exception as e:
-                    logger.warning(f"Failed to get path {path}: {e}")
+                    logger.warning(f"Exception getting path {path}: {e}")
                     
             # Add timestamp for charts
             result['timestamp'] = time.time() * 1000
+            
+            logger.debug(f"Chart result: {result}")
             return jsonify(sanitize_for_json(result))
             
         elif mode == 'dashboard':
             # Dashboard mode - get essential live data only
-            dashboard_data = get_dashboard_telemetry(odrive_manager.odrv)
-            return jsonify(sanitize_for_json(dashboard_data))
+            try:
+                dashboard_data = get_dashboard_telemetry(odrive_manager.odrv)
+                if not dashboard_data or not dashboard_data.get('device'):
+                    return jsonify({"error": "Failed to get dashboard data"}), 404
+                return jsonify(sanitize_for_json(dashboard_data))
+            except Exception as e:
+                logger.error(f"Error getting dashboard telemetry: {e}")
+                return jsonify({"error": "Device disconnected"}), 404
             
         elif mode == 'config':
             # Configuration mode - get configuration data
@@ -118,6 +169,8 @@ def get_selective_telemetry():
         
     except Exception as e:
         logger.error(f"Error getting telemetry: {e}")
+        # Mark connection as lost if we get exceptions
+        odrive_manager.connection_lost = True
         return jsonify({"error": str(e)}), 500
 
 def set_nested_property(obj, path, value):

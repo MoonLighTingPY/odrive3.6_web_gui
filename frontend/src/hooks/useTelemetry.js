@@ -10,9 +10,11 @@ class TelemetryManager {
     this.currentMode = 'default'
     this.currentPaths = []
     this.interval = null
-    this.updateRate = 1000 // Default 1Hz
+    this.updateRate = 1000
+    this.isRunning = false
+    this.consecutiveErrors = 0
+    this.maxConsecutiveErrors = 3
   }
-
   subscribe(id, config) {
     this.subscribers.set(id, config)
     this.updateTelemetryMode()
@@ -29,15 +31,27 @@ class TelemetryManager {
     let newPaths = []
     let newRate = 1000
 
-    // Charts mode takes highest priority for performance
+    // First pass: Check if we have any charts subscribers with paths
+    let hasChartsWithPaths = false
+    for (const [, config] of this.subscribers) {
+      if (config.type === 'charts' && config.paths?.length > 0) {
+        hasChartsWithPaths = true
+        break
+      }
+    }
+
+    // Second pass: Set mode based on priority
     for (const [, config] of this.subscribers) {
       if (config.type === 'charts' && config.paths?.length > 0) {
         newMode = 'charts'
         newPaths = [...new Set([...newPaths, ...config.paths])]
-        newRate = Math.min(newRate, config.updateRate || 1000) // High frequency for charts
-      } else if (config.type === 'dashboard' && newMode !== 'charts') {
+        // Limit maximum frequency to prevent overwhelming the backend
+        const requestedRate = config.updateRate || 100
+        const safeRate = Math.max(requestedRate, 50) // Minimum 50ms (20Hz max)
+        newRate = Math.min(newRate, safeRate)
+      } else if (config.type === 'dashboard' && !hasChartsWithPaths) {
         newMode = 'dashboard'
-        newRate = Math.min(newRate, config.updateRate || 100)
+        newRate = Math.min(newRate, config.updateRate || 1000)
       } else if (config.type === 'inspector' && newMode === 'default') {
         newMode = 'inspector'
         newRate = Math.min(newRate, config.updateRate || 2000)
@@ -53,7 +67,7 @@ class TelemetryManager {
       this.currentPaths = newPaths
       this.updateRate = newRate
       
-      console.log(`Telemetry mode changed to: ${newMode}, paths: ${newPaths.length}, rate: ${newRate}ms`)
+      console.log(`Telemetry mode changed to: ${newMode}, paths: ${newPaths.length}, rate: ${newRate}ms, paths: [${newPaths.join(', ')}]`)
       this.restartTelemetry()
     }
   }
@@ -81,10 +95,30 @@ class TelemetryManager {
       clearInterval(this.interval)
     }
 
-    if (this.subscribers.size === 0) return
+    if (this.subscribers.size === 0) {
+      this.isRunning = false
+      return
+    }
+
+    this.isRunning = true
+    this.consecutiveErrors = 0
 
     this.interval = setInterval(async () => {
+      // Skip if we're already processing a request or have too many errors
+      if (!this.isRunning) return
+      
+      if (this.consecutiveErrors >= this.maxConsecutiveErrors) {
+        console.warn(`Telemetry paused due to ${this.consecutiveErrors} consecutive errors`)
+        // Increase update rate to reduce load
+        this.updateRate = Math.max(this.updateRate * 2, 1000)
+        this.consecutiveErrors = 0
+        this.restartTelemetry()
+        return
+      }
+
       try {
+        this.isRunning = false // Prevent overlapping requests
+
         const payload = {
           mode: this.currentMode,
           paths: this.currentPaths
@@ -101,6 +135,7 @@ class TelemetryManager {
           
           // Verify we have valid data with vbus_voltage > 0
           if (data.device && data.device.vbus_voltage > 0) {
+            this.consecutiveErrors = 0 // Reset error counter on success
             // Notify all subscribers
             this.subscribers.forEach((config) => {
               if (config.callback) {
@@ -108,35 +143,36 @@ class TelemetryManager {
               }
             })
           } else {
+            this.consecutiveErrors++
             console.warn('Received telemetry data with no power (vbus_voltage <= 0)')
-            // Notify subscribers about disconnection
-            this.subscribers.forEach((config) => {
-              if (config.onDisconnected) {
-                config.onDisconnected()
-              }
-            })
+            this.notifyDisconnection()
           }
         } else if (response.status === 404) {
+          this.consecutiveErrors++
           console.warn('ODrive disconnected - received 404 from telemetry endpoint')
-          // Notify subscribers about disconnection
-          this.subscribers.forEach((config) => {
-            if (config.onDisconnected) {
-              config.onDisconnected()
-            }
-          })
+          this.notifyDisconnection()
         } else {
+          this.consecutiveErrors++
           console.warn(`Telemetry request failed with status: ${response.status}`)
         }
       } catch (error) {
+        this.consecutiveErrors++
         console.error('Telemetry fetch error:', error)
-        // Notify subscribers about connection error
-        this.subscribers.forEach((config) => {
-          if (config.onDisconnected) {
-            config.onDisconnected()
-          }
-        })
+        if (this.consecutiveErrors >= this.maxConsecutiveErrors) {
+          this.notifyDisconnection()
+        }
+      } finally {
+        this.isRunning = true // Allow next request
       }
     }, this.updateRate)
+  }
+
+  notifyDisconnection() {
+    this.subscribers.forEach((config) => {
+      if (config.onDisconnected) {
+        config.onDisconnected()
+      }
+    })
   }
 
   stop() {
@@ -144,6 +180,8 @@ class TelemetryManager {
       clearInterval(this.interval)
       this.interval = null
     }
+    this.isRunning = false
+    this.consecutiveErrors = 0
   }
 }
 
@@ -167,31 +205,35 @@ export const useTelemetry = (config) => {
   }, [config])
 
   useEffect(() => {
-    if (!isConnected) return
+    if (!isConnected || !config) return
 
     const manager = getTelemetryManager()
     const id = idRef.current
 
     // Subscribe with callback that updates Redux store
     manager.subscribe(id, {
-      ...configRef.current,
+      ...config,
       callback: (data) => {
-        if (configRef.current.onData) {
+        // Add null check to prevent errors when component unmounts
+        if (configRef.current && configRef.current.onData) {
           configRef.current.onData(data)
-        } else {
+        } else if (configRef.current) {
           // Default: update Redux store
           dispatch(updateOdriveState(data))
         }
       },
       onDisconnected: () => {
-        // Handle disconnection - update Redux state
-        dispatch(setConnectionLost(true))
-        console.log('ODrive disconnected - updating frontend state')
+        // Add null check here too
+        if (configRef.current) {
+          // Handle disconnection - update Redux state
+          dispatch(setConnectionLost(true))
+          console.log('ODrive disconnected - updating frontend state')
+        }
       }
     })
 
     return () => {
       manager.unsubscribe(id)
     }
-  }, [isConnected, dispatch])
+  }, [isConnected, dispatch, config]) // Add config to dependencies
 }

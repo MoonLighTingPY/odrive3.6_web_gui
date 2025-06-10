@@ -138,11 +138,15 @@ const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
     return result
   }
 
-  useTelemetry({
+  // Only subscribe to telemetry when we have properties selected AND we're connected
+  const telemetryConfig = selectedProperties.length > 0 && isConnected ? {
     type: 'charts',
     paths: selectedProperties,
-    updateRate: 1000 / sampleRate, // Convert Hz to ms
+    updateRate: Math.max(Math.round(1000 / sampleRate), 50), // Minimum 50ms (20Hz max)
     onData: (data) => {
+      console.log('LiveCharts received data:', data)
+      console.log('Selected properties:', selectedProperties)
+      
       if (isRecording && selectedProperties.length > 0) {
         const timestamp = data.timestamp || Date.now()
         const sample = { 
@@ -152,10 +156,13 @@ const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
         
         selectedProperties.forEach(property => {
           const value = getValueFromPath(data, property)
+          console.log(`Getting value for ${property}:`, value)
           if (value !== null) {
             sample[property] = value
           }
         })
+        
+        console.log('Sample data:', sample)
         
         setChartData(prev => {
           const newData = [...prev, sample]
@@ -166,7 +173,9 @@ const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
         })
       }
     }
-  })
+  } : null
+
+  useTelemetry(telemetryConfig)
 
   const startRecording = () => {
     setIsRecording(true)
@@ -379,9 +388,7 @@ const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
                   <option value={2}>2 Hz</option>
                   <option value={5}>5 Hz</option>
                   <option value={10}>10 Hz</option>
-                  <option value={20}>20 Hz</option>
-                  <option value={50}>50 Hz</option>
-                  <option value={100}>100 Hz</option>
+                  <option value={20}>20 Hz (Max)</option>
                 </Select>
               </FormControl>
 
