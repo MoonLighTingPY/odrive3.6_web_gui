@@ -80,8 +80,8 @@ export const generateConfigCommands = (config) => {
   commands.push(`odrv0.axis0.controller.config.vel_ramp_rate = ${safeValue(control.vel_ramp_rate, 10)}`)
   commands.push(`odrv0.axis0.controller.config.torque_ramp_rate = ${safeValue(control.torque_ramp_rate, 0.01)}`)
   commands.push(`odrv0.axis0.controller.config.circular_setpoints = ${safeBool(control.circular_setpoints) ? 'True' : 'False'}`)
-  commands.push(`odrv0.axis0.controller.config.inertia = ${safeValue(control.inertia, 0)}`)
-  commands.push(`odrv0.axis0.controller.config.input_filter_bandwidth = ${safeValue(control.input_filter_bandwidth, 2)}`)
+  commands.push(`odrv0.axis0.controller.config.inertia = ${safeValue(control.inertia, 0.0)}`)
+  commands.push(`odrv0.axis0.controller.config.input_filter_bandwidth = ${safeValue(control.input_filter_bandwidth, 2.0)}`)
   commands.push(`odrv0.axis0.controller.config.homing_speed = ${safeValue(control.homing_speed, 0.25)}`)
 
   // Interface configuration commands
@@ -228,8 +228,8 @@ export const generateControlCommands = (controlConfig = {}) => {
     `odrv0.axis0.controller.config.vel_ramp_rate = ${safeValue(controlConfig.vel_ramp_rate, 10)}`,
     `odrv0.axis0.controller.config.torque_ramp_rate = ${safeValue(controlConfig.torque_ramp_rate, 0.01)}`,
     `odrv0.axis0.controller.config.circular_setpoints = ${safeBool(controlConfig.circular_setpoints) ? 'True' : 'False'}`,
-    `odrv0.axis0.controller.config.inertia = ${safeValue(controlConfig.inertia, 0)}`,
-    `odrv0.axis0.controller.config.input_filter_bandwidth = ${safeValue(controlConfig.input_filter_bandwidth, 2)}`,
+    `odrv0.axis0.controller.config.inertia = ${safeValue(controlConfig.inertia, 0.0)}`,
+    `odrv0.axis0.controller.config.input_filter_bandwidth = ${safeValue(controlConfig.input_filter_bandwidth, 2.0)}`,
     `odrv0.axis0.controller.config.homing_speed = ${safeValue(controlConfig.homing_speed, 0.25)}`
   ]
 }
