@@ -30,7 +30,7 @@ import ConfirmationModal from '../modals/ConfirmationModal'
 
 // Import shared utilities
 import { generateConfigCommands } from '../../utils/configCommandGenerator'
-import { executeConfigAction } from '../../utils/configurationActions'
+import { executeConfigAction, applyAndSaveConfiguration } from '../../utils/configurationActions'
 
 const FinalConfigStep = () => {
   const toast = useToast()
@@ -215,15 +215,29 @@ const FinalConfigStep = () => {
 
     setIsLoading(true)
     try {
-      const result = await executeConfigAction(action, { commands: finalCommands })
-      
-      // If this was a calibration action, start monitoring
-      if (action.includes('calibrate')) {
-        setIsCalibrating(true)
-        setCalibrationProgress(0)
-        setCalibrationPhase('starting')
-        setCalibrationSequence(result.sequence || [])
-        onCalibrationOpen()
+      // Use the same logic as ConfigurationTab for save_and_reboot
+      if (action === 'save_and_reboot') {
+        const deviceConfig = {
+          power: powerConfig,
+          motor: motorConfig,
+          encoder: encoderConfig,
+          control: controlConfig,
+          interface: interfaceConfig
+        }
+        
+        // Use the shared applyAndSaveConfiguration function
+        await applyAndSaveConfiguration(deviceConfig, toast)
+      } else {
+        const result = await executeConfigAction(action, { commands: finalCommands })
+        
+        // If this was a calibration action, start monitoring
+        if (action.includes('calibrate')) {
+          setIsCalibrating(true)
+          setCalibrationProgress(0)
+          setCalibrationPhase('starting')
+          setCalibrationSequence(result.sequence || [])
+          onCalibrationOpen()
+        }
       }
     } catch (error) {
       toast({
