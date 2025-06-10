@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   VStack,
   HStack,
@@ -33,142 +33,154 @@ import {
 } from 'recharts'
 import { odrivePropertyTree } from '../../utils/odrivePropertyTree'
 
-const getValueFromPath = (obj, path) => {
-  if (!obj || !path) return null
-  
-  try {
-    return path.split('.').reduce((current, key) => {
-      if (current && typeof current === 'object' && key in current) {
-        return current[key]
-      }
-      return null
-    }, obj)
-  } catch (error) {
-    console.warn(`Failed to get value from path: ${path}`, error)
-    return null
-  }
-}
-
 const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
   const [chartData, setChartData] = useState([])
   const [isRecording, setIsRecording] = useState(false)
-  const [sampleRate, setSampleRate] = useState(50) // Hz - increased default
+  const [sampleRate, setSampleRate] = useState(10) // Hz
   const [maxSamples, setMaxSamples] = useState(1000)
   const [autoScale, setAutoScale] = useState(true)
-  const [timeWindow, setTimeWindow] = useState(20) // seconds - reduced for better performance
+  const [timeWindow, setTimeWindow] = useState(60) // seconds
   const [layoutMode, setLayoutMode] = useState('grid') // 'grid' or 'list'
   
-  const timeoutRef = useRef(null)
+  const intervalRef = useRef(null)
   const chartColors = [
     '#3B82F6', '#EF4444', '#10B981', '#F59E0B', 
     '#8B5CF6', '#06B6D4', '#84CC16', '#F97316',
     '#EC4899', '#6366F1', '#14B8A6', '#F472B6'
   ]
 
-  // Use selective telemetry for high-frequency data collection
-  useEffect(() => {
-    if (isRecording && isConnected && selectedProperties.length > 0) {
-      const targetInterval = 1000 / sampleRate // Target interval in ms
-      let lastFetchTime = 0
-      let consecutiveErrors = 0
-      const maxErrors = 5
-      
-      const fetchData = async () => {
-        const now = Date.now()
+  const getValueFromPath = (obj, path) => {
+    if (!obj || !obj.device) {
+      return null
+    }
+    
+    // Handle calculated properties
+    if (path.startsWith('calculated.')) {
+      const calcType = path.replace('calculated.', '')
+      if (calcType === 'electrical_power') {
+        const vbus = obj.device.vbus_voltage
+        const ibus = obj.device.ibus || 0
+        return vbus && ibus ? vbus * ibus : 0
+      } else if (calcType === 'mechanical_power') {
+        // Calculate mechanical power from torque and velocity
+        const torque_setpoint = obj.device.axis0?.controller?.torque_setpoint || 0
+        const vel_estimate = obj.device.axis0?.encoder?.vel_estimate || 0
+        const TORQUE_CONSTANT = obj.device.axis0?.motor?.config?.torque_constant || 0
         
-        // Skip if we're fetching too fast
-        if (now - lastFetchTime < targetInterval * 0.8) {
-          return
-        }
+        // P_mech = Torque * Angular_Velocity (in rad/s)
+        // Convert turns/s to rad/s: rad/s = turns/s * 2π
+        const angular_velocity = vel_estimate * 2 * Math.PI
         
-        try {
-          // Use selective telemetry endpoint - only fetch what we need
-          const response = await fetch('/api/odrive/telemetry/selective', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              properties: selectedProperties
-            })
-          })
+        // If torque constant is available, calculate actual mechanical torque
+        // Otherwise use torque setpoint directly (assuming it's already in Nm)
+        const actual_torque = TORQUE_CONSTANT > 0 ? 
+          (obj.device.axis0?.motor?.current_control?.Iq_setpoint || 0) * TORQUE_CONSTANT :
+          torque_setpoint
           
-          if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`)
-          }
-          
-          const result = await response.json()
-          lastFetchTime = now
-          consecutiveErrors = 0
-          
-          // Use server timestamp for better accuracy
-          const timestamp = result.timestamp || now
-          const sample = { 
-            time: timestamp,
-            relativeTime: chartData.length > 0 ? (timestamp - chartData[0].time) / 1000 : 0
-          }
-          
-          // Add the fetched property values directly
-          selectedProperties.forEach(property => {
-            const value = result.data[property]
-            if (value !== null && value !== undefined && !isNaN(value)) {
-              sample[property] = value
+        return actual_torque * angular_velocity
+      }
+      return null
+    }
+    
+    // Handle custom path mapping for featured properties
+    let actualPath = path
+    
+    // Check if this is a featured property with a custom path
+    const findPropertyPath = (tree, targetPath) => {
+      for (const [sectionName, section] of Object.entries(tree)) {
+        if (section.properties) {
+          for (const [propName, prop] of Object.entries(section.properties)) {
+            const currentPath = sectionName.startsWith('featured') ? `${sectionName}.${propName}` : 
+                              sectionName === 'system' ? `system.${propName}` : `${sectionName}.${propName}`
+            if (currentPath === targetPath && prop.path) {
+              return prop.path
             }
-          })
-          
-          setChartData(prev => {
-            const newData = [...prev, sample]
-            
-            // Keep only samples within time window
-            const cutoffTime = timestamp - (timeWindow * 1000)
-            const filteredData = newData.filter(d => d.time > cutoffTime)
-            
-            // Limit total samples for performance
-            if (filteredData.length > maxSamples) {
-              return filteredData.slice(-maxSamples)
-            }
-            
-            return filteredData
-          })
-          
-        } catch (error) {
-          consecutiveErrors++
-          console.warn(`Telemetry fetch error (${consecutiveErrors}/${maxErrors}):`, error)
-          
-          if (consecutiveErrors >= maxErrors) {
-            console.error('Too many consecutive errors, stopping recording')
-            setIsRecording(false)
           }
         }
       }
-      
-      // Start with immediate fetch
-      fetchData()
-      
-      // Use high-frequency polling with setTimeout for better timing control
-      const scheduleNext = () => {
-        if (isRecording) {
-          const nextDelay = Math.max(5, targetInterval - (Date.now() - lastFetchTime))
-          timeoutRef.current = setTimeout(() => {
-            fetchData().then(scheduleNext)
-          }, nextDelay)
-        }
+      return targetPath
+    }
+    
+    actualPath = findPropertyPath(odrivePropertyTree, path)
+    
+    // Build the correct path for the data structure
+    let fullPath
+    if (actualPath.startsWith('system.')) {
+      const systemProp = actualPath.replace('system.', '')
+      // Handle properties that are under device.config.*
+      if (['dc_bus_overvoltage_trip_level', 'dc_bus_undervoltage_trip_level', 'dc_max_positive_current', 
+           'dc_max_negative_current', 'enable_brake_resistor', 'brake_resistance'].includes(systemProp)) {
+        fullPath = `device.config.${systemProp}`
+      } else {
+        fullPath = `device.${systemProp}`
       }
-      
-      scheduleNext()
-      
-      return () => {
-        if (timeoutRef.current) {
-          clearTimeout(timeoutRef.current)
-        }
-      }
+    } else if (actualPath.startsWith('axis0.') || actualPath.startsWith('axis1.')) {
+      fullPath = `device.${actualPath}`
+    } else if (actualPath.startsWith('config.')) {
+      fullPath = `device.${actualPath}`
     } else {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current)
-        timeoutRef.current = null
+      fullPath = `device.${actualPath}`
+    }
+    
+    const parts = fullPath.split('.')
+    let current = obj
+    
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i]
+      if (current && current[part] !== undefined) {
+        current = current[part]
+      } else {
+        return null
       }
     }
-  }, [isRecording, isConnected, selectedProperties, sampleRate, timeWindow, maxSamples])
+    
+    const result = typeof current === 'number' ? current : null
+    return result
+  }
+
+  useEffect(() => {
+    if (isRecording && isConnected && selectedProperties.length > 0) {
+      intervalRef.current = setInterval(() => {
+        const timestamp = Date.now()
+        const sample = { 
+          time: timestamp,
+          relativeTime: chartData.length > 0 ? (timestamp - chartData[0].time) / 1000 : 0
+        }
+        
+        selectedProperties.forEach(property => {
+          const value = getValueFromPath(odriveState, property)
+          if (value !== null) {
+            sample[property] = value
+          }
+        })
+        
+        setChartData(prev => {
+          const newData = [...prev, sample]
+          // Keep only samples within time window
+          const cutoffTime = timestamp - (timeWindow * 1000)
+          const filteredData = newData.filter(d => d.time > cutoffTime)
+          
+          // Limit total samples
+          if (filteredData.length > maxSamples) {
+            return filteredData.slice(-maxSamples)
+          }
+          
+          return filteredData
+        })
+      }, 1000 / sampleRate)
+    } else {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+        intervalRef.current = null
+      }
+    }
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current)
+      }
+    }
+  }, [isRecording, isConnected, selectedProperties, sampleRate, odriveState, timeWindow, maxSamples, chartData])
 
   const startRecording = () => {
     setIsRecording(true)
@@ -383,8 +395,7 @@ const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
                   <option value={10}>10 Hz</option>
                   <option value={20}>20 Hz</option>
                   <option value={50}>50 Hz</option>
-                  <option value={100}>100 Hz</option>    
-                  <option value={1000}>1000 Hz</option>
+                  <option value={100}>100 Hz</option>
                 </Select>
               </FormControl>
 
