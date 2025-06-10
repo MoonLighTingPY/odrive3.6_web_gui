@@ -9,11 +9,11 @@ from flask import Blueprint, request, jsonify
 logger = logging.getLogger(__name__)
 system_bp = Blueprint('system', __name__, url_prefix='/api')
 
-from .. import VERSION
+from ..constants import VERSION
 
 @system_bp.route('/health', methods=['GET'])
 def health_check():
-    return jsonify({'status': 'ok', 'version': '0.5.6'})
+    return jsonify({'status': 'ok', 'version': VERSION})
 
 @system_bp.route('/system/check_updates', methods=['GET'])
 def check_updates():
@@ -26,7 +26,7 @@ def check_updates():
         
         release_data = response.json()
         latest_version = release_data['tag_name']
-        current_version = VERSION
+        current_version = f"{VERSION}"
         
         exe_asset = None
         for asset in release_data['assets']:

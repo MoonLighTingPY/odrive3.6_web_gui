@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import {
   Box,
   Button,
@@ -29,9 +29,10 @@ const UpdateChecker = () => {
   const [isChecking, setIsChecking] = useState(false)
   const [isUpdating, setIsUpdating] = useState(false)
   const [updateProgress, setUpdateProgress] = useState(0)
+  const [hasChecked, setHasChecked] = useState(false)
   const toast = useToast()
 
-  const checkForUpdates = async () => {
+  const checkForUpdates = useCallback(async (isManual = false) => {
     setIsChecking(true)
     try {
       console.log('Checking for updates...')
@@ -64,28 +65,43 @@ const UpdateChecker = () => {
       }
       
       setUpdateInfo(data)
+      setHasChecked(true)
       if (data.update_available) {
         onOpen()
-      } else {
+      } else if (isManual) {
+        // Only show toast for manual checks
         toast({
           title: 'No Updates Available',
-          description: `You're already running the latest version (${data.current_version})`,
+          description: `You're running the latest version (${data.current_version})`,
           status: 'info',
           duration: 3000,
         })
       }
     } catch (error) {
       console.error('Update check failed:', error)
-      toast({
-        title: 'Update Check Failed',
-        description: error.message,
-        status: 'error',
-        duration: 5000,
-      })
+      setHasChecked(true)
+      // Only show error toast if it's a manual check
+      if (isManual) {
+        toast({
+          title: 'Update Check Failed',
+          description: error.message,
+          status: 'error',
+          duration: 5000,
+        })
+      }
     } finally {
       setIsChecking(false)
     }
-  }
+  }, [onOpen, toast])
+
+  // Auto-check for updates on component mount (no toast)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      checkForUpdates(false)
+    }, 1000)
+
+    return () => clearTimeout(timer)
+  }, [checkForUpdates])
 
   const performUpdate = async () => {
     if (!updateInfo) return
@@ -165,19 +181,37 @@ const UpdateChecker = () => {
     return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i]
   }
 
+  const getButtonText = () => {
+    if (isChecking) return "Checking..."
+    if (!hasChecked) return "Check for Updates"
+    if (updateInfo?.update_available) return "🔄 Update Available!"
+    return "✅ Latest Version"
+  }
+
+  const getButtonColorScheme = () => {
+    if (!hasChecked) return "blue"
+    if (updateInfo?.update_available) return "orange"
+    return "green"
+  }
+
+  // Manual check button (shows toast)
+  const handleManualCheck = () => {
+    checkForUpdates(true)
+  }
+
   return (
     <>
       <Button
-        colorScheme="blue"
+        colorScheme={getButtonColorScheme()}
         variant="outline"
         size="sm"
-        onClick={checkForUpdates}
+        onClick={handleManualCheck}
         isLoading={isChecking}
         loadingText="Checking..."
       >
-        🔄 Update available!
+        {getButtonText()}
       </Button>
-
+      
       <Modal isOpen={isOpen} onClose={onClose} size="lg">
         <ModalOverlay />
         <ModalContent>
