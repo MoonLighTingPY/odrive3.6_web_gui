@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import { updateOdriveState, setConnectedDevice, setConnectionLost } from '../store/slices/deviceSlice'
+import { updateOdriveState, setConnectionLost } from '../store/slices/deviceSlice'
 
 let globalTelemetryManager = null
 
