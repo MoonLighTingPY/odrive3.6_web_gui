@@ -22,6 +22,7 @@ import InspectorTab from './components/tabs/InspectorTab'
 import PresetsTab from './components/tabs/PresetsTab'
 import CommandConsoleTab from './components/tabs/CommandConsoleTab'
 import { updateOdriveState } from './store/slices/deviceSlice'
+import UpdateChecker from './components/UpdateChecker'
 import './App.css'
 
 function App() {
@@ -197,6 +198,8 @@ function App() {
               >
                 Command Console
               </Tab>
+
+              <UpdateChecker />
 
               <Spacer />
               <HStack spacing={4} pr={4}>
