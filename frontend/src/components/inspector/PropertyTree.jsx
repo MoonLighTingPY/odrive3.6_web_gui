@@ -394,6 +394,68 @@ const PropertyTree = ({
       })
       
       filtered = writableFiltered
+    } else if (viewMode === 'chartable') {
+      const chartableFiltered = {}
+      
+      Object.entries(filtered).forEach(([sectionName, section]) => {
+        const chartableSection = { ...section, properties: {} }
+        let hasChartableProps = false
+        
+        Object.entries(section.properties).forEach(([propName, prop]) => {
+          // Add safety check
+          if (!prop || typeof prop !== 'object') return
+          
+          // Check if property is chartable (numeric, not writable config, and changes over time)
+          const isNumericType = prop.type === 'number'
+          const isReadOnly = !prop.writable
+          const isNotConfigParam = !propName.includes('config') && 
+                                  !propName.includes('limit') && 
+                                  !propName.includes('gain') && 
+                                  !propName.includes('bandwidth') &&
+                                  !propName.includes('pole_pairs') &&
+                                  !propName.includes('motor_type') &&
+                                  !propName.includes('calibration') &&
+                                  !propName.includes('resistance') &&
+                                  !propName.includes('inductance') &&
+                                  !propName.includes('constant') &&
+                                  !propName.includes('cpr') &&
+                                  !propName.includes('mode') &&
+                                  !propName.includes('use_index') &&
+                                  !propName.includes('control_mode') &&
+                                  !propName.includes('input_mode') &&
+                                  !sectionName.includes('config')
+          
+          // Include live telemetry values like measurements, estimates, setpoints, states
+          const isLiveTelemetry = propName.includes('measured') ||
+                                 propName.includes('estimate') ||
+                                 propName.includes('setpoint') ||
+                                 propName.includes('current_state') ||
+                                 propName.includes('voltage') ||
+                                 propName.includes('current') ||
+                                 propName.includes('temperature') ||
+                                 propName.includes('pos_') ||
+                                 propName.includes('vel_') ||
+                                 propName.includes('phase') ||
+                                 propName.includes('hall_state') ||
+                                 propName.includes('vbus') ||
+                                 propName.includes('ibus')
+          
+          const isChartableProperty = isNumericType && (isReadOnly || isLiveTelemetry) && 
+                                     (isNotConfigParam || isLiveTelemetry) &&
+                                     !propName.includes('error') // Exclude error flags
+          
+          if (isChartableProperty) {
+            chartableSection.properties[propName] = prop
+            hasChartableProps = true
+          }
+        })
+        
+        if (hasChartableProps) {
+          chartableFiltered[sectionName] = chartableSection
+        }
+      })
+      
+      filtered = chartableFiltered
     } else if (viewMode === 'errors') {
       const errorFiltered = {}
       
@@ -446,6 +508,7 @@ const PropertyTree = ({
                 >
                   <option value="all">All Properties</option>
                   <option value="writable">Writable Only</option>
+                  <option value="chartable">Chartable Only</option>
                   <option value="errors">Errors Only</option>
                 </Select>
               </FormControl>

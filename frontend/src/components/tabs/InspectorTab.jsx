@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, } from 'react'
 import { useSelector } from 'react-redux'
 import {
   VStack,
@@ -26,11 +26,6 @@ const InspectorTab = () => {
   const [searchFilter, setSearchFilter] = useState('')
   const [selectedProperties, setSelectedProperties] = useState([])
 
-  // Simple refresh that just updates timestamp - no API calls
-  const refreshAllData = useCallback(() => {
-    // Just update timestamp - data comes from DeviceList polling
-    console.log('Manual refresh triggered - using live data from DeviceList')
-  }, [])
 
   const updateProperty = async (path, value) => {
     try {
@@ -99,38 +94,7 @@ const InspectorTab = () => {
         </Text>
       </Box>
 
-      {/* Control Panel */}
-      <Card bg="gray.800" variant="elevated">
-        <CardBody>
-          <HStack justify="space-between" wrap="wrap" spacing={4}>
-            <HStack spacing={4}>
-              <Button
-                leftIcon={<RefreshCw size={16} />}
-                onClick={refreshAllData}
-                isDisabled={!isConnected}
-                colorScheme="blue"
-              >
-                Refresh View
-              </Button>
-              
-              <Text color="gray.300" fontSize="sm">
-                Live data from DeviceList (1Hz)
-              </Text>
-            </HStack>
-
-            <HStack spacing={4}>
-              {selectedProperties.length > 0 && (
-                <Badge colorScheme="blue">
-                  {selectedProperties.length} properties charted
-                </Badge>
-              )}
-              <Badge colorScheme={isConnected ? 'green' : 'red'}>
-                {isConnected ? 'Live Data' : 'Disconnected'}
-              </Badge>
-            </HStack>
-          </HStack>
-        </CardBody>
-      </Card>
+    
 
       {/* Main Content Grid */}
       <Grid templateColumns="1fr 1fr" gap={6} flex="1" h="100%">
