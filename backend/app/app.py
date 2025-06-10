@@ -18,7 +18,7 @@ from .routes.calibration_routes import calibration_bp, init_routes as init_calib
 from .routes.telemetry_routes import telemetry_bp, init_routes as init_telemetry_routes
 from .routes.system_routes import system_bp
 
-VERSION = "v1.0.0"
+VERSION = "palladium"
 current_version = VERSION
 
 # Configure logging
