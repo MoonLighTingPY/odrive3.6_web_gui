@@ -253,6 +253,7 @@ const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
           <LineChart 
             data={chartData} 
             margin={{ top: 5, right: 5, left: 20, bottom: 5 }}
+            isAnimationActive={false}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
             <XAxis 
@@ -293,6 +294,7 @@ const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
               strokeWidth={2}
               dot={false}
               connectNulls={false}
+              isAnimationActive={false}
             />
           </LineChart>
         </ResponsiveContainer>
