@@ -135,8 +135,8 @@ class ODriveManager:
         
         # If we're in a reboot state, don't try to check connection yet
         if self.is_rebooting:
-            if self.reboot_start_time and (time.time() - self.reboot_start_time) < 10:
-                return False  # Wait at least 10 seconds after reboot command
+            if self.reboot_start_time and (time.time() - self.reboot_start_time) < 8:
+                return False  # Reduced from 10 to 8 seconds
             
         try:
             # Try to read a simple property to check connection
@@ -166,18 +166,21 @@ class ODriveManager:
 
     def try_reconnect(self) -> bool:
         """Try to reconnect to the same device"""
-        if not self.current_device_serial or not self.connection_lost:
+        if not self.current_device_serial:
             return False
         
-        # If we're rebooting, wait longer between attempts and limit total attempts
-        if self.is_rebooting:
+        # For physical reconnections, be more aggressive
+        if not self.connection_lost:
+            # This might be a physical reconnection, so force check
+            pass
+        elif self.is_rebooting:
             if self.reboot_start_time and (time.time() - self.reboot_start_time) < 5:
                 return False  # Don't try to reconnect for first 5 seconds after reboot
             
             if self.reconnection_attempts >= self.max_reconnection_attempts:
                 logger.warning(f"Max reconnection attempts reached for rebooting device")
                 return False
-        
+
         # Prevent multiple simultaneous reconnection attempts
         if hasattr(self, '_reconnecting') and self._reconnecting:
             return False
@@ -188,11 +191,8 @@ class ODriveManager:
         try:
             logger.info(f"Attempting to reconnect to device {self.current_device_serial} (attempt {self.reconnection_attempts})")
             
-            # Use appropriate timeout based on situation
-            if self.is_rebooting:
-                timeout = 3
-            else:
-                timeout = 6  # Shorter timeout for save operations
+            # Use shorter timeout for faster detection of physical reconnections
+            timeout = 2 if not self.is_rebooting else 3
                 
             odrv = odrive.find_any(timeout=timeout)
             
@@ -217,8 +217,8 @@ class ODriveManager:
                     
         except Exception as e:
             # Reduce log noise during reboot by only logging every few attempts
-            if not self.is_rebooting or self.reconnection_attempts % 3 == 0:
-                logger.error(f"Error during reconnection attempt {self.reconnection_attempts}: {e}")
+            if not self.is_rebooting or self.reconnection_attempts % 2 == 0:
+                logger.debug(f"Reconnection attempt {self.reconnection_attempts} failed: {e}")
         finally:
             self._reconnecting = False
             

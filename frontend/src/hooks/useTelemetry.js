@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
-import { updateOdriveState } from '../store/slices/deviceSlice'
+import { updateOdriveState, setConnectedDevice, setConnectionLost } from '../store/slices/deviceSlice'
 
 let globalTelemetryManager = null
 
@@ -34,7 +34,7 @@ class TelemetryManager {
       if (config.type === 'charts' && config.paths?.length > 0) {
         newMode = 'charts'
         newPaths = [...new Set([...newPaths, ...config.paths])]
-        newRate = Math.min(newRate, config.updateRate || 100) // High frequency for charts
+        newRate = Math.min(newRate, config.updateRate || 1000) // High frequency for charts
       } else if (config.type === 'dashboard' && newMode !== 'charts') {
         newMode = 'dashboard'
         newRate = Math.min(newRate, config.updateRate || 100)
@@ -55,6 +55,24 @@ class TelemetryManager {
       
       console.log(`Telemetry mode changed to: ${newMode}, paths: ${newPaths.length}, rate: ${newRate}ms`)
       this.restartTelemetry()
+    }
+  }
+
+  async healthCheck() {
+    try {
+      // Use connection status endpoint instead of command for health check
+      // This is more efficient and less resource intensive
+      const response = await fetch('/api/odrive/connection_status')
+      
+      if (response.ok) {
+        const status = await response.json()
+        // Check if connected and not lost, and has valid device serial
+        return status.connected && !status.connection_lost && status.device_serial
+      }
+      return false
+    } catch (error) {
+      console.warn('Health check failed:', error)
+      return false
     }
   }
 
@@ -81,15 +99,42 @@ class TelemetryManager {
         if (response.ok) {
           const data = await response.json()
           
-          // Notify all subscribers
+          // Verify we have valid data with vbus_voltage > 0
+          if (data.device && data.device.vbus_voltage > 0) {
+            // Notify all subscribers
+            this.subscribers.forEach((config) => {
+              if (config.callback) {
+                config.callback(data)
+              }
+            })
+          } else {
+            console.warn('Received telemetry data with no power (vbus_voltage <= 0)')
+            // Notify subscribers about disconnection
+            this.subscribers.forEach((config) => {
+              if (config.onDisconnected) {
+                config.onDisconnected()
+              }
+            })
+          }
+        } else if (response.status === 404) {
+          console.warn('ODrive disconnected - received 404 from telemetry endpoint')
+          // Notify subscribers about disconnection
           this.subscribers.forEach((config) => {
-            if (config.callback) {
-              config.callback(data)
+            if (config.onDisconnected) {
+              config.onDisconnected()
             }
           })
+        } else {
+          console.warn(`Telemetry request failed with status: ${response.status}`)
         }
       } catch (error) {
         console.error('Telemetry fetch error:', error)
+        // Notify subscribers about connection error
+        this.subscribers.forEach((config) => {
+          if (config.onDisconnected) {
+            config.onDisconnected()
+          }
+        })
       }
     }, this.updateRate)
   }
@@ -137,6 +182,12 @@ export const useTelemetry = (config) => {
           // Default: update Redux store
           dispatch(updateOdriveState(data))
         }
+      },
+      onDisconnected: () => {
+        // Handle disconnection - update Redux state
+        dispatch(setConnectedDevice(null))
+        dispatch(setConnectionLost(true))
+        console.log('ODrive disconnected - updating frontend state')
       }
     })
 

@@ -79,11 +79,13 @@ def connection_status():
     try:
         is_connected = odrive_manager.check_connection()
         
-        if not is_connected and odrive_manager.current_device_serial and odrive_manager.connection_lost:
+        # If not connected but we expect to be, try to find device immediately
+        if not is_connected and odrive_manager.current_device_serial:
+            # Try a quick reconnection attempt for physical reconnections
             reconnect_success = odrive_manager.try_reconnect()
             if reconnect_success:
                 is_connected = True
-                logger.info("Auto-reconnection successful during status check")
+                logger.info("Device reconnected during status check (physical reconnection detected)")
         
         return jsonify({
             'connected': is_connected,

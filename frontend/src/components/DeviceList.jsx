@@ -88,12 +88,10 @@ const DeviceList = () => {
 
 // Update the reconnection detection useEffect in DeviceList.jsx
 useEffect(() => {
-  // Separate reconnection detection - only runs when connection is lost
-  if (isConnected && connectionLost && !isScanning) {
+  if (!isConnected && connectedDevice && !isScanning) {
+    // More frequent polling for faster reconnection detection
     const reconnectInterval = setInterval(async () => {
       try {
-        // Only check connection status - don't fetch telemetry here
-        // The telemetry hook will handle the actual data fetching
         const statusResponse = await fetch('/api/odrive/connection_status')
         if (statusResponse.ok) {
           const status = await statusResponse.json()
@@ -105,7 +103,7 @@ useEffect(() => {
             setTimeout(() => {
               // Dispatch a custom event to trigger config pull in ConfigurationTab
               window.dispatchEvent(new CustomEvent('deviceReconnected'))
-            }, 1) // Reduced from 1000ms to 500ms
+            }, 100) // Reduced from 500ms to 100ms for faster response
             
             toast({
               title: 'Device reconnected',
@@ -119,11 +117,11 @@ useEffect(() => {
         // Reconnection attempt failed, continue trying
         console.log('Reconnection attempt failed:', error)
       }
-    }, 1000) // Reduced from 3000ms to 1000ms (1 second) for faster detection
+    }, 500) // Reduced from 1000ms to 500ms for much faster detection
     
     return () => clearInterval(reconnectInterval)
   }
-}, [isConnected, connectionLost, dispatch, toast, isScanning])
+}, [isConnected, connectionLost, dispatch, toast, isScanning, connectedDevice])
 
 
   const handleConnect = async (device) => {
