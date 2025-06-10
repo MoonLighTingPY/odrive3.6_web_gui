@@ -7,16 +7,16 @@ from flask import Flask, send_from_directory
 from flask_cors import CORS
 from collections import defaultdict
 
-# Import our modules
-from odrive_manager import ODriveManager
-from utils.utils import is_running_as_executable, open_browser
+# Import our modules - using relative imports
+from .odrive_manager import ODriveManager
+from .utils.utils import is_running_as_executable, open_browser
 
-# Import route blueprints
-from routes.device_routes import device_bp, init_routes as init_device_routes
-from routes.config_routes import config_bp, init_routes as init_config_routes
-from routes.calibration_routes import calibration_bp, init_routes as init_calibration_routes
-from routes.telemetry_routes import telemetry_bp, init_routes as init_telemetry_routes
-from routes.system_routes import system_bp
+# Import route blueprints - using relative imports
+from .routes.device_routes import device_bp, init_routes as init_device_routes
+from .routes.config_routes import config_bp, init_routes as init_config_routes
+from .routes.calibration_routes import calibration_bp, init_routes as init_calibration_routes
+from .routes.telemetry_routes import telemetry_bp, init_routes as init_telemetry_routes
+from .routes.system_routes import system_bp
 
 VERSION = "v1.0.0"
 current_version = VERSION

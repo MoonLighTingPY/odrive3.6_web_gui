@@ -78,17 +78,27 @@ for icon_path in possible_icons:
 all_binaries = odrive_binaries + pystray_binaries + pil_binaries + flask_binaries
 all_datas = [
     ('../frontend/dist', 'static'),
+    ('app', 'app'),  # Include the entire app folder
 ] + odrive_datas + pystray_datas + pil_datas + flask_datas + ([
     (icon_file, '.'),
 ] if icon_file else [])
 
-# Essential hidden imports only
+# Essential hidden imports only - updated for app folder structure
 all_hiddenimports = [
     'odrive',
     'odrive.utils',
     'flask',
     'flask_cors',
-    'app',
+    'app.app',  # Updated import path
+    'app.odrive_manager',  # Add app module imports
+    'app.odrive_telemetry_config',
+    'app.utils.utils',
+    'app.utils.calibration_utils',
+    'app.routes.device_routes',
+    'app.routes.config_routes',
+    'app.routes.calibration_routes',
+    'app.routes.telemetry_routes',
+    'app.routes.system_routes',
     'threading',
     'webbrowser',
     'json',

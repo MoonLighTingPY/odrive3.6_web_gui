@@ -1,7 +1,7 @@
 import logging
 from flask import Blueprint, request, jsonify
-from utils.utils import sanitize_for_json
-from odrive_telemetry_config import (
+from ..utils.utils import sanitize_for_json
+from ..odrive_telemetry_config import (
     get_high_frequency_telemetry,
     get_configuration_data,
     get_full_device_state
@@ -10,10 +10,11 @@ from odrive_telemetry_config import (
 logger = logging.getLogger(__name__)
 telemetry_bp = Blueprint('telemetry', __name__, url_prefix='/api/odrive')
 
-# Initialize ODrive manager (will be set by main app)
+# Global ODrive manager (will be set by init_routes)
 odrive_manager = None
 
 def init_routes(manager):
+    """Initialize routes with ODrive manager"""
     global odrive_manager
     odrive_manager = manager
 

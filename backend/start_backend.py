@@ -82,8 +82,8 @@ def main():
     colored_print("Initializing ODrive GUI...", Colors.BLUE)
     
     try:
-        # Import Flask app
-        from app import app
+        # Import Flask app from app folder
+        from app.app import app
         
         colored_print("Starting ODrive GUI server...", Colors.GREEN)
         

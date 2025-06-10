@@ -1,14 +1,14 @@
 import logging
 from flask import Blueprint, request, jsonify
-from odrive_manager import ODriveManager
 
 logger = logging.getLogger(__name__)
 device_bp = Blueprint('device', __name__, url_prefix='/api/odrive')
 
-# Initialize ODrive manager (will be set by main app)
+# Global ODrive manager (will be set by init_routes)
 odrive_manager = None
 
 def init_routes(manager):
+    """Initialize routes with ODrive manager"""
     global odrive_manager
     odrive_manager = manager
 

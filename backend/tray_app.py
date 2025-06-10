@@ -51,14 +51,14 @@ class ODriveTrayApp:
                 try:
                     # Import Flask modules in the background thread to avoid blocking UI
                     self.update_status("Loading Modules...")
-                    import app
+                    import app.app as flask_app  # Updated import path
                     logger.info("Flask app imported successfully")
                     
                     # Disable auto-browser opening in the backend
                     os.environ['ODRIVE_NO_AUTO_BROWSER'] = '1'
                     
                     self.update_status("Backend Starting...")
-                    app.app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
+                    flask_app.app.run(host='0.0.0.0', port=5000, debug=False, use_reloader=False)
                 except Exception as e:
                     logger.error(f"Error running Flask backend: {e}")
                     self.update_status("Backend Failed")
