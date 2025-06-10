@@ -1409,7 +1409,6 @@ def perform_update():
             current_exe = os.path.abspath(__file__)
         
         current_dir = os.path.dirname(current_exe)
-        backup_path = os.path.join(current_dir, f"ODrive_GUI_Tray_backup_{int(time.time())}.exe")
         
         # Create update script
         update_script = f"""
@@ -1418,7 +1417,6 @@ echo Updating ODrive GUI...
 timeout /t 3 /nobreak >nul
 taskkill /f /im "ODrive_GUI_Tray.exe" >nul 2>&1
 timeout /t 2 /nobreak >nul
-move "{current_exe}" "{backup_path}"
 move "{temp_file}" "{current_exe}"
 start "" "{current_exe}"
 del "%~f0"

@@ -175,7 +175,7 @@ const UpdateChecker = () => {
         isLoading={isChecking}
         loadingText="Checking..."
       >
-        🔄 Check for Updates
+        🔄 Update available!
       </Button>
 
       <Modal isOpen={isOpen} onClose={onClose} size="lg">
