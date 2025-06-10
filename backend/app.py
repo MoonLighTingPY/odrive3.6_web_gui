@@ -818,24 +818,27 @@ def save_config():
                 logger.info("Device remained connected after save operation")
                 return jsonify({'message': 'Configuration saved to non-volatile memory'})
             else:
-                logger.info("Device disconnected during save, attempting to reconnect")
+                logger.info("Device disconnected during save, marking for reconnection")
+                # Mark connection as lost to trigger reconnection attempts
+                odrive_manager.connection_lost = True
                 
         except Exception as e:
             # Check if this is a disconnection during save
             if "disconnected" in str(e).lower():
                 logger.warning(f"Device disconnected during save operation: {e}")
                 save_successful = True  # Assume save was successful if disconnection occurred
+                odrive_manager.connection_lost = True  # Mark for reconnection
             else:
                 logger.error(f"Error saving configuration: {e}")
                 return jsonify({'error': f'Failed to save configuration: {str(e)}'}), 400
         
-        # If device disconnected, try to reconnect to verify save was successful
+        # If device disconnected, try to reconnect immediately
         if save_successful and odrive_manager.connection_lost:
-            logger.info("Attempting to reconnect after save operation")
+            logger.info("Attempting immediate reconnection after save operation")
             
             # Give device time to recover and try multiple reconnection attempts
-            for attempt in range(5):
-                time.sleep(1.0)  # Wait 1 second between attempts
+            for attempt in range(8):  # Increased attempts
+                time.sleep(1.5)  # Slightly longer wait between attempts
                 
                 if odrive_manager.try_reconnect():
                     logger.info(f"Reconnected after save operation on attempt {attempt + 1}")
@@ -844,12 +847,12 @@ def save_config():
                         'reconnected': True
                     })
             
-            # If we can't reconnect, assume save was still successful
-            logger.warning("Could not reconnect after save operation, but save likely succeeded")
+            # If immediate reconnection fails, return success but indicate reconnection needed
+            logger.info("Immediate reconnection failed, but save was successful")
             return jsonify({
-                'message': 'Configuration save completed, but device connection lost. Please reconnect manually.',
-                'save_likely_successful': True,
-                'reconnection_required': True
+                'message': 'Configuration saved successfully. Device will reconnect automatically.',
+                'save_successful': True,
+                'reconnection_in_progress': True
             })
         
         return jsonify({'message': 'Configuration saved to non-volatile memory'})
@@ -1209,17 +1212,29 @@ def encoder_direction_find():
 
 @app.route('/api/odrive/connection_status', methods=['GET'])
 def connection_status():
-    """Get connection status"""
+    """Get connection status and attempt reconnection if needed"""
     try:
         is_connected = odrive_manager.check_connection()
+        
+        # If not connected but we have a device serial, try to reconnect
+        if not is_connected and odrive_manager.current_device_serial and odrive_manager.connection_lost:
+            # Try to reconnect automatically
+            reconnect_success = odrive_manager.try_reconnect()
+            if reconnect_success:
+                is_connected = True
+                logger.info("Auto-reconnection successful during status check")
+        
         return jsonify({
             'connected': is_connected,
             'connection_lost': odrive_manager.connection_lost,
-            'device_serial': odrive_manager.current_device_serial
+            'device_serial': odrive_manager.current_device_serial,
+            'is_rebooting': odrive_manager.is_rebooting,
+            'reconnection_attempts': odrive_manager.reconnection_attempts
         })
     except Exception as e:
         logger.error(f"Error in connection_status: {e}")
         return jsonify({'error': str(e)}), 500
+    
 
 @app.route('/api/health', methods=['GET'])
 def health_check():

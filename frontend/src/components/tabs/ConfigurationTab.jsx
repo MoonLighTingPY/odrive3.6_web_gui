@@ -139,7 +139,32 @@ const ConfigurationTab = () => {
     })
     setHasAutoLoaded(false)
   }
-}, [isConnected, hasAutoLoaded, isPullingConfig, pullBatchParams]) 
+}, [isConnected, hasAutoLoaded, isPullingConfig, pullBatchParams])
+
+useEffect(() => {
+  const handleDeviceReconnected = async () => {
+    if (isConnected && !isPullingConfig) {
+      console.log('Device reconnected, pulling configuration...')
+      try {
+        await pullBatchParams()
+        toast({
+          title: 'Configuration Updated',
+          description: 'Configuration has been pulled from the reconnected device',
+          status: 'info',
+          duration: 3000,
+        })
+      } catch (error) {
+        console.error('Failed to pull config after reconnection:', error)
+      }
+    }
+  }
+
+  window.addEventListener('deviceReconnected', handleDeviceReconnected)
+  
+  return () => {
+    window.removeEventListener('deviceReconnected', handleDeviceReconnected)
+  }
+}, [isConnected, isPullingConfig, pullBatchParams, toast])
 
   const onUpdateConfig = (category, key, value) => {
     // Update local device config
@@ -404,19 +429,34 @@ const ConfigurationTab = () => {
               </Button>
             </HStack>
 
-            {/* Apply & Save Button */}
+            {/* Pull Config and Apply & Save Buttons */}
             {activeConfigStep < steps.length && (
-              <Button
-                colorScheme="blue"
-                size="md"
-                onClick={handleApplyAndSave}
-                isDisabled={!isConnected}
-                isLoading={isApplyingSave}
-                loadingText="Applying & Saving..."
-                leftIcon={!isApplyingSave ? <Text>⚙️💾</Text> : undefined}
-              >
-                Apply & Save Configuration
-              </Button>
+              <HStack spacing={3} justify="center">
+                <Button
+                  colorScheme="green"
+                  variant="outline"
+                  size="md"
+                  onClick={pullBatchParams}
+                  isDisabled={!isConnected}
+                  isLoading={isPullingConfig}
+                  loadingText="Pulling..."
+                  leftIcon={!isPullingConfig ? <Text>📥</Text> : undefined}
+                >
+                  Pull Current Config
+                </Button>
+                
+                <Button
+                  colorScheme="blue"
+                  size="md"
+                  onClick={handleApplyAndSave}
+                  isDisabled={!isConnected}
+                  isLoading={isApplyingSave}
+                  loadingText="Applying & Saving..."
+                  leftIcon={!isApplyingSave ? <Text>⚙️💾</Text> : undefined}
+                >
+                  Apply & Save Configuration
+                </Button>
+              </HStack>
             )}
           </VStack>
         </VStack>

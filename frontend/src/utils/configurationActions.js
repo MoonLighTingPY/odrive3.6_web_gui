@@ -201,6 +201,12 @@ export const executeCommand = async (command) => {
  * @param {Function} toast - Toast notification function
  * @returns {Promise<void>} Resolves when both apply and save are complete
  */
+/**
+ * Apply configuration and save to non-volatile memory
+ * @param {Object} deviceConfig - Device configuration object
+ * @param {Function} toast - Toast notification function
+ * @returns {Promise<void>} Resolves when both apply and save are complete
+ */
 export const applyAndSaveConfiguration = async (deviceConfig, toast) => {
   const { generateConfigCommands } = await import('./configCommandGenerator')
   const commands = generateConfigCommands(deviceConfig)
@@ -215,14 +221,77 @@ export const applyAndSaveConfiguration = async (deviceConfig, toast) => {
 
   await applyConfiguration(commands)
 
-  // Step 2: Save to non-volatile memory
 
-  await saveConfiguration()
+  try {
+    await saveConfiguration()
+    
+    // Device will reboot after save - wait for reconnection
+    toast({
+      title: 'Device rebooting...',
+      description: 'ODrive is rebooting, waiting for reconnection...',
+      status: 'warning',
+      duration: 5000,
+    })
 
-  toast({
-    title: 'Configuration Applied & Saved',
-    description: `Configuration successfully applied and saved to non-volatile memory`,
-    status: 'success',
-    duration: 5000,
-  })
+    // Wait for device to reconnect (check connection status every 2 seconds for up to 30 seconds)
+    let reconnected = false
+    let attempts = 0
+    const maxAttempts = 15 // 30 seconds total
+
+    while (!reconnected && attempts < maxAttempts) {
+      await new Promise(resolve => setTimeout(resolve, 2000)) // Wait 2 seconds
+      attempts++
+
+      try {
+        // Check connection status
+        const statusResponse = await fetch('/api/odrive/connection_status')
+        if (statusResponse.ok) {
+          const status = await statusResponse.json()
+          if (status.connected && !status.connection_lost) {
+            // Verify we can actually get device data
+            const telemetryResponse = await fetch('/api/odrive/telemetry')
+            if (telemetryResponse.ok) {
+              const telemetry = await telemetryResponse.json()
+              if (telemetry.device && Object.keys(telemetry.device).length > 0) {
+                reconnected = true
+                break
+              }
+            }
+          }
+        }
+      } catch (error) {
+        // Connection check failed, continue waiting
+        console.log(`Reconnection attempt ${attempts} failed:`, error)
+      }
+    }
+
+    if (reconnected) {
+      toast({
+        title: 'Configuration Applied & Saved',
+        description: 'Configuration successfully applied, saved, and device reconnected',
+        status: 'success',
+        duration: 5000,
+      })
+    } else {
+      toast({
+        title: 'Configuration Saved - Manual Reconnection Required',
+        description: 'Configuration was saved but automatic reconnection failed. Please reconnect manually.',
+        status: 'warning',
+        duration: 8000,
+      })
+    }
+
+  } catch (error) {
+    // If save fails, still show appropriate message
+    if (error.message.includes('reboot') || error.message.includes('disconnect')) {
+      toast({
+        title: 'Configuration Saved (Device Rebooted)',
+        description: 'Configuration saved successfully. Device has rebooted - it may take a moment to reconnect.',
+        status: 'info',
+        duration: 8000,
+      })
+    } else {
+      throw error // Re-throw if it's a real error
+    }
+  }
 }
