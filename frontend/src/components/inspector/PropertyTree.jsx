@@ -27,6 +27,11 @@ import {
   Alert,
   AlertIcon,
   Checkbox,
+  Slider,
+  SliderTrack,
+  SliderFilledTrack,
+  SliderThumb,
+  SliderMark,
 } from '@chakra-ui/react'
 import { EditIcon, CheckIcon, CloseIcon, SearchIcon, InfoIcon } from '@chakra-ui/icons'
 import { odrivePropertyTree } from '../../utils/odrivePropertyTree'
@@ -42,8 +47,9 @@ const PropertyTree = ({
 }) => {
   const [editingProperty, setEditingProperty] = useState(null)
   const [editValue, setEditValue] = useState('')
-  const [expandedSections, setExpandedSections] = useState(new Set(['system', 'axis0']))
-  const [viewMode, setViewMode] = useState('all') // all, writable, errors
+  const [expandedSections, setExpandedSections] = useState(new Set(['featured', 'featured.telemetry', 'featured.control']))
+  const [viewMode, setViewMode] = useState('all')
+  const [sliderValues, setSliderValues] = useState({})
 
   const startEditing = (path, currentValue) => {
     setEditingProperty(path)
@@ -81,6 +87,7 @@ const PropertyTree = ({
     console.log('Updating property:', devicePath, 'with value:', parsedValue)
     
     try {
+      // Call the correct updateProperty function that should handle the API call
       await updateProperty(devicePath, parsedValue)
       setEditingProperty(null)
       setEditValue('')
@@ -107,43 +114,86 @@ const PropertyTree = ({
   }
 
   const getValueFromState = useCallback((path) => {
-  if (!odriveState || !odriveState.device) {
-    return undefined
-  }
-  
-  // Build the correct path for the data structure
-  let fullPath
-  if (path.startsWith('system.')) {
-    const systemProp = path.replace('system.', '')
-    // Handle properties that are under device.config.*
-    if (['dc_bus_overvoltage_trip_level', 'dc_bus_undervoltage_trip_level', 'dc_max_positive_current', 
-         'dc_max_negative_current', 'enable_brake_resistor', 'brake_resistance'].includes(systemProp)) {
-      fullPath = `device.config.${systemProp}`
-    } else {
-      // Properties directly under device.*
-      fullPath = `device.${systemProp}`
-    }
-  } else if (path.startsWith('axis0.') || path.startsWith('axis1.')) {
-    // Axis properties map to device.axis0.* or device.axis1.*
-    fullPath = `device.${path}`
-  } else {
-    // Direct device path
-    fullPath = `device.${path}`
-  }
-  
-  const parts = fullPath.split('.')
-  let current = odriveState
-  
-  for (const part of parts) {
-    if (current && current[part] !== undefined) {
-      current = current[part]
-    } else {
+    if (!odriveState || !odriveState.device) {
       return undefined
     }
-  }
-  
-  return current
-}, [odriveState])
+    
+    // Check if this is a featured property with a custom path first
+    const findPropertyPath = (tree, targetPath) => {
+      for (const [sectionName, section] of Object.entries(tree)) {
+        if (section.properties) {
+          for (const [propName, prop] of Object.entries(section.properties)) {
+            const currentPath = sectionName.startsWith('featured') ? `${sectionName}.${propName}` : 
+                              sectionName === 'system' ? `system.${propName}` : `${sectionName}.${propName}`
+            if (currentPath === targetPath && prop.path) {
+              return prop.path
+            }
+          }
+        }
+      }
+      return targetPath
+    }
+    
+    // Get the actual path (this might be a calculated path)
+    const actualPath = findPropertyPath(odrivePropertyTree, path)
+    
+    // Handle calculated properties (check the actual path, not the original path)
+    if (actualPath.startsWith('calculated.')) {
+      const calcType = actualPath.replace('calculated.', '')
+      if (calcType === 'electrical_power') {
+        const vbus = odriveState.device.vbus_voltage
+        const ibus = odriveState.device.ibus || 0
+        return vbus && ibus ? vbus * ibus : 0
+      } else if (calcType === 'mechanical_power') {
+        // Calculate mechanical power from torque and velocity
+        const torque_setpoint = odriveState.device.axis0?.controller?.torque_setpoint || 0
+        const vel_estimate = odriveState.device.axis0?.encoder?.vel_estimate || 0
+        const TORQUE_CONSTANT = odriveState.device.axis0?.motor?.config?.torque_constant || 0
+        
+        // P_mech = Torque * Angular_Velocity (in rad/s)
+        // Convert turns/s to rad/s: rad/s = turns/s * 2π
+        const angular_velocity = vel_estimate * 2 * Math.PI
+        
+        // If torque constant is available, calculate actual mechanical torque
+        // Otherwise use torque setpoint directly (assuming it's already in Nm)
+        const actual_torque = TORQUE_CONSTANT > 0 ? 
+          (odriveState.device.axis0?.motor?.current_control?.Iq_setpoint || 0) * TORQUE_CONSTANT :
+          torque_setpoint
+          
+        return actual_torque * angular_velocity
+      }
+      return undefined
+    }
+    
+    // Handle normal path resolution
+    let fullPath
+    if (actualPath.startsWith('system.')) {
+      const systemProp = actualPath.replace('system.', '')
+      if (['dc_bus_overvoltage_trip_level', 'dc_bus_undervoltage_trip_level', 'dc_max_positive_current', 
+           'dc_max_negative_current', 'enable_brake_resistor', 'brake_resistance'].includes(systemProp)) {
+        fullPath = `device.config.${systemProp}`
+      } else {
+        fullPath = `device.${systemProp}`
+      }
+    } else if (actualPath.startsWith('axis0.') || actualPath.startsWith('axis1.')) {
+      fullPath = `device.${actualPath}`
+    } else {
+      fullPath = `device.${actualPath}`
+    }
+    
+    const parts = fullPath.split('.')
+    let current = odriveState
+    
+    for (const part of parts) {
+      if (current && current[part] !== undefined) {
+        current = current[part]
+      } else {
+        return undefined
+      }
+    }
+    
+    return current
+  }, [odriveState])
 
   const hasError = useCallback((sectionName) => {
     if (!odriveState || !odriveState.device) return false
@@ -180,7 +230,81 @@ const PropertyTree = ({
     return typeof value === 'number' && !prop?.name?.toLowerCase().includes('error')
   }
 
-  const renderProperty = (prop, value, displayPath, devicePath) => {
+  const isSetpointProperty = (prop) => {
+    return prop.isSetpoint || prop.name?.toLowerCase().includes('input') || 
+           prop.name?.toLowerCase().includes('setpoint')
+  }
+
+  const getSliderRange = (prop) => {
+    if (prop.min !== undefined && prop.max !== undefined) {
+      return { 
+        min: prop.min, 
+        max: prop.max, 
+        step: prop.step || (prop.max - prop.min) / 100 
+      }
+    }
+    
+    // Default ranges based on property type
+    if (prop.path?.includes('input_pos')) {
+      return { min: -10, max: 10, step: 0.1 }
+    } else if (prop.path?.includes('input_vel')) {
+      return { min: -50, max: 50, step: 0.5 }
+    } else if (prop.path?.includes('input_torque')) {
+      return { min: -10, max: 10, step: 0.1 }
+    }
+    
+    return { min: -100, max: 100, step: 1 }
+  }
+
+  const handleSliderChange = async (displayPath, value) => {
+    setSliderValues(prev => ({ ...prev, [displayPath]: value }))
+    
+    // Find the actual property to get the correct API path
+    const findProperty = (tree, targetPath) => {
+      for (const [sectionName, section] of Object.entries(tree)) {
+        if (section.properties) {
+          for (const [propName, prop] of Object.entries(section.properties)) {
+            const currentPath = sectionName.startsWith('featured') ? `${sectionName}.${propName}` : 
+                              sectionName === 'system' ? `system.${propName}` : `${sectionName}.${propName}`
+            if (currentPath === targetPath) {
+              return { prop, actualPath: prop.path || targetPath }
+            }
+          }
+        }
+      }
+      return { prop: null, actualPath: targetPath }
+    }
+    
+    const { actualPath } = findProperty(odrivePropertyTree, displayPath)
+    
+    // Build device path for API call
+    let devicePath
+    if (actualPath.startsWith('system.')) {
+      const systemProp = actualPath.replace('system.', '')
+      devicePath = `device.config.${systemProp}`
+    } else if (actualPath.startsWith('axis0.') || actualPath.startsWith('axis1.')) {
+      devicePath = `device.${actualPath}`
+    } else {
+      devicePath = `device.${actualPath}`
+    }
+    
+    try {
+      // Call the correct updateProperty function that should handle the API call
+      await updateProperty(devicePath, value)
+    } catch (error) {
+      console.error('Failed to update setpoint:', error)
+      setSliderValues(prev => {
+        const { [displayPath]: _removed, ...rest } = prev
+        return rest
+      })
+    }
+  }
+
+  const getCurrentSliderValue = (displayPath, actualValue) => {
+    return sliderValues[displayPath] !== undefined ? sliderValues[displayPath] : (actualValue || 0)
+  }
+
+  const renderProperty = (prop, value, displayPath) => {
     // Add safety checks for prop structure
     if (!prop || typeof prop !== 'object') {
       console.warn(`Invalid property structure for ${displayPath}:`, prop)
@@ -198,6 +322,8 @@ const PropertyTree = ({
     const isError = displayPath.includes('error') && value !== 0 && value !== undefined
     const isChartable = isPropertyChartable(value, prop)
     const isCharted = selectedProperties.includes(displayPath)
+    const isSetpoint = isSetpointProperty(prop)
+    const showSlider = isSetpoint && isWritable && isConnected && typeof value === 'number'
 
     // Use fallback values if prop fields are missing
     const propName = prop.name || displayPath.split('.').pop()
@@ -213,138 +339,235 @@ const PropertyTree = ({
         _hover={{ bg: isError ? "red.800" : "gray.700", borderColor: isError ? "red.400" : "gray.500" }}
         transition="all 0.2s"
       >
-        <HStack justify="space-between" align="center" h="100%" minH="60px">
-          {/* Left side - Property info */}
-          <HStack spacing={3} flex="1" align="center">
-            {/* Chart Checkbox */}
-            {isChartable && togglePropertyChart && (
-              <Tooltip label={isCharted ? "Remove from chart" : "Add to chart"}>
-                <Checkbox
-                  size="md"
-                  colorScheme="blue"
-                  isChecked={isCharted}
-                  onChange={() => togglePropertyChart(displayPath)}
-                />
-              </Tooltip>
-            )}
-            
-            <VStack align="start" spacing={1} flex="1">
-              <HStack spacing={2} align="center">
-                <Text fontSize="md" fontWeight="bold" color="white">
-                  {propName}
-                </Text>
-                <Badge size="sm" colorScheme={isWritable ? "green" : "gray"}>
-                  {isWritable ? "RW" : "RO"}
-                </Badge>
-                <Badge size="sm" colorScheme="blue" variant="subtle">
-                  {valueType}
-                </Badge>
-                {isChartable && (
-                  <Badge size="sm" colorScheme="purple" variant="subtle">
-                    CHART
-                  </Badge>
-                )}
-                {isError && (
-                  <Badge size="sm" colorScheme="red">
-                    ERROR
-                  </Badge>
-                )}
-              </HStack>
+        <VStack spacing={3} align="stretch">
+          <HStack justify="space-between" align="center">
+            {/* Left side - Property info */}
+            <HStack spacing={3} flex="1" align="center">
+              {/* Chart Checkbox */}
+              {isChartable && togglePropertyChart && (
+                <Tooltip label={isCharted ? "Remove from chart" : "Add to chart"}>
+                  <Checkbox
+                    size="md"
+                    colorScheme="blue"
+                    isChecked={isCharted}
+                    onChange={() => togglePropertyChart(displayPath)}
+                  />
+                </Tooltip>
+              )}
               
-              <HStack spacing={4} align="center">
-                <Text fontSize="xs" color="gray.400" fontFamily="mono">
-                  {devicePath}
-                </Text>
-                {prop.min !== undefined && prop.max !== undefined && (
-                  <Text fontSize="xs" color="gray.500">
-                    Range: {prop.min} to {prop.max}
+              <VStack align="start" spacing={1} flex="1">
+                <HStack spacing={2} align="center">
+                  <Text fontSize="md" fontWeight="bold" color="white">
+                    {propName}
+                  </Text>
+                  <Badge size="sm" colorScheme={isWritable ? "green" : "gray"}>
+                    {isWritable ? "RW" : "RO"}
+                  </Badge>
+                  <Badge size="sm" colorScheme="blue" variant="subtle">
+                    {valueType}
+                  </Badge>
+                  {isChartable && (
+                    <Badge size="sm" colorScheme="purple" variant="subtle">
+                      CHART
+                    </Badge>
+                  )}
+                  {isSetpoint && (
+                    <Badge size="sm" colorScheme="orange" variant="subtle">
+                      SETPOINT
+                    </Badge>
+                  )}
+                  {isError && (
+                    <Badge size="sm" colorScheme="red">
+                      ERROR
+                    </Badge>
+                  )}
+                </HStack>
+                
+                <HStack spacing={4} align="center">
+                  <Text fontSize="xs" color="gray.400" fontFamily="mono">
+                    {prop.path || displayPath}
+                  </Text>
+                  {prop.min !== undefined && prop.max !== undefined && (
+                    <Text fontSize="xs" color="gray.500">
+                      Range: {prop.min} to {prop.max}
+                    </Text>
+                  )}
+                </HStack>
+                
+                {isError && value !== undefined && (
+                  <Text fontSize="xs" color="red.400" fontWeight="bold">
+                    Error Code: 0x{value.toString(16).toUpperCase()}
                   </Text>
                 )}
-              </HStack>
-              
-              {isError && value !== undefined && (
-                <Text fontSize="xs" color="red.400" fontWeight="bold">
-                  Error Code: 0x{value.toString(16).toUpperCase()}
-                </Text>
-              )}
-            </VStack>
-          </HStack>
-          
-          {/* Right side - Value display and editing */}
-          <HStack spacing={3} minW="250px" justify="flex-end">
-            {isEditing ? (
-              <>
-                {valueType === 'boolean' ? (
-                  <Switch
-                    size="lg"
-                    isChecked={editValue === 'true'}
-                    onChange={(e) => setEditValue(e.target.checked ? 'true' : 'false')}
-                    colorScheme="blue"
-                  />
-                ) : (
-                  <NumberInput
-                    size="md"
-                    value={editValue}
-                    onChange={setEditValue}
-                    min={prop.min}
-                    max={prop.max}
-                    step={prop.step}
-                    precision={prop.decimals}
-                    minW="120px"
-                  >
-                    <NumberInputField bg="gray.700" color="white" />
-                  </NumberInput>
-                )}
-                <IconButton
-                  size="md"
-                  colorScheme="green"
-                  icon={<CheckIcon />}
-                  onClick={saveEdit}
-                  isDisabled={!isConnected}
-                />
-                <IconButton
-                  size="md"
-                  colorScheme="red"
-                  icon={<CloseIcon />}
-                  onClick={cancelEdit}
-                />
-              </>
-            ) : (
-              <>
-                <Text 
-                  fontSize="lg" 
-                  fontFamily="mono" 
-                  color={value !== undefined ? (isError ? "red.300" : "white") : "gray.500"}
-                  fontWeight="bold"
-                  minW="120px"
-                  textAlign="right"
-                >
-                  {value !== undefined 
-                    ? (typeof displayValue === 'number' 
-                        ? displayValue.toFixed(prop.decimals || 3)
-                        : String(displayValue))
-                    : 'N/A'
-                  }
-                </Text>
-                {isWritable && isConnected && (
-                  <Tooltip label="Edit property">
-                    <IconButton
-                      size="md"
-                      variant="ghost"
-                      icon={<EditIcon />}
-                      onClick={() => startEditing(displayPath, displayValue)}
-                      _hover={{ bg: "gray.600" }}
+              </VStack>
+            </HStack>
+            
+            {/* Right side - Value display and editing */}
+            <HStack spacing={3} minW="250px" justify="flex-end">
+              {isEditing ? (
+                <>
+                  {valueType === 'boolean' ? (
+                    <Switch
+                      size="lg"
+                      isChecked={editValue === 'true'}
+                      onChange={(e) => setEditValue(e.target.checked ? 'true' : 'false')}
+                      colorScheme="blue"
                     />
-                  </Tooltip>
-                )}
-              </>
-            )}
+                  ) : prop.options ? (
+                    <Select
+                      value={editValue}
+                      onChange={(e) => setEditValue(e.target.value)}
+                      size="md"
+                      bg="gray.700"
+                      color="white"
+                      minW="150px"
+                    >
+                      {Object.entries(prop.options).map(([val, label]) => (
+                        <option key={val} value={val}>{val}: {label}</option>
+                      ))}
+                    </Select>
+                  ) : (
+                    <NumberInput
+                      size="md"
+                      value={editValue}
+                      onChange={setEditValue}
+                      min={prop.min}
+                      max={prop.max}
+                      step={prop.step}
+                      precision={prop.decimals}
+                      minW="120px"
+                    >
+                      <NumberInputField bg="gray.700" color="white" />
+                    </NumberInput>
+                  )}
+                  <IconButton
+                    size="md"
+                    colorScheme="green"
+                    icon={<CheckIcon />}
+                    onClick={saveEdit}
+                    isDisabled={!isConnected}
+                  />
+                  <IconButton
+                    size="md"
+                    colorScheme="red"
+                    icon={<CloseIcon />}
+                    onClick={cancelEdit}
+                  />
+                </>
+              ) : (
+                <>
+                  <VStack align="end" spacing={0}>
+                    <Text 
+                      fontSize="lg" 
+                      fontFamily="mono" 
+                      color={value !== undefined ? (isError ? "red.300" : "white") : "gray.500"}
+                      fontWeight="bold"
+                      minW="120px"
+                      textAlign="right"
+                    >
+                      {value !== undefined 
+                        ? (typeof displayValue === 'number' 
+                            ? displayValue.toFixed(prop.decimals || 3)
+                            : prop.options && prop.options[displayValue] 
+                              ? `${displayValue}: ${prop.options[displayValue]}`
+                              : String(displayValue))
+                        : 'N/A'
+                      }
+                    </Text>
+                    {prop.options && typeof value === 'number' && prop.options[value] && (
+                      <Text fontSize="xs" color="gray.400">
+                        {prop.options[value]}
+                      </Text>
+                    )}
+                  </VStack>
+                  {isWritable && isConnected && !showSlider && (
+                    <Tooltip label="Edit property">
+                      <IconButton
+                        size="md"
+                        variant="ghost"
+                        icon={<EditIcon />}
+                        onClick={() => startEditing(displayPath, displayValue)}
+                        _hover={{ bg: "gray.600" }}
+                      />
+                    </Tooltip>
+                  )}
+                </>
+              )}
+            </HStack>
           </HStack>
-        </HStack>
+
+          {/* Slider for setpoints */}
+          {showSlider && (
+            <Box w="100%">
+              <VStack spacing={2} w="100%">
+                <HStack justify="space-between" w="100%">
+                  <Text fontSize="xs" color="gray.400">Interactive Control</Text>
+                  <Button
+                    size="xs"
+                    colorScheme="red"
+                    variant="outline"
+                    onClick={() => handleSliderChange(displayPath, 0)}
+                  >
+                    Zero
+                  </Button>
+                </HStack>
+                
+                {(() => {
+                  const range = getSliderRange(prop)
+                  const currentValue = getCurrentSliderValue(displayPath, value)
+                  
+                  return (
+                    <Box w="100%" position="relative" pb={6}>
+                      <Slider
+                        value={currentValue}
+                        min={range.min}
+                        max={range.max}
+                        step={range.step}
+                        onChange={(val) => setSliderValues(prev => ({ ...prev, [displayPath]: val }))
+                        }
+                        onChangeEnd={(val) => handleSliderChange(displayPath, val)}
+                        colorScheme="blue"
+                      >
+                        <SliderMark value={range.min} mt="1" ml="-2.5" fontSize="xs" color="gray.400">
+                          {range.min}
+                        </SliderMark>
+                        <SliderMark value={0} mt="1" ml="-1" fontSize="xs" color="gray.300">
+                          0
+                        </SliderMark>
+                        <SliderMark value={range.max} mt="1" ml="-2.5" fontSize="xs" color="gray.400">
+                          {range.max}
+                        </SliderMark>
+                        <SliderMark
+                          value={currentValue}
+                          textAlign="center"
+                          bg="blue.500"
+                          color="white"
+                          mt="-10"
+                          ml="-5"
+                          w="10"
+                          borderRadius="md"
+                          fontSize="xs"
+                          px={1}
+                        >
+                          {currentValue.toFixed(range.step < 1 ? 1 : 0)}
+                        </SliderMark>
+                        <SliderTrack bg="gray.600">
+                          <SliderFilledTrack bg="blue.400" />
+                        </SliderTrack>
+                        <SliderThumb bg="blue.500" />
+                      </Slider>
+                    </Box>
+                  )
+                })()}
+              </VStack>
+            </Box>
+          )}
+        </VStack>
       </Box>
     )
   }
 
+  // Update filteredTree to ensure featured sections appear first
   const filteredTree = useMemo(() => {
     let filtered = { ...odrivePropertyTree }
     
@@ -357,7 +580,6 @@ const PropertyTree = ({
         let hasMatchingProps = false
         
         Object.entries(section.properties).forEach(([propName, prop]) => {
-          // Add safety check for prop structure
           if (!prop || typeof prop !== 'object') {
             console.warn(`Invalid property structure for ${propName}:`, prop)
             return
@@ -388,7 +610,7 @@ const PropertyTree = ({
       filtered = searchFiltered
     }
     
-    // Apply view mode filter
+    // Apply view mode filter (same as before)
     if (viewMode === 'writable') {
       const writableFiltered = {}
       
@@ -397,7 +619,6 @@ const PropertyTree = ({
         let hasWritableProps = false
         
         Object.entries(section.properties).forEach(([propName, prop]) => {
-          // Add safety check
           if (!prop || typeof prop !== 'object') return
           
           if (prop.writable) {
@@ -420,10 +641,8 @@ const PropertyTree = ({
         let hasChartableProps = false
         
         Object.entries(section.properties).forEach(([propName, prop]) => {
-          // Add safety check
           if (!prop || typeof prop !== 'object') return
           
-          // Check if property is chartable (numeric, not writable config, and changes over time)
           const isNumericType = prop.type === 'number'
           const isReadOnly = !prop.writable
           const isNotConfigParam = !propName.includes('config') && 
@@ -443,7 +662,6 @@ const PropertyTree = ({
                                   !propName.includes('input_mode') &&
                                   !sectionName.includes('config')
           
-          // Include live telemetry values like measurements, estimates, setpoints, states
           const isLiveTelemetry = propName.includes('measured') ||
                                  propName.includes('estimate') ||
                                  propName.includes('setpoint') ||
@@ -456,11 +674,12 @@ const PropertyTree = ({
                                  propName.includes('phase') ||
                                  propName.includes('hall_state') ||
                                  propName.includes('vbus') ||
-                                 propName.includes('ibus')
+                                 propName.includes('ibus') ||
+                                 propName.includes('power')
           
           const isChartableProperty = isNumericType && (isReadOnly || isLiveTelemetry) && 
                                      (isNotConfigParam || isLiveTelemetry) &&
-                                     !propName.includes('error') // Exclude error flags
+                                     !propName.includes('error')
           
           if (isChartableProperty) {
             chartableSection.properties[propName] = prop
@@ -486,7 +705,25 @@ const PropertyTree = ({
       filtered = errorFiltered
     }
     
-    return filtered
+    // Ensure featured sections are at the top
+    const orderedSections = {}
+    const featuredSections = ['featured', 'featured.telemetry', 'featured.control']
+    
+    // Add featured sections first
+    featuredSections.forEach(sectionName => {
+      if (filtered[sectionName]) {
+        orderedSections[sectionName] = filtered[sectionName]
+      }
+    })
+    
+    // Add remaining sections
+    Object.entries(filtered).forEach(([sectionName, section]) => {
+      if (!featuredSections.includes(sectionName)) {
+        orderedSections[sectionName] = section
+      }
+    })
+    
+    return orderedSections
   }, [searchFilter, viewMode, hasError])
 
   return (
@@ -569,19 +806,24 @@ const PropertyTree = ({
                   <AccordionButton
                     onClick={() => toggleSection(sectionName)}
                     _expanded={{ bg: 'gray.700' }}
-                    bg="gray.750"
+                    bg={sectionName.startsWith('featured') ? 'orange.800' : 'gray.750'}
                     borderRadius="md"
                     mb={2}
-                    _hover={{ bg: 'gray.700' }}
+                    _hover={{ bg: sectionName.startsWith('featured') ? 'orange.700' : 'gray.700' }}
                   >
                     <Box flex="1" textAlign="left">
                       <HStack>
                         <Text fontWeight="bold" color="white" fontSize="lg">
                           {section.name}
                         </Text>
-                        <Badge colorScheme="blue" variant="solid">
+                        <Badge colorScheme={sectionName.startsWith('featured') ? 'orange' : 'blue'} variant="solid">
                           {Object.keys(section.properties).length}
                         </Badge>
+                        {sectionName.startsWith('featured') && (
+                          <Badge colorScheme="yellow" variant="outline">
+                            FEATURED
+                          </Badge>
+                        )}
                         {hasError(sectionName) && (
                           <Badge colorScheme="red">
                             ERROR
@@ -594,13 +836,14 @@ const PropertyTree = ({
                   <AccordionPanel pb={4} px={0}>
                     <VStack spacing={3} align="stretch">
                       {Object.entries(section.properties).map(([propName, prop]) => {
-                        const displayPath = sectionName === 'system' 
-                          ? `system.${propName}` 
-                          : `${sectionName}.${propName}`
+                        const displayPath = sectionName.startsWith('featured') 
+                          ? `${sectionName}.${propName}`
+                          : sectionName === 'system' 
+                            ? `system.${propName}` 
+                            : `${sectionName}.${propName}`
                         const value = getValueFromState(displayPath)
-                        const devicePath = displayPath
                         
-                        return renderProperty(prop, value, displayPath, devicePath)
+                        return renderProperty(prop, value, displayPath)
                       })}
                     </VStack>
                   </AccordionPanel>

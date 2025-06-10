@@ -216,12 +216,6 @@ export const applyAndSaveConfiguration = async (deviceConfig, toast) => {
   await applyConfiguration(commands)
 
   // Step 2: Save to non-volatile memory
-  toast({
-    title: 'Saving to memory...',
-    description: 'Saving configuration to non-volatile memory',
-    status: 'info',
-    duration: 2000,
-  })
 
   await saveConfiguration()
 

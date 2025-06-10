@@ -1,4 +1,78 @@
 export const odrivePropertyTree = {
+  // Add Featured section at the top
+  featured: {
+    name: '⭐ Featured',
+    description: 'Quick access to key monitoring and control properties',
+    properties: {} // Will be populated dynamically
+  },
+
+  'featured.telemetry': {
+    name: '📊 Live Telemetry',
+    description: 'Key values for monitoring motor performance and power consumption',
+    properties: {
+      // DC Bus measurements - these are directly under device
+      vbus_voltage: { name: 'Bus Voltage', description: 'DC bus voltage (V)', writable: false, type: 'number', decimals: 2, path: 'vbus_voltage' },
+      ibus: { name: 'Bus Current', description: 'DC bus current (A)', writable: false, type: 'number', decimals: 3, path: 'ibus' },
+      
+      // Motor currents - correct paths for v0.5.6
+      iq_measured: { name: 'Motor Current (Iq)', description: 'Quadrature current - torque producing (A)', writable: false, type: 'number', decimals: 3, path: 'axis0.motor.current_control.Iq_measured' },
+      id_measured: { name: 'Motor Current (Id)', description: 'Direct current - field weakening (A)', writable: false, type: 'number', decimals: 3, path: 'axis0.motor.current_control.Id_measured' },
+      iq_setpoint: { name: 'Motor Current Setpoint (Iq)', description: 'Quadrature current setpoint (A)', writable: false, type: 'number', decimals: 3, path: 'axis0.motor.current_control.Iq_setpoint' },
+      
+      // Phase currents - these are what's showing in your device list
+      current_meas_phB: { name: 'Phase B Current', description: 'Measured current in phase B (A)', writable: false, type: 'number', decimals: 3, path: 'axis0.motor.current_meas_phB' },
+      current_meas_phC: { name: 'Phase C Current', description: 'Measured current in phase C (A)', writable: false, type: 'number', decimals: 3, path: 'axis0.motor.current_meas_phC' },
+      
+      // Position and velocity
+      pos_estimate: { name: 'Position', description: 'Current position estimate (turns)', writable: false, type: 'number', decimals: 3, path: 'axis0.encoder.pos_estimate' },
+      vel_estimate: { name: 'Velocity', description: 'Current velocity estimate (turns/s)', writable: false, type: 'number', decimals: 3, path: 'axis0.encoder.vel_estimate' },
+      
+      // Motor voltage setpoints 
+      vq_setpoint: { name: 'Motor Voltage (Vq)', description: 'Quadrature voltage setpoint (V)', writable: false, type: 'number', decimals: 3, path: 'axis0.motor.current_control.Vq_setpoint' },
+      vd_setpoint: { name: 'Motor Voltage (Vd)', description: 'Direct voltage setpoint (V)', writable: false, type: 'number', decimals: 3, path: 'axis0.motor.current_control.Vd_setpoint' },
+      
+      // Control setpoints for monitoring
+      pos_setpoint_monitor: { name: 'Position Setpoint', description: 'Current position command (turns)', writable: false, type: 'number', decimals: 3, path: 'axis0.controller.pos_setpoint' },
+      vel_setpoint_monitor: { name: 'Velocity Setpoint', description: 'Current velocity command (turns/s)', writable: false, type: 'number', decimals: 3, path: 'axis0.controller.vel_setpoint' },
+      
+      // Calculated power - these will work with the calculation logic
+      electrical_power: { name: 'Electrical Power', description: 'Calculated electrical power (W)', writable: false, type: 'number', decimals: 2, path: 'calculated.electrical_power' },
+      mechanical_power: { name: 'Mechanical Power', description: 'Calculated mechanical power (W)', writable: false, type: 'number', decimals: 2, path: 'calculated.mechanical_power' },
+      
+      // Axis state
+      current_state: { name: 'Axis State', description: 'Current axis state', writable: false, type: 'number', path: 'axis0.current_state',
+        options: { 0: 'Undefined', 1: 'Idle', 2: 'Startup', 3: 'Full Calib', 4: 'Motor Calib', 6: 'Encoder Index', 7: 'Encoder Offset', 8: 'Closed Loop', 9: 'Lockin Spin', 10: 'Encoder Dir Find', 11: 'Homing' } },
+    }
+  },
+
+  'featured.control': {
+    name: '🎛️ Control & Setpoints',
+    description: 'Interactive controls for testing and tuning the motor',
+    properties: {
+      // Control mode
+      control_mode: { name: 'Control Mode', description: 'Active control mode', writable: true, type: 'number', min: 0, max: 3, path: 'axis0.controller.config.control_mode', 
+        options: { 0: 'Voltage', 1: 'Torque', 2: 'Velocity', 3: 'Position' } },
+      input_mode: { name: 'Input Mode', description: 'Input processing mode', writable: true, type: 'number', min: 0, max: 8, path: 'axis0.controller.config.input_mode',
+        options: { 0: 'Inactive', 1: 'Passthrough', 2: 'Vel Ramp', 3: 'Pos Filter', 4: 'Mix Channels', 5: 'Trap Traj', 6: 'Torque Ramp', 7: 'Mirror', 8: 'Tuning' } },
+      
+      // Direct control inputs (these will have sliders) - correct paths for v0.5.6
+      input_pos: { name: 'Position Input', description: 'Position command input (turns)', writable: true, type: 'number', decimals: 3, path: 'axis0.controller.input_pos', 
+        min: -100, max: 100, step: 0.1, isSetpoint: true },
+      input_vel: { name: 'Velocity Input', description: 'Velocity command input (turns/s)', writable: true, type: 'number', decimals: 3, path: 'axis0.controller.input_vel', 
+        min: -100, max: 100, step: 0.5, isSetpoint: true },
+      input_torque: { name: 'Torque Input', description: 'Torque command input (Nm)', writable: true, type: 'number', decimals: 3, path: 'axis0.controller.input_torque', 
+        min: -10, max: 10, step: 0.1, isSetpoint: true },
+      
+      // Axis state control
+      requested_state: { name: 'Axis State Request', description: 'Request axis state change', writable: true, type: 'number', min: 0, max: 13, path: 'axis0.requested_state',
+        options: { 0: 'Undefined', 1: 'Idle', 2: 'Startup', 3: 'Full Calib', 4: 'Motor Calib', 6: 'Encoder Index', 7: 'Encoder Offset', 8: 'Closed Loop', 9: 'Lockin Spin', 10: 'Encoder Dir Find', 11: 'Homing' } },
+      
+      // Quick limits for testing
+      vel_limit: { name: 'Velocity Limit', description: 'Maximum allowed velocity (turns/s)', writable: true, type: 'number', min: 0, max: 1000, step: 1, path: 'axis0.controller.config.vel_limit' },
+      current_lim: { name: 'Current Limit', description: 'Motor current limit (A)', writable: true, type: 'number', min: 0, max: 60, step: 0.5, path: 'axis0.motor.config.current_lim' },
+    }
+  },
+
   system: {
     name: 'System Configuration',
     description: 'Top-level ODrive system settings and information',

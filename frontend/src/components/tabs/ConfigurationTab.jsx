@@ -200,12 +200,6 @@ const ConfigurationTab = () => {
           }
         }))
 
-        toast({
-          title: 'Parameter refreshed',
-          description: `${configKey} = ${value}`,
-          status: 'success',
-          duration: 2000,
-        })
       } else {
         throw new Error('Failed to read parameter')
       }
@@ -227,30 +221,46 @@ const ConfigurationTab = () => {
 
   // Apply and Save function using shared utility
   const handleApplyAndSave = async () => {
-    if (!isConnected) {
-      toast({
-        title: 'Error',
-        description: 'No ODrive connected',
-        status: 'error',
-        duration: 3000,
-      })
-      return
-    }
-
-    setIsApplyingSave(true)
-    try {
-      await applyAndSaveConfiguration(deviceConfig, toast)
-    } catch (error) {
-      toast({
-        title: 'Apply & Save Failed',
-        description: error.message,
-        status: 'error',
-        duration: 5000,
-      })
-    } finally {
-      setIsApplyingSave(false)
-    }
+  if (!isConnected) {
+    toast({
+      title: 'Error',
+      description: 'No ODrive connected',
+      status: 'error',
+      duration: 3000,
+    })
+    return
   }
+
+  // Check if we have any actual configuration values
+  const hasValidConfig = Object.values(deviceConfig).some(category => 
+    Object.keys(category).length > 0 && 
+    Object.values(category).some(value => value !== undefined && value !== null && value !== '')
+  )
+
+  if (!hasValidConfig) {
+    toast({
+      title: 'No Configuration to Apply',
+      description: 'Please configure some parameters before applying. Use the configuration steps or load current values first.',
+      status: 'warning',
+      duration: 5000,
+    })
+    return
+  }
+
+  setIsApplyingSave(true)
+  try {
+    await applyAndSaveConfiguration(deviceConfig, toast)
+  } catch (error) {
+    toast({
+      title: 'Apply & Save Failed',
+      description: error.message,
+      status: 'error',
+      duration: 5000,
+    })
+  } finally {
+    setIsApplyingSave(false)
+  }
+}
 
   const nextConfigStep = () => {
     if (activeConfigStep < steps.length) {

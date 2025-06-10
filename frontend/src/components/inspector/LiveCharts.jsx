@@ -31,6 +31,7 @@ import {
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
 } from 'recharts'
+import { odrivePropertyTree } from '../../utils/odrivePropertyTree'
 
 const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
   const [chartData, setChartData] = useState([])
@@ -53,10 +54,59 @@ const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
       return null
     }
     
-    // Build the correct path to match PropertyTree logic
+    // Handle calculated properties
+    if (path.startsWith('calculated.')) {
+      const calcType = path.replace('calculated.', '')
+      if (calcType === 'electrical_power') {
+        const vbus = obj.device.vbus_voltage
+        const ibus = obj.device.ibus || 0
+        return vbus && ibus ? vbus * ibus : 0
+      } else if (calcType === 'mechanical_power') {
+        // Calculate mechanical power from torque and velocity
+        const torque_setpoint = obj.device.axis0?.controller?.torque_setpoint || 0
+        const vel_estimate = obj.device.axis0?.encoder?.vel_estimate || 0
+        const TORQUE_CONSTANT = obj.device.axis0?.motor?.config?.torque_constant || 0
+        
+        // P_mech = Torque * Angular_Velocity (in rad/s)
+        // Convert turns/s to rad/s: rad/s = turns/s * 2π
+        const angular_velocity = vel_estimate * 2 * Math.PI
+        
+        // If torque constant is available, calculate actual mechanical torque
+        // Otherwise use torque setpoint directly (assuming it's already in Nm)
+        const actual_torque = TORQUE_CONSTANT > 0 ? 
+          (obj.device.axis0?.motor?.current_control?.Iq_setpoint || 0) * TORQUE_CONSTANT :
+          torque_setpoint
+          
+        return actual_torque * angular_velocity
+      }
+      return null
+    }
+    
+    // Handle custom path mapping for featured properties
+    let actualPath = path
+    
+    // Check if this is a featured property with a custom path
+    const findPropertyPath = (tree, targetPath) => {
+      for (const [sectionName, section] of Object.entries(tree)) {
+        if (section.properties) {
+          for (const [propName, prop] of Object.entries(section.properties)) {
+            const currentPath = sectionName.startsWith('featured') ? `${sectionName}.${propName}` : 
+                              sectionName === 'system' ? `system.${propName}` : `${sectionName}.${propName}`
+            if (currentPath === targetPath && prop.path) {
+              return prop.path
+            }
+          }
+        }
+      }
+      return targetPath
+    }
+    
+    actualPath = findPropertyPath(odrivePropertyTree, path)
+    
+    // Build the correct path for the data structure
     let fullPath
-    if (path.startsWith('system.')) {
-      const systemProp = path.replace('system.', '')
+    if (actualPath.startsWith('system.')) {
+      const systemProp = actualPath.replace('system.', '')
       // Handle properties that are under device.config.*
       if (['dc_bus_overvoltage_trip_level', 'dc_bus_undervoltage_trip_level', 'dc_max_positive_current', 
            'dc_max_negative_current', 'enable_brake_resistor', 'brake_resistance'].includes(systemProp)) {
@@ -64,12 +114,12 @@ const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
       } else {
         fullPath = `device.${systemProp}`
       }
-    } else if (path.startsWith('axis0.') || path.startsWith('axis1.')) {
-      fullPath = `device.${path}`
-    } else if (path.startsWith('config.')) {
-      fullPath = `device.${path}`
+    } else if (actualPath.startsWith('axis0.') || actualPath.startsWith('axis1.')) {
+      fullPath = `device.${actualPath}`
+    } else if (actualPath.startsWith('config.')) {
+      fullPath = `device.${actualPath}`
     } else {
-      fullPath = `device.${path}`
+      fullPath = `device.${actualPath}`
     }
     
     const parts = fullPath.split('.')
@@ -114,6 +164,7 @@ const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
           if (filteredData.length > maxSamples) {
             return filteredData.slice(-maxSamples)
           }
+          
           return filteredData
         })
       }, 1000 / sampleRate)

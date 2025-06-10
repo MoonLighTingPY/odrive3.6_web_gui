@@ -159,6 +159,31 @@ class ODriveManager:
         self.reboot_start_time = None
         self.reconnection_attempts = 0
         self.max_reconnection_attempts = 10
+
+    def _normalize_command(self, command: str) -> str:
+        """Normalize command to use 'device' reference instead of odrv0, odrv1, etc."""
+        try:
+            # Replace common ODrive variable names with 'device'
+            normalized = command
+            
+            # List of common ODrive variable names to replace
+            odrive_vars = ['odrv0', 'odrv1', 'dev0', 'dev1', 'my_drive', 'odrive']
+            
+            for var in odrive_vars:
+                # Replace at the beginning of the command
+                if normalized.startswith(var + '.'):
+                    normalized = normalized.replace(var + '.', 'device.', 1)
+                    break
+                # Also handle cases where the variable is used without a dot (standalone)
+                elif normalized == var:
+                    normalized = 'device'
+                    break
+            
+            return normalized
+            
+        except Exception as e:
+            logger.warning(f"Error normalizing command '{command}': {e}")
+            return command
         
 
     def scan_for_devices(self) -> List[Dict[str, Any]]:
@@ -344,90 +369,34 @@ class ODriveManager:
             
         return False
     
-    def _sanitize_value(self, value: str) -> Any:
-        sanitize_for_json(value)
-
-    def get_device_state(self) -> Dict[str, Any]:
-        """Get current device state"""
-        if not self.current_device:
-            return {}
-        
-        # Check connection and try to reconnect if needed
-        if not self.check_connection():
-            if self.try_reconnect():
-                # Successfully reconnected, proceed
-                pass
-            else:
-                return {}
-        
+    def _sanitize_value(self, value_str: str) -> Any:
+        """Sanitize and convert string value to appropriate Python type"""
         try:
-            state = {
-                'vbus_voltage': self.current_device.vbus_voltage,
-                'axis0': {
-                    'current_state': self.current_device.axis0.current_state,
-                    'error': self.current_device.axis0.error,
-                    'motor': {
-                        'error': self.current_device.axis0.motor.error,
-                        'current_control': {
-                            'Iq_measured': self.current_device.axis0.motor.current_control.Iq_measured,
-                            'Iq_setpoint': self.current_device.axis0.motor.current_control.Iq_setpoint,
-                        },
-                        'motor_thermistor': {
-                            'temperature': getattr(self.current_device.axis0.motor.motor_thermistor, 'temperature', 25.0)
-                        },
-                        'fet_thermistor': {
-                            'temperature': getattr(self.current_device.axis0.motor.fet_thermistor, 'temperature', 25.0)
-                        }
-                    },
-                    'encoder': {
-                        'error': self.current_device.axis0.encoder.error,
-                        'pos_estimate': self.current_device.axis0.encoder.pos_estimate,
-                        'vel_estimate': self.current_device.axis0.encoder.vel_estimate,
-                        'config': {
-                            'cpr': self.current_device.axis0.encoder.config.cpr,
-                        }
-                    },
-                    'controller': {
-                        'error': self.current_device.axis0.controller.error,
-                        'pos_setpoint': self.current_device.axis0.controller.pos_setpoint,
-                        'vel_setpoint': self.current_device.axis0.controller.vel_setpoint,
-                    }
-                }
-            }
-            return state
-        except Exception as e:
-            if not self.is_rebooting:  # Reduce log noise during reboot
-                logger.error(f"Error getting device state: {e}")
-            self.connection_lost = True
-            return {}
-
-    def _normalize_command(self, command: str) -> str:
-        """Normalize command to use device reference instead of hardcoded names"""
-        # Replace any common ODrive variable names with 'device'
-        command = command.replace('odrv0.', 'device.')
-        command = command.replace('odrv1.', 'device.')
-        command = command.replace('dev0.', 'device.')
-        command = command.replace('dev1.', 'device.')
-        command = command.replace('my_drive.', 'device.')
-        command = command.replace('odrive.', 'device.')
-        
-        # Handle function calls without dot notation
-        if command.startswith('odrv0'):
-            command = command.replace('odrv0', 'device', 1)
-        elif command.startswith('odrv1'):
-            command = command.replace('odrv1', 'device', 1)
-        elif command.startswith('dev0'):
-            command = command.replace('dev0', 'device', 1)
-        elif command.startswith('dev1'):
-            command = command.replace('dev1', 'device', 1)
-        elif command.startswith('my_drive'):
-            command = command.replace('my_drive', 'device', 1)
-        elif command.startswith('odrive'):
-            command = command.replace('odrive', 'device', 1)
+            # Remove whitespace
+            value_str = value_str.strip()
             
-        return command
-
-    
+            # Handle boolean values
+            if value_str.lower() in ['true', 'false']:
+                return value_str.lower() == 'true'
+            
+            # Handle None/null values
+            if value_str.lower() in ['none', 'null', 'undefined']:
+                return None
+            
+            # Try to convert to number
+            try:
+                # Try integer first
+                if '.' not in value_str and 'e' not in value_str.lower():
+                    return int(value_str)
+                else:
+                    return float(value_str)
+            except ValueError:
+                # Return as string if not a number
+                return value_str
+                
+        except Exception as e:
+            logger.warning(f"Error sanitizing value '{value_str}': {e}")
+            return value_str
 
     def execute_command(self, command: str) -> Dict[str, Any]:
         """Execute a command on the ODrive"""
@@ -486,19 +455,20 @@ class ODriveManager:
                     path = parts[0].strip()
                     value_str = parts[1].strip()
                     
-                    # Skip commands with undefined values
+                    # Sanitize and convert the value
+                    value = self._sanitize_value(value_str)
+                    
+                    # Skip commands with undefined values - check the original string, not sanitized value
                     if value_str.lower() in ['undefined', 'null', 'none']:
                         logger.warning(f"Skipping command with undefined value: {command}")
                         return {'result': f'Skipped {path} (undefined value)'}
                     
+                    # Skip if sanitized value is None and original was a null-like string
+                    if value is None and value_str.lower() in ['undefined', 'null', 'none']:
+                        logger.warning(f"Skipping command with null value: {command}")
+                        return {'result': f'Skipped {path} (null value)'}
+                    
                     try:
-                        # Sanitize and convert the value
-                        value = self._sanitize_value(value_str)
-                        
-                        if value is None:
-                            logger.warning(f"Skipping command with null value: {command}")
-                            return {'result': f'Skipped {path} (null value)'}
-                        
                         # Execute the assignment
                         exec(f"{path} = {repr(value)}", {}, local_context)
                         return {'result': f'Set {path} = {value}'}
@@ -541,7 +511,7 @@ class ODriveManager:
                         
                         logger.error(f"Error in command execution: {e2}")
                         return {'error': str(e2)}
-                
+            
         except Exception as e:
             # For reboot commands, disconnection errors are expected
             if ('erase_configuration' in command or 'reboot' in command) and 'disconnected' in str(e).lower():
@@ -782,7 +752,7 @@ def save_and_reboot():
                 if not odrive_manager.connection_lost and odrive_manager.current_device:
                     logger.info(f"Device reconnected after save operation (detected on attempt {attempt + 1})")
                     break
-                    
+        
         # Final check: if device is now connected, proceed with reboot
         if save_successful:
             # Check one more time if device is available
