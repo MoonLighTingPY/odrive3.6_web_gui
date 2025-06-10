@@ -86,42 +86,55 @@ const DeviceList = () => {
     updateRate: 2000, // 2 seconds for device list
   })
 
-// Update the reconnection detection useEffect in DeviceList.jsx
-useEffect(() => {
-  if (!isConnected && connectedDevice && !isScanning) {
-    // More frequent polling for faster reconnection detection
-    const reconnectInterval = setInterval(async () => {
-      try {
-        const statusResponse = await fetch('/api/odrive/connection_status')
-        if (statusResponse.ok) {
-          const status = await statusResponse.json()
-          if (status.connected && !status.connection_lost) {
-            // Backend says we're connected - trust it and clear connection lost
-            dispatch(setConnectionLost(false))
-            
-            // Trigger configuration pull after successful reconnection
-            setTimeout(() => {
-              // Dispatch a custom event to trigger config pull in ConfigurationTab
-              window.dispatchEvent(new CustomEvent('deviceReconnected'))
-            }, 100) // Reduced from 500ms to 100ms for faster response
-            
-            toast({
-              title: 'Device reconnected',
-              description: 'ODrive connection has been restored. Pulling configuration...',
-              status: 'success',
-              duration: 3000,
-            })
+    // Update the reconnection detection useEffect in DeviceList.jsx
+  useEffect(() => {
+    if (connectedDevice && !isConnected) {
+      // More frequent polling for faster reconnection detection
+      const reconnectInterval = setInterval(async () => {
+        try {
+          const statusResponse = await fetch('/api/odrive/connection_status')
+          if (statusResponse.ok) {
+            const status = await statusResponse.json()
+            if (status.connected && !status.connection_lost && status.device_serial) {
+              // Backend says we're connected - trust it and clear connection lost
+              dispatch(setConnectionLost(false))
+              dispatch(setConnectedDevice({ 
+                serial: status.device_serial,
+                path: connectedDevice.path || `ODrive ${status.device_serial}`
+              }))
+              
+              // Trigger configuration pull after successful reconnection
+              setTimeout(() => {
+                // Dispatch a custom event to trigger config pull in ConfigurationTab
+                window.dispatchEvent(new CustomEvent('deviceReconnected'))
+              }, 500)
+              
+              // Only show toast if this wasn't expected (not during config operations)
+              const isExpectedReconnection = sessionStorage.getItem('expectingReconnection') === 'true'
+              if (!isExpectedReconnection) {
+                toast({
+                  title: 'Device reconnected',
+                  description: 'ODrive connection has been restored',
+                  status: 'success',
+                  duration: 3000,
+                })
+              } else {
+                // Clear the flag since reconnection is complete
+                sessionStorage.removeItem('expectingReconnection')
+              }
+              
+              clearInterval(reconnectInterval)
+            }
           }
+        } catch (error) {
+          // Reconnection attempt failed, continue trying
+          console.log('Reconnection attempt failed:', error)
         }
-      } catch (error) {
-        // Reconnection attempt failed, continue trying
-        console.log('Reconnection attempt failed:', error)
-      }
-    }, 500) // Reduced from 1000ms to 500ms for much faster detection
-    
-    return () => clearInterval(reconnectInterval)
-  }
-}, [isConnected, connectionLost, dispatch, toast, isScanning, connectedDevice])
+      }, 1000) // Check every second for reconnection
+      
+      return () => clearInterval(reconnectInterval)
+    }
+  }, [isConnected, dispatch, toast, isScanning, connectedDevice])
 
 
   const handleConnect = async (device) => {

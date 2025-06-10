@@ -178,20 +178,24 @@ export const createAutoBackupAction = async (deviceConfig, toast) => {
 
     // Check if this was an update to existing backup
     const isUpdate = backup.description && backup.description.includes('updated when ODrive reconnected')
-
-    toast({
-      title: isUpdate ? 'Auto Backup Updated' : 'Auto Backup Created',
-      description: isUpdate 
-        ? `Existing backup updated: "${backup.name}"${cleanedUp > 0 ? `. Cleaned up ${cleanedUp} old backups.` : ''}`
-        : `Configuration backed up as "${backup.name}"${cleanedUp > 0 ? `. Cleaned up ${cleanedUp} old backups.` : ''}`,
-      status: 'info',
-      duration: 3000,
-    })
+    
+    // Only show toast if this wasn't during an expected reconnection
+    const isExpectedReconnection = sessionStorage.getItem('expectingReconnection') === 'true'
+    
+    if (!isExpectedReconnection) {
+      toast({
+        title: isUpdate ? 'Auto Backup Updated' : 'Auto Backup Created',
+        description: isUpdate 
+          ? `Existing backup updated: "${backup.name}"${cleanedUp > 0 ? `. Cleaned up ${cleanedUp} old backups.` : ''}`
+          : `Configuration backed up as "${backup.name}"${cleanedUp > 0 ? `. Cleaned up ${cleanedUp} old backups.` : ''}`,
+        status: 'info',
+        duration: 3000,
+      })
+    }
 
     return backup
   } catch (error) {
     console.error('Auto backup failed:', error)
-    // Don't show error toast for auto backup failures to avoid annoying users
     throw error
   }
 }

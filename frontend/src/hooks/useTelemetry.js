@@ -185,7 +185,6 @@ export const useTelemetry = (config) => {
       },
       onDisconnected: () => {
         // Handle disconnection - update Redux state
-        dispatch(setConnectedDevice(null))
         dispatch(setConnectionLost(true))
         console.log('ODrive disconnected - updating frontend state')
       }

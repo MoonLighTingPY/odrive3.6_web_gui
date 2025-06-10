@@ -211,6 +211,9 @@ export const applyAndSaveConfiguration = async (deviceConfig, toast) => {
   const { generateConfigCommands } = await import('./configCommandGenerator')
   const commands = generateConfigCommands(deviceConfig)
   
+  // Mark that we're expecting a reconnection
+  sessionStorage.setItem('expectingReconnection', 'true')
+  
   // Step 1: Apply configuration
   toast({
     title: 'Applying configuration...',
@@ -220,7 +223,6 @@ export const applyAndSaveConfiguration = async (deviceConfig, toast) => {
   })
 
   await applyConfiguration(commands)
-
 
   try {
     await saveConfiguration()
@@ -233,33 +235,32 @@ export const applyAndSaveConfiguration = async (deviceConfig, toast) => {
       duration: 5000,
     })
 
-    // Wait for device to reconnect (check connection status every 2 seconds for up to 30 seconds)
+    // Wait for device to reconnect
     let reconnected = false
     let attempts = 0
     const maxAttempts = 15
 
     while (!reconnected && attempts < maxAttempts) {
-  await new Promise(resolve => setTimeout(resolve, 100)) // Increased to 3 seconds
-  attempts++
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      attempts++
 
-  try {
-    // Only check connection status, don't fetch telemetry
-    const statusResponse = await fetch('/api/odrive/connection_status')
-    if (statusResponse.ok) {
-      const status = await statusResponse.json()
-      if (status.connected && !status.connection_lost) {
-        // Backend confirms connection is restored
-        reconnected = true
-        break
+      try {
+        const statusResponse = await fetch('/api/odrive/connection_status')
+        if (statusResponse.ok) {
+          const status = await statusResponse.json()
+          if (status.connected && !status.connection_lost) {
+            reconnected = true
+            break
+          }
+        }
+      } catch (error) {
+        console.log(`Reconnection attempt ${attempts} failed:`, error)
       }
     }
-  } catch (error) {
-    // Connection check failed, continue waiting
-    console.log(`Reconnection attempt ${attempts} failed:`, error)
-  }
-}
 
     if (reconnected) {
+      // Clear the flag and show final success toast
+      sessionStorage.removeItem('expectingReconnection')
       toast({
         title: 'Configuration Applied & Saved',
         description: 'Configuration successfully applied, saved, and device reconnected',
@@ -267,6 +268,7 @@ export const applyAndSaveConfiguration = async (deviceConfig, toast) => {
         duration: 5000,
       })
     } else {
+      sessionStorage.removeItem('expectingReconnection')
       toast({
         title: 'Configuration Saved - Manual Reconnection Required',
         description: 'Configuration was saved but automatic reconnection failed. Please reconnect manually.',
@@ -276,7 +278,8 @@ export const applyAndSaveConfiguration = async (deviceConfig, toast) => {
     }
 
   } catch (error) {
-    // If save fails, still show appropriate message
+    sessionStorage.removeItem('expectingReconnection')
+    // Handle save errors...
     if (error.message.includes('reboot') || error.message.includes('disconnect')) {
       toast({
         title: 'Configuration Saved (Device Rebooted)',
@@ -285,7 +288,7 @@ export const applyAndSaveConfiguration = async (deviceConfig, toast) => {
         duration: 8000,
       })
     } else {
-      throw error // Re-throw if it's a real error
+      throw error
     }
   }
 }

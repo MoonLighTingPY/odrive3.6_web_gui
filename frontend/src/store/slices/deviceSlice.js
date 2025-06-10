@@ -25,11 +25,16 @@ const deviceSlice = createSlice({
       state.availableDevices = action.payload
     },
     setConnectedDevice: (state, action) => {
-      state.connectedDevice = action.payload
-      state.isConnected = !!action.payload
-      state.connectionError = null
-      state.connectionLost = false
-      state.reconnecting = false
+      if (action.payload) {
+        state.connectedDevice = action.payload
+        state.isConnected = true
+        state.connectionLost = false // Clear connection lost when setting a device
+        state.reconnecting = false
+      } else {
+        state.isConnected = false
+        state.connectedDevice = null
+        // Don't clear connectionLost here - let reconnection logic handle it
+      }
     },
     setConnectionError: (state, action) => {
       state.connectionError = action.payload
@@ -40,6 +45,11 @@ const deviceSlice = createSlice({
       state.connectionLost = action.payload
       if (action.payload) {
         state.isConnected = false
+      } else {
+        // When connection is restored, ensure we're marked as connected
+        if (state.connectedDevice) {
+          state.isConnected = true
+        }
       }
     },
     setReconnecting: (state, action) => {

@@ -147,12 +147,17 @@ useEffect(() => {
       console.log('Device reconnected, pulling configuration...')
       try {
         await pullBatchParams()
-        toast({
-          title: 'Configuration Updated',
-          description: 'Configuration has been pulled from the reconnected device',
-          status: 'info',
-          duration: 3000,
-        })
+        
+        // Only show toast if this was an unexpected reconnection
+        const isExpectedReconnection = sessionStorage.getItem('expectingReconnection') === 'true'
+        if (!isExpectedReconnection) {
+          toast({
+            title: 'Configuration Updated',
+            description: 'Configuration has been pulled from the reconnected device',
+            status: 'info',
+            duration: 3000,
+          })
+        }
       } catch (error) {
         console.error('Failed to pull config after reconnection:', error)
       }

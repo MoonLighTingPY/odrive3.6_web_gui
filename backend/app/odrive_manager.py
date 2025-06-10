@@ -191,8 +191,8 @@ class ODriveManager:
         try:
             logger.info(f"Attempting to reconnect to device {self.current_device_serial} (attempt {self.reconnection_attempts})")
             
-            # Use shorter timeout for faster detection of physical reconnections
-            timeout = 2 if not self.is_rebooting else 3
+            # Use longer timeout for reconnection attempts
+            timeout = 5 if not self.is_rebooting else 8
                 
             odrv = odrive.find_any(timeout=timeout)
             
@@ -204,7 +204,7 @@ class ODriveManager:
                     self.connection_lost = False
                     self.reconnection_attempts = 0
                     self._reconnecting = False
-                    logger.info(f"Reconnected to ODrive: {self.current_device_serial}")
+                    logger.info(f"Successfully reconnected to ODrive: {self.current_device_serial}")
                     
                     if self.is_rebooting:
                         self.is_rebooting = False
@@ -214,11 +214,13 @@ class ODriveManager:
                     return True
                 else:
                     logger.warning(f"Found different device: {device_serial}, expected: {self.current_device_serial}")
+            else:
+                logger.debug(f"No ODrive found during reconnection attempt {self.reconnection_attempts}")
                     
         except Exception as e:
             # Reduce log noise during reboot by only logging every few attempts
-            if not self.is_rebooting or self.reconnection_attempts % 2 == 0:
-                logger.debug(f"Reconnection attempt {self.reconnection_attempts} failed: {e}")
+            if not self.is_rebooting or self.reconnection_attempts % 3 == 0:
+                logger.warning(f"Reconnection attempt {self.reconnection_attempts} failed: {e}")
         finally:
             self._reconnecting = False
             
