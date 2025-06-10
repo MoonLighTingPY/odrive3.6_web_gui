@@ -263,21 +263,7 @@ const DashboardTab = ({ isConnected, odriveState }) => {
                   {getAxisStateName(axisState)}
                 </StatHelpText>
               </Stat>
-              <Stat>
-                <StatLabel color="gray.300">Errors</StatLabel>
-                <StatNumber 
-                  color={odriveState.axis0?.error ? "red.300" : "green.300"} 
-                  fontSize="md"
-                  cursor={odriveState.axis0?.error ? "pointer" : "default"}
-                  _hover={odriveState.axis0?.error ? { opacity: 0.8 } : {}}
-                  onClick={odriveState.axis0?.error ? () => handleErrorClick(odriveState.axis0.error, 'axis') : undefined}
-                >
-                  {odriveState.axis0?.error ? `0x${odriveState.axis0.error.toString(16).toUpperCase()}` : 'None'}
-                </StatNumber>
-                <StatHelpText color="gray.400">
-                  {odriveState.axis0?.error ? "Click for help" : "Axis Error Code"}
-                </StatHelpText>
-              </Stat>
+          
             </SimpleGrid>
           </CardBody>
         </Card>

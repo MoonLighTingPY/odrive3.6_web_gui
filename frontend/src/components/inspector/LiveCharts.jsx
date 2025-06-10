@@ -16,9 +16,12 @@ import {
   FormLabel,
   Select,
   Switch,
-  Tooltip
+  Tooltip,
+  Grid,
+  GridItem,
+  ButtonGroup
 } from '@chakra-ui/react'
-import { Trash2, Play, Pause, Download, Settings } from 'lucide-react'
+import { Trash2, Play, Pause, Download, LayoutGrid, List } from 'lucide-react'
 import {
   LineChart,
   Line,
@@ -26,7 +29,6 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip as RechartsTooltip,
-  Legend,
   ResponsiveContainer,
 } from 'recharts'
 
@@ -37,6 +39,7 @@ const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
   const [maxSamples, setMaxSamples] = useState(1000)
   const [autoScale, setAutoScale] = useState(true)
   const [timeWindow, setTimeWindow] = useState(60) // seconds
+  const [layoutMode, setLayoutMode] = useState('grid') // 'grid' or 'list'
   
   const intervalRef = useRef(null)
   const chartColors = [
@@ -46,48 +49,44 @@ const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
   ]
 
   const getValueFromPath = (obj, path) => {
-  if (!obj || !obj.device) {
-    console.log(`LiveCharts: obj or obj.device is null/undefined for path: ${path}`)
-    return null
-  }
-  
-  // Build the correct path to match PropertyTree logic
-  let fullPath
-  if (path.startsWith('system.')) {
-    // System properties map directly to device.* properties
-    const systemProp = path.replace('system.', '')
-    fullPath = `device.${systemProp}`
-  } else if (path.startsWith('axis0.') || path.startsWith('axis1.')) {
-    // Axis properties map to device.axis0.* or device.axis1.*
-    fullPath = `device.${path}`
-  } else if (path.startsWith('config.')) {
-    // Config properties map to device.config.*
-    fullPath = `device.${path}`
-  } else {
-    // Direct device path
-    fullPath = `device.${path}`
-  }
-  
-  console.log(`LiveCharts: Full path: ${fullPath}`)
-  
-  const parts = fullPath.split('.')
-  let current = obj
-  
-  for (let i = 0; i < parts.length; i++) {
-    const part = parts[i]
-    if (current && current[part] !== undefined) {
-      current = current[part]
-      console.log(`LiveCharts: Found part ${part}, current:`, typeof current === 'object' ? Object.keys(current) : current)
-    } else {
-      console.log(`LiveCharts: Part ${part} not found in:`, current ? Object.keys(current) : 'null object')
+    if (!obj || !obj.device) {
       return null
     }
+    
+    // Build the correct path to match PropertyTree logic
+    let fullPath
+    if (path.startsWith('system.')) {
+      const systemProp = path.replace('system.', '')
+      // Handle properties that are under device.config.*
+      if (['dc_bus_overvoltage_trip_level', 'dc_bus_undervoltage_trip_level', 'dc_max_positive_current', 
+           'dc_max_negative_current', 'enable_brake_resistor', 'brake_resistance'].includes(systemProp)) {
+        fullPath = `device.config.${systemProp}`
+      } else {
+        fullPath = `device.${systemProp}`
+      }
+    } else if (path.startsWith('axis0.') || path.startsWith('axis1.')) {
+      fullPath = `device.${path}`
+    } else if (path.startsWith('config.')) {
+      fullPath = `device.${path}`
+    } else {
+      fullPath = `device.${path}`
+    }
+    
+    const parts = fullPath.split('.')
+    let current = obj
+    
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i]
+      if (current && current[part] !== undefined) {
+        current = current[part]
+      } else {
+        return null
+      }
+    }
+    
+    const result = typeof current === 'number' ? current : null
+    return result
   }
-  
-  const result = typeof current === 'number' ? current : null
-  console.log(`LiveCharts: Final result for ${fullPath}:`, result)
-  return result
-}
 
   useEffect(() => {
     if (isRecording && isConnected && selectedProperties.length > 0) {
@@ -177,10 +176,89 @@ const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
     return property.split('.').pop()
   }
 
+  // Calculate grid columns based on number of properties
+  const getGridColumns = (count) => {
+    if (count <= 1) return 1
+    if (count <= 2) return 2
+    if (count <= 4) return 2
+    if (count <= 6) return 3
+    return 4
+  }
+
+  // Render individual chart component
+  const renderChart = (property, index) => (
+  <Box key={property} p={3} bg="gray.900" borderRadius="md" borderWidth="1px" borderColor="gray.700" h="100%">
+    <VStack spacing={2} align="stretch" h="100%">
+      <HStack justify="space-between" flexShrink={0}>
+        <Text 
+          fontSize="sm" 
+          fontWeight="bold" 
+          color={chartColors[index % chartColors.length]}
+        >
+          {getPropertyDisplayName(property)}
+        </Text>
+        <Text fontSize="xs" color="gray.400" fontFamily="mono">
+          {formatValue(getValueFromPath(odriveState, property))}
+        </Text>
+      </HStack>
+      
+      <Box flex="1" minH={layoutMode === 'list' ? "200px" : "250px"}>
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart 
+            data={chartData} 
+            margin={{ top: 5, right: 5, left: 20, bottom: 5 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+            <XAxis 
+              dataKey="relativeTime" 
+              stroke="#9CA3AF"
+              tick={{ fill: '#9CA3AF', fontSize: 10 }}
+              tickFormatter={(value) => `${value.toFixed(0)}s`}
+            />
+            <YAxis 
+              stroke="#9CA3AF"
+              tick={{ fill: '#9CA3AF', fontSize: 10 }}
+              domain={autoScale ? ['auto', 'auto'] : undefined}
+              width={60}
+              tickFormatter={(value) => 
+                Math.abs(value) >= 1000 ? 
+                  `${(value / 1000).toFixed(1)}k` : 
+                  value.toFixed(2)
+              }
+            />
+            <RechartsTooltip 
+              contentStyle={{ 
+                backgroundColor: '#1F2937', 
+                border: '1px solid #374151',
+                borderRadius: '6px',
+                color: '#F9FAFB',
+                fontSize: '11px'
+              }}
+              labelFormatter={(value) => `Time: ${value.toFixed(1)}s`}
+              formatter={(value) => [
+                typeof value === 'number' ? value.toFixed(6) : value, 
+                getPropertyDisplayName(property)
+              ]}
+            />
+            <Line
+              type="monotone"
+              dataKey={property}
+              stroke={chartColors[index % chartColors.length]}
+              strokeWidth={2}
+              dot={false}
+              connectNulls={false}
+            />
+          </LineChart>
+        </ResponsiveContainer>
+      </Box>
+    </VStack>
+  </Box>
+)
+
   return (
     <VStack spacing={4} align="stretch" h="100%">
       {/* Controls */}
-      <Card bg="gray.800" variant="elevated">
+      <Card bg="gray.800" variant="elevated" flexShrink={0}>
         <CardHeader>
           <HStack justify="space-between">
             <Heading size="md" color="white">Live Charts</Heading>
@@ -220,80 +298,102 @@ const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
                 Export CSV
               </Button>
 
-              <Badge colorScheme={isRecording ? 'green' : 'gray'} ml="auto">
+              {/* Layout Toggle */}
+              <ButtonGroup size="sm" isAttached variant="outline" ml="auto">
+                <Tooltip label="Grid Layout">
+                  <Button
+                    leftIcon={<LayoutGrid size={14} />}
+                    colorScheme={layoutMode === 'grid' ? 'blue' : 'gray'}
+                    variant={layoutMode === 'grid' ? 'solid' : 'outline'}
+                    onClick={() => setLayoutMode('grid')}
+                  >
+                    Grid
+                  </Button>
+                </Tooltip>
+                <Tooltip label="List Layout">
+                  <Button
+                    leftIcon={<List size={14} />}
+                    colorScheme={layoutMode === 'list' ? 'blue' : 'gray'}
+                    variant={layoutMode === 'list' ? 'solid' : 'outline'}
+                    onClick={() => setLayoutMode('list')}
+                  >
+                    List
+                  </Button>
+                </Tooltip>
+              </ButtonGroup>
+
+              <Badge colorScheme={isRecording ? 'green' : 'gray'}>
                 {isRecording ? 'Recording' : 'Stopped'}
               </Badge>
             </HStack>
 
-            // Replace the Settings section around line 220:
+            {/* Settings */}
+            <HStack spacing={4} w="100%">
+              <FormControl maxW="120px">
+                <FormLabel color="gray.300" fontSize="sm">Sample Rate:</FormLabel>
+                <Select
+                  value={sampleRate}
+                  onChange={(e) => setSampleRate(parseInt(e.target.value))}
+                  size="sm"
+                  bg="gray.700"
+                  color="white"
+                >
+                  <option value={1}>1 Hz</option>
+                  <option value={2}>2 Hz</option>
+                  <option value={5}>5 Hz</option>
+                  <option value={10}>10 Hz</option>
+                  <option value={20}>20 Hz</option>
+                  <option value={50}>50 Hz</option>
+                </Select>
+              </FormControl>
 
-{/* Settings */}
-<HStack spacing={4} w="100%">
-  <FormControl maxW="120px">
-    <FormLabel color="gray.300" fontSize="sm">Sample Rate:</FormLabel>
-    <Select
-      value={sampleRate}
-      onChange={(e) => setSampleRate(parseInt(e.target.value))}
-      size="sm"
-      bg="gray.700"
-      color="white"
-    >
-      <option value={1}>1 Hz</option>
-      <option value={2}>2 Hz</option>
-      <option value={5}>5 Hz</option>
-      <option value={10}>10 Hz</option>
-      <option value={20}>20 Hz</option>
-      <option value={50}>50 Hz</option>
-    </Select>
-  </FormControl>
+              <FormControl maxW="120px">
+                <FormLabel color="gray.300" fontSize="sm">Time Window:</FormLabel>
+                <Select
+                  value={timeWindow}
+                  onChange={(e) => setTimeWindow(parseInt(e.target.value))}
+                  size="sm"
+                  bg="gray.700"
+                  color="white"
+                >
+                  <option value={30}>30 seconds</option>
+                  <option value={60}>1 minute</option>
+                  <option value={300}>5 minutes</option>
+                  <option value={600}>10 minutes</option>
+                  <option value={1800}>30 minutes</option>
+                </Select>
+              </FormControl>
 
-  <FormControl maxW="120px">
-    <FormLabel color="gray.300" fontSize="sm">Time Window:</FormLabel>
-    <Select
-      value={timeWindow}
-      onChange={(e) => setTimeWindow(parseInt(e.target.value))}
-      size="sm"
-      bg="gray.700"
-      color="white"
-    >
-      <option value={30}>30 seconds</option>
-      <option value={60}>1 minute</option>
-      <option value={300}>5 minutes</option>
-      <option value={600}>10 minutes</option>
-      <option value={1800}>30 minutes</option>
-    </Select>
-  </FormControl>
+              <FormControl maxW="120px">
+                <FormLabel color="gray.300" fontSize="sm">Max Samples:</FormLabel>
+                <Select
+                  value={maxSamples}
+                  onChange={(e) => setMaxSamples(parseInt(e.target.value))}
+                  size="sm"
+                  bg="gray.700"
+                  color="white"
+                >
+                  <option value={500}>500</option>
+                  <option value={1000}>1000</option>
+                  <option value={2000}>2000</option>
+                  <option value={5000}>5000</option>
+                  <option value={10000}>10000</option>
+                </Select>
+              </FormControl>
 
-  <FormControl maxW="120px">
-    <FormLabel color="gray.300" fontSize="sm">Max Samples:</FormLabel>
-    <Select
-      value={maxSamples}
-      onChange={(e) => setMaxSamples(parseInt(e.target.value))}
-      size="sm"
-      bg="gray.700"
-      color="white"
-    >
-      <option value={500}>500</option>
-      <option value={1000}>1000</option>
-      <option value={2000}>2000</option>
-      <option value={5000}>5000</option>
-      <option value={10000}>10000</option>
-    </Select>
-  </FormControl>
-
-  <FormControl display="flex" alignItems="center" maxW="120px">
-    <FormLabel htmlFor="auto-scale" mb="0" color="gray.300" fontSize="sm">
-      Auto Scale:
-    </FormLabel>
-    <Switch
-      id="auto-scale"
-      size="sm"
-      colorScheme="blue"
-      isChecked={autoScale}
-      onChange={(e) => setAutoScale(e.target.checked)}
-    />
-  </FormControl>
-</HStack>
+              <FormControl display="flex" alignItems="center" maxW="120px">
+                <FormLabel htmlFor="auto-scale" mb="0" color="gray.300" fontSize="sm">
+                  Auto Scale:
+                </FormLabel>
+                <Switch
+                  id="auto-scale"
+                  size="sm"
+                  colorScheme="blue"
+                  isChecked={autoScale}
+                  onChange={(e) => setAutoScale(e.target.checked)}
+                />
+              </FormControl>
+            </HStack>
 
             {/* Current Values */}
             {selectedProperties.length > 0 && (
@@ -317,96 +417,76 @@ const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
         </CardBody>
       </Card>
 
-      {/* Charts */}
-      <Card bg="gray.800" variant="elevated" flex="1">
-        <CardBody h="100%">
-          {selectedProperties.length === 0 ? (
-            <Box textAlign="center" py={20}>
-              <Text color="gray.400" fontSize="lg">
-                Select properties from the tree to start charting
-              </Text>
-              <Text color="gray.500" fontSize="sm" mt={2}>
-                Click the checkbox next to any property in the Property Tree
-              </Text>
-            </Box>
-          ) : chartData.length === 0 ? (
-            <Box textAlign="center" py={20}>
-              <Text color="gray.400" fontSize="lg">
-                No data recorded yet
-              </Text>
-              <Text color="gray.500" fontSize="sm" mt={2}>
-                Click "Start Recording" to begin data collection
-              </Text>
-            </Box>
-          ) : (
-            <Box h="100%">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis 
-                    dataKey="relativeTime" 
-                    stroke="#9CA3AF"
-                    tick={{ fill: '#9CA3AF', fontSize: 12 }}
-                    tickFormatter={(value) => `${value.toFixed(1)}s`}
-                  />
-                  <YAxis 
-                    stroke="#9CA3AF"
-                    tick={{ fill: '#9CA3AF', fontSize: 12 }}
-                    domain={autoScale ? ['auto', 'auto'] : undefined}
-                  />
-                  <RechartsTooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#1F2937', 
-                      border: '1px solid #374151',
-                      borderRadius: '6px',
-                      color: '#F9FAFB'
-                    }}
-                    labelFormatter={(value) => `Time: ${value.toFixed(3)}s`}
-                    formatter={(value, name) => [
-                      typeof value === 'number' ? value.toFixed(6) : value, 
-                      getPropertyDisplayName(name)
-                    ]}
-                  />
-                  <Legend 
-                    wrapperStyle={{ color: '#F9FAFB' }}
-                    formatter={(value) => getPropertyDisplayName(value)}
-                  />
+      {/* Charts Display - This will take remaining space */}
+      <Box flex="1" minH="0">
+        {selectedProperties.length === 0 ? (
+          <Card bg="gray.800" variant="elevated" h="100%">
+            <CardBody display="flex" alignItems="center" justifyContent="center">
+              <VStack>
+                <Text color="gray.400" fontSize="lg">
+                  Select properties from the tree to start charting
+                </Text>
+                <Text color="gray.500" fontSize="sm" mt={2}>
+                  Click the checkbox next to any property in the Property Tree
+                </Text>
+              </VStack>
+            </CardBody>
+          </Card>
+        ) : chartData.length === 0 ? (
+          <Card bg="gray.800" variant="elevated" h="100%">
+            <CardBody display="flex" alignItems="center" justifyContent="center">
+              <VStack>
+                <Text color="gray.400" fontSize="lg">
+                  No data recorded yet
+                </Text>
+                <Text color="gray.500" fontSize="sm" mt={2}>
+                  Click "Start Recording" to begin data collection
+                </Text>
+              </VStack>
+            </CardBody>
+          </Card>
+        ) : (
+          <Card bg="gray.800" variant="elevated" h="100%" display="flex" flexDirection="column">
+            <CardHeader py={3} flexShrink={0}>
+              <HStack justify="space-between">
+                <Heading size="md" color="white">
+                  Charts ({layoutMode === 'grid' ? 'Grid View' : 'List View'})
+                </Heading>
+                <Badge colorScheme="blue" variant="outline">
+                  {chartData.length} data points
+                </Badge>
+              </HStack>
+            </CardHeader>
+            <CardBody flex="1" minH="0" p={4}>
+              {layoutMode === 'list' ? (
+                // List Layout - Single Column
+                <VStack spacing={3} align="stretch" h="100%">
                   {selectedProperties.map((property, index) => (
-                    <Line
-                      key={property}
-                      type="monotone"
-                      dataKey={property}
-                      stroke={chartColors[index % chartColors.length]}
-                      strokeWidth={2}
-                      dot={false}
-                      connectNulls={false}
-                    />
+                    <Box key={property} h={`${100 / selectedProperties.length}%`} minH="200px">
+                      {renderChart(property, index)}
+                    </Box>
                   ))}
-                </LineChart>
-              </ResponsiveContainer>
-            </Box>
-          )}
-        </CardBody>
-      </Card>
+                </VStack>
+              ) : (
+                // Grid Layout - Multiple Columns
+                <Grid 
+                  templateColumns={`repeat(${getGridColumns(selectedProperties.length)}, 1fr)`}
+                  templateRows={`repeat(${Math.ceil(selectedProperties.length / getGridColumns(selectedProperties.length))}, 1fr)`}
+                  gap={4}
+                  h="100%"
+                >
+                  {selectedProperties.map((property, index) => (
+                    <GridItem key={property}>
+                      {renderChart(property, index)}
+                    </GridItem>
+                  ))}
+                </Grid>
+              )}
+            </CardBody>
+          </Card>
+        )}
+      </Box>
 
-      {/* Data Info */}
-      {chartData.length > 0 && (
-        <Card bg="gray.800" variant="elevated">
-          <CardBody>
-            <HStack justify="space-between">
-              <Text color="gray.300" fontSize="sm">
-                Data Points: {chartData.length}
-              </Text>
-              <Text color="gray.300" fontSize="sm">
-                Duration: {chartData.length > 0 ? (chartData[chartData.length - 1].relativeTime).toFixed(1) : 0}s
-              </Text>
-              <Text color="gray.300" fontSize="sm">
-                Rate: {sampleRate} Hz
-              </Text>
-            </HStack>
-          </CardBody>
-        </Card>
-      )}
     </VStack>
   )
 }

@@ -84,20 +84,10 @@ const InspectorTab = () => {
 
   return (
     <VStack spacing={6} align="stretch" p={6} h="100%">
-      
-      <Box>
-        <Heading size="lg" color="white" mb={2}>
-          ODrive Inspector
-        </Heading>
-        <Text color="gray.300" mb={4}>
-          Monitor properties in real-time using live data from connected ODrive
-        </Text>
-      </Box>
 
-    
 
       {/* Main Content Grid */}
-      <Grid templateColumns="1fr 1fr" gap={6} flex="1" h="100%">
+      <Grid templateColumns="1fr 1.5fr" gap={6} flex="1" h="100%">
         
         {/* Left Side - Property Tree */}
         <GridItem>
