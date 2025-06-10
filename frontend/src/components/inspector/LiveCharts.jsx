@@ -138,8 +138,8 @@ const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
     return result
   }
 
-  // Only subscribe to telemetry when we have properties selected AND we're connected
-  const telemetryConfig = selectedProperties.length > 0 && isConnected ? {
+  // Only subscribe to telemetry when we have properties selected AND we're connected AND recording
+  const telemetryConfig = selectedProperties.length > 0 && isConnected && isRecording ? {
     type: 'charts',
     paths: selectedProperties,
     updateRate: Math.max(Math.round(1000 / sampleRate), 50), // Minimum 50ms (20Hz max)
