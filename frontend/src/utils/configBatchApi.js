@@ -193,15 +193,7 @@ export const loadAllConfigurationBatch = async () => {
           categorizedResults.encoder[configKey] = value;
         }
       } else if (path.includes('.controller.config.')) {
-        // Add all missing control parameters
         categorizedResults.control[configKey] = value;
-      } else if (path.includes('.config.can.')) {
-        // Handle CAN configuration
-        if (configKey === 'node_id') {
-          categorizedResults.interface['can_node_id'] = value;
-        } else {
-          categorizedResults.interface[configKey] = value;
-        }
       } else if (path.includes('.can.') || path.includes('.config.enable_uart') || 
                  path.includes('.config.uart_') || path.includes('.config.gpio') ||
                  path.includes('.config.enable_watchdog') || path.includes('.config.watchdog_') ||
