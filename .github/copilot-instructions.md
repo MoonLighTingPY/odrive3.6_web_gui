@@ -29,4 +29,4 @@ also a button there to connect/disconnect to odrive. i think that's all for begi
 and no "we will do this later" stuff. just make it fully functional, with all the features described above.
 but, if you don't know how to implement something, just ask me, i will help you.
 if i ask you to fix someting, and there are just minor changes, just give me that part of the code that needs to be changed, not the whole file.
-but if there are major changes, then give me the whole file.
+but if there are reaaaaly major changes, like really a lot in one file - then give me the whole file.

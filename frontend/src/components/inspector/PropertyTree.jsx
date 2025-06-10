@@ -201,17 +201,26 @@ const PropertyTree = ({
 
     // Use fallback values if prop fields are missing
     const propName = prop.name || displayPath.split('.').pop()
-    const propDescription = prop.description || 'No description available'
 
     return (
-      <HStack key={displayPath} justify="space-between" p={3} bg={isError ? "red.900" : "gray.800"} borderRadius="md" border={isError ? "1px solid" : "none"} borderColor={isError ? "red.500" : "transparent"}>
-        <VStack align="start" spacing={1} flex="1">
-          <HStack>
+      <Box
+        key={displayPath}
+        bg={isError ? "red.900" : "gray.750"}
+        borderRadius="lg"
+        border="1px solid"
+        borderColor={isError ? "red.500" : "gray.600"}
+        p={4}
+        _hover={{ bg: isError ? "red.800" : "gray.700", borderColor: isError ? "red.400" : "gray.500" }}
+        transition="all 0.2s"
+      >
+        <HStack justify="space-between" align="center" h="100%" minH="60px">
+          {/* Left side - Property info */}
+          <HStack spacing={3} flex="1" align="center">
             {/* Chart Checkbox */}
             {isChartable && togglePropertyChart && (
               <Tooltip label={isCharted ? "Remove from chart" : "Add to chart"}>
                 <Checkbox
-                  size="sm"
+                  size="md"
                   colorScheme="blue"
                   isChecked={isCharted}
                   onChange={() => togglePropertyChart(displayPath)}
@@ -219,111 +228,120 @@ const PropertyTree = ({
               </Tooltip>
             )}
             
-            <Text fontSize="sm" fontWeight="bold" color="white">
-              {propName}
-            </Text>
-            <Badge size="sm" colorScheme={isWritable ? "green" : "gray"}>
-              {isWritable ? "RW" : "RO"}
-            </Badge>
-            <Badge size="sm" colorScheme="blue">
-              {valueType}
-            </Badge>
-            {isChartable && (
-              <Badge size="sm" colorScheme="purple">
-                CHART
-              </Badge>
-            )}
-            {isError && (
-              <Badge size="sm" colorScheme="red">
-                ERROR
-              </Badge>
+            <VStack align="start" spacing={1} flex="1">
+              <HStack spacing={2} align="center">
+                <Text fontSize="md" fontWeight="bold" color="white">
+                  {propName}
+                </Text>
+                <Badge size="sm" colorScheme={isWritable ? "green" : "gray"}>
+                  {isWritable ? "RW" : "RO"}
+                </Badge>
+                <Badge size="sm" colorScheme="blue" variant="subtle">
+                  {valueType}
+                </Badge>
+                {isChartable && (
+                  <Badge size="sm" colorScheme="purple" variant="subtle">
+                    CHART
+                  </Badge>
+                )}
+                {isError && (
+                  <Badge size="sm" colorScheme="red">
+                    ERROR
+                  </Badge>
+                )}
+              </HStack>
+              
+              <HStack spacing={4} align="center">
+                <Text fontSize="xs" color="gray.400" fontFamily="mono">
+                  {devicePath}
+                </Text>
+                {prop.min !== undefined && prop.max !== undefined && (
+                  <Text fontSize="xs" color="gray.500">
+                    Range: {prop.min} to {prop.max}
+                  </Text>
+                )}
+              </HStack>
+              
+              {isError && value !== undefined && (
+                <Text fontSize="xs" color="red.400" fontWeight="bold">
+                  Error Code: 0x{value.toString(16).toUpperCase()}
+                </Text>
+              )}
+            </VStack>
+          </HStack>
+          
+          {/* Right side - Value display and editing */}
+          <HStack spacing={3} minW="250px" justify="flex-end">
+            {isEditing ? (
+              <>
+                {valueType === 'boolean' ? (
+                  <Switch
+                    size="lg"
+                    isChecked={editValue === 'true'}
+                    onChange={(e) => setEditValue(e.target.checked ? 'true' : 'false')}
+                    colorScheme="blue"
+                  />
+                ) : (
+                  <NumberInput
+                    size="md"
+                    value={editValue}
+                    onChange={setEditValue}
+                    min={prop.min}
+                    max={prop.max}
+                    step={prop.step}
+                    precision={prop.decimals}
+                    minW="120px"
+                  >
+                    <NumberInputField bg="gray.700" color="white" />
+                  </NumberInput>
+                )}
+                <IconButton
+                  size="md"
+                  colorScheme="green"
+                  icon={<CheckIcon />}
+                  onClick={saveEdit}
+                  isDisabled={!isConnected}
+                />
+                <IconButton
+                  size="md"
+                  colorScheme="red"
+                  icon={<CloseIcon />}
+                  onClick={cancelEdit}
+                />
+              </>
+            ) : (
+              <>
+                <Text 
+                  fontSize="lg" 
+                  fontFamily="mono" 
+                  color={value !== undefined ? (isError ? "red.300" : "white") : "gray.500"}
+                  fontWeight="bold"
+                  minW="120px"
+                  textAlign="right"
+                >
+                  {value !== undefined 
+                    ? (typeof displayValue === 'number' 
+                        ? displayValue.toFixed(prop.decimals || 3)
+                        : String(displayValue))
+                    : 'N/A'
+                  }
+                </Text>
+                {isWritable && isConnected && (
+                  <Tooltip label="Edit property">
+                    <IconButton
+                      size="md"
+                      variant="ghost"
+                      icon={<EditIcon />}
+                      onClick={() => startEditing(displayPath, displayValue)}
+                      _hover={{ bg: "gray.600" }}
+                    />
+                  </Tooltip>
+                )}
+              </>
             )}
           </HStack>
-          <Text fontSize="xs" color="gray.400">
-            {propDescription}
-          </Text>
-          <Text fontSize="xs" color="gray.500" fontFamily="mono">
-            {devicePath}
-          </Text>
-          {isError && value !== undefined && (
-            <Text fontSize="xs" color="red.400" fontWeight="bold">
-              Error Code: 0x{value.toString(16).toUpperCase()}
-            </Text>
-          )}
-          {/* Range info */}
-          {prop.min !== undefined && prop.max !== undefined && (
-            <Tooltip label={`Range: ${prop.min} to ${prop.max}`}>
-              <InfoIcon color="gray.400" boxSize={3} />
-            </Tooltip>
-          )}
-        </VStack>
-        
-        {/* Value display and editing */}
-        <HStack spacing={2} minW="200px">
-          {isEditing ? (
-            <>
-              {valueType === 'boolean' ? (
-                <Switch
-                  isChecked={editValue === 'true'}
-                  onChange={(e) => setEditValue(e.target.checked ? 'true' : 'false')}
-                />
-              ) : (
-                <NumberInput
-                  size="sm"
-                  value={editValue}
-                  onChange={setEditValue}
-                  min={prop.min}
-                  max={prop.max}
-                  step={prop.step}
-                  precision={prop.decimals}
-                >
-                  <NumberInputField bg="gray.700" color="white" />
-                </NumberInput>
-              )}
-              <IconButton
-                size="sm"
-                colorScheme="green"
-                icon={<CheckIcon />}
-                onClick={saveEdit}
-                isDisabled={!isConnected}
-              />
-              <IconButton
-                size="sm"
-                colorScheme="red"
-                icon={<CloseIcon />}
-                onClick={cancelEdit}
-              />
-            </>
-          ) : (
-            <>
-              <Text 
-                fontSize="sm" 
-                fontFamily="mono" 
-                color={value !== undefined ? (isError ? "red.300" : "white") : "gray.500"}
-                minW="100px"
-                textAlign="right"
-              >
-                {value !== undefined 
-                  ? (typeof displayValue === 'number' 
-                      ? displayValue.toFixed(prop.decimals || 3)
-                      : String(displayValue))
-                  : 'N/A'
-                }
-              </Text>
-              {isWritable && isConnected && (
-                <Tooltip label="Edit property">
-                  <IconButton
-                    size="sm"
-                    variant="ghost"
-                    icon={<EditIcon />}
-                    onClick={() => startEditing(displayPath, displayValue)}
-                  />
-                </Tooltip>
-              )}
-            </>
-          )}
         </HStack>
-      </HStack>
+      </Box>
     )
   }
 
@@ -547,17 +565,21 @@ const PropertyTree = ({
               Object.keys(filteredTree).indexOf(section)
             ).filter(idx => idx !== -1)}>
               {Object.entries(filteredTree).map(([sectionName, section]) => (
-                <AccordionItem key={sectionName}>
+                <AccordionItem key={sectionName} border="none">
                   <AccordionButton
                     onClick={() => toggleSection(sectionName)}
                     _expanded={{ bg: 'gray.700' }}
+                    bg="gray.750"
+                    borderRadius="md"
+                    mb={2}
+                    _hover={{ bg: 'gray.700' }}
                   >
                     <Box flex="1" textAlign="left">
                       <HStack>
-                        <Text fontWeight="bold" color="white">
+                        <Text fontWeight="bold" color="white" fontSize="lg">
                           {section.name}
                         </Text>
-                        <Badge colorScheme="blue">
+                        <Badge colorScheme="blue" variant="solid">
                           {Object.keys(section.properties).length}
                         </Badge>
                         {hasError(sectionName) && (
@@ -566,14 +588,11 @@ const PropertyTree = ({
                           </Badge>
                         )}
                       </HStack>
-                      <Text fontSize="sm" color="gray.400">
-                        {section.description}
-                      </Text>
                     </Box>
                     <AccordionIcon />
                   </AccordionButton>
-                  <AccordionPanel pb={4}>
-                    <VStack spacing={2} align="stretch">
+                  <AccordionPanel pb={4} px={0}>
+                    <VStack spacing={3} align="stretch">
                       {Object.entries(section.properties).map(([propName, prop]) => {
                         const displayPath = sectionName === 'system' 
                           ? `system.${propName}` 

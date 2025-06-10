@@ -68,6 +68,7 @@ export const executeConfigAction = async (action, options = {}) => {
       try {
         const errorData = JSON.parse(responseText)
         errorMessage = errorData.error || errorData.message || errorMessage
+      // eslint-disable-next-line no-unused-vars
       } catch (parseError) {
         // If JSON parsing fails, use the raw response text
         errorMessage = responseText || errorMessage
@@ -79,6 +80,7 @@ export const executeConfigAction = async (action, options = {}) => {
     // Try to parse as JSON, fallback to text if it fails
     try {
       return JSON.parse(responseText)
+    // eslint-disable-next-line no-unused-vars
     } catch (parseError) {
       return { message: responseText }
     }
