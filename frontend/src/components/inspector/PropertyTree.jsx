@@ -107,48 +107,46 @@ const PropertyTree = ({
   }
 
   const getValueFromState = useCallback((path) => {
-    // The odriveState should contain the device data structure
-    if (!odriveState || !odriveState.device) {
-      console.log('No device data in odriveState:', odriveState)
+  if (!odriveState || !odriveState.device) {
+    console.log('No device data in odriveState:', odriveState)
+    return undefined
+  }
+  
+  // Build the correct path for the data structure
+  let fullPath
+  if (path.startsWith('system.')) {
+    // System properties map directly to device.* properties
+    const systemProp = path.replace('system.', '')
+    // All system properties are directly under device.*
+    fullPath = `device.${systemProp}`
+  } else if (path.startsWith('axis0.') || path.startsWith('axis1.')) {
+    // Axis properties map to device.axis0.* or device.axis1.*
+    fullPath = `device.${path}`
+  } else if (path.startsWith('config.')) {
+    // Config properties map to device.config.*
+    fullPath = `device.${path}`
+  } else {
+    // Direct device path
+    fullPath = `device.${path}`
+  }
+  
+  console.log('Looking for path:', fullPath, 'in state:', odriveState)
+  
+  const parts = fullPath.split('.')
+  let current = odriveState
+  
+  for (const part of parts) {
+    if (current && current[part] !== undefined) {
+      current = current[part]
+    } else {
+      console.log(`Part ${part} not found in current object:`, current)
       return undefined
     }
-    
-    // Build the full device path - the data is already under device.*
-    let fullPath
-    if (path.startsWith('system')) {
-      // System properties map to device.config.* or device.*
-      const systemProp = path.replace('system.', '')
-      // Check if it's a config property or direct device property
-      if (['hw_version_major', 'hw_version_minor', 'fw_version_major', 'fw_version_minor', 'serial_number', 'vbus_voltage', 'ibus'].includes(systemProp)) {
-        fullPath = `device.${systemProp}`
-      } else {
-        fullPath = `device.config.${systemProp}`
-      }
-    } else if (path.startsWith('axis0') || path.startsWith('axis1')) {
-      // Axis properties map to device.axis0.* or device.axis1.*
-      fullPath = `device.${path}`
-    } else {
-      // Direct device path
-      fullPath = `device.${path}`
-    }
-    
-    console.log('Looking for path:', fullPath, 'in state:', odriveState)
-    
-    const parts = fullPath.split('.')
-    let current = odriveState
-    
-    for (const part of parts) {
-      if (current && current[part] !== undefined) {
-        current = current[part]
-      } else {
-        console.log(`Part ${part} not found in current object:`, current)
-        return undefined
-      }
-    }
-    
-    console.log(`Found value for ${fullPath}:`, current)
-    return current
-  }, [odriveState])
+  }
+  
+  console.log(`Found value for ${fullPath}:`, current)
+  return current
+}, [odriveState])
 
   const hasError = useCallback((sectionName) => {
     if (!odriveState || !odriveState.device) return false

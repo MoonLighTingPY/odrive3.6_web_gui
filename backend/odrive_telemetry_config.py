@@ -83,6 +83,15 @@ def get_high_frequency_telemetry(odrv):
     try:
         return {
             'device': {
+                # System-level properties that PropertyTree expects
+                'hw_version_major': odrv.hw_version_major,
+                'hw_version_minor': odrv.hw_version_minor,
+                'fw_version_major': odrv.fw_version_major,
+                'fw_version_minor': odrv.fw_version_minor,
+                'fw_version_revision': getattr(odrv, 'fw_version_revision', 0),
+                'fw_version_unreleased': getattr(odrv, 'fw_version_unreleased', 0),
+                'serial_number': odrv.serial_number,
+                'user_config_loaded': getattr(odrv, 'user_config_loaded', 0),
                 'vbus_voltage': odrv.vbus_voltage,
                 'ibus': getattr(odrv, 'ibus', 0),
                 'axis0': {
@@ -90,18 +99,38 @@ def get_high_frequency_telemetry(odrv):
                     'error': odrv.axis0.error,
                     'motor': {
                         'error': odrv.axis0.motor.error,
+                        'is_calibrated': odrv.axis0.motor.is_calibrated,
+                        'current_meas_phB': getattr(odrv.axis0.motor, 'current_meas_phB', 0),
+                        'current_meas_phC': getattr(odrv.axis0.motor, 'current_meas_phC', 0),
+                        'DC_calib_phB': getattr(odrv.axis0.motor, 'DC_calib_phB', 0),
+                        'DC_calib_phC': getattr(odrv.axis0.motor, 'DC_calib_phC', 0),
                         'current_control': {
                             'Iq_measured': odrv.axis0.motor.current_control.Iq_measured,
                             'Iq_setpoint': odrv.axis0.motor.current_control.Iq_setpoint,
                             'Id_measured': getattr(odrv.axis0.motor.current_control, 'Id_measured', 0),
                             'Id_setpoint': getattr(odrv.axis0.motor.current_control, 'Id_setpoint', 0),
+                            'Vq_setpoint': getattr(odrv.axis0.motor.current_control, 'Vq_setpoint', 0),
+                            'Vd_setpoint': getattr(odrv.axis0.motor.current_control, 'Vd_setpoint', 0),
                         },
-                        'DC_calib_phB': getattr(odrv.axis0.motor, 'DC_calib_phB', 0),
-                        'DC_calib_phC': getattr(odrv.axis0.motor, 'DC_calib_phC', 0),
-                        'is_calibrated': odrv.axis0.motor.is_calibrated,
+                        # Add thermistor readings for temperature
+                        'motor_thermistor': {
+                            'temperature': getattr(getattr(odrv.axis0.motor, 'motor_thermistor', None), 'temperature', 0) if hasattr(odrv.axis0.motor, 'motor_thermistor') else 0,
+                            'voltage': getattr(getattr(odrv.axis0.motor, 'motor_thermistor', None), 'voltage', 0) if hasattr(odrv.axis0.motor, 'motor_thermistor') else 0,
+                        },
+                        'fet_thermistor': {
+                            'temperature': getattr(getattr(odrv.axis0.motor, 'fet_thermistor', None), 'temperature', 0) if hasattr(odrv.axis0.motor, 'fet_thermistor') else 0,
+                            'voltage': getattr(getattr(odrv.axis0.motor, 'fet_thermistor', None), 'voltage', 0) if hasattr(odrv.axis0.motor, 'fet_thermistor') else 0,
+                        },
                         'config': {
                             'current_lim': odrv.axis0.motor.config.current_lim,
                             'torque_lim': odrv.axis0.motor.config.torque_lim,
+                            'motor_type': odrv.axis0.motor.config.motor_type,
+                            'pole_pairs': odrv.axis0.motor.config.pole_pairs,
+                            'calibration_current': odrv.axis0.motor.config.calibration_current,
+                            'resistance_calib_max_voltage': odrv.axis0.motor.config.resistance_calib_max_voltage,
+                            'phase_resistance': odrv.axis0.motor.config.phase_resistance,
+                            'phase_inductance': odrv.axis0.motor.config.phase_inductance,
+                            'torque_constant': odrv.axis0.motor.config.torque_constant,
                         }
                     },
                     'encoder': {
@@ -110,8 +139,13 @@ def get_high_frequency_telemetry(odrv):
                         'vel_estimate': odrv.axis0.encoder.vel_estimate,
                         'is_ready': odrv.axis0.encoder.is_ready,
                         'index_found': getattr(odrv.axis0.encoder, 'index_found', False),
+                        'hall_state': getattr(odrv.axis0.encoder, 'hall_state', 0),
+                        'phase': getattr(odrv.axis0.encoder, 'phase', 0),
                         'config': {
                             'cpr': odrv.axis0.encoder.config.cpr,
+                            'mode': odrv.axis0.encoder.config.mode,
+                            'use_index': getattr(odrv.axis0.encoder.config, 'use_index', False),
+                            'bandwidth': getattr(odrv.axis0.encoder.config, 'bandwidth', 1000),
                         }
                     },
                     'controller': {
@@ -120,42 +154,47 @@ def get_high_frequency_telemetry(odrv):
                         'vel_setpoint': odrv.axis0.controller.vel_setpoint,
                         'torque_setpoint': getattr(odrv.axis0.controller, 'torque_setpoint', 0),
                         'config': {
+                            'control_mode': odrv.axis0.controller.config.control_mode,
+                            'input_mode': odrv.axis0.controller.config.input_mode,
                             'vel_limit': odrv.axis0.controller.config.vel_limit,
                             'pos_gain': odrv.axis0.controller.config.pos_gain,
                             'vel_gain': odrv.axis0.controller.config.vel_gain,
+                            'vel_integrator_gain': getattr(odrv.axis0.controller.config, 'vel_integrator_gain', 0),
+                        }
+                    },
+                    'config': {
+                        'watchdog_timeout': getattr(odrv.axis0.config, 'watchdog_timeout', 0),
+                        'enable_step_dir': getattr(odrv.axis0.config, 'enable_step_dir', False),
+                        'step_dir_always_on': getattr(odrv.axis0.config, 'step_dir_always_on', False),
+                        'startup_motor_calibration': getattr(odrv.axis0.config, 'startup_motor_calibration', False),
+                        'startup_encoder_index_search': getattr(odrv.axis0.config, 'startup_encoder_index_search', False),
+                        'startup_encoder_offset_calibration': getattr(odrv.axis0.config, 'startup_encoder_offset_calibration', False),
+                        'startup_closed_loop_control': getattr(odrv.axis0.config, 'startup_closed_loop_control', False),
+                        'enable_sensorless_mode': getattr(odrv.axis0.config, 'enable_sensorless_mode', False),
+                        'enable_watchdog': getattr(odrv.axis0.config, 'enable_watchdog', False),
+                        'step_gpio_pin': getattr(odrv.axis0.config, 'step_gpio_pin', 0),
+                        'dir_gpio_pin': getattr(odrv.axis0.config, 'dir_gpio_pin', 0),
+                        'counts_per_step': getattr(odrv.axis0.config, 'counts_per_step', 1),
+                        'can': {
+                            'node_id': getattr(odrv.axis0.config.can, 'node_id', 0),
+                            'is_extended': getattr(odrv.axis0.config.can, 'is_extended', False),
+                            'heartbeat_rate_ms': getattr(odrv.axis0.config.can, 'heartbeat_rate_ms', 100),
                         }
                     }
                 },
-                'axis1': {
-                    'current_state': getattr(odrv, 'axis1', type('obj', (object,), {'current_state': 0})).current_state if hasattr(odrv, 'axis1') else 0,
-                    'error': getattr(odrv, 'axis1', type('obj', (object,), {'error': 0})).error if hasattr(odrv, 'axis1') else 0,
-                    'motor': {
-                        'error': getattr(getattr(odrv, 'axis1', None), 'motor', type('obj', (object,), {'error': 0})).error if hasattr(odrv, 'axis1') else 0,
-                    },
-                    'encoder': {
-                        'error': getattr(getattr(odrv, 'axis1', None), 'encoder', type('obj', (object,), {'error': 0})).error if hasattr(odrv, 'axis1') else 0,
-                        'pos_estimate': getattr(getattr(odrv, 'axis1', None), 'encoder', type('obj', (object,), {'pos_estimate': 0})).pos_estimate if hasattr(odrv, 'axis1') else 0,
-                        'vel_estimate': getattr(getattr(odrv, 'axis1', None), 'encoder', type('obj', (object,), {'vel_estimate': 0})).vel_estimate if hasattr(odrv, 'axis1') else 0,
-                    }
-                } if hasattr(odrv, 'axis1') else {
-                    'current_state': 0,
-                    'error': 0,
-                    'motor': {'error': 0},
-                    'encoder': {'error': 0, 'pos_estimate': 0, 'vel_estimate': 0}
-                },
                 'config': {
-                    'brake_resistance': odrv.config.brake_resistance,
                     'dc_bus_overvoltage_trip_level': odrv.config.dc_bus_overvoltage_trip_level,
                     'dc_bus_undervoltage_trip_level': odrv.config.dc_bus_undervoltage_trip_level,
                     'dc_max_positive_current': odrv.config.dc_max_positive_current,
                     'dc_max_negative_current': odrv.config.dc_max_negative_current,
                     'enable_brake_resistor': odrv.config.enable_brake_resistor,
+                    'brake_resistance': odrv.config.brake_resistance,
                 }
             }
         }
     except Exception as e:
         logger.error(f"Error getting high frequency telemetry: {e}")
-        return {}
+        return {'device': {}}
 
 def get_configuration_data(odrv):
     """Get configuration data (medium + low frequency properties)"""

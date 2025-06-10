@@ -46,53 +46,48 @@ const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
   ]
 
   const getValueFromPath = (obj, path) => {
-    if (!obj || !obj.device) {
-      console.log(`LiveCharts: obj or obj.device is null/undefined for path: ${path}`)
+  if (!obj || !obj.device) {
+    console.log(`LiveCharts: obj or obj.device is null/undefined for path: ${path}`)
+    return null
+  }
+  
+  // Build the correct path to match PropertyTree logic
+  let fullPath
+  if (path.startsWith('system.')) {
+    // System properties map directly to device.* properties
+    const systemProp = path.replace('system.', '')
+    fullPath = `device.${systemProp}`
+  } else if (path.startsWith('axis0.') || path.startsWith('axis1.')) {
+    // Axis properties map to device.axis0.* or device.axis1.*
+    fullPath = `device.${path}`
+  } else if (path.startsWith('config.')) {
+    // Config properties map to device.config.*
+    fullPath = `device.${path}`
+  } else {
+    // Direct device path
+    fullPath = `device.${path}`
+  }
+  
+  console.log(`LiveCharts: Full path: ${fullPath}`)
+  
+  const parts = fullPath.split('.')
+  let current = obj
+  
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i]
+    if (current && current[part] !== undefined) {
+      current = current[part]
+      console.log(`LiveCharts: Found part ${part}, current:`, typeof current === 'object' ? Object.keys(current) : current)
+    } else {
+      console.log(`LiveCharts: Part ${part} not found in:`, current ? Object.keys(current) : 'null object')
       return null
     }
-    
-    console.log(`LiveCharts: Getting value for path: ${path}`)
-    console.log(`LiveCharts: Device object keys:`, Object.keys(obj.device))
-    
-    // Build the correct path - the PropertyTree uses paths like "axis0.encoder.pos_estimate"
-    // but the data is actually under device.axis0.encoder.pos_estimate
-    let fullPath
-    if (path.startsWith('system.')) {
-      // System properties map to device.* or device.config.*
-      const systemProp = path.replace('system.', '')
-      if (['hw_version_major', 'hw_version_minor', 'fw_version_major', 'fw_version_minor', 'serial_number', 'vbus_voltage', 'ibus'].includes(systemProp)) {
-        fullPath = `device.${systemProp}`
-      } else {
-        fullPath = `device.config.${systemProp}`
-      }
-    } else if (path.startsWith('axis0.') || path.startsWith('axis1.')) {
-      // Axis properties map to device.axis0.* or device.axis1.*
-      fullPath = `device.${path}`
-    } else {
-      // Direct device path
-      fullPath = `device.${path}`
-    }
-    
-    console.log(`LiveCharts: Full path: ${fullPath}`)
-    
-    const parts = fullPath.split('.')
-    let current = obj
-    
-    for (let i = 0; i < parts.length; i++) {
-      const part = parts[i]
-      if (current && current[part] !== undefined) {
-        current = current[part]
-        console.log(`LiveCharts: Found part ${part}, current:`, typeof current === 'object' ? Object.keys(current) : current)
-      } else {
-        console.log(`LiveCharts: Part ${part} not found in:`, current ? Object.keys(current) : 'null object')
-        return null
-      }
-    }
-    
-    const result = typeof current === 'number' ? current : null
-    console.log(`LiveCharts: Final result for ${fullPath}:`, result)
-    return result
   }
+  
+  const result = typeof current === 'number' ? current : null
+  console.log(`LiveCharts: Final result for ${fullPath}:`, result)
+  return result
+}
 
   useEffect(() => {
     if (isRecording && isConnected && selectedProperties.length > 0) {
@@ -230,56 +225,75 @@ const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
               </Badge>
             </HStack>
 
-            {/* Settings */}
-            <HStack spacing={4} w="100%">
-              <FormControl maxW="120px">
-                <FormLabel color="gray.300" fontSize="sm">Sample Rate:</FormLabel>
-                <Select
-                  value={sampleRate}
-                  onChange={(e) => setSampleRate(parseInt(e.target.value))}
-                  size="sm"
-                  bg="gray.700"
-                  color="white"
-                >
-                  <option value={1}>1 Hz</option>
-                  <option value={2}>2 Hz</option>
-                  <option value={5}>5 Hz</option>
-                  <option value={10}>10 Hz</option>
-                  <option value={20}>20 Hz</option>
-                  <option value={50}>50 Hz</option>
-                </Select>
-              </FormControl>
+            // Replace the Settings section around line 220:
 
-              <FormControl maxW="120px">
-                <FormLabel color="gray.300" fontSize="sm">Time Window:</FormLabel>
-                <Select
-                  value={timeWindow}
-                  onChange={(e) => setTimeWindow(parseInt(e.target.value))}
-                  size="sm"
-                  bg="gray.700"
-                  color="white"
-                >
-                  <option value={30}>30 seconds</option>
-                  <option value={60}>1 minute</option>
-                  <option value={300}>5 minutes</option>
-                  <option value={600}>10 minutes</option>
-                  <option value={1800}>30 minutes</option>
-                </Select>
-              </FormControl>
+{/* Settings */}
+<HStack spacing={4} w="100%">
+  <FormControl maxW="120px">
+    <FormLabel color="gray.300" fontSize="sm">Sample Rate:</FormLabel>
+    <Select
+      value={sampleRate}
+      onChange={(e) => setSampleRate(parseInt(e.target.value))}
+      size="sm"
+      bg="gray.700"
+      color="white"
+    >
+      <option value={1}>1 Hz</option>
+      <option value={2}>2 Hz</option>
+      <option value={5}>5 Hz</option>
+      <option value={10}>10 Hz</option>
+      <option value={20}>20 Hz</option>
+      <option value={50}>50 Hz</option>
+    </Select>
+  </FormControl>
 
-              <FormControl display="flex" alignItems="center" maxW="120px">
-                <FormLabel htmlFor="auto-scale" mb="0" color="gray.300" fontSize="sm">
-                  Auto Scale:
-                </FormLabel>
-                <Switch
-                  id="auto-scale"
-                  size="sm"
-                  colorScheme="blue"
-                  isChecked={autoScale}
-                  onChange={(e) => setAutoScale(e.target.checked)}
-                />
-              </FormControl>
-            </HStack>
+  <FormControl maxW="120px">
+    <FormLabel color="gray.300" fontSize="sm">Time Window:</FormLabel>
+    <Select
+      value={timeWindow}
+      onChange={(e) => setTimeWindow(parseInt(e.target.value))}
+      size="sm"
+      bg="gray.700"
+      color="white"
+    >
+      <option value={30}>30 seconds</option>
+      <option value={60}>1 minute</option>
+      <option value={300}>5 minutes</option>
+      <option value={600}>10 minutes</option>
+      <option value={1800}>30 minutes</option>
+    </Select>
+  </FormControl>
+
+  <FormControl maxW="120px">
+    <FormLabel color="gray.300" fontSize="sm">Max Samples:</FormLabel>
+    <Select
+      value={maxSamples}
+      onChange={(e) => setMaxSamples(parseInt(e.target.value))}
+      size="sm"
+      bg="gray.700"
+      color="white"
+    >
+      <option value={500}>500</option>
+      <option value={1000}>1000</option>
+      <option value={2000}>2000</option>
+      <option value={5000}>5000</option>
+      <option value={10000}>10000</option>
+    </Select>
+  </FormControl>
+
+  <FormControl display="flex" alignItems="center" maxW="120px">
+    <FormLabel htmlFor="auto-scale" mb="0" color="gray.300" fontSize="sm">
+      Auto Scale:
+    </FormLabel>
+    <Switch
+      id="auto-scale"
+      size="sm"
+      colorScheme="blue"
+      isChecked={autoScale}
+      onChange={(e) => setAutoScale(e.target.checked)}
+    />
+  </FormControl>
+</HStack>
 
             {/* Current Values */}
             {selectedProperties.length > 0 && (
