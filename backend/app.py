@@ -343,6 +343,9 @@ class ODriveManager:
             self._reconnecting = False
             
         return False
+    
+    def _sanitize_value(self, value: str) -> Any:
+        sanitize_for_json(value)
 
     def get_device_state(self) -> Dict[str, Any]:
         """Get current device state"""

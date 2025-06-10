@@ -49,18 +49,44 @@ export const executeConfigAction = async (action, options = {}) => {
       throw new Error(`Unknown action: ${action}`)
   }
 
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  })
+  console.log(`Executing action: ${action}`, { endpoint, payload }) // Add debugging
 
-  if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.message || `${action} action failed`)
+  try {
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+
+    // Get the response text first to see what we're actually receiving
+    const responseText = await response.text()
+    console.log(`Response for ${action}:`, { status: response.status, text: responseText })
+
+    if (!response.ok) {
+      let errorMessage = `${action} action failed`
+      
+      try {
+        const errorData = JSON.parse(responseText)
+        errorMessage = errorData.error || errorData.message || errorMessage
+      } catch (parseError) {
+        // If JSON parsing fails, use the raw response text
+        errorMessage = responseText || errorMessage
+      }
+      
+      throw new Error(errorMessage)
+    }
+
+    // Try to parse as JSON, fallback to text if it fails
+    try {
+      return JSON.parse(responseText)
+    } catch (parseError) {
+      return { message: responseText }
+    }
+    
+  } catch (fetchError) {
+    console.error(`Fetch error for ${action}:`, fetchError)
+    throw fetchError
   }
-
-  return await response.json()
 }
 
 /**
