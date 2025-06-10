@@ -27,6 +27,7 @@ import {
 import { getAxisStateName } from '../utils/odriveEnums'
 import { getErrorDescription, getErrorColor, isErrorCritical } from '../utils/odriveErrors'
 import '../styles/DeviceList.css'
+import { useTelemetry } from '../hooks/useTelemetry'
 
 const DeviceList = () => {
   const dispatch = useDispatch()
@@ -78,145 +79,47 @@ const DeviceList = () => {
     return "red" // Error or undefined
   }
   
-  // Add this helper function to fetch device state
-  const fetchDeviceState = async () => {
-    try {
-      const response = await fetch('/api/odrive/state')
-      if (response.ok) {
-        const state = await response.json()
-        if (Object.keys(state).length > 0) {
-          dispatch(updateOdriveState(state))
-        }
-      }
-    } catch (error) {
-      console.error('Failed to fetch device state:', error)
-    }
-  }
 
   // Replace the useEffect that handles polling (around lines 90-145)
+  useTelemetry({
+    type: 'dashboard',
+    updateRate: 2000, // 2 seconds for device list
+  })
 
-useEffect(() => {
-  if (isConnected && !isScanning) {
-    const interval = setInterval(async () => {
-      try {
-        // Use ONLY telemetry endpoint for real-time data
-        const response = await fetch('/api/odrive/telemetry')
-        if (response.ok) {
-          const text = await response.text()
-          try {
-            // Clean JSON before parsing to handle any remaining Infinity issues
-            const cleanText = text.replace(/:\s*Infinity/g, ': 1e10')
-                                 .replace(/:\s*-Infinity/g, ': -1e10')
-                                 .replace(/:\s*NaN/g, ': null')
-            const state = JSON.parse(cleanText)
-            
-            if (state && state.device && Object.keys(state.device).length > 0) {
-              dispatch(updateOdriveState(state))
-              
-              // Clear connection lost flag if we got valid data
-              if (connectionLost) {
-                dispatch(setConnectionLost(false))
-                toast({
-                  title: 'Device reconnected',
-                  description: 'ODrive connection has been restored.',
-                  status: 'success',
-                  duration: 3000,
-                })
-              }
-            } else {
-              // Empty response or no device data - but don't mark as lost immediately
-              // Only mark as lost if we get multiple empty responses in a row
-              if (!connectionLost) {
-                console.log('Empty telemetry response received')
-                // Don't immediately mark as lost - wait for a few attempts
-              }
-            }
-          } catch (parseError) {
-            console.error('JSON parse error:', parseError)
-            console.error('Raw response:', text)
-            // Only mark as lost if it's a real parse error, not empty response
-            if (text.trim() !== '' && !connectionLost) {
-              dispatch(setConnectionLost(true))
-            }
-          }
-        } else {
-          // HTTP error - check if it's a real error or just temporary
-          if (response.status === 404 && !connectionLost) {
-            // 404 might be temporary during reconnection, don't immediately mark as lost
-            console.log('Received 404, device might be reconnecting...')
-          } else if (!connectionLost) {
-            console.log(`HTTP ${response.status} - marking connection as lost`)
-            dispatch(setConnectionLost(true))
-            toast({
-              title: 'Connection lost',
-              description: 'Lost connection to ODrive. Attempting to reconnect...',
-              status: 'warning',
-              duration: 5000,
-            })
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch device state:', error)
-        // Only mark as lost if it's a real network error, not a timeout during reconnection
-        if (!connectionLost && !error.message.includes('fetch')) {
-          dispatch(setConnectionLost(true))
-          toast({
-            title: 'Connection lost',
-            description: 'Lost connection to ODrive. Attempting to reconnect...',
-            status: 'warning',
-            duration: 5000,
-          })
-        }
-      }
-    }, 3000) // Increased to 3 seconds to give more time for reconnection
-    
-    return () => clearInterval(interval)
-  }
-}, [isConnected, connectionLost, dispatch, toast, isScanning])
-
-
-// Add this new useEffect after the existing polling effect
-// Update the reconnection detection useEffect
+// Update the reconnection detection useEffect in DeviceList.jsx
 useEffect(() => {
   // Separate reconnection detection - only runs when connection is lost
   if (isConnected && connectionLost && !isScanning) {
     const reconnectInterval = setInterval(async () => {
       try {
-        // Try to get connection status first
+        // Only check connection status - don't fetch telemetry here
+        // The telemetry hook will handle the actual data fetching
         const statusResponse = await fetch('/api/odrive/connection_status')
         if (statusResponse.ok) {
           const status = await statusResponse.json()
           if (status.connected && !status.connection_lost) {
-            // Backend says we're connected, try to get telemetry to confirm
-            const telemetryResponse = await fetch('/api/odrive/telemetry')
-            if (telemetryResponse.ok) {
-              const telemetry = await telemetryResponse.json()
-              if (telemetry.device && Object.keys(telemetry.device).length > 0) {
-                // Successfully got data - clear connection lost
-                dispatch(setConnectionLost(false))
-                dispatch(updateOdriveState(telemetry))
-                
-                // Trigger configuration pull after successful reconnection
-                setTimeout(() => {
-                  // Dispatch a custom event to trigger config pull in ConfigurationTab
-                  window.dispatchEvent(new CustomEvent('deviceReconnected'))
-                }, 1000) // Wait 1 second for device to stabilize
-                
-                toast({
-                  title: 'Device reconnected',
-                  description: 'ODrive connection has been restored. Pulling configuration...',
-                  status: 'success',
-                  duration: 3000,
-                })
-              }
-            }
+            // Backend says we're connected - trust it and clear connection lost
+            dispatch(setConnectionLost(false))
+            
+            // Trigger configuration pull after successful reconnection
+            setTimeout(() => {
+              // Dispatch a custom event to trigger config pull in ConfigurationTab
+              window.dispatchEvent(new CustomEvent('deviceReconnected'))
+            }, 1) // Reduced from 1000ms to 500ms
+            
+            toast({
+              title: 'Device reconnected',
+              description: 'ODrive connection has been restored. Pulling configuration...',
+              status: 'success',
+              duration: 3000,
+            })
           }
         }
       } catch (error) {
         // Reconnection attempt failed, continue trying
         console.log('Reconnection attempt failed:', error)
       }
-    }, 2000) // Check every 2 seconds when connection is lost
+    }, 1000) // Reduced from 3000ms to 1000ms (1 second) for faster detection
     
     return () => clearInterval(reconnectInterval)
   }
@@ -490,8 +393,7 @@ useEffect(() => {
                             status: 'success',
                             duration: 3000,
                           });
-                          // Refresh data after clearing errors
-                          setTimeout(() => fetchDeviceState(), 100);
+
                         } else {
                           const error = await response.json();
                           throw new Error(error.error || 'Failed to clear errors');

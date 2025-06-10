@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState } from 'react'
 import {
   VStack,
   HStack,
@@ -32,6 +32,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { odrivePropertyTree } from '../../utils/odrivePropertyTree'
+import { useTelemetry } from '../../hooks/useTelemetry'
 
 const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
   const [chartData, setChartData] = useState([])
@@ -42,7 +43,6 @@ const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
   const [timeWindow, setTimeWindow] = useState(60) // seconds
   const [layoutMode, setLayoutMode] = useState('grid') // 'grid' or 'list'
   
-  const intervalRef = useRef(null)
   const chartColors = [
     '#3B82F6', '#EF4444', '#10B981', '#F59E0B', 
     '#8B5CF6', '#06B6D4', '#84CC16', '#F97316',
@@ -138,17 +138,20 @@ const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
     return result
   }
 
-  useEffect(() => {
-    if (isRecording && isConnected && selectedProperties.length > 0) {
-      intervalRef.current = setInterval(() => {
-        const timestamp = Date.now()
+  useTelemetry({
+    type: 'charts',
+    paths: selectedProperties,
+    updateRate: 1000 / sampleRate, // Convert Hz to ms
+    onData: (data) => {
+      if (isRecording && selectedProperties.length > 0) {
+        const timestamp = data.timestamp || Date.now()
         const sample = { 
           time: timestamp,
           relativeTime: chartData.length > 0 ? (timestamp - chartData[0].time) / 1000 : 0
         }
         
         selectedProperties.forEach(property => {
-          const value = getValueFromPath(odriveState, property)
+          const value = getValueFromPath(data, property)
           if (value !== null) {
             sample[property] = value
           }
@@ -156,31 +159,14 @@ const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
         
         setChartData(prev => {
           const newData = [...prev, sample]
-          // Keep only samples within time window
           const cutoffTime = timestamp - (timeWindow * 1000)
           const filteredData = newData.filter(d => d.time > cutoffTime)
-          
-          // Limit total samples
-          if (filteredData.length > maxSamples) {
-            return filteredData.slice(-maxSamples)
-          }
-          
-          return filteredData
+          return filteredData.length > maxSamples ? 
+            filteredData.slice(-maxSamples) : filteredData
         })
-      }, 1000 / sampleRate)
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-        intervalRef.current = null
       }
     }
-
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current)
-      }
-    }
-  }, [isRecording, isConnected, selectedProperties, sampleRate, odriveState, timeWindow, maxSamples, chartData])
+  })
 
   const startRecording = () => {
     setIsRecording(true)

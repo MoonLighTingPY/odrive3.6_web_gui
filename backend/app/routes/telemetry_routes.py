@@ -6,6 +6,8 @@ from ..odrive_telemetry_config import (
     get_configuration_data,
     get_full_device_state
 )
+import time
+from ..odrive_telemetry_config import get_dashboard_telemetry
 
 logger = logging.getLogger(__name__)
 telemetry_bp = Blueprint('telemetry', __name__, url_prefix='/api/odrive')
@@ -61,41 +63,71 @@ def get_config_batch():
         logger.error(f"Error in get_config_batch: {e}")
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500
 
-@telemetry_bp.route('/state', methods=['GET'])
-def get_device_state():
-    logger.warning("State endpoint called - redirecting to telemetry")
-    return get_telemetry()
-
-@telemetry_bp.route('/telemetry', methods=['GET'])
-def get_telemetry():
+@telemetry_bp.route('/telemetry', methods=['POST'])
+def get_selective_telemetry():
+    """Get selective telemetry data based on what the frontend needs"""
     try:
         if not odrive_manager.is_connected():
             return jsonify({"error": "No ODrive connected"}), 404
         
-        telemetry_data = get_high_frequency_telemetry(odrive_manager.odrv)
-        serializable_data = sanitize_for_json(telemetry_data)
+        data = request.get_json()
+        if not data:
+            # Default to high frequency data if no selection provided
+            telemetry_data = get_high_frequency_telemetry(odrive_manager.odrv)
+            return jsonify(sanitize_for_json(telemetry_data))
         
-        logger.info(f"Telemetry data structure keys: {list(serializable_data.keys()) if isinstance(serializable_data, dict) else 'Not a dict'}")
-        if isinstance(serializable_data, dict) and 'device' in serializable_data:
-            device_keys = list(serializable_data['device'].keys()) if isinstance(serializable_data['device'], dict) else 'Device not a dict'
-            logger.info(f"Device keys: {device_keys}")
+        # Get the data selection mode
+        mode = data.get('mode', 'default')  # 'dashboard', 'charts', 'inspector', 'config', 'default'
+        specific_paths = data.get('paths', [])  # Specific property paths to fetch
         
-        return jsonify(serializable_data)
+        if mode == 'charts' and specific_paths:
+            # Chart mode - only fetch specific properties for maximum performance
+            result = {'device': {}}
+            for path in specific_paths:
+                try:
+                    value = odrive_manager.execute_command(f'device.{path}')
+                    if 'result' in value and 'error' not in value:
+                        # Set the nested property in the result
+                        set_nested_property(result['device'], path, value['result'])
+                except Exception as e:
+                    logger.warning(f"Failed to get path {path}: {e}")
+                    
+            # Add timestamp for charts
+            result['timestamp'] = time.time() * 1000
+            return jsonify(sanitize_for_json(result))
+            
+        elif mode == 'dashboard':
+            # Dashboard mode - get essential live data only
+            dashboard_data = get_dashboard_telemetry(odrive_manager.odrv)
+            return jsonify(sanitize_for_json(dashboard_data))
+            
+        elif mode == 'config':
+            # Configuration mode - get configuration data
+            config_data = get_configuration_data(odrive_manager.odrv)
+            return jsonify(sanitize_for_json(config_data))
+            
+        elif mode == 'inspector':
+            # Inspector mode - get full state for property tree
+            full_data = get_full_device_state(odrive_manager.odrv)
+            return jsonify(sanitize_for_json(full_data))
+            
+        else:
+            # Default mode - high frequency telemetry
+            telemetry_data = get_high_frequency_telemetry(odrive_manager.odrv)
+            return jsonify(sanitize_for_json(telemetry_data))
         
     except Exception as e:
         logger.error(f"Error getting telemetry: {e}")
         return jsonify({"error": str(e)}), 500
 
-@telemetry_bp.route('/full-state', methods=['GET'])  
-def get_full_state():
-    try:
-        if not odrive_manager.is_connected():
-            return jsonify({"error": "No ODrive connected"}), 404
-        
-        full_data = get_full_device_state(odrive_manager.odrv)
-        sanitizable_data = sanitize_for_json(full_data)
-        
-        return jsonify(sanitizable_data)
-    except Exception as e:
-        logger.error(f"Error getting full state: {e}")
-        return jsonify({"error": str(e)}), 500
+def set_nested_property(obj, path, value):
+    """Set a nested property in a dictionary structure"""
+    parts = path.split('.')
+    current = obj
+    
+    for part in parts[:-1]:
+        if part not in current:
+            current[part] = {}
+        current = current[part]
+    
+    current[parts[-1]] = value

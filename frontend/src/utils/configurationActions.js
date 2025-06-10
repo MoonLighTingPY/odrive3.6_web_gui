@@ -236,34 +236,28 @@ export const applyAndSaveConfiguration = async (deviceConfig, toast) => {
     // Wait for device to reconnect (check connection status every 2 seconds for up to 30 seconds)
     let reconnected = false
     let attempts = 0
-    const maxAttempts = 15 // 30 seconds total
+    const maxAttempts = 15
 
     while (!reconnected && attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 2000)) // Wait 2 seconds
-      attempts++
+  await new Promise(resolve => setTimeout(resolve, 100)) // Increased to 3 seconds
+  attempts++
 
-      try {
-        // Check connection status
-        const statusResponse = await fetch('/api/odrive/connection_status')
-        if (statusResponse.ok) {
-          const status = await statusResponse.json()
-          if (status.connected && !status.connection_lost) {
-            // Verify we can actually get device data
-            const telemetryResponse = await fetch('/api/odrive/telemetry')
-            if (telemetryResponse.ok) {
-              const telemetry = await telemetryResponse.json()
-              if (telemetry.device && Object.keys(telemetry.device).length > 0) {
-                reconnected = true
-                break
-              }
-            }
-          }
-        }
-      } catch (error) {
-        // Connection check failed, continue waiting
-        console.log(`Reconnection attempt ${attempts} failed:`, error)
+  try {
+    // Only check connection status, don't fetch telemetry
+    const statusResponse = await fetch('/api/odrive/connection_status')
+    if (statusResponse.ok) {
+      const status = await statusResponse.json()
+      if (status.connected && !status.connection_lost) {
+        // Backend confirms connection is restored
+        reconnected = true
+        break
       }
     }
+  } catch (error) {
+    // Connection check failed, continue waiting
+    console.log(`Reconnection attempt ${attempts} failed:`, error)
+  }
+}
 
     if (reconnected) {
       toast({

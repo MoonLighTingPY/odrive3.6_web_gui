@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState} from 'react'
 import { useSelector } from 'react-redux'
 import {
   Box,
@@ -31,31 +31,15 @@ import ErrorTroubleshooting from "../modals/ErrorTroubleshootingModal"
 import '../../styles/DashboardTab.css'
 
 const DashboardTab = ({ isConnected, odriveState }) => {
+  // eslint-disable-next-line no-unused-vars
   const [realTimeData, setRealTimeData] = useState({})
   const [selectedError, setSelectedError] = useState({ code: null, type: null })
   const { connectedDevice } = useSelector(state => state.device)
   
   const { isOpen: isTroubleshootingOpen, onOpen: onTroubleshootingOpen, onClose: onTroubleshootingClose } = useDisclosure()
 
-  useEffect(() => {
-    if (isConnected) {
-      const interval = setInterval(async () => {
-        try {
-          const response = await fetch('/api/odrive/telemetry')
-          if (response.ok) {
-            const data = await response.json()
-            setRealTimeData(data)
-          }
-        } catch (error) {
-          console.error('Failed to fetch telemetry:', error)
-        }
-      }, 100) // 10Hz update rate
 
-      return () => clearInterval(interval)
-    }
-  }, [isConnected])
-
-    // Check if we should show dashboard content
+  // Check if we should show dashboard content
   const shouldShowDashboard = () => {
     const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development'
     return isDevelopment || isConnected

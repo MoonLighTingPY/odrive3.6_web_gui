@@ -5,6 +5,7 @@ This module handles the mapping and collection of ODrive properties
 
 import odrive
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -348,3 +349,45 @@ def set_nested_property(obj, path, value):
         
     except Exception as e:
         logger.debug(f"Error setting nested property {path}: {e}")
+
+def get_dashboard_telemetry(odrv):
+    """Get minimal telemetry data specifically for dashboard display"""
+    try:
+        return {
+            'device': {
+                'vbus_voltage': odrv.vbus_voltage,
+                'ibus': getattr(odrv, 'ibus', 0),
+                'hw_version_major': odrv.hw_version_major,
+                'hw_version_minor': odrv.hw_version_minor,
+                'fw_version_major': odrv.fw_version_major,
+                'fw_version_minor': odrv.fw_version_minor,
+                'serial_number': odrv.serial_number,
+                'axis0': {
+                    'current_state': odrv.axis0.current_state,
+                    'error': odrv.axis0.error,
+                    'motor': {
+                        'error': odrv.axis0.motor.error,
+                        'is_calibrated': odrv.axis0.motor.is_calibrated,
+                        'current_control': {
+                            'Iq_measured': odrv.axis0.motor.current_control.Iq_measured,
+                        }
+                    },
+                    'encoder': {
+                        'error': odrv.axis0.encoder.error,
+                        'pos_estimate': odrv.axis0.encoder.pos_estimate,
+                        'vel_estimate': odrv.axis0.encoder.vel_estimate,
+                        'is_ready': odrv.axis0.encoder.is_ready,
+                    },
+                    'controller': {
+                        'error': odrv.axis0.controller.error,
+                        'pos_setpoint': odrv.axis0.controller.pos_setpoint,
+                        'vel_setpoint': odrv.axis0.controller.vel_setpoint,
+                        'torque_setpoint': getattr(odrv.axis0.controller, 'torque_setpoint', 0),
+                    }
+                }
+            },
+            'timestamp': time.time() * 1000
+        }
+    except Exception as e:
+        logger.error(f"Error getting dashboard telemetry: {e}")
+        return {'device': {}}

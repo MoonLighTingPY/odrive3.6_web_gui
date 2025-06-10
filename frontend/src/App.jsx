@@ -21,39 +21,13 @@ import DashboardTab from './components/tabs/DashboardTab'
 import InspectorTab from './components/tabs/InspectorTab'
 import PresetsTab from './components/tabs/PresetsTab'
 import CommandConsoleTab from './components/tabs/CommandConsoleTab'
-import { updateOdriveState } from './store/slices/deviceSlice'
 import UpdateChecker from './components/UpdateChecker'
 import './App.css'
 
 function App() {
-  const dispatch = useDispatch()
   const { isConnected, connectedDevice, odriveState } = useSelector(state => state.device)
   const [activeTab, setActiveTab] = useState(0)
 
-  // Poll device state when connected
-  useEffect(() => {
-    if (!isConnected) return
-
-    const pollDeviceState = async () => {
-      try {
-        const response = await fetch('/api/odrive/state')
-        if (response.ok) {
-          const state = await response.json()
-          dispatch(updateOdriveState(state))
-        }
-      } catch (error) {
-        console.error('Failed to poll device state:', error)
-      }
-    }
-
-    // Poll every 500ms
-    const interval = setInterval(pollDeviceState, 500)
-    
-    // Initial poll
-    pollDeviceState()
-
-    return () => clearInterval(interval)
-  }, [isConnected, dispatch])
 
   return (
     <Box bg="gray.900" minH="100vh" color="white">
