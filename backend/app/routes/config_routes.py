@@ -13,6 +13,77 @@ def init_routes(manager):
     global odrive_manager
     odrive_manager = manager
 
+@config_bp.route('/config/batch', methods=['POST'])
+def get_config_batch():
+    """Get multiple configuration values in a single request"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No JSON data provided'}), 400
+            
+        config_paths = data.get('paths', [])
+        
+        if not config_paths:
+            return jsonify({'error': 'No configuration paths provided'}), 400
+            
+        if not odrive_manager.current_device:
+            return jsonify({'error': 'No ODrive device connected'}), 400
+        
+        results = {}
+        
+        for path in config_paths:
+            try:
+                # Remove 'device.' prefix if present
+                clean_path = path.replace('device.', '') if path.startswith('device.') else path
+                
+                # Build the actual attribute path for the ODrive object
+                try:
+                    # Split the path and traverse the object
+                    parts = clean_path.split('.')
+                    current_obj = odrive_manager.current_device
+                    
+                    for part in parts:
+                        if hasattr(current_obj, part):
+                            current_obj = getattr(current_obj, part)
+                        else:
+                            current_obj = None
+                            break
+                    
+                    if current_obj is not None:
+                        # Handle different types of values
+                        if hasattr(current_obj, '__call__'):
+                            # It's a method, don't call it
+                            results[path] = {'error': 'Cannot read method values'}
+                        else:
+                            # Convert to basic Python types for JSON serialization
+                            value = current_obj
+                            if hasattr(value, 'value'):  # Enum handling
+                                value = value.value
+                            elif hasattr(value, '__float__'):
+                                value = float(value)
+                            elif hasattr(value, '__int__'):
+                                value = int(value)
+                            elif hasattr(value, '__bool__'):
+                                value = bool(value)
+                            
+                            results[path] = value
+                    else:
+                        results[path] = {'error': f'Path not found: {clean_path}'}
+                        
+                except Exception as e:
+                    logger.error(f"Error reading path {path}: {e}")
+                    results[path] = {'error': f'Read error: {str(e)}'}
+                    
+            except Exception as e:
+                logger.error(f"Error processing path {path}: {e}")
+                results[path] = {'error': f'Processing error: {str(e)}'}
+        
+        return jsonify({'results': results})
+        
+    except Exception as e:
+        logger.error(f"Error in get_config_batch: {e}")
+        return jsonify({'error': f'Internal server error: {str(e)}'}), 500
+
 @config_bp.route('/apply_config', methods=['POST'])
 def apply_config():
     try:
