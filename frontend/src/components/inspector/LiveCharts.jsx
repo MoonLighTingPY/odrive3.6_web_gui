@@ -46,19 +46,52 @@ const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
   ]
 
   const getValueFromPath = (obj, path) => {
-    if (!obj) return null
-    const parts = path.split('.')
+    if (!obj || !obj.device) {
+      console.log(`LiveCharts: obj or obj.device is null/undefined for path: ${path}`)
+      return null
+    }
+    
+    console.log(`LiveCharts: Getting value for path: ${path}`)
+    console.log(`LiveCharts: Device object keys:`, Object.keys(obj.device))
+    
+    // Build the correct path - the PropertyTree uses paths like "axis0.encoder.pos_estimate"
+    // but the data is actually under device.axis0.encoder.pos_estimate
+    let fullPath
+    if (path.startsWith('system.')) {
+      // System properties map to device.* or device.config.*
+      const systemProp = path.replace('system.', '')
+      if (['hw_version_major', 'hw_version_minor', 'fw_version_major', 'fw_version_minor', 'serial_number', 'vbus_voltage', 'ibus'].includes(systemProp)) {
+        fullPath = `device.${systemProp}`
+      } else {
+        fullPath = `device.config.${systemProp}`
+      }
+    } else if (path.startsWith('axis0.') || path.startsWith('axis1.')) {
+      // Axis properties map to device.axis0.* or device.axis1.*
+      fullPath = `device.${path}`
+    } else {
+      // Direct device path
+      fullPath = `device.${path}`
+    }
+    
+    console.log(`LiveCharts: Full path: ${fullPath}`)
+    
+    const parts = fullPath.split('.')
     let current = obj
     
-    for (const part of parts) {
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i]
       if (current && current[part] !== undefined) {
         current = current[part]
+        console.log(`LiveCharts: Found part ${part}, current:`, typeof current === 'object' ? Object.keys(current) : current)
       } else {
+        console.log(`LiveCharts: Part ${part} not found in:`, current ? Object.keys(current) : 'null object')
         return null
       }
     }
     
-    return typeof current === 'number' ? current : null
+    const result = typeof current === 'number' ? current : null
+    console.log(`LiveCharts: Final result for ${fullPath}:`, result)
+    return result
   }
 
   useEffect(() => {

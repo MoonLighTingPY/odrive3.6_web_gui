@@ -1306,7 +1306,6 @@ def get_device_state():
     logger.warning("State endpoint called - redirecting to telemetry")
     return get_telemetry()  # Changed from get_config_batch to get_telemetry
 
-# Also add the telemetry endpoint if it's missing:
 @app.route('/api/odrive/telemetry', methods=['GET'])
 def get_telemetry():
     try:
@@ -1318,6 +1317,12 @@ def get_telemetry():
         
         # Sanitize data to handle Infinity, NaN, and other problematic values
         serializable_data = sanitize_for_json(telemetry_data)
+        
+        # Add debug logging to see what structure we're returning
+        logger.info(f"Telemetry data structure keys: {list(serializable_data.keys()) if isinstance(serializable_data, dict) else 'Not a dict'}")
+        if isinstance(serializable_data, dict) and 'device' in serializable_data:
+            device_keys = list(serializable_data['device'].keys()) if isinstance(serializable_data['device'], dict) else 'Device not a dict'
+            logger.info(f"Device keys: {device_keys}")
         
         return jsonify(serializable_data)
         

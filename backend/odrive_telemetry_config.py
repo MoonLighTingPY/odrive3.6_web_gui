@@ -79,66 +79,83 @@ def safe_get_property(odrv, property_path):
 # Update the get_high_frequency_telemetry function to also include some config data:
 
 def get_high_frequency_telemetry(odrv):
-    """Get high-frequency telemetry data for real-time monitoring"""
-    if not odrv:
-        return {'device': {}}
-    
-    data = {'device': {}}
-    
-    # High-frequency properties that should be polled frequently (10+ Hz)
-    high_freq_properties = [
-        ('vbus_voltage', 'vbus_voltage'),
-        ('ibus', 'ibus'),
-        
-        # Add some basic config properties that are needed by PropertyTree
-        ('config.dc_bus_overvoltage_trip_level', 'config.dc_bus_overvoltage_trip_level'),
-        ('config.dc_bus_undervoltage_trip_level', 'config.dc_bus_undervoltage_trip_level'),
-        ('config.dc_max_positive_current', 'config.dc_max_positive_current'),
-        ('config.dc_max_negative_current', 'config.dc_max_negative_current'),
-        ('config.enable_brake_resistor', 'config.enable_brake_resistor'),
-        ('config.brake_resistance', 'config.brake_resistance'),
-        
-        # Axis 0 live data
-        ('axis0.encoder.pos_estimate', 'axis0.encoder.pos_estimate'),
-        ('axis0.encoder.vel_estimate', 'axis0.encoder.vel_estimate'),
-        ('axis0.motor.current_meas_phB', 'axis0.motor.current_meas_phB'),
-        ('axis0.motor.current_meas_phC', 'axis0.motor.current_meas_phC'), 
-        ('axis0.controller.pos_setpoint', 'axis0.controller.pos_setpoint'),
-        ('axis0.controller.vel_setpoint', 'axis0.controller.vel_setpoint'),
-        ('axis0.controller.torque_setpoint', 'axis0.controller.torque_setpoint'),
-        ('axis0.current_state', 'axis0.current_state'),
-        ('axis0.error', 'axis0.error'),
-        ('axis0.motor.error', 'axis0.motor.error'),
-        ('axis0.encoder.error', 'axis0.encoder.error'),
-        ('axis0.controller.error', 'axis0.controller.error'),
-        ('axis0.motor.is_calibrated', 'axis0.motor.is_calibrated'),
-        ('axis0.encoder.is_ready', 'axis0.encoder.is_ready'),
-        ('axis0.encoder.index_found', 'axis0.encoder.index_found'),
-        
-        # Axis 1 live data
-        ('axis1.encoder.pos_estimate', 'axis1.encoder.pos_estimate'),
-        ('axis1.encoder.vel_estimate', 'axis1.encoder.vel_estimate'), 
-        ('axis1.motor.current_meas_phB', 'axis1.motor.current_meas_phB'),
-        ('axis1.motor.current_meas_phC', 'axis1.motor.current_meas_phC'),
-        ('axis1.controller.pos_setpoint', 'axis1.controller.pos_setpoint'),
-        ('axis1.controller.vel_setpoint', 'axis1.controller.vel_setpoint'),
-        ('axis1.controller.torque_setpoint', 'axis1.controller.torque_setpoint'),
-        ('axis1.current_state', 'axis1.current_state'),
-        ('axis1.error', 'axis1.error'),
-        ('axis1.motor.error', 'axis1.motor.error'),
-        ('axis1.encoder.error', 'axis1.encoder.error'),
-        ('axis1.controller.error', 'axis1.controller.error'),
-        ('axis1.motor.is_calibrated', 'axis1.motor.is_calibrated'),
-        ('axis1.encoder.is_ready', 'axis1.encoder.is_ready'),
-        ('axis1.encoder.index_found', 'axis1.encoder.index_found')
-    ]
-    
-    for odrv_path, data_path in high_freq_properties:
-        value = safe_get_property(odrv, odrv_path)
-        if value is not None:
-            set_nested_property(data['device'], data_path, value)
-    
-    return data
+    """Get high-frequency telemetry data for live charts and real-time monitoring"""
+    try:
+        return {
+            'device': {
+                'vbus_voltage': odrv.vbus_voltage,
+                'ibus': getattr(odrv, 'ibus', 0),
+                'axis0': {
+                    'current_state': odrv.axis0.current_state,
+                    'error': odrv.axis0.error,
+                    'motor': {
+                        'error': odrv.axis0.motor.error,
+                        'current_control': {
+                            'Iq_measured': odrv.axis0.motor.current_control.Iq_measured,
+                            'Iq_setpoint': odrv.axis0.motor.current_control.Iq_setpoint,
+                            'Id_measured': getattr(odrv.axis0.motor.current_control, 'Id_measured', 0),
+                            'Id_setpoint': getattr(odrv.axis0.motor.current_control, 'Id_setpoint', 0),
+                        },
+                        'DC_calib_phB': getattr(odrv.axis0.motor, 'DC_calib_phB', 0),
+                        'DC_calib_phC': getattr(odrv.axis0.motor, 'DC_calib_phC', 0),
+                        'is_calibrated': odrv.axis0.motor.is_calibrated,
+                        'config': {
+                            'current_lim': odrv.axis0.motor.config.current_lim,
+                            'torque_lim': odrv.axis0.motor.config.torque_lim,
+                        }
+                    },
+                    'encoder': {
+                        'error': odrv.axis0.encoder.error,
+                        'pos_estimate': odrv.axis0.encoder.pos_estimate,
+                        'vel_estimate': odrv.axis0.encoder.vel_estimate,
+                        'is_ready': odrv.axis0.encoder.is_ready,
+                        'index_found': getattr(odrv.axis0.encoder, 'index_found', False),
+                        'config': {
+                            'cpr': odrv.axis0.encoder.config.cpr,
+                        }
+                    },
+                    'controller': {
+                        'error': odrv.axis0.controller.error,
+                        'pos_setpoint': odrv.axis0.controller.pos_setpoint,
+                        'vel_setpoint': odrv.axis0.controller.vel_setpoint,
+                        'torque_setpoint': getattr(odrv.axis0.controller, 'torque_setpoint', 0),
+                        'config': {
+                            'vel_limit': odrv.axis0.controller.config.vel_limit,
+                            'pos_gain': odrv.axis0.controller.config.pos_gain,
+                            'vel_gain': odrv.axis0.controller.config.vel_gain,
+                        }
+                    }
+                },
+                'axis1': {
+                    'current_state': getattr(odrv, 'axis1', type('obj', (object,), {'current_state': 0})).current_state if hasattr(odrv, 'axis1') else 0,
+                    'error': getattr(odrv, 'axis1', type('obj', (object,), {'error': 0})).error if hasattr(odrv, 'axis1') else 0,
+                    'motor': {
+                        'error': getattr(getattr(odrv, 'axis1', None), 'motor', type('obj', (object,), {'error': 0})).error if hasattr(odrv, 'axis1') else 0,
+                    },
+                    'encoder': {
+                        'error': getattr(getattr(odrv, 'axis1', None), 'encoder', type('obj', (object,), {'error': 0})).error if hasattr(odrv, 'axis1') else 0,
+                        'pos_estimate': getattr(getattr(odrv, 'axis1', None), 'encoder', type('obj', (object,), {'pos_estimate': 0})).pos_estimate if hasattr(odrv, 'axis1') else 0,
+                        'vel_estimate': getattr(getattr(odrv, 'axis1', None), 'encoder', type('obj', (object,), {'vel_estimate': 0})).vel_estimate if hasattr(odrv, 'axis1') else 0,
+                    }
+                } if hasattr(odrv, 'axis1') else {
+                    'current_state': 0,
+                    'error': 0,
+                    'motor': {'error': 0},
+                    'encoder': {'error': 0, 'pos_estimate': 0, 'vel_estimate': 0}
+                },
+                'config': {
+                    'brake_resistance': odrv.config.brake_resistance,
+                    'dc_bus_overvoltage_trip_level': odrv.config.dc_bus_overvoltage_trip_level,
+                    'dc_bus_undervoltage_trip_level': odrv.config.dc_bus_undervoltage_trip_level,
+                    'dc_max_positive_current': odrv.config.dc_max_positive_current,
+                    'dc_max_negative_current': odrv.config.dc_max_negative_current,
+                    'enable_brake_resistor': odrv.config.enable_brake_resistor,
+                }
+            }
+        }
+    except Exception as e:
+        logger.error(f"Error getting high frequency telemetry: {e}")
+        return {}
 
 def get_configuration_data(odrv):
     """Get configuration data (medium + low frequency properties)"""
