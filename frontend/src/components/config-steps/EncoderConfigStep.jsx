@@ -154,10 +154,8 @@ const EncoderConfigStep = ({
                       onChange={(value) => handleConfigChange('cpr', parseInt(value) || 0)}
                       onRefresh={() => handleRefresh('cpr')}
                       isLoading={isLoading('cpr')}
-                      step={1}
                       precision={0}
-                      min={1}
-                      max={65536}
+
                     />
                   </FormControl>
 
@@ -169,10 +167,8 @@ const EncoderConfigStep = ({
                       onRefresh={() => handleRefresh('bandwidth')}
                       isLoading={isLoading('bandwidth')}
                       unit="Hz"
-                      step={100}
                       precision={0}
-                      min={100}
-                      max={10000}
+
                     />
                   </FormControl>
 
@@ -184,10 +180,8 @@ const EncoderConfigStep = ({
                       onRefresh={() => handleRefresh('calib_range')}
                       isLoading={isLoading('calib_range')}
                       unit="rad"
-                      step={0.001}
                       precision={6}
-                      min={0.001}
-                      max={1.0}
+
                     />
                   </FormControl>
                 </VStack>
@@ -204,10 +198,8 @@ const EncoderConfigStep = ({
                       onChange={(value) => handleConfigChange('calib_scan_distance', parseInt(value) || 0)}
                       onRefresh={() => handleRefresh('calib_scan_distance')}
                       isLoading={isLoading('calib_scan_distance')}
-                      step={1000}
                       precision={0}
-                      min={1000}
-                      max={50000}
+
                     />
                   </FormControl>
 
@@ -219,10 +211,8 @@ const EncoderConfigStep = ({
                       onRefresh={() => handleRefresh('calib_scan_omega')}
                       isLoading={isLoading('calib_scan_omega')}
                       unit="rad/s"
-                      step={0.1}
                       precision={3}
-                      min={1}
-                      max={50}
+
                     />
                   </FormControl>
 

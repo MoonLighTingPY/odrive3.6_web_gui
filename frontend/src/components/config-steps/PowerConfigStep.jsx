@@ -89,10 +89,7 @@ const PowerConfigStep = ({
                   onRefresh={() => handleRefresh('dc_bus_undervoltage_trip_level')}
                   isLoading={isLoading('dc_bus_undervoltage_trip_level')}
                   unit="V"
-                  step={1}
                   precision={1}
-                  min={5}
-                  max={30}
                 />
               </FormControl>
             </SimpleGrid>
@@ -119,10 +116,7 @@ const PowerConfigStep = ({
                       onRefresh={() => handleRefresh('dc_max_positive_current')}
                       isLoading={isLoading('dc_max_positive_current')}
                       unit="A"
-                      step={1}
                       precision={1}
-                      min={0}
-                      max={60}
                     />
                   </FormControl>
 
@@ -134,10 +128,7 @@ const PowerConfigStep = ({
                       onRefresh={() => handleRefresh('dc_max_negative_current')}
                       isLoading={isLoading('dc_max_negative_current')}
                       unit="A"
-                      step={1}
                       precision={1}
-                      min={-60}
-                      max={0}
                     />
                   </FormControl>
                 </HStack>
@@ -171,10 +162,7 @@ const PowerConfigStep = ({
                         onRefresh={() => handleRefresh('brake_resistance')}
                         isLoading={isLoading('brake_resistance')}
                         unit="Ω"
-                        step={0.1}
                         precision={2}
-                        min={0.1}
-                        max={10}
                       />
                     </FormControl>
                   )}

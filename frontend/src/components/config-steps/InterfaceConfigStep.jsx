@@ -67,10 +67,7 @@ const InterfaceConfigStep = ({
                         onChange={(value) => handleConfigChange('can_node_id', parseInt(value) || 0)}
                         onRefresh={() => handleRefresh('can_node_id')}
                         isLoading={isLoading('can_node_id')}
-                        step={1}
                         precision={0}
-                        min={0}
-                        max={63}
                       />
                     </FormControl>
 
@@ -117,10 +114,7 @@ const InterfaceConfigStep = ({
                         onRefresh={() => handleRefresh('heartbeat_rate_ms')} // Fixed
                         isLoading={isLoading('heartbeat_rate_ms')} // Fixed
                         unit="ms"
-                        step={10}
                         precision={0}
-                        min={0}
-                        max={1000}
                       />
                     </FormControl>
                   </HStack>

@@ -83,10 +83,7 @@ const MotorConfigStep = ({
                     onChange={(value) => handleConfigChange('pole_pairs', parseInt(value) || 0)}
                     onRefresh={() => handleRefresh('pole_pairs')}
                     isLoading={isLoading('pole_pairs')}
-                    step={1}
                     precision={0}
-                    min={1}
-                    max={50}
                   />
                 </FormControl>
               </HStack>
@@ -100,10 +97,7 @@ const MotorConfigStep = ({
                     onRefresh={() => handleRefresh('motor_kv')}
                     isLoading={isLoading('motor_kv')}
                     unit="RPM/V"
-                    step={10}
                     precision={1}
-                    min={1}
-                    max={10000}
                   />
                 </FormControl>
 
@@ -115,10 +109,7 @@ const MotorConfigStep = ({
                     onRefresh={() => handleRefresh('current_lim')}
                     isLoading={isLoading('current_lim')}
                     unit="A"
-                    step={1}
                     precision={1}
-                    min={0}
-                    max={100}
                   />
                 </FormControl>
               </HStack>
@@ -132,10 +123,7 @@ const MotorConfigStep = ({
                     onRefresh={() => handleRefresh('calibration_current')}
                     isLoading={isLoading('calibration_current')}
                     unit="A"
-                    step={1}
                     precision={1}
-                    min={0}
-                    max={100}
                   />
                 </FormControl>
 
@@ -147,10 +135,7 @@ const MotorConfigStep = ({
                     onRefresh={() => handleRefresh('resistance_calib_max_voltage')}
                     isLoading={isLoading('resistance_calib_max_voltage')}
                     unit="V"
-                    step={0.5}
                     precision={1}
-                    min={0}
-                    max={12}
                   />
                 </FormControl>
               </HStack>
@@ -164,10 +149,7 @@ const MotorConfigStep = ({
                     onRefresh={() => handleRefresh('lock_in_spin_current')}
                     isLoading={isLoading('lock_in_spin_current')}
                     unit="A"
-                    step={1}
                     precision={1}
-                    min={0}
-                    max={50}
                   />
                 </FormControl>
 
@@ -180,10 +162,7 @@ const MotorConfigStep = ({
                     onRefresh={() => handleRefresh('phase_resistance')}
                     isLoading={isLoading('phase_resistance')}
                     unit="Ω"
-                    step={0.001}
                     precision={6}
-                    min={0}
-                    max={10}
                   />
                 </FormControl>
 

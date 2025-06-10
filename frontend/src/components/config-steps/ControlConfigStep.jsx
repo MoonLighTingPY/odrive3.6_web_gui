@@ -210,10 +210,8 @@ const ControlConfigStep = ({
                         onRefresh={() => handleRefresh('pos_gain')}
                         isLoading={isLoading('pos_gain')}
                         unit="(turns/s)/turn"
-                        step={0.1}
                         precision={3}
-                        min={0}
-                        max={100}
+
                       />
                       <Text fontSize="xs" color="blue.300" mt={1}>
                         Calculated: {calculatedGains.pos_gain.toFixed(3)}
@@ -236,10 +234,7 @@ const ControlConfigStep = ({
                       onRefresh={() => handleRefresh('vel_gain')}
                       isLoading={isLoading('vel_gain')}
                       unit="Nm [per turn/s]"
-                      step={0.001}
                       precision={6}
-                      min={0}
-                      max={10}
                     />
                     <Text fontSize="xs" color="blue.300" mt={1}>
                       Calculated: {calculatedGains.vel_gain.toFixed(6)}
@@ -261,10 +256,7 @@ const ControlConfigStep = ({
                       onRefresh={() => handleRefresh('vel_integrator_gain')}
                       isLoading={isLoading('vel_integrator_gain')}
                       unit="Nm⋅s [per turn/s]"
-                      step={0.001}
                       precision={6}
-                      min={0}
-                      max={1}
                     />
                     <Text fontSize="xs" color="blue.300" mt={1}>
                       Calculated: {calculatedGains.vel_integrator_gain.toFixed(6)}
@@ -411,10 +403,7 @@ const ControlConfigStep = ({
                       onRefresh={() => handleRefresh('vel_limit')}
                       isLoading={isLoading('vel_limit')}
                       unit={useRpm ? "RPM" : "turns/s"}
-                      step={useRpm ? 100 : 1}
                       precision={useRpm ? 0 : 2}
-                      min={0}
-                      max={useRpm ? 10000 : 100}
                     />
                   </FormControl>
 
@@ -431,10 +420,7 @@ const ControlConfigStep = ({
                       onRefresh={() => handleRefresh('vel_ramp_rate')}
                       isLoading={isLoading('vel_ramp_rate')}
                       unit={useRpm ? "RPM/s" : "turns/s²"}
-                      step={useRpm ? 100 : 1}
                       precision={useRpm ? 0 : 2}
-                      min={0}
-                      max={useRpm ? 10000 : 100}
                     />
                   </FormControl>
 
@@ -451,10 +437,7 @@ const ControlConfigStep = ({
                       onRefresh={() => handleRefresh('torque_ramp_rate')}
                       isLoading={isLoading('torque_ramp_rate')}
                       unit="Nm/s"
-                      step={0.1}
                       precision={2}
-                      min={0}
-                      max={100}
                     />
                   </FormControl>
                 </VStack>
@@ -496,10 +479,7 @@ const ControlConfigStep = ({
                       onRefresh={() => handleRefresh('inertia')}
                       isLoading={isLoading('inertia')}
                       unit="kg⋅m²"
-                      step={0.001}
                       precision={6}
-                      min={0}
-                      max={1}
                     />
                   </FormControl>
 
@@ -516,10 +496,7 @@ const ControlConfigStep = ({
                       onRefresh={() => handleRefresh('input_filter_bandwidth')}
                       isLoading={isLoading('input_filter_bandwidth')}
                       unit="Hz"
-                      step={0.1}
                       precision={2}
-                      min={0}
-                      max={1000}
                     />
                   </FormControl>
                 </VStack>

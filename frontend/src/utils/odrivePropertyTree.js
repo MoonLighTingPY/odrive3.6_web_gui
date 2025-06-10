@@ -138,12 +138,12 @@ export const odrivePropertyTree = {
     name: 'Motor Configuration Parameters',
     description: 'Motor configuration and calibration parameters',
     properties: {
-      current_lim: { name: 'Current Limit', description: 'Motor current limit (A)', writable: true, type: 'number', min: 0, max: 60, step: 0.1, decimals: 1 },
-      torque_lim: { name: 'Torque Limit', description: 'Motor torque limit (Nm)', writable: true, type: 'number', min: 0, max: 100, step: 0.1, decimals: 3 },
-      motor_type: { name: 'Motor Type', description: 'Motor type (0=HIGH_CURRENT, 1=GIMBAL)', writable: true, type: 'number', min: 0, max: 1 },
-      pole_pairs: { name: 'Pole Pairs', description: 'Number of motor pole pairs', writable: true, type: 'number', min: 1, max: 50 },
-      calibration_current: { name: 'Calibration Current', description: 'Current used for motor calibration (A)', writable: true, type: 'number', min: 1, max: 60, step: 0.1, decimals: 1 },
-      resistance_calib_max_voltage: { name: 'Resistance Calibration Max Voltage', description: 'Maximum voltage for resistance calibration (V)', writable: true, type: 'number', min: 1, max: 12, step: 0.1, decimals: 1 },
+      motor_type: { name: 'Motor Type', description: 'Motor type (0=HIGH_CURRENT, 1=GIMBAL)', writable: true, type: 'number' },
+      pole_pairs: { name: 'Pole Pairs', description: 'Number of motor pole pairs', writable: true, type: 'number', step: 1 },
+      current_lim: { name: 'Current Limit', description: 'Motor current limit (A)', writable: true, type: 'number', step: 0.1, decimals: 1 },
+      torque_lim: { name: 'Torque Limit', description: 'Motor torque limit (Nm)', writable: true, type: 'number', step: 0.1, decimals: 3 },
+      calibration_current: { name: 'Calibration Current', description: 'Current used for motor calibration (A)', writable: true, type: 'number', step: 0.1, decimals: 1 },
+      resistance_calib_max_voltage: { name: 'Resistance Calibration Max Voltage', description: 'Maximum voltage for resistance calibration (V)', writable: true, type: 'number', step: 0.1, decimals: 1 },
       phase_inductance: { name: 'Phase Inductance', description: 'Motor phase inductance (H)', writable: true, type: 'number', min: 0, max: 0.01, step: 0.000001, decimals: 6 },
       phase_resistance: { name: 'Phase Resistance', description: 'Motor phase resistance (Ω)', writable: true, type: 'number', min: 0, max: 10, step: 0.001, decimals: 3 },
       torque_constant: { name: 'Torque Constant', description: 'Motor torque constant (Nm/A)', writable: true, type: 'number', min: 0, max: 1, step: 0.001, decimals: 6 },
@@ -168,10 +168,13 @@ export const odrivePropertyTree = {
     name: 'Encoder Configuration Parameters',
     description: 'Encoder configuration and calibration parameters',
     properties: {
-      cpr: { name: 'CPR', description: 'Counts per revolution', writable: true, type: 'number', min: 1, max: 1000000, step: 1 },
-      mode: { name: 'Encoder Mode', description: 'Encoder mode (0=HALL, 1=INCREMENTAL, 2=SINCOS)', writable: true, type: 'number', min: 0, max: 2 },
+      cpr: { name: 'CPR', description: 'Counts per revolution', writable: true, type: 'number', step: 1 },
+      mode: { name: 'Encoder Mode', description: 'Encoder mode (0=HALL, 1=INCREMENTAL, 2=SINCOS)', writable: true, type: 'number' },
       use_index: { name: 'Use Index', description: 'Use encoder index signal', writable: true, type: 'boolean' },
-      bandwidth: { name: 'Bandwidth', description: 'Encoder bandwidth (Hz)', writable: true, type: 'number', min: 100, max: 10000, step: 10 },
+      bandwidth: { name: 'Bandwidth', description: 'Encoder bandwidth (Hz)', writable: true, type: 'number', step: 10 },
+      calib_scan_distance: { name: 'Scan Distance', description: 'Encoder calibration scan distance', writable: true, type: 'number', step: 1000 },
+      calib_scan_omega: { name: 'Scan Omega', description: 'Encoder calibration scan speed (rad/s)', writable: true, type: 'number', step: 0.1, decimals: 3 },
+      calib_range: { name: 'Calib Range', description: 'Encoder calibration range tolerance', writable: true, type: 'number', step: 0.001, decimals: 6 },
     }
   },
 
@@ -192,10 +195,13 @@ export const odrivePropertyTree = {
     properties: {
       control_mode: { name: 'Control Mode', description: 'Control mode (0=VOLTAGE, 1=TORQUE, 2=VELOCITY, 3=POSITION)', writable: true, type: 'number', min: 0, max: 3 },
       input_mode: { name: 'Input Mode', description: 'Input mode (0=INACTIVE, 1=PASSTHROUGH, 2=VEL_RAMP, 3=POS_FILTER, 4=MIX_CHANNELS, 5=TRAP_TRAJ, 6=TORQUE_RAMP, 7=MIRROR)', writable: true, type: 'number', min: 0, max: 7 },
-      vel_limit: { name: 'Velocity Limit', description: 'Maximum velocity (counts/s)', writable: true, type: 'number', min: 0, max: 1000000, step: 1 },
-      pos_gain: { name: 'Position Gain', description: 'Position controller proportional gain', writable: true, type: 'number', min: 0, max: 1000, step: 0.1, decimals: 3 },
-      vel_gain: { name: 'Velocity Gain', description: 'Velocity controller proportional gain', writable: true, type: 'number', min: 0, max: 10, step: 0.001, decimals: 6 },
-      vel_integrator_gain: { name: 'Velocity Integrator Gain', description: 'Velocity controller integral gain', writable: true, type: 'number', min: 0, max: 10, step: 0.001, decimals: 6 },
+      vel_limit: { name: 'Velocity Limit', description: 'Maximum velocity (counts/s)', writable: true, type: 'number', step: 1 },
+      pos_gain: { name: 'Position Gain', description: 'Position controller proportional gain', writable: true, type: 'number', step: 0.1, decimals: 3 },
+      vel_gain: { name: 'Velocity Gain', description: 'Velocity controller proportional gain', writable: true, type: 'number', step: 0.001, decimals: 6 },
+      vel_integrator_gain: { name: 'Velocity Integrator Gain', description: 'Velocity controller integral gain', writable: true, type: 'number', step: 0.001, decimals: 6 },
+      torque_ramp_rate: { name: 'Torque Ramp Rate', description: 'Torque ramp rate (Nm/s)', writable: true, type: 'number', step: 0.001, decimals: 6 },
+      inertia: { name: 'Inertia', description: 'System inertia (kg⋅m²)', writable: true, type: 'number', step: 0.001, decimals: 6 },
+      input_filter_bandwidth: { name: 'Input Filter Bandwidth', description: 'Input filter bandwidth (Hz)', writable: true, type: 'number', step: 0.1, decimals: 3 },
     }
   }
 }
