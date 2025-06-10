@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 from typing import Dict, Any
-from flask import Flask, send_from_directory
+from flask import Flask, send_from_directory, request
 from flask_cors import CORS
 from collections import defaultdict
 
@@ -30,8 +30,9 @@ if hasattr(sys, '_MEIPASS'):
     static_folder = os.path.join(sys._MEIPASS, 'static')
     template_folder = os.path.join(sys._MEIPASS, 'static')
 else:
-    static_folder = '../frontend/dist'
-    template_folder = '../frontend/dist'
+    # Fix the path - we're now in backend/app/, so we need to go up two levels to reach frontend
+    static_folder = '../../frontend/dist'
+    template_folder = '../../frontend/dist'
 
 app = Flask(__name__, 
             static_folder=static_folder,
@@ -58,7 +59,8 @@ def index():
         if hasattr(sys, '_MEIPASS'):
             return send_from_directory(app.static_folder, 'index.html')
         else:
-            return send_from_directory('../frontend/dist', 'index.html')
+            # Fix the path for development mode
+            return send_from_directory('../../frontend/dist', 'index.html')
     except Exception as e:
         return f"Error serving index: {e}", 500
 
@@ -68,7 +70,8 @@ def catch_all(path):
         if hasattr(sys, '_MEIPASS'):
             file_path = os.path.join(app.static_folder, path)
         else:
-            file_path = os.path.join('../frontend/dist', path)
+            # Fix the path for development mode
+            file_path = os.path.join('../../frontend/dist', path)
             
         if os.path.exists(file_path):
             return send_from_directory(os.path.dirname(file_path), os.path.basename(file_path))
@@ -92,6 +95,15 @@ init_device_routes(odrive_manager)
 init_config_routes(odrive_manager)
 init_calibration_routes(odrive_manager)
 init_telemetry_routes(odrive_manager)
+
+@app.after_request
+def after_request(response):
+    # Add headers to prevent caching of telemetry data
+    if request.path.startswith('/api/odrive/telemetry'):
+        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    return response
 
 if __name__ == '__main__':
     print("🚀 Starting ODrive GUI Backend...")
