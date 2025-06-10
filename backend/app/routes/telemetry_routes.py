@@ -101,45 +101,89 @@ def get_selective_telemetry():
         specific_paths = data.get('paths', [])
         
         if mode == 'charts' and specific_paths:
-            # Chart mode - only fetch specific properties for maximum performance
-            result = {'device': {}}
-            
-            # Always include vbus_voltage for health check
+            # Chart mode - get pre-computed telemetry data and extract requested paths
             try:
-                vbus_result = odrive_manager.execute_command('odrv0.vbus_voltage')
-                if 'result' in vbus_result and 'error' not in vbus_result:
-                    if vbus_result['result'] <= 0:
-                        return jsonify({"error": "Device disconnected - no power detected"}), 404
-                    result['device']['vbus_voltage'] = vbus_result['result']
-                else:
-                    return jsonify({"error": "Device disconnected during health check"}), 404
-            except Exception as e:
-                logger.warning(f"Health check failed: {e}")
-                return jsonify({"error": "Device disconnected"}), 404
-            
-            # Fetch each requested path
-            for path in specific_paths:
-                try:
-                    # Convert frontend path to ODrive command
-                    odrv_path = f'odrv0.{path}'
-                    logger.debug(f"Fetching chart data for path: {odrv_path}")
-                    
-                    value = odrive_manager.execute_command(odrv_path)
-                    if 'result' in value and 'error' not in value:
-                        # Set the nested property in the result using the original path
-                        set_nested_property(result['device'], path, value['result'])
-                        logger.debug(f"Successfully fetched {path}: {value['result']}")
-                    else:
-                        logger.warning(f"Failed to get path {path}: {value.get('error', 'Unknown error')}")
+                # Get all telemetry data at once (more efficient than individual commands)
+                full_telemetry = get_high_frequency_telemetry(odrive_manager.odrv)
+                if not full_telemetry or not full_telemetry.get('device'):
+                    return jsonify({"error": "Failed to get telemetry data"}), 404
+                
+                # Extract only the requested paths from the full telemetry data
+                result = {'device': {}}
+                
+                # ALWAYS include vbus_voltage for health check, regardless of what's requested
+                result['device']['vbus_voltage'] = full_telemetry['device'].get('vbus_voltage', 0)
+                
+                for path in specific_paths:
+                    try:
+                        # Navigate through the telemetry data to find the requested value
+                        path_parts = path.split('.')
+                        current = full_telemetry['device']
                         
-                except Exception as e:
-                    logger.warning(f"Exception getting path {path}: {e}")
-                    
-            # Add timestamp for charts
-            result['timestamp'] = time.time() * 1000
-            
-            logger.debug(f"Chart result: {result}")
-            return jsonify(sanitize_for_json(result))
+                        # Special handling for featured.telemetry paths
+                        if path.startswith('featured.telemetry.'):
+                            property_name = path.split('.')[-1]  # Get the last part (e.g., 'vbus_voltage')
+                            
+                            # Map featured properties to their actual locations in telemetry data
+                            if property_name == 'vbus_voltage':
+                                value = current.get('vbus_voltage')
+                            elif property_name == 'ibus':
+                                value = current.get('ibus')
+                            elif property_name == 'axis0_error':
+                                value = current.get('axis0', {}).get('error')
+                            elif property_name == 'axis0_current_state':
+                                value = current.get('axis0', {}).get('current_state')
+                            elif property_name == 'motor_error':
+                                value = current.get('axis0', {}).get('motor', {}).get('error')
+                            elif property_name == 'encoder_error':
+                                value = current.get('axis0', {}).get('encoder', {}).get('error')
+                            elif property_name == 'controller_error':
+                                value = current.get('axis0', {}).get('controller', {}).get('error')
+                            elif property_name == 'pos_estimate':
+                                value = current.get('axis0', {}).get('encoder', {}).get('pos_estimate')
+                            elif property_name == 'vel_estimate':
+                                value = current.get('axis0', {}).get('encoder', {}).get('vel_estimate')
+                            elif property_name == 'Iq_setpoint':
+                                value = current.get('axis0', {}).get('motor', {}).get('current_control', {}).get('Iq_setpoint')
+                            elif property_name == 'Iq_measured':
+                                value = current.get('axis0', {}).get('motor', {}).get('current_control', {}).get('Iq_measured')
+                            elif property_name == 'pos_setpoint':
+                                value = current.get('axis0', {}).get('controller', {}).get('pos_setpoint')
+                            elif property_name == 'vel_setpoint':
+                                value = current.get('axis0', {}).get('controller', {}).get('vel_setpoint')
+                            elif property_name == 'torque_setpoint':
+                                value = current.get('axis0', {}).get('controller', {}).get('torque_setpoint')
+                            else:
+                                value = None
+                                
+                            if value is not None:
+                                set_nested_property(result['device'], path, value)
+                        else:
+                            # For non-featured paths, navigate normally
+                            for part in path_parts:
+                                if isinstance(current, dict) and part in current:
+                                    current = current[part]
+                                else:
+                                    current = None
+                                    break
+                            
+                            if current is not None:
+                                set_nested_property(result['device'], path, current)
+                                
+                    except Exception as e:
+                        logger.warning(f"Exception extracting path {path}: {e}")
+                        
+                # Add timestamp for charts
+                result['timestamp'] = full_telemetry.get('timestamp', time.time() * 1000)
+                
+                # Debug logging
+                logger.debug(f"Chart result vbus_voltage: {result['device'].get('vbus_voltage')}")
+                
+                return jsonify(sanitize_for_json(result))
+                
+            except Exception as e:
+                logger.error(f"Error getting chart telemetry: {e}")
+                return jsonify({"error": "Device disconnected"}), 404
             
         elif mode == 'dashboard':
             # Dashboard mode - get essential live data only
