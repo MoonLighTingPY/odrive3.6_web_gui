@@ -188,18 +188,6 @@ const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
 
   return (
     <VStack spacing={4} align="stretch" h="100%">
-      {/* Header */}
-      <Card bg="gray.800" variant="elevated" flexShrink={0}>
-        <CardHeader>
-          <HStack justify="space-between">
-            <Heading size="md" color="white">Live Charts</Heading>
-            <Badge colorScheme={selectedProperties.length > 0 ? 'green' : 'gray'}>
-              {selectedProperties.length} properties
-            </Badge>
-          </HStack>
-        </CardHeader>
-      </Card>
-
       {/* Charts Display */}
       <Box flex="1" minH="0">
         {selectedProperties.length === 0 ? (

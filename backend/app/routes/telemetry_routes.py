@@ -4,10 +4,10 @@ from ..utils.utils import sanitize_for_json
 from ..odrive_telemetry_config import (
     get_high_frequency_telemetry,
     get_configuration_data,
-    get_full_device_state
+    get_full_device_state,
+    get_dashboard_telemetry
 )
 import time
-from ..odrive_telemetry_config import get_dashboard_telemetry
 
 logger = logging.getLogger(__name__)
 telemetry_bp = Blueprint('telemetry', __name__, url_prefix='/api/odrive')
@@ -120,46 +120,22 @@ def get_selective_telemetry():
                         path_parts = path.split('.')
                         current = full_telemetry['device']
                         
-                        # Special handling for featured.telemetry paths
-                        if path.startswith('featured.telemetry.'):
-                            property_name = path.split('.')[-1]  # Get the last part (e.g., 'vbus_voltage')
-                            
-                            # Map featured properties to their actual locations in telemetry data
-                            if property_name == 'vbus_voltage':
-                                value = current.get('vbus_voltage')
-                            elif property_name == 'ibus':
-                                value = current.get('ibus')
-                            elif property_name == 'axis0_error':
-                                value = current.get('axis0', {}).get('error')
-                            elif property_name == 'axis0_current_state':
-                                value = current.get('axis0', {}).get('current_state')
-                            elif property_name == 'motor_error':
-                                value = current.get('axis0', {}).get('motor', {}).get('error')
-                            elif property_name == 'encoder_error':
-                                value = current.get('axis0', {}).get('encoder', {}).get('error')
-                            elif property_name == 'controller_error':
-                                value = current.get('axis0', {}).get('controller', {}).get('error')
-                            elif property_name == 'pos_estimate':
-                                value = current.get('axis0', {}).get('encoder', {}).get('pos_estimate')
-                            elif property_name == 'vel_estimate':
-                                value = current.get('axis0', {}).get('encoder', {}).get('vel_estimate')
-                            elif property_name == 'Iq_setpoint':
-                                value = current.get('axis0', {}).get('motor', {}).get('current_control', {}).get('Iq_setpoint')
-                            elif property_name == 'Iq_measured':
-                                value = current.get('axis0', {}).get('motor', {}).get('current_control', {}).get('Iq_measured')
-                            elif property_name == 'pos_setpoint':
-                                value = current.get('axis0', {}).get('controller', {}).get('pos_setpoint')
-                            elif property_name == 'vel_setpoint':
-                                value = current.get('axis0', {}).get('controller', {}).get('vel_setpoint')
-                            elif property_name == 'torque_setpoint':
-                                value = current.get('axis0', {}).get('controller', {}).get('torque_setpoint')
+                        # Handle system.* paths
+                        if path.startsWith('system.'):
+                            system_prop = path.replace('system.', '')
+                            if system_prop in ['dc_bus_overvoltage_trip_level', 'dc_bus_undervoltage_trip_level', 
+                                             'dc_max_positive_current', 'dc_max_negative_current', 
+                                             'enable_brake_resistor', 'brake_resistance']:
+                                # These are config properties
+                                value = current.get('config', {}).get(system_prop)
                             else:
-                                value = None
-                                
+                                # These are direct device properties
+                                value = current.get(system_prop)
+                            
                             if value is not None:
                                 set_nested_property(result['device'], path, value)
                         else:
-                            # For non-featured paths, navigate normally
+                            # For axis paths, navigate normally
                             for part in path_parts:
                                 if isinstance(current, dict) and part in current:
                                     current = current[part]
@@ -175,9 +151,6 @@ def get_selective_telemetry():
                         
                 # Add timestamp for charts
                 result['timestamp'] = full_telemetry.get('timestamp', time.time() * 1000)
-                
-                # Debug logging
-                logger.debug(f"Chart result vbus_voltage: {result['device'].get('vbus_voltage')}")
                 
                 return jsonify(sanitize_for_json(result))
                 
