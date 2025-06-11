@@ -22,10 +22,6 @@ import {
   Switch,
   Button,
   Select,
-  FormControl,
-  FormLabel,
-  Alert,
-  AlertIcon,
   Checkbox,
   Slider,
   SliderTrack,
@@ -33,7 +29,7 @@ import {
   SliderThumb,
   SliderMark,
 } from '@chakra-ui/react'
-import { EditIcon, CheckIcon, CloseIcon, SearchIcon, InfoIcon } from '@chakra-ui/icons'
+import { EditIcon, CheckIcon, CloseIcon, SearchIcon } from '@chakra-ui/icons'
 import { odrivePropertyTree } from '../../utils/odrivePropertyTree'
 
 const PropertyTree = ({ 
@@ -47,8 +43,7 @@ const PropertyTree = ({
 }) => {
   const [editingProperty, setEditingProperty] = useState(null)
   const [editValue, setEditValue] = useState('')
-  const [expandedSections, setExpandedSections] = useState(new Set(['featured', 'featured.telemetry', 'featured.control']))
-  const [viewMode, setViewMode] = useState('all')
+  const [expandedSections, setExpandedSections] = useState(new Set(Object.keys(odrivePropertyTree)))
   const [sliderValues, setSliderValues] = useState({})
 
   const startEditing = (path, currentValue) => {
@@ -118,67 +113,20 @@ const PropertyTree = ({
       return undefined
     }
     
-    // Check if this is a featured property with a custom path first
-    const findPropertyPath = (tree, targetPath) => {
-      for (const [sectionName, section] of Object.entries(tree)) {
-        if (section.properties) {
-          for (const [propName, prop] of Object.entries(section.properties)) {
-            const currentPath = sectionName.startsWith('featured') ? `${sectionName}.${propName}` : 
-                              sectionName === 'system' ? `system.${propName}` : `${sectionName}.${propName}`
-            if (currentPath === targetPath && prop.path) {
-              return prop.path
-            }
-          }
-        }
-      }
-      return targetPath
-    }
-    
-    // Get the actual path (this might be a calculated path)
-    const actualPath = findPropertyPath(odrivePropertyTree, path)
-    
-    // Handle calculated properties (check the actual path, not the original path)
-    if (actualPath.startsWith('calculated.')) {
-      const calcType = actualPath.replace('calculated.', '')
-      if (calcType === 'electrical_power') {
-        const vbus = odriveState.device.vbus_voltage
-        const ibus = odriveState.device.ibus || 0
-        return vbus && ibus ? vbus * ibus : 0
-      } else if (calcType === 'mechanical_power') {
-        // Calculate mechanical power from torque and velocity
-        const torque_setpoint = odriveState.device.axis0?.controller?.torque_setpoint || 0
-        const vel_estimate = odriveState.device.axis0?.encoder?.vel_estimate || 0
-        const TORQUE_CONSTANT = odriveState.device.axis0?.motor?.config?.torque_constant || 0
-        
-        // P_mech = Torque * Angular_Velocity (in rad/s)
-        // Convert turns/s to rad/s: rad/s = turns/s * 2π
-        const angular_velocity = vel_estimate * 2 * Math.PI
-        
-        // If torque constant is available, calculate actual mechanical torque
-        // Otherwise use torque setpoint directly (assuming it's already in Nm)
-        const actual_torque = TORQUE_CONSTANT > 0 ? 
-          (odriveState.device.axis0?.motor?.current_control?.Iq_setpoint || 0) * TORQUE_CONSTANT :
-          torque_setpoint
-          
-        return actual_torque * angular_velocity
-      }
-      return undefined
-    }
-    
     // Handle normal path resolution
     let fullPath
-    if (actualPath.startsWith('system.')) {
-      const systemProp = actualPath.replace('system.', '')
+    if (path.startsWith('system.')) {
+      const systemProp = path.replace('system.', '')
       if (['dc_bus_overvoltage_trip_level', 'dc_bus_undervoltage_trip_level', 'dc_max_positive_current', 
            'dc_max_negative_current', 'enable_brake_resistor', 'brake_resistance'].includes(systemProp)) {
         fullPath = `device.config.${systemProp}`
       } else {
         fullPath = `device.${systemProp}`
       }
-    } else if (actualPath.startsWith('axis0.') || actualPath.startsWith('axis1.')) {
-      fullPath = `device.${actualPath}`
+    } else if (path.startsWith('axis0.') || path.startsWith('axis1.')) {
+      fullPath = `device.${path}`
     } else {
-      fullPath = `device.${actualPath}`
+      fullPath = `device.${path}`
     }
     
     const parts = fullPath.split('.')
@@ -194,37 +142,6 @@ const PropertyTree = ({
     
     return current
   }, [odriveState])
-
-  const hasError = useCallback((sectionName) => {
-    if (!odriveState || !odriveState.device) return false
-    
-    const sectionData = odriveState.device[sectionName] || odriveState.device
-    
-    // Check for any error properties in this section
-    const checkForErrors = (obj, prefix = '') => {
-      if (!obj || typeof obj !== 'object') return false
-      
-      for (const [key, value] of Object.entries(obj)) {
-        if (key === 'error' && value && value !== 0) {
-          return true
-        }
-        if (typeof value === 'object' && value !== null) {
-          if (checkForErrors(value, `${prefix}${key}.`)) {
-            return true
-          }
-        }
-      }
-      return false
-    }
-    
-    return checkForErrors(sectionData)
-  }, [odriveState])
-
-  const errorCount = useMemo(() => {
-    if (!odriveState || !odriveState.device) return 0
-    
-    return Object.keys(odrivePropertyTree).filter(hasError).length
-  }, [odriveState, hasError])
 
   const isPropertyChartable = (value, prop) => {
     return typeof value === 'number' && !prop?.name?.toLowerCase().includes('error')
@@ -245,11 +162,11 @@ const PropertyTree = ({
     }
     
     // Default ranges based on property type
-    if (prop.path?.includes('input_pos')) {
+    if (prop.name?.includes('input_pos')) {
       return { min: -10, max: 10, step: 0.1 }
-    } else if (prop.path?.includes('input_vel')) {
+    } else if (prop.name?.includes('input_vel')) {
       return { min: -50, max: 50, step: 0.5 }
-    } else if (prop.path?.includes('input_torque')) {
+    } else if (prop.name?.includes('input_torque')) {
       return { min: -10, max: 10, step: 0.1 }
     }
     
@@ -259,33 +176,15 @@ const PropertyTree = ({
   const handleSliderChange = async (displayPath, value) => {
     setSliderValues(prev => ({ ...prev, [displayPath]: value }))
     
-    // Find the actual property to get the correct API path
-    const findProperty = (tree, targetPath) => {
-      for (const [sectionName, section] of Object.entries(tree)) {
-        if (section.properties) {
-          for (const [propName, prop] of Object.entries(section.properties)) {
-            const currentPath = sectionName.startsWith('featured') ? `${sectionName}.${propName}` : 
-                              sectionName === 'system' ? `system.${propName}` : `${sectionName}.${propName}`
-            if (currentPath === targetPath) {
-              return { prop, actualPath: prop.path || targetPath }
-            }
-          }
-        }
-      }
-      return { prop: null, actualPath: targetPath }
-    }
-    
-    const { actualPath } = findProperty(odrivePropertyTree, displayPath)
-    
     // Build device path for API call
     let devicePath
-    if (actualPath.startsWith('system.')) {
-      const systemProp = actualPath.replace('system.', '')
+    if (displayPath.startsWith('system.')) {
+      const systemProp = displayPath.replace('system.', '')
       devicePath = `device.config.${systemProp}`
-    } else if (actualPath.startsWith('axis0.') || actualPath.startsWith('axis1.')) {
-      devicePath = `device.${actualPath}`
+    } else if (displayPath.startsWith('axis0.') || displayPath.startsWith('axis1.')) {
+      devicePath = `device.${displayPath}`
     } else {
-      devicePath = `device.${actualPath}`
+      devicePath = `device.${displayPath}`
     }
     
     try {
@@ -385,7 +284,7 @@ const PropertyTree = ({
                 
                 <HStack spacing={4} align="center">
                   <Text fontSize="xs" color="gray.400" fontFamily="mono">
-                    {prop.path || displayPath}
+                    {displayPath}
                   </Text>
                   {prop.min !== undefined && prop.max !== undefined && (
                     <Text fontSize="xs" color="gray.500">
@@ -567,11 +466,10 @@ const PropertyTree = ({
     )
   }
 
-  // Update filteredTree to ensure featured sections appear first
+  // Apply search filter
   const filteredTree = useMemo(() => {
     let filtered = { ...odrivePropertyTree }
     
-    // Apply search filter
     if (searchFilter) {
       const searchFiltered = {}
       
@@ -610,172 +508,32 @@ const PropertyTree = ({
       filtered = searchFiltered
     }
     
-    // Apply view mode filter (same as before)
-    if (viewMode === 'writable') {
-      const writableFiltered = {}
-      
-      Object.entries(filtered).forEach(([sectionName, section]) => {
-        const writableSection = { ...section, properties: {} }
-        let hasWritableProps = false
-        
-        Object.entries(section.properties).forEach(([propName, prop]) => {
-          if (!prop || typeof prop !== 'object') return
-          
-          if (prop.writable) {
-            writableSection.properties[propName] = prop
-            hasWritableProps = true
-          }
-        })
-        
-        if (hasWritableProps) {
-          writableFiltered[sectionName] = writableSection
-        }
-      })
-      
-      filtered = writableFiltered
-    } else if (viewMode === 'chartable') {
-      const chartableFiltered = {}
-      
-      Object.entries(filtered).forEach(([sectionName, section]) => {
-        const chartableSection = { ...section, properties: {} }
-        let hasChartableProps = false
-        
-        Object.entries(section.properties).forEach(([propName, prop]) => {
-          if (!prop || typeof prop !== 'object') return
-          
-          const isNumericType = prop.type === 'number'
-          const isReadOnly = !prop.writable
-          const isNotConfigParam = !propName.includes('config') && 
-                                  !propName.includes('limit') && 
-                                  !propName.includes('gain') && 
-                                  !propName.includes('bandwidth') &&
-                                  !propName.includes('pole_pairs') &&
-                                  !propName.includes('motor_type') &&
-                                  !propName.includes('calibration') &&
-                                  !propName.includes('resistance') &&
-                                  !propName.includes('inductance') &&
-                                  !propName.includes('constant') &&
-                                  !propName.includes('cpr') &&
-                                  !propName.includes('mode') &&
-                                  !propName.includes('use_index') &&
-                                  !propName.includes('control_mode') &&
-                                  !propName.includes('input_mode') &&
-                                  !sectionName.includes('config')
-          
-          const isLiveTelemetry = propName.includes('measured') ||
-                                 propName.includes('estimate') ||
-                                 propName.includes('setpoint') ||
-                                 propName.includes('current_state') ||
-                                 propName.includes('voltage') ||
-                                 propName.includes('current') ||
-                                 propName.includes('temperature') ||
-                                 propName.includes('pos_') ||
-                                 propName.includes('vel_') ||
-                                 propName.includes('phase') ||
-                                 propName.includes('hall_state') ||
-                                 propName.includes('vbus') ||
-                                 propName.includes('ibus') ||
-                                 propName.includes('power')
-          
-          const isChartableProperty = isNumericType && (isReadOnly || isLiveTelemetry) && 
-                                     (isNotConfigParam || isLiveTelemetry) &&
-                                     !propName.includes('error')
-          
-          if (isChartableProperty) {
-            chartableSection.properties[propName] = prop
-            hasChartableProps = true
-          }
-        })
-        
-        if (hasChartableProps) {
-          chartableFiltered[sectionName] = chartableSection
-        }
-      })
-      
-      filtered = chartableFiltered
-    } else if (viewMode === 'errors') {
-      const errorFiltered = {}
-      
-      Object.entries(filtered).forEach(([sectionName, section]) => {
-        if (hasError(sectionName)) {
-          errorFiltered[sectionName] = section
-        }
-      })
-      
-      filtered = errorFiltered
-    }
-    
-    // Ensure featured sections are at the top
-    const orderedSections = {}
-    const featuredSections = ['featured', 'featured.telemetry', 'featured.control']
-    
-    // Add featured sections first
-    featuredSections.forEach(sectionName => {
-      if (filtered[sectionName]) {
-        orderedSections[sectionName] = filtered[sectionName]
-      }
-    })
-    
-    // Add remaining sections
-    Object.entries(filtered).forEach(([sectionName, section]) => {
-      if (!featuredSections.includes(sectionName)) {
-        orderedSections[sectionName] = section
-      }
-    })
-    
-    return orderedSections
-  }, [searchFilter, viewMode, hasError])
+    return filtered
+  }, [searchFilter])
 
   return (
     <VStack spacing={4} align="stretch" h="100%">
-      {/* Search and Filter Controls */}
+      {/* Search Controls */}
       <Card bg="gray.800" variant="elevated">
         <CardBody>
-          <VStack spacing={3}>
-            <HStack>
-              <SearchIcon color="gray.400" />
-              <Input
-                value={searchFilter}
-                onChange={(e) => setSearchFilter(e.target.value)}
-                placeholder="Search properties..."
-                bg="gray.700"
-                border="1px solid"
-                borderColor="gray.600"
-                color="white"
-                flex="1"
-              />
-              {searchFilter && (
-                <Button size="sm" onClick={() => setSearchFilter('')}>
-                  Clear
-                </Button>
-              )}
-            </HStack>
-            
-            <HStack w="100%">
-              <FormControl>
-                <FormLabel fontSize="sm" color="gray.300">View Mode:</FormLabel>
-                <Select
-                  value={viewMode}
-                  onChange={(e) => setViewMode(e.target.value)}
-                  size="sm"
-                  bg="gray.700"
-                  color="white"
-                >
-                  <option value="all">All Properties</option>
-                  <option value="writable">Writable Only</option>
-                  <option value="chartable">Chartable Only</option>
-                  <option value="errors">Errors Only</option>
-                </Select>
-              </FormControl>
-              
-              {errorCount > 0 && (
-                <Alert status="error" variant="left-accent" size="sm">
-                  <AlertIcon />
-                  <Text fontSize="sm">{errorCount} section(s) with errors</Text>
-                </Alert>
-              )}
-            </HStack>
-          </VStack>
+          <HStack>
+            <SearchIcon color="gray.400" />
+            <Input
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
+              placeholder="Search properties..."
+              bg="gray.700"
+              border="1px solid"
+              borderColor="gray.600"
+              color="white"
+              flex="1"
+            />
+            {searchFilter && (
+              <Button size="sm" onClick={() => setSearchFilter('')}>
+                Clear
+              </Button>
+            )}
+          </HStack>
         </CardBody>
       </Card>
 
@@ -806,29 +564,19 @@ const PropertyTree = ({
                   <AccordionButton
                     onClick={() => toggleSection(sectionName)}
                     _expanded={{ bg: 'gray.700' }}
-                    bg={sectionName.startsWith('featured') ? 'orange.800' : 'gray.750'}
+                    bg="gray.750"
                     borderRadius="md"
                     mb={2}
-                    _hover={{ bg: sectionName.startsWith('featured') ? 'orange.700' : 'gray.700' }}
+                    _hover={{ bg: 'gray.700' }}
                   >
                     <Box flex="1" textAlign="left">
                       <HStack>
                         <Text fontWeight="bold" color="white" fontSize="lg">
                           {section.name}
                         </Text>
-                        <Badge colorScheme={sectionName.startsWith('featured') ? 'orange' : 'blue'} variant="solid">
+                        <Badge colorScheme="blue" variant="solid">
                           {Object.keys(section.properties).length}
                         </Badge>
-                        {sectionName.startsWith('featured') && (
-                          <Badge colorScheme="yellow" variant="outline">
-                            FEATURED
-                          </Badge>
-                        )}
-                        {hasError(sectionName) && (
-                          <Badge colorScheme="red">
-                            ERROR
-                          </Badge>
-                        )}
                       </HStack>
                     </Box>
                     <AccordionIcon />
@@ -836,11 +584,9 @@ const PropertyTree = ({
                   <AccordionPanel pb={4} px={0}>
                     <VStack spacing={3} align="stretch">
                       {Object.entries(section.properties).map(([propName, prop]) => {
-                        const displayPath = sectionName.startsWith('featured') 
-                          ? `${sectionName}.${propName}`
-                          : sectionName === 'system' 
-                            ? `system.${propName}` 
-                            : `${sectionName}.${propName}`
+                        const displayPath = sectionName === 'system' 
+                          ? `system.${propName}` 
+                          : `${sectionName}.${propName}`
                         const value = getValueFromState(displayPath)
                         
                         return renderProperty(prop, value, displayPath)
