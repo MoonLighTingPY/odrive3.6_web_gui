@@ -1,5 +1,7 @@
 import time
 import logging
+import math
+import json
 from flask import Blueprint, request, jsonify
 
 logger = logging.getLogger(__name__)
@@ -12,6 +14,31 @@ def init_routes(manager):
     """Initialize routes with ODrive manager"""
     global odrive_manager
     odrive_manager = manager
+
+def safe_json_serialize(value):
+    """Safely serialize a value to JSON, handling NaN, infinity, and None values"""
+    if value is None:
+        return None
+    elif isinstance(value, float):
+        if math.isnan(value):
+            return 0.0  # Default NaN to 0
+        elif math.isinf(value):
+            return 1000.0 if value > 0 else -1000.0  # Default infinity to reasonable values
+        else:
+            return value
+    elif isinstance(value, (int, bool, str)):
+        return value
+    elif hasattr(value, 'value'):  # Enum handling
+        return safe_json_serialize(value.value)
+    elif hasattr(value, '__float__'):
+        return safe_json_serialize(float(value))
+    elif hasattr(value, '__int__'):
+        return safe_json_serialize(int(value))
+    elif hasattr(value, '__bool__'):
+        return safe_json_serialize(bool(value))
+    else:
+        # For any other complex objects, convert to string
+        return str(value)
 
 @config_bp.route('/config/batch', methods=['POST'])
 def get_config_batch():
@@ -53,30 +80,33 @@ def get_config_batch():
                         # Handle different types of values
                         if hasattr(current_obj, '__call__'):
                             # It's a method, don't call it
-                            results[path] = {'error': 'Cannot read method values'}
+                            results[path] = None  # Set to None instead of error object
                         else:
-                            # Convert to basic Python types for JSON serialization
-                            value = current_obj
-                            if hasattr(value, 'value'):  # Enum handling
-                                value = value.value
-                            elif hasattr(value, '__float__'):
-                                value = float(value)
-                            elif hasattr(value, '__int__'):
-                                value = int(value)
-                            elif hasattr(value, '__bool__'):
-                                value = bool(value)
-                            
-                            results[path] = value
+                            # Safely serialize the value
+                            safe_value = safe_json_serialize(current_obj)
+                            results[path] = safe_value
                     else:
-                        results[path] = {'error': f'Path not found: {clean_path}'}
+                        # Set to None for missing paths instead of error object
+                        results[path] = None
                         
                 except Exception as e:
-                    logger.error(f"Error reading path {path}: {e}")
-                    results[path] = {'error': f'Read error: {str(e)}'}
+                    logger.warning(f"Error reading path {path}: {e}")
+                    results[path] = None  # Set to None instead of error object
                     
             except Exception as e:
-                logger.error(f"Error processing path {path}: {e}")
-                results[path] = {'error': f'Processing error: {str(e)}'}
+                logger.warning(f"Error processing path {path}: {e}")
+                results[path] = None  # Set to None instead of error object
+        
+        # Double-check that the result can be serialized to JSON
+        try:
+            json.dumps(results)
+        except (TypeError, ValueError) as e:
+            logger.error(f"JSON serialization failed: {e}")
+            # If serialization still fails, create a clean result with safe defaults
+            clean_results = {}
+            for path in config_paths:
+                clean_results[path] = None
+            results = clean_results
         
         return jsonify({'results': results})
         

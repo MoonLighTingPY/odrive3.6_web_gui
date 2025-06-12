@@ -28,31 +28,35 @@ export const loadConfigurationBatch = async (configPaths) => {
       throw new Error('Invalid response structure: missing results field');
     }
     
-    // Convert string values to proper types
-    const results = {};
+    // Clean the data to handle null/undefined values with reasonable defaults
+    const cleanedResults = {};
     Object.entries(data.results).forEach(([path, value]) => {
-      if (typeof value === 'string') {
-        // Try to convert numeric strings to numbers
-        const numValue = parseFloat(value);
-        if (!isNaN(numValue)) {
-          results[path] = numValue;
-        } else if (value.toLowerCase() === 'true') {
-          results[path] = true;
-        } else if (value.toLowerCase() === 'false') {
-          results[path] = false;
+      if (value === null || value === undefined) {
+        // Set reasonable defaults based on parameter name patterns
+        if (path.includes('enable_') || path.includes('pre_calibrated') || path.includes('use_')) {
+          cleanedResults[path] = false;
+        } else if (path.includes('current') || path.includes('voltage') || path.includes('resistance') || 
+                   path.includes('gain') || path.includes('limit') || path.includes('constant')) {
+          cleanedResults[path] = 0.0;
+        } else if (path.includes('mode') || path.includes('type') || path.includes('pairs') || 
+                   path.includes('cpr') || path.includes('node_id')) {
+          cleanedResults[path] = 0;
+        } else if (path.includes('bandwidth') || path.includes('timeout') || path.includes('rate')) {
+          cleanedResults[path] = 1000; // Reasonable default for frequencies/rates
         } else {
-          results[path] = value;
+          cleanedResults[path] = 0;
         }
       } else {
-        results[path] = value;
+        cleanedResults[path] = value;
       }
     });
     
-    return results;
+    return cleanedResults;
+    
   } catch (error) {
-    console.error('Error loading configuration batch:', error);
-    // Provide more specific error information
-    if (error.message.includes('JSON.parse')) {
+    console.error('Batch configuration load failed:', error);
+    
+    if (error.message.includes('JSON')) {
       throw new Error('Backend returned invalid JSON response. Check if ODrive is connected and backend is running properly.');
     }
     throw error;

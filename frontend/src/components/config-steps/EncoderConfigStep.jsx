@@ -240,18 +240,7 @@ const EncoderConfigStep = ({
                 <Text fontWeight="bold" color="purple.300" mb={2} fontSize="sm">Advanced Settings</Text>
                 <VStack spacing={2} align="stretch">
 
-                  <HStack spacing={2}>
-                    <Switch
-                      isChecked={encoderConfig.hall_polarity_calibrated}
-                      onChange={(e) => handleConfigChange('hall_polarity_calibrated', e.target.checked)}
-                      colorScheme="odrive"
-                      size="sm"
-                    />
-                    <FormLabel color="white" mb={0} fontSize="xs">Hall Polarity Calibrated</FormLabel>
-                    <Tooltip label="Indicates if hall polarity calibration has been completed.">
-                      <Icon as={InfoIcon} color="gray.400" boxSize={3} />
-                    </Tooltip>
-                  </HStack>
+
 
                   <HStack spacing={2}>
                     <Switch
