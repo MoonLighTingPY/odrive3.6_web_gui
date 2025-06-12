@@ -58,10 +58,12 @@ const LiveCharts = ({ selectedProperties }) => {
   // Use the new charts telemetry hook
   useChartsTelemetry(selectedProperties, handleChartData, 1)
 
-  // Clear data when properties change
+  // Only clear data when ALL properties are removed (not when adding new ones)
   useEffect(() => {
-    setChartData([])
-  }, [selectedProperties])
+    if (selectedProperties.length === 0) {
+      setChartData([])
+    }
+  }, [selectedProperties.length])  // Changed dependency to only length
 
   const getPropertyDisplayName = (property) => {
     return property.split('.').pop()
