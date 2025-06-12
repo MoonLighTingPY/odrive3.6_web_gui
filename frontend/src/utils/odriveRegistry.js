@@ -1097,27 +1097,32 @@ export const getAllConfigurationParams = () => {
 export const generatePowerCommands = (powerConfig = {}) => {
   const commands = []
   
-  // DC Bus voltage settings
-  if (powerConfig.dcBusOvervoltageTrip !== undefined) {
-    commands.push(`odrv0.config.dc_bus_overvoltage_trip_level = ${powerConfig.dcBusOvervoltageTrip}`)
+  // DC Bus voltage settings (using underscore_case property names)
+  if (powerConfig.dc_bus_overvoltage_trip_level !== undefined) {
+    commands.push(`odrv0.config.dc_bus_overvoltage_trip_level = ${powerConfig.dc_bus_overvoltage_trip_level}`)
   }
   
-  if (powerConfig.dcBusUndervoltageTrip !== undefined) {
-    commands.push(`odrv0.config.dc_bus_undervoltage_trip_level = ${powerConfig.dcBusUndervoltageTrip}`)
+  if (powerConfig.dc_bus_undervoltage_trip_level !== undefined) {
+    commands.push(`odrv0.config.dc_bus_undervoltage_trip_level = ${powerConfig.dc_bus_undervoltage_trip_level}`)
   }
   
   // Enable/disable brake resistor
-  if (powerConfig.enableBrakeResistor !== undefined) {
-    commands.push(`odrv0.config.enable_brake_resistor = ${powerConfig.enableBrakeResistor}`)
+  if (powerConfig.enable_brake_resistor !== undefined) {
+    commands.push(`odrv0.config.enable_brake_resistor = ${powerConfig.enable_brake_resistor}`)
+  }
+  
+  // Brake resistance
+  if (powerConfig.brake_resistance !== undefined) {
+    commands.push(`odrv0.config.brake_resistance = ${powerConfig.brake_resistance}`)
   }
   
   // Current limits
-  if (powerConfig.dcMaxPositiveCurrent !== undefined) {
-    commands.push(`odrv0.config.dc_max_positive_current = ${powerConfig.dcMaxPositiveCurrent}`)
+  if (powerConfig.dc_max_positive_current !== undefined) {
+    commands.push(`odrv0.config.dc_max_positive_current = ${powerConfig.dc_max_positive_current}`)
   }
   
-  if (powerConfig.dcMaxNegativeCurrent !== undefined) {
-    commands.push(`odrv0.config.dc_max_negative_current = ${powerConfig.dcMaxNegativeCurrent}`)
+  if (powerConfig.dc_max_negative_current !== undefined) {
+    commands.push(`odrv0.config.dc_max_negative_current = ${powerConfig.dc_max_negative_current}`)
   }
   
   return commands
@@ -1133,46 +1138,59 @@ export const generateMotorCommands = (motorConfig = {}) => {
   const axisNum = motorConfig.axisNumber || 0
   
   // Motor type
-  if (motorConfig.motorType !== undefined) {
-    commands.push(`odrv0.axis${axisNum}.motor.config.motor_type = ${motorConfig.motorType}`)
+  if (motorConfig.motor_type !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.motor.config.motor_type = ${motorConfig.motor_type}`)
   }
   
   // Pole pairs
-  if (motorConfig.polePairs !== undefined) {
-    commands.push(`odrv0.axis${axisNum}.motor.config.pole_pairs = ${motorConfig.polePairs}`)
-  }
-  
-  // Torque constant (KV rating inverse)
-  if (motorConfig.torqueConstant !== undefined) {
-    commands.push(`odrv0.axis${axisNum}.motor.config.torque_constant = ${motorConfig.torqueConstant}`)
+  if (motorConfig.pole_pairs !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.motor.config.pole_pairs = ${motorConfig.pole_pairs}`)
   }
   
   // Current limits
-  if (motorConfig.currentLimit !== undefined) {
-    commands.push(`odrv0.axis${axisNum}.motor.config.current_lim = ${motorConfig.currentLimit}`)
-  }
-  
-  if (motorConfig.currentLimitMargin !== undefined) {
-    commands.push(`odrv0.axis${axisNum}.motor.config.current_lim_margin = ${motorConfig.currentLimitMargin}`)
+  if (motorConfig.current_lim !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.motor.config.current_lim = ${motorConfig.current_lim}`)
   }
   
   // Calibration settings
-  if (motorConfig.calibrationCurrent !== undefined) {
-    commands.push(`odrv0.axis${axisNum}.motor.config.calibration_current = ${motorConfig.calibrationCurrent}`)
+  if (motorConfig.calibration_current !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.motor.config.calibration_current = ${motorConfig.calibration_current}`)
   }
   
-  if (motorConfig.resistanceCalibrationMaxVoltage !== undefined) {
-    commands.push(`odrv0.axis${axisNum}.motor.config.resistance_calib_max_voltage = ${motorConfig.resistanceCalibrationMaxVoltage}`)
+  if (motorConfig.resistance_calib_max_voltage !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.motor.config.resistance_calib_max_voltage = ${motorConfig.resistance_calib_max_voltage}`)
+  }
+  
+  // Lock-in spin current
+  if (motorConfig.lock_in_spin_current !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.config.calibration_lockin.current = ${motorConfig.lock_in_spin_current}`)
   }
   
   // Phase resistance (for gimbal motors)
-  if (motorConfig.phaseResistance !== undefined) {
-    commands.push(`odrv0.axis${axisNum}.motor.config.phase_resistance = ${motorConfig.phaseResistance}`)
+  if (motorConfig.phase_resistance !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.motor.config.phase_resistance = ${motorConfig.phase_resistance}`)
   }
   
   // Phase inductance  
-  if (motorConfig.phaseInductance !== undefined) {
-    commands.push(`odrv0.axis${axisNum}.motor.config.phase_inductance = ${motorConfig.phaseInductance}`)
+  if (motorConfig.phase_inductance !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.motor.config.phase_inductance = ${motorConfig.phase_inductance}`)
+  }
+  
+  // Handle motor_kv to torque_constant conversion
+  if (motorConfig.motor_kv !== undefined) {
+
+    const torqueConstant = 8.27 / motorConfig.motor_kv
+    commands.push(`odrv0.axis${axisNum}.motor.config.torque_constant = ${torqueConstant}`)
+  }
+  
+  // Direct torque constant setting (takes precedence over motor_kv)
+  if (motorConfig.torque_constant !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.motor.config.torque_constant = ${motorConfig.torque_constant}`)
+  }
+  
+  // Pre-calibrated flag
+  if (motorConfig.pre_calibrated !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.motor.config.pre_calibrated = ${motorConfig.pre_calibrated}`)
   }
   
   return commands
@@ -1187,9 +1205,9 @@ export const generateEncoderCommands = (encoderConfig = {}) => {
   const commands = []
   const axisNum = encoderConfig.axisNumber || 0
   
-  // Encoder mode
-  if (encoderConfig.mode !== undefined) {
-    commands.push(`odrv0.axis${axisNum}.encoder.config.mode = ${encoderConfig.mode}`)
+  // Encoder mode/type
+  if (encoderConfig.encoder_type !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.encoder.config.mode = ${encoderConfig.encoder_type}`)
   }
   
   // Counts per revolution
@@ -1198,18 +1216,8 @@ export const generateEncoderCommands = (encoderConfig = {}) => {
   }
   
   // Use index
-  if (encoderConfig.useIndex !== undefined) {
-    commands.push(`odrv0.axis${axisNum}.encoder.config.use_index = ${encoderConfig.useIndex}`)
-  }
-  
-  // Find index on startup
-  if (encoderConfig.findIndexOnStartup !== undefined) {
-    commands.push(`odrv0.axis${axisNum}.encoder.config.find_idx_on_lockin_only = ${encoderConfig.findIndexOnStartup}`)
-  }
-  
-  // Zero count on find index
-  if (encoderConfig.zeroCountOnFindIndex !== undefined) {
-    commands.push(`odrv0.axis${axisNum}.encoder.config.zero_count_on_find_idx = ${encoderConfig.zeroCountOnFindIndex}`)
+  if (encoderConfig.use_index !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.encoder.config.use_index = ${encoderConfig.use_index}`)
   }
   
   // Direction
@@ -1223,8 +1231,53 @@ export const generateEncoderCommands = (encoderConfig = {}) => {
   }
   
   // Calib range
-  if (encoderConfig.calibRange !== undefined) {
-    commands.push(`odrv0.axis${axisNum}.encoder.config.calib_range = ${encoderConfig.calibRange}`)
+  if (encoderConfig.calib_range !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.encoder.config.calib_range = ${encoderConfig.calib_range}`)
+  }
+  
+  // Calib scan distance
+  if (encoderConfig.calib_scan_distance !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.encoder.config.calib_scan_distance = ${encoderConfig.calib_scan_distance}`)
+  }
+  
+  // Calib scan omega
+  if (encoderConfig.calib_scan_omega !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.encoder.config.calib_scan_omega = ${encoderConfig.calib_scan_omega}`)
+  }
+  
+  // Pre-calibrated flag
+  if (encoderConfig.pre_calibrated !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.encoder.config.pre_calibrated = ${encoderConfig.pre_calibrated}`)
+  }
+  
+  // Use index offset
+  if (encoderConfig.use_index_offset !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.encoder.config.use_index_offset = ${encoderConfig.use_index_offset}`)
+  }
+  
+  // Find index on lockin only
+  if (encoderConfig.find_idx_on_lockin_only !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.encoder.config.find_idx_on_lockin_only = ${encoderConfig.find_idx_on_lockin_only}`)
+  }
+  
+  // Absolute SPI CS GPIO pin
+  if (encoderConfig.abs_spi_cs_gpio_pin !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.encoder.config.abs_spi_cs_gpio_pin = ${encoderConfig.abs_spi_cs_gpio_pin}`)
+  }
+  
+  // Enable phase interpolation
+  if (encoderConfig.enable_phase_interpolation !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.encoder.config.enable_phase_interpolation = ${encoderConfig.enable_phase_interpolation}`)
+  }
+  
+  // Hall polarity
+  if (encoderConfig.hall_polarity !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.encoder.config.hall_polarity = ${encoderConfig.hall_polarity}`)
+  }
+  
+  // Hall polarity calibrated
+  if (encoderConfig.hall_polarity_calibrated !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.encoder.config.hall_polarity_calibrated = ${encoderConfig.hall_polarity_calibrated}`)
   }
   
   return commands
@@ -1240,54 +1293,72 @@ export const generateControlCommands = (controlConfig = {}) => {
   const axisNum = controlConfig.axisNumber || 0
   
   // Control mode
-  if (controlConfig.controlMode !== undefined) {
-    commands.push(`odrv0.axis${axisNum}.controller.config.control_mode = ${controlConfig.controlMode}`)
+  if (controlConfig.control_mode !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.controller.config.control_mode = ${controlConfig.control_mode}`)
   }
   
   // Input mode
-  if (controlConfig.inputMode !== undefined) {
-    commands.push(`odrv0.axis${axisNum}.controller.config.input_mode = ${controlConfig.inputMode}`)
+  if (controlConfig.input_mode !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.controller.config.input_mode = ${controlConfig.input_mode}`)
+  }
+  
+  // Velocity limit
+  if (controlConfig.vel_limit !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.controller.config.vel_limit = ${controlConfig.vel_limit}`)
   }
   
   // Position gain
-  if (controlConfig.posGain !== undefined) {
-    commands.push(`odrv0.axis${axisNum}.controller.config.pos_gain = ${controlConfig.posGain}`)
+  if (controlConfig.pos_gain !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.controller.config.pos_gain = ${controlConfig.pos_gain}`)
   }
   
   // Velocity gain and integrator gain
-  if (controlConfig.velGain !== undefined) {
-    commands.push(`odrv0.axis${axisNum}.controller.config.vel_gain = ${controlConfig.velGain}`)
+  if (controlConfig.vel_gain !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.controller.config.vel_gain = ${controlConfig.vel_gain}`)
   }
   
-  if (controlConfig.velIntegratorGain !== undefined) {
-    commands.push(`odrv0.axis${axisNum}.controller.config.vel_integrator_gain = ${controlConfig.velIntegratorGain}`)
+  if (controlConfig.vel_integrator_gain !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.controller.config.vel_integrator_gain = ${controlConfig.vel_integrator_gain}`)
   }
   
-  // Velocity limits
-  if (controlConfig.velLimit !== undefined) {
-    commands.push(`odrv0.axis${axisNum}.controller.config.vel_limit = ${controlConfig.velLimit}`)
-  }
-  
-  if (controlConfig.velLimitTolerance !== undefined) {
-    commands.push(`odrv0.axis${axisNum}.controller.config.vel_limit_tolerance = ${controlConfig.velLimitTolerance}`)
+  // Velocity limit tolerance
+  if (controlConfig.vel_limit_tolerance !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.controller.config.vel_limit_tolerance = ${controlConfig.vel_limit_tolerance}`)
   }
   
   // Ramped velocity settings
-  if (controlConfig.velRampRate !== undefined) {
-    commands.push(`odrv0.axis${axisNum}.controller.config.vel_ramp_rate = ${controlConfig.velRampRate}`)
+  if (controlConfig.vel_ramp_rate !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.controller.config.vel_ramp_rate = ${controlConfig.vel_ramp_rate}`)
   }
   
-  // Trapezoidal trajectory settings
-  if (controlConfig.trajVelLimit !== undefined) {
-    commands.push(`odrv0.axis${axisNum}.trap_traj.config.vel_limit = ${controlConfig.trajVelLimit}`)
+  // Torque ramp rate
+  if (controlConfig.torque_ramp_rate !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.controller.config.torque_ramp_rate = ${controlConfig.torque_ramp_rate}`)
   }
   
-  if (controlConfig.trajAccelLimit !== undefined) {
-    commands.push(`odrv0.axis${axisNum}.trap_traj.config.accel_limit = ${controlConfig.trajAccelLimit}`)
+  // Circular setpoints
+  if (controlConfig.circular_setpoints !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.controller.config.circular_setpoints = ${controlConfig.circular_setpoints}`)
   }
   
-  if (controlConfig.trajDecelLimit !== undefined) {
-    commands.push(`odrv0.axis${axisNum}.trap_traj.config.decel_limit = ${controlConfig.trajDecelLimit}`)
+  // Inertia
+  if (controlConfig.inertia !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.controller.config.inertia = ${controlConfig.inertia}`)
+  }
+  
+  // Input filter bandwidth
+  if (controlConfig.input_filter_bandwidth !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.controller.config.input_filter_bandwidth = ${controlConfig.input_filter_bandwidth}`)
+  }
+  
+  // Homing speed
+  if (controlConfig.homing_speed !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.controller.config.homing_speed = ${controlConfig.homing_speed}`)
+  }
+  
+  // Anticogging enabled
+  if (controlConfig.anticogging_enabled !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.controller.config.anticogging.anticogging_enabled = ${controlConfig.anticogging_enabled}`)
   }
   
   return commands
@@ -1302,45 +1373,96 @@ export const generateInterfaceCommands = (interfaceConfig = {}) => {
   const commands = []
   
   // CAN interface
-  if (interfaceConfig.canNodeId !== undefined) {
-    commands.push(`odrv0.axis0.config.can.node_id = ${interfaceConfig.canNodeId}`)
+  if (interfaceConfig.can_node_id !== undefined) {
+    commands.push(`odrv0.axis0.config.can.node_id = ${interfaceConfig.can_node_id}`)
   }
   
-  if (interfaceConfig.canBaudRate !== undefined) {
-    commands.push(`odrv0.can.config.baud_rate = ${interfaceConfig.canBaudRate}`)
+  if (interfaceConfig.can_node_id_extended !== undefined) {
+    commands.push(`odrv0.axis0.config.can.is_extended = ${interfaceConfig.can_node_id_extended}`)
   }
   
-  // UART interface
-  if (interfaceConfig.uartBaudRate !== undefined) {
-    commands.push(`odrv0.config.uart_baudrate = ${interfaceConfig.uartBaudRate}`)
+  if (interfaceConfig.can_baudrate !== undefined) {
+    commands.push(`odrv0.can.config.baud_rate = ${interfaceConfig.can_baudrate}`)
   }
   
-  // Watchdog timer
-  if (interfaceConfig.enableWatchdog !== undefined) {
-    commands.push(`odrv0.axis0.config.enable_watchdog = ${interfaceConfig.enableWatchdog}`)
-    commands.push(`odrv0.axis1.config.enable_watchdog = ${interfaceConfig.enableWatchdog}`)
+  if (interfaceConfig.heartbeat_rate_ms !== undefined) {
+    commands.push(`odrv0.axis0.config.can.heartbeat_rate_ms = ${interfaceConfig.heartbeat_rate_ms}`)
   }
   
-  if (interfaceConfig.watchdogTimeout !== undefined) {
-    commands.push(`odrv0.axis0.config.watchdog_timeout = ${interfaceConfig.watchdogTimeout}`)
-    commands.push(`odrv0.axis1.config.watchdog_timeout = ${interfaceConfig.watchdogTimeout}`)
+  // UART A interface
+  if (interfaceConfig.enable_uart_a !== undefined) {
+    commands.push(`odrv0.config.enable_uart_a = ${interfaceConfig.enable_uart_a}`)
+  }
+  
+  if (interfaceConfig.uart_a_baudrate !== undefined) {
+    commands.push(`odrv0.config.uart_a_baudrate = ${interfaceConfig.uart_a_baudrate}`)
+  }
+  
+  if (interfaceConfig.uart0_protocol !== undefined) {
+    commands.push(`odrv0.config.uart0_protocol = ${interfaceConfig.uart0_protocol}`)
+  }
+  
+  // UART B interface
+  if (interfaceConfig.enable_uart_b !== undefined) {
+    commands.push(`odrv0.config.enable_uart_b = ${interfaceConfig.enable_uart_b}`)
+  }
+  
+  if (interfaceConfig.uart_b_baudrate !== undefined) {
+    commands.push(`odrv0.config.uart_b_baudrate = ${interfaceConfig.uart_b_baudrate}`)
+  }
+  
+  if (interfaceConfig.uart1_protocol !== undefined) {
+    commands.push(`odrv0.config.uart1_protocol = ${interfaceConfig.uart1_protocol}`)
   }
   
   // GPIO settings
-  if (interfaceConfig.gpio1Mode !== undefined) {
-    commands.push(`odrv0.config.gpio1_mode = ${interfaceConfig.gpio1Mode}`)
+  if (interfaceConfig.gpio1_mode !== undefined) {
+    commands.push(`odrv0.config.gpio1_mode = ${interfaceConfig.gpio1_mode}`)
   }
   
-  if (interfaceConfig.gpio2Mode !== undefined) {
-    commands.push(`odrv0.config.gpio2_mode = ${interfaceConfig.gpio2Mode}`)
+  if (interfaceConfig.gpio2_mode !== undefined) {
+    commands.push(`odrv0.config.gpio2_mode = ${interfaceConfig.gpio2_mode}`)
   }
   
-  if (interfaceConfig.gpio3Mode !== undefined) {
-    commands.push(`odrv0.config.gpio3_mode = ${interfaceConfig.gpio3Mode}`)
+  if (interfaceConfig.gpio3_mode !== undefined) {
+    commands.push(`odrv0.config.gpio3_mode = ${interfaceConfig.gpio3_mode}`)
   }
   
-  if (interfaceConfig.gpio4Mode !== undefined) {
-    commands.push(`odrv0.config.gpio4_mode = ${interfaceConfig.gpio4Mode}`)
+  if (interfaceConfig.gpio4_mode !== undefined) {
+    commands.push(`odrv0.config.gpio4_mode = ${interfaceConfig.gpio4_mode}`)
+  }
+  
+  // Watchdog timer
+  if (interfaceConfig.enable_watchdog !== undefined) {
+    commands.push(`odrv0.axis0.config.enable_watchdog = ${interfaceConfig.enable_watchdog}`)
+    commands.push(`odrv0.axis1.config.enable_watchdog = ${interfaceConfig.enable_watchdog}`)
+  }
+  
+  if (interfaceConfig.watchdog_timeout !== undefined) {
+    commands.push(`odrv0.axis0.config.watchdog_timeout = ${interfaceConfig.watchdog_timeout}`)
+    commands.push(`odrv0.axis1.config.watchdog_timeout = ${interfaceConfig.watchdog_timeout}`)
+  }
+  
+  // Step/Direction interface
+  if (interfaceConfig.enable_step_dir !== undefined) {
+    commands.push(`odrv0.axis0.config.enable_step_dir = ${interfaceConfig.enable_step_dir}`)
+  }
+  
+  if (interfaceConfig.step_dir_always_on !== undefined) {
+    commands.push(`odrv0.axis0.config.step_dir_always_on = ${interfaceConfig.step_dir_always_on}`)
+  }
+  
+  if (interfaceConfig.step_gpio_pin !== undefined) {
+    commands.push(`odrv0.axis0.config.step_gpio_pin = ${interfaceConfig.step_gpio_pin}`)
+  }
+  
+  if (interfaceConfig.dir_gpio_pin !== undefined) {
+    commands.push(`odrv0.axis0.config.dir_gpio_pin = ${interfaceConfig.dir_gpio_pin}`)
+  }
+  
+  // Sensorless mode
+  if (interfaceConfig.enable_sensorless !== undefined) {
+    commands.push(`odrv0.axis0.config.enable_sensorless_mode = ${interfaceConfig.enable_sensorless}`)
   }
   
   return commands
