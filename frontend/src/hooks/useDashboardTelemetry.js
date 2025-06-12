@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { updateOdriveState, setConnectionLost } from '../store/slices/deviceSlice'
 
-export const useDashboardTelemetry = (updateRate = 1000) => {
+export const useDashboardTelemetry = (updateRate = 2000) => { // Increased from 1000ms to 2000ms
   const { isConnected } = useSelector(state => state.device)
   const dispatch = useDispatch()
 

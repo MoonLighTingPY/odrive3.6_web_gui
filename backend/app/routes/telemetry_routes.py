@@ -28,53 +28,51 @@ def get_dashboard_telemetry():
         if not odrive_manager.is_connected():
             return jsonify({"error": "No ODrive connected"}), 404
         
-        # Quick health check
-        try:
-            vbus = odrive_manager.odrv.vbus_voltage
+        # Use thread-safe access for dashboard data
+        def _get_dashboard_data():
+            # Quick health check
+            vbus = odrive_manager.safe_get_property('vbus_voltage')
             if vbus <= 0:
                 odrive_manager.connection_lost = True
-                return jsonify({"error": "Device disconnected"}), 404
-        except Exception:
-            odrive_manager.connection_lost = True
-            return jsonify({"error": "Device disconnected"}), 404
+                raise Exception("Device disconnected")
             
-        # Return only essential data for dashboard
-        data = {
-            'device': {
-                'vbus_voltage': vbus,
-                'ibus': getattr(odrive_manager.odrv, 'ibus', 0),
-                'hw_version_major': odrive_manager.odrv.hw_version_major,
-                'hw_version_minor': odrive_manager.odrv.hw_version_minor,
-                'fw_version_major': odrive_manager.odrv.fw_version_major,
-                'fw_version_minor': odrive_manager.odrv.fw_version_minor,
-                'serial_number': odrive_manager.odrv.serial_number,
-                'axis0': {
-                    'current_state': odrive_manager.odrv.axis0.current_state,
-                    'error': odrive_manager.odrv.axis0.error,
-                    'motor': {
-                        'error': odrive_manager.odrv.axis0.motor.error,
-                        'is_calibrated': odrive_manager.odrv.axis0.motor.is_calibrated,
-                        'current_control': {
-                            'Iq_measured': odrive_manager.odrv.axis0.motor.current_control.Iq_measured,
+            return {
+                'device': {
+                    'vbus_voltage': vbus,
+                    'ibus': odrive_manager.safe_get_property('ibus') or 0,
+                    'hw_version_major': odrive_manager.safe_get_property('hw_version_major'),
+                    'hw_version_minor': odrive_manager.safe_get_property('hw_version_minor'),
+                    'fw_version_major': odrive_manager.safe_get_property('fw_version_major'),
+                    'fw_version_minor': odrive_manager.safe_get_property('fw_version_minor'),
+                    'serial_number': odrive_manager.safe_get_property('serial_number'),
+                    'axis0': {
+                        'current_state': odrive_manager.safe_get_property('axis0.current_state'),
+                        'error': odrive_manager.safe_get_property('axis0.error'),
+                        'motor': {
+                            'error': odrive_manager.safe_get_property('axis0.motor.error'),
+                            'is_calibrated': odrive_manager.safe_get_property('axis0.motor.is_calibrated'),
+                            'current_control': {
+                                'Iq_measured': odrive_manager.safe_get_property('axis0.motor.current_control.Iq_measured'),
+                            }
+                        },
+                        'encoder': {
+                            'error': odrive_manager.safe_get_property('axis0.encoder.error'),
+                            'pos_estimate': odrive_manager.safe_get_property('axis0.encoder.pos_estimate'),
+                            'vel_estimate': odrive_manager.safe_get_property('axis0.encoder.vel_estimate'),
+                            'is_ready': odrive_manager.safe_get_property('axis0.encoder.is_ready'),
+                        },
+                        'controller': {
+                            'error': odrive_manager.safe_get_property('axis0.controller.error'),
+                            'pos_setpoint': odrive_manager.safe_get_property('axis0.controller.pos_setpoint'),
+                            'vel_setpoint': odrive_manager.safe_get_property('axis0.controller.vel_setpoint'),
+                            'torque_setpoint': odrive_manager.safe_get_property('axis0.controller.torque_setpoint') or 0,
                         }
-                    },
-                    'encoder': {
-                        'error': odrive_manager.odrv.axis0.encoder.error,
-                        'pos_estimate': odrive_manager.odrv.axis0.encoder.pos_estimate,
-                        'vel_estimate': odrive_manager.odrv.axis0.encoder.vel_estimate,
-                        'is_ready': odrive_manager.odrv.axis0.encoder.is_ready,
-                    },
-                    'controller': {
-                        'error': odrive_manager.odrv.axis0.controller.error,
-                        'pos_setpoint': odrive_manager.odrv.axis0.controller.pos_setpoint,
-                        'vel_setpoint': odrive_manager.odrv.axis0.controller.vel_setpoint,
-                        'torque_setpoint': getattr(odrive_manager.odrv.axis0.controller, 'torque_setpoint', 0),
                     }
-                }
-            },
-            'timestamp': time.time() * 1000
-        }
+                },
+                'timestamp': time.time() * 1000
+            }
         
+        data = _get_dashboard_data()
         return jsonify(sanitize_for_json(data))
         
     except Exception as e:

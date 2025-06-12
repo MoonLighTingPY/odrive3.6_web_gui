@@ -2,6 +2,8 @@ import time
 import logging
 import odrive
 from typing import Dict, Any, List, Optional
+import threading
+from queue import Queue
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +19,9 @@ class ODriveManager:
         self.reboot_start_time = None
         self.reconnection_attempts = 0
         self.max_reconnection_attempts = 10
+        self.request_queue = Queue()
+        self.request_lock = threading.Lock()
+        self.is_processing = False
 
     def _normalize_command(self, command: str) -> str:
         """Normalize command to use 'device' reference instead of odrv0, odrv1, etc."""
@@ -419,3 +424,36 @@ class ODriveManager:
             if "disconnected" in str(e).lower() or "connection" in str(e).lower():
                 self.connection_lost = True
             return {'error': str(e)}
+
+    def execute_with_lock(self, func, *args, **kwargs):
+        """Execute a function with exclusive ODrive access"""
+        with self.request_lock:
+            try:
+                return func(*args, **kwargs)
+            except Exception as e:
+                logger.error(f"ODrive operation failed: {e}")
+                raise
+    
+    def safe_get_property(self, path):
+        """Thread-safe property access"""
+        def _get_property():
+            parts = path.split('.')
+            current = self.odrv
+            for part in parts:
+                current = getattr(current, part, None)
+                if current is None:
+                    return None
+            return current
+        
+        return self.execute_with_lock(_get_property)
+    
+    def safe_set_property(self, path, value):
+        """Thread-safe property setting"""
+        def _set_property():
+            parts = path.split('.')
+            obj = self.odrv
+            for part in parts[:-1]:
+                obj = getattr(obj, part)
+            setattr(obj, parts[-1], value)
+        
+        return self.execute_with_lock(_set_property)

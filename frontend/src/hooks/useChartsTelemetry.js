@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react'
 
-export const useChartsTelemetry = (properties, onData, updateRate = 1) => {
+export const useChartsTelemetry = (properties, onData, updateRate = 100) => {
   const intervalRef = useRef(null)
+  const lastRequestTime = useRef(0)
 
   useEffect(() => {
     if (!properties.length) {
@@ -14,6 +15,17 @@ export const useChartsTelemetry = (properties, onData, updateRate = 1) => {
 
     const fetchData = async () => {
       try {
+        // Add small random delay to stagger requests
+        const now = Date.now()
+        const minInterval = 50 // Minimum 50ms between any requests
+        const timeSinceLastRequest = now - lastRequestTime.current
+        
+        if (timeSinceLastRequest < minInterval) {
+          await new Promise(resolve => setTimeout(resolve, minInterval - timeSinceLastRequest))
+        }
+        
+        lastRequestTime.current = Date.now()
+        
         const response = await fetch('/api/charts/telemetry', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
