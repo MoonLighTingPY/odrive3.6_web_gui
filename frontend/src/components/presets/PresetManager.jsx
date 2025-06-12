@@ -27,7 +27,6 @@ import {
   isFactoryPreset,
   saveCurrentConfigAsPreset,
   loadPresetConfig,
-  createAutoBackup,
   importPresetsFromFile
 } from '../../utils/configurationPresetsManager'
 import PresetSaveDialog from './PresetSaveDialog'
@@ -69,32 +68,10 @@ const PresetManager = ({
     }
   }, [toast])
 
-  const handleAutoBackup = useCallback(async () => {
-    try {
-      createAutoBackup(currentConfig)
-      loadPresets() // Refresh preset list
-      toast({
-        title: 'Auto Backup Created',
-        description: 'Configuration automatically backed up',
-        status: 'info',
-        duration: 2000,
-      })
-    } catch (error) {
-      console.error('Auto backup failed:', error)
-    }
-  }, [currentConfig, loadPresets, toast])
-
   // Load presets on component mount
   useEffect(() => {
     loadPresets()
   }, [loadPresets])
-
-  // Auto-backup when connected - only once per connection
-useEffect(() => {
-  if (isConnected && Object.keys(currentConfig).length > 0) {
-    handleAutoBackup()
-  }
-}, [isConnected, currentConfig, handleAutoBackup]) // Remove currentConfig from dependencies
 
   const handleLoadPreset = async () => {
   if (!selectedPreset) {

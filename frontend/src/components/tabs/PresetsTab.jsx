@@ -24,9 +24,7 @@ import {
 } from '@chakra-ui/react'
 import { RefreshCw, Save, Upload } from 'lucide-react'
 import { 
-  getAllAvailablePresets, 
-  createAutoBackup,
-  cleanupAutoBackups
+  getAllAvailablePresets
 } from '../../utils/configurationPresetsManager'
 import {
   applyPresetAndSaveAction
@@ -71,19 +69,6 @@ const PresetsTab = () => {
       })
     }
   }, [toast])
-
-  // Auto-backup when connected and we have configuration data
-  useEffect(() => {
-    if (isConnected && Object.keys(deviceConfig.power || {}).length > 0) {
-      try {
-        createAutoBackup(deviceConfig)
-        cleanupAutoBackups()
-        loadPresets()
-      } catch (error) {
-        console.error('Auto backup failed:', error)
-      }
-    }
-  }, [isConnected, powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig, loadPresets, deviceConfig])
 
   // Load presets on mount
   useEffect(() => {
