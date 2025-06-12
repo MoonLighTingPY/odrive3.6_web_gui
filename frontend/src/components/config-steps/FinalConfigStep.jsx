@@ -215,8 +215,8 @@ const FinalConfigStep = () => {
 
     setIsLoading(true)
     try {
-      // Use the same logic as ConfigurationTab for save_and_reboot
-      if (action === 'save_and_reboot') {
+      // Use the shared applyAndSaveConfiguration function for both actions
+      if (action === 'save_and_reboot' || action === 'apply_and_save') {
         const deviceConfig = {
           power: powerConfig,
           motor: motorConfig,
@@ -225,7 +225,7 @@ const FinalConfigStep = () => {
           interface: interfaceConfig
         }
         
-        // Use the shared applyAndSaveConfiguration function
+        // Use the shared applyAndSaveConfiguration function from ConfigurationTab
         await applyAndSaveConfiguration(deviceConfig, toast)
       } else {
         const result = await executeConfigAction(action, { commands: finalCommands })
@@ -297,6 +297,12 @@ const FinalConfigStep = () => {
         description: 'This will reset all ODrive settings to factory defaults and reboot the device.',
         color: 'red',
         confirmText: 'Yes, erase and reboot'
+      },
+      apply_and_save: {
+        title: 'Apply & Save Configuration',
+        description: 'This will apply all configuration commands to the ODrive and save them to non-volatile memory. The device will reboot automatically.',
+        color: 'blue',
+        confirmText: 'Apply and save configuration'
       },
       apply: {
         title: 'Apply New Configuration',
@@ -447,29 +453,16 @@ const FinalConfigStep = () => {
                   </Button>
 
                   <Button
-                    colorScheme="blue"
-                    size="lg"
-                    w="100%"
-                    h="60px"
-                    onClick={() => handleAction('apply')}
-                    isDisabled={!isConnected}
-                    isLoading={isLoading && pendingAction === 'apply'}
-                  >
-                    ⚙️ Apply New Configuration
-                  </Button>
-
-                  <Button
                     colorScheme="green"
                     size="lg"
                     w="100%"
                     h="60px"
-                    onClick={() => handleAction('save_and_reboot')}
+                    onClick={() => handleAction('apply_and_save')}
                     isDisabled={!isConnected}
-                    isLoading={isLoading && pendingAction === 'save_and_reboot'}
+                    isLoading={isLoading && pendingAction === 'apply_and_save'}
                   >
-                    💾 Save & Reboot
+                    ⚙️💾 Apply & Save Configuration
                   </Button>
-
 
                 </VStack>
 
@@ -490,38 +483,8 @@ const FinalConfigStep = () => {
                   >
                     🎯 Full Calibration
                   </Button>
-
+                  
                   <Button
-                    colorScheme="orange"
-                    variant="outline"
-                    size="lg"
-                    w="100%"
-                    h="60px"
-                    onClick={() => handleAction('calibrate_motor')}
-                    isDisabled={!isConnected}
-                    isLoading={isLoading && pendingAction === 'calibrate_motor'}
-                  >
-                    🔧 Motor Only
-                  </Button>
-
-                  <Button
-                    colorScheme="orange"
-                    variant="outline"
-                    size="lg"
-                    w="100%"
-                    h="60px"
-                    onClick={() => handleAction('calibrate_encoder')}
-                    isDisabled={!isConnected}
-                    isLoading={isLoading && pendingAction === 'calibrate_encoder'}
-                  >
-                    📐 Encoder Only
-                  </Button>
-
-                </VStack>
-                                  
-
-              </SimpleGrid>
-              <Button
                     colorScheme="blue"
                     size="lg"
                     w="100%"
@@ -532,6 +495,12 @@ const FinalConfigStep = () => {
                   >
                     🔄 Clear Errors
                   </Button>
+
+                </VStack>
+                                  
+
+              </SimpleGrid>
+
 
             </VStack>
           </CardBody>
