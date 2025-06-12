@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo } from 'react'
+import React, { useState, useCallback, useMemo, useEffect } from 'react'
 import {
   VStack,
   HStack,
@@ -35,12 +35,77 @@ const PropertyTree = ({
   updateProperty, 
   isConnected,
   selectedProperties = [],
-  togglePropertyChart
+  togglePropertyChart,
+  refreshTrigger
 }) => {
   const [editingProperty, setEditingProperty] = useState(null)
   const [editValue, setEditValue] = useState('')
   const [refreshingProperties, setRefreshingProperties] = useState(new Set())
   const [propertyValues, setPropertyValues] = useState({})
+
+  // Refresh all properties when refreshTrigger changes
+  useEffect(() => {
+    if (refreshTrigger > 0 && isConnected) {
+      refreshAllProperties()
+    }
+  }, [refreshTrigger, isConnected])
+
+  // Function to refresh all properties at once
+  const refreshAllProperties = async () => {
+    const allPaths = []
+    
+    // Collect all property paths from the tree
+    Object.entries(odrivePropertyTree).forEach(([sectionName, section]) => {
+      Object.keys(section.properties).forEach(propName => {
+        const displayPath = sectionName === 'system' 
+          ? `system.${propName}` 
+          : `${sectionName}.${propName}`
+        allPaths.push(displayPath)
+      })
+    })
+
+    // Set all as refreshing
+    setRefreshingProperties(new Set(allPaths))
+
+    // Refresh each property
+    const refreshPromises = allPaths.map(async (displayPath) => {
+      try {
+        // Build device path
+        let devicePath = displayPath
+        if (displayPath.startsWith('system.')) {
+          const systemProp = displayPath.replace('system.', '')
+          if (['dc_bus_overvoltage_trip_level', 'dc_bus_undervoltage_trip_level', 'dc_max_positive_current', 
+               'dc_max_negative_current', 'enable_brake_resistor', 'brake_resistance'].includes(systemProp)) {
+            devicePath = `config.${systemProp}`
+          } else {
+            devicePath = systemProp
+          }
+        }
+
+        const response = await fetch('/api/odrive/property', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ path: devicePath })
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setPropertyValues(prev => ({
+            ...prev,
+            [displayPath]: data.value
+          }))
+        }
+      } catch (error) {
+        console.error(`Failed to refresh property ${displayPath}:`, error)
+      }
+    })
+
+    // Wait for all refreshes to complete
+    await Promise.all(refreshPromises)
+    
+    // Clear refreshing state
+    setRefreshingProperties(new Set())
+  }
 
   // Refresh a single property
   const refreshProperty = async (displayPath) => {

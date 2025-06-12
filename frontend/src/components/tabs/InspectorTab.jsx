@@ -1,4 +1,4 @@
-import { useState, } from 'react'
+import { useState, useEffect } from 'react'
 import { useSelector } from 'react-redux'
 import {
   VStack,
@@ -25,6 +25,14 @@ const InspectorTab = () => {
   const { isConnected, odriveState } = useSelector(state => state.device)
   const [searchFilter, setSearchFilter] = useState('')
   const [selectedProperties, setSelectedProperties] = useState([])
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
+
+  // Trigger refresh when tab opens and device is connected
+  useEffect(() => {
+    if (isConnected) {
+      setRefreshTrigger(prev => prev + 1)
+    }
+  }, [isConnected])
 
   const updateProperty = async (path, value) => {
     try {
@@ -96,6 +104,7 @@ const InspectorTab = () => {
             isConnected={isConnected}
             selectedProperties={selectedProperties}
             togglePropertyChart={togglePropertyChart}
+            refreshTrigger={refreshTrigger}
           />
         </GridItem>
 
