@@ -1,4 +1,4 @@
-import { useState} from 'react'
+import { useState } from 'react'
 import { useSelector } from 'react-redux'
 import {
   Box,
@@ -23,23 +23,36 @@ import {
   Tooltip,
   Icon,
   useDisclosure,
+  useToast,
 } from '@chakra-ui/react'
 import { InfoIcon, WarningIcon } from '@chakra-ui/icons'
 import { getAxisStateName } from '../../utils/odriveEnums'
 import { getErrorDescription, isErrorCritical } from '../../utils/odriveErrors'
 import ErrorTroubleshooting from "../modals/ErrorTroubleshootingModal"
+import CalibrationModal from '../modals/CalibrationModal'
+import { useCalibration } from '../../hooks/useCalibration'
 import '../../styles/DashboardTab.css'
 
-const DashboardTab = ({ isConnected, odriveState }) => {
-  // Use the new dashboard telemetry hook
+const DashboardTab = () => {
   
-  // eslint-disable-next-line no-unused-vars
-  const [realTimeData, setRealTimeData] = useState({})
+  // Remove duplicate declarations - only use Redux state
+  const { odriveState, isConnected, connectedDevice } = useSelector(state => state.device)
   const [selectedError, setSelectedError] = useState({ code: null, type: null })
-  const { connectedDevice } = useSelector(state => state.device)
   
   const { isOpen: isTroubleshootingOpen, onOpen: onTroubleshootingOpen, onClose: onTroubleshootingClose } = useDisclosure()
+  const { isOpen: isCalibrationOpen, onOpen: onCalibrationOpen, onClose: onCalibrationClose } = useDisclosure()
 
+  // Use the calibration hook
+  const {
+    calibrationStatus,
+    calibrationProgress,
+    isCalibrating,
+    calibrationPhase,
+    calibrationSequence,
+    startCalibration,
+    stopCalibration,
+    getCalibrationPhaseDescription
+  } = useCalibration()
 
   // Check if we should show dashboard content
   const shouldShowDashboard = () => {
@@ -138,12 +151,12 @@ const DashboardTab = ({ isConnected, odriveState }) => {
 
   // Add null checks before accessing properties
   const axisState = axis0Data?.state || 0
-  const motorCurrent = realTimeData.axis0?.motor?.current_control?.Iq_measured || 0
-  const encoderPos = realTimeData.axis0?.encoder?.pos_estimate || axis0Data?.encoder?.pos_estimate || 0
-  const encoderVel = realTimeData.axis0?.encoder?.vel_estimate || axis0Data?.encoder?.vel_estimate || 0
-  const vbusVoltage = realTimeData.vbus_voltage || systemData?.vbus_voltage || 0
-  const motorTemp = realTimeData.axis0?.motor?.motor_thermistor?.temperature || 0
-  const fetTemp = realTimeData.axis0?.motor?.fet_thermistor?.temperature || 0
+  const motorCurrent = odriveState.device?.axis0?.motor?.current_meas_phB || 0
+  const encoderPos = odriveState.device?.axis0?.encoder?.pos_estimate || 0
+  const encoderVel = odriveState.device?.axis0?.encoder?.vel_estimate || 0
+  const vbusVoltage = odriveState.device?.vbus_voltage || 0
+  const motorTemp = odriveState.device?.axis0?.motor?.motor_thermistor?.temperature || 0
+  const fetTemp = odriveState.device?.axis0?.motor?.fet_thermistor?.temperature || 0
 
   const getStateColor = (state) => {
     if (state === 8) return 'green' // CLOSED_LOOP_CONTROL
@@ -196,6 +209,14 @@ const DashboardTab = ({ isConnected, odriveState }) => {
         </Box>
       </Alert>
     )
+  }
+
+  // Update the calibration button click handler:
+  const handleFullCalibration = async () => {
+    const result = await startCalibration('full')
+    if (result.success) {
+      onCalibrationOpen()
+    }
   }
 
   return (
@@ -413,11 +434,7 @@ const DashboardTab = ({ isConnected, odriveState }) => {
               </Button>
               <Button
                 colorScheme="orange"
-                onClick={() => fetch('/api/odrive/command', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ command: 'odrv0.axis0.requested_state = 3' })
-                })}
+                onClick={handleFullCalibration}
                 isDisabled={axisState !== 1}
               >
                 Full Calibration
@@ -436,6 +453,18 @@ const DashboardTab = ({ isConnected, odriveState }) => {
           </CardBody>
         </Card>
       </VStack>
+
+      {/* Add the Calibration Modal before the Error Troubleshooting Modal */}
+      <CalibrationModal
+        isOpen={isCalibrationOpen}
+        onClose={onCalibrationClose}
+        isCalibrating={isCalibrating}
+        calibrationProgress={calibrationProgress}
+        calibrationPhase={calibrationPhase}
+        calibrationSequence={calibrationSequence}
+        calibrationStatus={calibrationStatus}
+        getCalibrationPhaseDescription={getCalibrationPhaseDescription}
+      />
 
       {/* Error Troubleshooting Modal */}
       <ErrorTroubleshooting
