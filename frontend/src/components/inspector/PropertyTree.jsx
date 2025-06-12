@@ -49,7 +49,7 @@ const PropertyTree = ({
     if (refreshTrigger > 0 && isConnected) {
       refreshAllProperties()
     }
-  }, [refreshTrigger, isConnected])
+  }, [refreshTrigger, isConnected, refreshAllProperties])
 
   // Function to collect all properties recursively from the tree structure
   const collectAllProperties = useCallback((node, basePath = '') => {
@@ -75,7 +75,7 @@ const PropertyTree = ({
   }, [])
 
   // Function to refresh all properties at once
-  const refreshAllProperties = async () => {
+  const refreshAllProperties = useCallback(async () => {
     const allPaths = []
     
     // Collect all property paths from the tree recursively
@@ -125,7 +125,7 @@ const PropertyTree = ({
     
     // Clear refreshing state
     setRefreshingProperties(new Set())
-  }
+  }, [collectAllProperties])
 
   // Refresh a single property
   const refreshProperty = async (displayPath) => {
