@@ -19,9 +19,9 @@ import {
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
 } from 'recharts'
-import { useTelemetry } from '../../hooks/useTelemetry'
+import { useChartsTelemetry } from '../../hooks/useChartsTelemetry'
 
-const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
+const LiveCharts = ({ selectedProperties }) => {
   const [chartData, setChartData] = useState([])
   
   const chartColors = [
@@ -30,91 +30,43 @@ const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
     '#EC4899', '#6366F1', '#14B8A6', '#F472B6'
   ]
 
-  const getValueFromPath = (obj, path) => {
-    if (!obj || !obj.device) {
-      return null
+  const handleChartData = (data) => {
+    if (!data.data) return
+    
+    const timestamp = data.timestamp
+    const sample = { 
+      time: timestamp,
+      relativeTime: chartData.length > 0 ? (timestamp - chartData[0].time) / 1000 : 0
     }
     
-    // Handle normal path resolution
-    let fullPath
-    if (path.startsWith('system.')) {
-      const systemProp = path.replace('system.', '')
-      if (['dc_bus_overvoltage_trip_level', 'dc_bus_undervoltage_trip_level', 'dc_max_positive_current', 
-           'dc_max_negative_current', 'enable_brake_resistor', 'brake_resistance'].includes(systemProp)) {
-        fullPath = `device.config.${systemProp}`
-      } else {
-        fullPath = `device.${systemProp}`
+    // Add all property values to the sample
+    Object.entries(data.data).forEach(([property, value]) => {
+      if (typeof value === 'number') {
+        sample[property] = value
       }
-    } else if (path.startsWith('axis0.') || path.startsWith('axis1.')) {
-      fullPath = `device.${path}`
-    } else {
-      fullPath = `device.${path}`
-    }
+    })
     
-    const parts = fullPath.split('.')
-    let current = obj
-    
-    for (let i = 0; i < parts.length; i++) {
-      const part = parts[i]
-      if (current && current[part] !== undefined) {
-        current = current[part]
-      } else {
-        return null
-      }
-    }
-    
-    const result = typeof current === 'number' ? current : null
-    return result
+    setChartData(prev => {
+      const newData = [...prev, sample]
+      // Keep only last 1000 points and last 60 seconds
+      const cutoffTime = timestamp - 60000
+      const filteredData = newData.filter(d => d.time > cutoffTime)
+      return filteredData.length > 1000 ? filteredData.slice(-1000) : filteredData
+    })
   }
 
-  // Always subscribe when we have properties selected and are connected
-  const telemetryConfig = selectedProperties.length > 0 && isConnected ? {
-    type: 'charts',
-    paths: selectedProperties,
-    updateRate: 100, // Fixed 10Hz update rate
-    onData: (data) => {
-      if (selectedProperties.length > 0) {
-        const timestamp = Date.now()
-        const sample = { 
-          time: timestamp,
-          relativeTime: chartData.length > 0 ? (timestamp - chartData[0].time) / 1000 : 0
-        }
-        
-        selectedProperties.forEach(property => {
-          const value = getValueFromPath(data, property)
-          if (value !== null) {
-            sample[property] = value
-          }
-        })
-        
-        setChartData(prev => {
-          const newData = [...prev, sample]
-          // Keep only last 1000 points and last 60 seconds
-          const cutoffTime = timestamp - 60000
-          const filteredData = newData.filter(d => d.time > cutoffTime)
-          return filteredData.length > 1000 ? filteredData.slice(-1000) : filteredData
-        })
-      }
-    }
-  } : null
-
-  useTelemetry(telemetryConfig)
+  // Use the new charts telemetry hook
+  useChartsTelemetry(selectedProperties, handleChartData, 1)
 
   // Clear data when properties change
   useEffect(() => {
     setChartData([])
   }, [selectedProperties])
 
-  const formatValue = (value) => {
-    if (value === null || value === undefined) return 'N/A'
-    return typeof value === 'number' ? value.toFixed(3) : String(value)
-  }
-
   const getPropertyDisplayName = (property) => {
     return property.split('.').pop()
   }
 
-  // Render individual chart component
   const renderChart = (property, index) => (
     <Box key={property} p={3} bg="gray.900" borderRadius="md" borderWidth="1px" borderColor="gray.700" h="300px">
       <VStack spacing={2} align="stretch" h="100%">
@@ -127,7 +79,7 @@ const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
             {getPropertyDisplayName(property)}
           </Text>
           <Text fontSize="xs" color="gray.400" fontFamily="mono">
-            {formatValue(getValueFromPath(odriveState, property))}
+            {chartData.length > 0 ? chartData[chartData.length - 1][property]?.toFixed(3) || 'N/A' : 'N/A'}
           </Text>
         </HStack>
         
@@ -188,7 +140,6 @@ const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
 
   return (
     <VStack spacing={4} align="stretch" h="100%">
-      {/* Charts Display */}
       <Box flex="1" minH="0">
         {selectedProperties.length === 0 ? (
           <Card bg="gray.800" variant="elevated" h="100%">
@@ -208,7 +159,7 @@ const LiveCharts = ({ selectedProperties, odriveState, isConnected }) => {
             <CardHeader py={3} flexShrink={0}>
               <HStack justify="space-between">
                 <Heading size="md" color="white">
-                  Charts (List View)
+                  Live Charts
                 </Heading>
                 <Badge colorScheme="blue" variant="outline">
                   {chartData.length} data points

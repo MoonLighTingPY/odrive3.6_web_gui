@@ -27,7 +27,7 @@ import {
 import { getAxisStateName } from '../utils/odriveEnums'
 import { getErrorDescription, getErrorColor, isErrorCritical } from '../utils/odriveErrors'
 import '../styles/DeviceList.css'
-import { useTelemetry } from '../hooks/useTelemetry'
+import { useDashboardTelemetry } from '../hooks/useDashboardTelemetry'
 
 const DeviceList = () => {
   const dispatch = useDispatch()
@@ -79,12 +79,8 @@ const DeviceList = () => {
     return "red" // Error or undefined
   }
   
-
-  // Replace the useEffect that handles polling (around lines 90-145)
-  useTelemetry({
-    type: 'dashboard',
-    updateRate: 2000, // 2 seconds for device list
-  })
+  // Use the new dashboard telemetry hook
+  useDashboardTelemetry(2000) // 2 second updates for device list
 
     // Update the reconnection detection useEffect in DeviceList.jsx
   useEffect(() => {

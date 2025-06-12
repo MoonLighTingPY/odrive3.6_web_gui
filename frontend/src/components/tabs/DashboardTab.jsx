@@ -1,5 +1,6 @@
 import { useState} from 'react'
 import { useSelector } from 'react-redux'
+import { useDashboardTelemetry } from '../../hooks/useDashboardTelemetry'
 import {
   Box,
   VStack,
@@ -31,6 +32,9 @@ import ErrorTroubleshooting from "../modals/ErrorTroubleshootingModal"
 import '../../styles/DashboardTab.css'
 
 const DashboardTab = ({ isConnected, odriveState }) => {
+  // Use the new dashboard telemetry hook
+  useDashboardTelemetry(1000) // 1 second updates
+  
   // eslint-disable-next-line no-unused-vars
   const [realTimeData, setRealTimeData] = useState({})
   const [selectedError, setSelectedError] = useState({ code: null, type: null })

@@ -26,7 +26,6 @@ const InspectorTab = () => {
   const [searchFilter, setSearchFilter] = useState('')
   const [selectedProperties, setSelectedProperties] = useState([])
 
-
   const updateProperty = async (path, value) => {
     try {
       const response = await fetch('/api/odrive/set', {
@@ -84,8 +83,6 @@ const InspectorTab = () => {
 
   return (
     <VStack spacing={6} align="stretch" p={6} h="100%">
-
-
       {/* Main Content Grid */}
       <Grid templateColumns="1fr 1.5fr" gap={6} flex="1" h="100%">
         
@@ -106,8 +103,6 @@ const InspectorTab = () => {
         <GridItem>
           <LiveCharts
             selectedProperties={selectedProperties}
-            odriveState={odriveState}
-            isConnected={isConnected}
           />
         </GridItem>
 

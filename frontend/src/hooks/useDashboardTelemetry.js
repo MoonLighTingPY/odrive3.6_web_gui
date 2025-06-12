@@ -1,0 +1,30 @@
+import { useEffect } from 'react'
+import { useSelector, useDispatch } from 'react-redux'
+import { updateOdriveState, setConnectionLost } from '../store/slices/deviceSlice'
+
+export const useDashboardTelemetry = (updateRate = 1000) => {
+  const { isConnected } = useSelector(state => state.device)
+  const dispatch = useDispatch()
+
+  useEffect(() => {
+    if (!isConnected) return
+
+    const interval = setInterval(async () => {
+      try {
+        const response = await fetch('/api/odrive/dashboard')
+        
+        if (response.ok) {
+          const data = await response.json()
+          dispatch(updateOdriveState(data))
+        } else if (response.status === 404) {
+          dispatch(setConnectionLost(true))
+        }
+      } catch (error) {
+        console.error('Dashboard telemetry error:', error)
+        dispatch(setConnectionLost(true))
+      }
+    }, updateRate)
+
+    return () => clearInterval(interval)
+  }, [isConnected, dispatch, updateRate])
+}
