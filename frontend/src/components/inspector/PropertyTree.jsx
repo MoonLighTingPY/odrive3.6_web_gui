@@ -42,6 +42,7 @@ const PropertyTree = ({
   const [editValue, setEditValue] = useState('')
   const [refreshingProperties, setRefreshingProperties] = useState(new Set())
   const [propertyValues, setPropertyValues] = useState({})
+  const [collapsedSections, setCollapsedSections] = useState(new Set())
 
   // Refresh all properties when refreshTrigger changes
   useEffect(() => {
@@ -50,18 +51,37 @@ const PropertyTree = ({
     }
   }, [refreshTrigger, isConnected])
 
+  // Function to collect all properties recursively from the tree structure
+  const collectAllProperties = useCallback((node, basePath = '') => {
+    const properties = []
+    
+    // Add direct properties
+    if (node.properties) {
+      Object.entries(node.properties).forEach(([propName, prop]) => {
+        const fullPath = basePath ? `${basePath}.${propName}` : propName
+        properties.push({ path: fullPath, prop, propName })
+      })
+    }
+    
+    // Recursively add properties from children
+    if (node.children) {
+      Object.entries(node.children).forEach(([childName, childNode]) => {
+        const childPath = basePath ? `${basePath}.${childName}` : childName
+        properties.push(...collectAllProperties(childNode, childPath))
+      })
+    }
+    
+    return properties
+  }, [])
+
   // Function to refresh all properties at once
   const refreshAllProperties = async () => {
     const allPaths = []
     
-    // Collect all property paths from the tree
+    // Collect all property paths from the tree recursively
     Object.entries(odrivePropertyTree).forEach(([sectionName, section]) => {
-      Object.keys(section.properties).forEach(propName => {
-        const displayPath = sectionName === 'system' 
-          ? `system.${propName}` 
-          : `${sectionName}.${propName}`
-        allPaths.push(displayPath)
-      })
+      const sectionProperties = collectAllProperties(section, sectionName)
+      allPaths.push(...sectionProperties.map(p => p.path))
     })
 
     // Set all as refreshing
@@ -247,12 +267,24 @@ const PropertyTree = ({
     return typeof value === 'number' && !prop?.name?.toLowerCase().includes('error')
   }
 
+  const toggleSection = (sectionPath) => {
+    setCollapsedSections(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(sectionPath)) {
+        newSet.delete(sectionPath)
+      } else {
+        newSet.add(sectionPath)
+      }
+      return newSet
+    })
+  }
+
   const renderProperty = (prop, value, displayPath) => {
     if (!prop || typeof prop !== 'object') {
       console.warn(`Invalid property structure for ${displayPath}:`, prop)
       return (
-        <Box key={displayPath} p={3} bg="red.900" borderRadius="md">
-          <Text color="red.300">Invalid property: {displayPath}</Text>
+        <Box key={displayPath} p={2} bg="red.900" borderRadius="md">
+          <Text color="red.300" fontSize="sm">Invalid property: {displayPath}</Text>
         </Box>
       )
     }
@@ -272,102 +304,86 @@ const PropertyTree = ({
       <Box
         key={displayPath}
         bg={isError ? "red.900" : "gray.750"}
-        borderRadius="lg"
+        borderRadius="md"
         border="1px solid"
-        borderColor={isError ? "red.500" : "gray.600"}
-        p={4}
-        _hover={{ bg: isError ? "red.800" : "gray.700", borderColor: isError ? "red.400" : "gray.500" }}
+        borderColor={isError ? "red.600" : "gray.600"}
+        p={2}
+        _hover={{ bg: isError ? "red.800" : "gray.700" }}
         transition="all 0.2s"
       >
-        <HStack justify="space-between" align="center">
-          {/* Left side - Property info with chart checkbox */}
-          <HStack spacing={3} flex="1" align="center">
+        <HStack justify="space-between" align="center" spacing={2}>
+          {/* Left side - Compact property info */}
+          <HStack spacing={2} flex="1" align="center" minW="0">
             {isChartable && togglePropertyChart && (
-              <Tooltip label={isCharted ? "Remove from chart" : "Add to chart"}>
-                <Checkbox
-                  size="md"
-                  colorScheme="blue"
-                  isChecked={isCharted}
-                  onChange={() => togglePropertyChart(displayPath)}
-                />
-              </Tooltip>
+              <Checkbox
+                size="sm"
+                colorScheme="blue"
+                isChecked={isCharted}
+                onChange={() => togglePropertyChart(displayPath)}
+              />
             )}
             
-            <VStack align="start" spacing={1} flex="1">
-              <HStack spacing={2} align="center">
-                <Text fontSize="md" fontWeight="bold" color="white">
+            <VStack align="start" spacing={0} flex="1" minW="0">
+              <HStack spacing={1} align="center" w="100%">
+                <Text 
+                  fontSize="sm" 
+                  fontWeight="semibold" 
+                  color="white" 
+                  isTruncated
+                  flex="1"
+                >
                   {propName}
                 </Text>
-                <Badge size="sm" colorScheme={isWritable ? "green" : "gray"}>
+                <Badge size="xs" colorScheme={isWritable ? "green" : "gray"} variant="subtle">
                   {isWritable ? "RW" : "RO"}
                 </Badge>
-                <Badge size="sm" colorScheme="blue" variant="subtle">
-                  {valueType}
-                </Badge>
-                {isChartable && (
-                  <Badge size="sm" colorScheme="purple" variant="subtle">
-                    CHART
-                  </Badge>
-                )}
                 {isError && (
-                  <Badge size="sm" colorScheme="red">
-                    ERROR
+                  <Badge size="xs" colorScheme="red" variant="solid">
+                    ERR
                   </Badge>
                 )}
               </HStack>
               
-              <Text fontSize="xs" color="gray.400" fontFamily="mono">
+              <Text fontSize="xs" color="gray.500" fontFamily="mono" isTruncated w="100%">
                 {displayPath}
               </Text>
-              
-              {prop.description && (
-                <Text fontSize="xs" color="gray.500">
-                  {prop.description}
-                </Text>
-              )}
-              
-              {isError && value !== undefined && (
-                <Text fontSize="xs" color="red.400" fontWeight="bold">
-                  Error Code: 0x{value.toString(16).toUpperCase()}
-                </Text>
-              )}
             </VStack>
           </HStack>
           
-          {/* Right side - Value display and controls */}
-          <HStack spacing={3} minW="300px" justify="flex-end">
+          {/* Right side - Compact value and controls */}
+          <HStack spacing={1} minW="fit-content">
             {isEditing ? (
               <>
                 {valueType === 'boolean' ? (
                   <Switch
-                    size="lg"
+                    size="sm"
                     isChecked={editValue === 'true'}
                     onChange={(e) => setEditValue(e.target.checked ? 'true' : 'false')}
                     colorScheme="blue"
                   />
                 ) : (
                   <NumberInput
-                    size="md"
+                    size="sm"
                     value={editValue}
                     onChange={setEditValue}
                     min={prop.min}
                     max={prop.max}
                     step={prop.step}
                     precision={prop.decimals}
-                    minW="120px"
+                    w="80px"
                   >
-                    <NumberInputField bg="gray.700" color="white" />
+                    <NumberInputField bg="gray.700" color="white" fontSize="xs" />
                   </NumberInput>
                 )}
                 <IconButton
-                  size="sm"
+                  size="xs"
                   colorScheme="green"
                   icon={<CheckIcon />}
                   onClick={saveEdit}
                   isDisabled={!isConnected}
                 />
                 <IconButton
-                  size="sm"
+                  size="xs"
                   colorScheme="red"
                   icon={<CloseIcon />}
                   onClick={cancelEdit}
@@ -376,44 +392,36 @@ const PropertyTree = ({
             ) : (
               <>
                 <Text 
-                  fontSize="lg" 
+                  fontSize="sm" 
                   fontFamily="mono" 
                   color={value !== undefined ? (isError ? "red.300" : "white") : "gray.500"}
-                  fontWeight="bold"
-                  minW="120px"
+                  fontWeight="semibold"
+                  minW="60px"
                   textAlign="right"
                 >
                   {value !== undefined 
                     ? (typeof displayValue === 'number' 
-                        ? displayValue.toFixed(prop.decimals || 3)
+                        ? displayValue.toFixed(Math.min(prop.decimals || 2, 3))
                         : String(displayValue))
                     : 'N/A'
                   }
                 </Text>
                 
-                {/* Refresh button */}
-                <Tooltip label="Refresh value">
-                  <IconButton
-                    size="sm"
-                    variant="ghost"
-                    icon={isRefreshing ? <Spinner size="xs" /> : <RepeatIcon />}
-                    onClick={() => refreshProperty(displayPath)}
-                    isDisabled={!isConnected || isRefreshing}
-                    _hover={{ bg: "gray.600" }}
-                  />
-                </Tooltip>
+                <IconButton
+                  size="xs"
+                  variant="ghost"
+                  icon={isRefreshing ? <Spinner size="xs" /> : <RepeatIcon />}
+                  onClick={() => refreshProperty(displayPath)}
+                  isDisabled={!isConnected || isRefreshing}
+                />
                 
-                {/* Edit button for writable properties */}
                 {isWritable && isConnected && (
-                  <Tooltip label="Edit property">
-                    <IconButton
-                      size="sm"
-                      variant="ghost"
-                      icon={<EditIcon />}
-                      onClick={() => startEditing(displayPath, displayValue)}
-                      _hover={{ bg: "gray.600" }}
-                    />
-                  </Tooltip>
+                  <IconButton
+                    size="xs"
+                    variant="ghost"
+                    icon={<EditIcon />}
+                    onClick={() => startEditing(displayPath, displayValue)}
+                  />
                 )}
               </>
             )}
@@ -423,7 +431,73 @@ const PropertyTree = ({
     )
   }
 
-  // Apply search filter
+  // Function to render a section recursively with collapsible subsections
+  const renderSection = (section, sectionPath = '', depth = 0) => {
+    const sectionItems = []
+    
+    // Render direct properties first
+    if (section.properties) {
+      Object.entries(section.properties).forEach(([propName, prop]) => {
+        const displayPath = sectionPath ? `${sectionPath}.${propName}` : propName
+        const value = getValueFromState(displayPath)
+        sectionItems.push(renderProperty(prop, value, displayPath))
+      })
+    }
+    
+    // Then render child sections
+    if (section.children) {
+      Object.entries(section.children).forEach(([childName, childSection]) => {
+        const childPath = sectionPath ? `${sectionPath}.${childName}` : childName
+        const isCollapsed = collapsedSections.has(childPath)
+        const childPropertyCount = collectAllProperties(childSection).length
+        
+        sectionItems.push(
+          <Box key={`section-${childPath}`} ml={depth > 0 ? 3 : 0}>
+            {/* Collapsible section header */}
+            <Box
+              bg="gray.700"
+              borderRadius="md"
+              p={2}
+              mb={2}
+              border="1px solid"
+              borderColor="gray.600"
+              cursor="pointer"
+              onClick={() => toggleSection(childPath)}
+              _hover={{ bg: "gray.650" }}
+              transition="all 0.2s"
+            >
+              <HStack justify="space-between">
+                <HStack spacing={2}>
+                  <Text fontWeight="bold" color="blue.300" fontSize="sm">
+                    {isCollapsed ? '▶' : '▼'} {childSection.name}
+                  </Text>
+                  <Badge colorScheme="purple" variant="outline" size="xs">
+                    {childPropertyCount}
+                  </Badge>
+                </HStack>
+              </HStack>
+              {!isCollapsed && childSection.description && (
+                <Text fontSize="xs" color="gray.400" mt={1}>
+                  {childSection.description}
+                </Text>
+              )}
+            </Box>
+            
+            {/* Collapsible content */}
+            {!isCollapsed && (
+              <VStack spacing={1} align="stretch" ml={2}>
+                {renderSection(childSection, childPath, depth + 1)}
+              </VStack>
+            )}
+          </Box>
+        )
+      })
+    }
+    
+    return sectionItems
+  }
+
+  // Apply search filter with recursive search
   const filteredTree = useMemo(() => {
     let filtered = { ...odrivePropertyTree }
     
@@ -431,31 +505,28 @@ const PropertyTree = ({
       const searchFiltered = {}
       
       Object.entries(odrivePropertyTree).forEach(([sectionName, section]) => {
-        const filteredSection = { ...section, properties: {} }
-        let hasMatchingProps = false
+        // Collect all properties from this section recursively
+        const allProperties = collectAllProperties(section, sectionName)
         
-        Object.entries(section.properties).forEach(([propName, prop]) => {
-          if (!prop || typeof prop !== 'object') return
-          
-          const searchTerm = searchFilter.toLowerCase()
+        const searchTerm = searchFilter.toLowerCase()
+        const matchingProperties = allProperties.filter(({ path, prop, propName }) => {
           const propNameLower = propName.toLowerCase()
-          const sectionNameLower = sectionName.toLowerCase()
+          const pathLower = path.toLowerCase()
           const propDisplayName = prop.name ? prop.name.toLowerCase() : propNameLower
           const propDescription = prop.description ? prop.description.toLowerCase() : ''
           
-          if (
+          return (
             propDisplayName.includes(searchTerm) ||
             propDescription.includes(searchTerm) ||
             propNameLower.includes(searchTerm) ||
-            sectionNameLower.includes(searchTerm)
-          ) {
-            filteredSection.properties[propName] = prop
-            hasMatchingProps = true
-          }
+            pathLower.includes(searchTerm)
+          )
         })
         
-        if (hasMatchingProps || section.name.toLowerCase().includes(searchFilter.toLowerCase())) {
-          searchFiltered[sectionName] = filteredSection
+        if (matchingProperties.length > 0 || section.name.toLowerCase().includes(searchTerm)) {
+          // If we have matches, include the whole section
+          // In a more advanced implementation, you could rebuild the tree with only matching branches
+          searchFiltered[sectionName] = section
         }
       })
       
@@ -463,15 +534,15 @@ const PropertyTree = ({
     }
     
     return filtered
-  }, [searchFilter])
+  }, [searchFilter, collectAllProperties])
 
   return (
-    <VStack spacing={4} align="stretch" h="100%">
-      {/* Search Controls */}
+    <VStack spacing={3} align="stretch" h="100%">
+      {/* Compact Search Controls */}
       <Card bg="gray.800" variant="elevated">
-        <CardBody>
-          <HStack>
-            <SearchIcon color="gray.400" />
+        <CardBody py={2}>
+          <HStack spacing={2}>
+            <SearchIcon color="gray.400" boxSize={4} />
             <Input
               value={searchFilter}
               onChange={(e) => setSearchFilter(e.target.value)}
@@ -480,10 +551,11 @@ const PropertyTree = ({
               border="1px solid"
               borderColor="gray.600"
               color="white"
+              size="sm"
               flex="1"
             />
             {searchFilter && (
-              <Button size="sm" onClick={() => setSearchFilter('')}>
+              <Button size="xs" onClick={() => setSearchFilter('')}>
                 Clear
               </Button>
             )}
@@ -491,62 +563,67 @@ const PropertyTree = ({
         </CardBody>
       </Card>
 
-      {/* Property Tree */}
+      {/* Compact Property Tree */}
       <Card bg="gray.800" variant="elevated" flex="1">
-        <CardHeader>
+        <CardHeader py={2}>
           <HStack justify="space-between">
-            <Heading size="md" color="white">ODrive Properties</Heading>
-            <HStack spacing={2}>
+            <Heading size="sm" color="white">ODrive Properties</Heading>
+            <HStack spacing={1}>
               {selectedProperties.length > 0 && (
-                <Badge colorScheme="blue">
+                <Badge colorScheme="blue" size="sm">
                   {selectedProperties.length} charted
                 </Badge>
               )}
-              <Badge colorScheme="gray">
+              <Badge colorScheme="gray" size="sm">
                 {Object.keys(filteredTree).length} sections
               </Badge>
             </HStack>
           </HStack>
         </CardHeader>
-        <CardBody>
-          <Box maxH="600px" overflowY="auto">
-            <Accordion allowMultiple defaultIndex={Object.keys(filteredTree).map((_, index) => index)}>
-              {Object.entries(filteredTree).map(([sectionName, section]) => (
-                <AccordionItem key={sectionName} border="none">
-                  <AccordionButton
-                    _expanded={{ bg: 'gray.700' }}
-                    bg="gray.750"
-                    borderRadius="md"
-                    mb={2}
-                    _hover={{ bg: 'gray.700' }}
-                  >
-                    <Box flex="1" textAlign="left">
-                      <HStack>
-                        <Text fontWeight="bold" color="white" fontSize="lg">
-                          {section.name}
-                        </Text>
-                        <Badge colorScheme="blue" variant="solid">
-                          {Object.keys(section.properties).length}
-                        </Badge>
+        <CardBody py={2}>
+          <Box maxH="70vh" overflowY="auto">
+            <VStack spacing={2} align="stretch">
+              {Object.entries(filteredTree).map(([sectionName, section]) => {
+                const isCollapsed = collapsedSections.has(sectionName)
+                const totalProperties = collectAllProperties(section).length
+                
+                return (
+                  <Box key={sectionName}>
+                    {/* Main section header */}
+                    <Box
+                      bg="gray.700"
+                      borderRadius="md"
+                      p={3}
+                      mb={2}
+                      border="2px solid"
+                      borderColor="gray.600"
+                      cursor="pointer"
+                      onClick={() => toggleSection(sectionName)}
+                      _hover={{ bg: "gray.650", borderColor: "gray.500" }}
+                      transition="all 0.2s"
+                    >
+                      <HStack justify="space-between">
+                        <HStack spacing={2}>
+                          <Text fontWeight="bold" color="white" fontSize="md">
+                            {isCollapsed ? '▶' : '▼'} {section.name}
+                          </Text>
+                          <Badge colorScheme="blue" variant="solid" size="sm">
+                            {totalProperties}
+                          </Badge>
+                        </HStack>
                       </HStack>
                     </Box>
-                    <AccordionIcon />
-                  </AccordionButton>
-                  <AccordionPanel pb={4} px={0}>
-                    <VStack spacing={3} align="stretch">
-                      {Object.entries(section.properties).map(([propName, prop]) => {
-                        const displayPath = sectionName === 'system' 
-                          ? `system.${propName}` 
-                          : `${sectionName}.${propName}`
-                        const value = getValueFromState(displayPath)
-                        
-                        return renderProperty(prop, value, displayPath)
-                      })}
-                    </VStack>
-                  </AccordionPanel>
-                </AccordionItem>
-              ))}
-            </Accordion>
+                    
+                    {/* Main section content */}
+                    {!isCollapsed && (
+                      <VStack spacing={1} align="stretch" ml={2}>
+                        {renderSection(section, sectionName)}
+                      </VStack>
+                    )}
+                  </Box>
+                )
+              })}
+            </VStack>
           </Box>
         </CardBody>
       </Card>
