@@ -30,6 +30,11 @@ def calibrate():
         
         logger.info(f"Starting {calibration_type} calibration...")
         
+        # Check prerequisites first
+        prerequisites = check_calibration_prerequisites(odrive_manager)
+        if not prerequisites.get('ready', False):
+            return jsonify({'error': f"Calibration prerequisites not met: {prerequisites.get('reason', 'Unknown error')}"})
+        
         if calibration_type == 'full':
             result = odrive_manager.execute_command('device.axis0.requested_state = 3')
             if 'error' not in result:
@@ -40,11 +45,20 @@ def calibrate():
                     'next_state': 'full_calibration'
                 })
         elif calibration_type == 'motor':
+            # For motor-only calibration, we need to ensure it doesn't auto-continue
+            # First, disable any startup sequences that might interfere
+            logger.info("Preparing motor-only calibration...")
+            
+            # Temporarily disable encoder startup sequences to prevent auto-continuation
+            odrive_manager.execute_command('device.axis0.config.startup_encoder_index_search = False')
+            odrive_manager.execute_command('device.axis0.config.startup_encoder_offset_calibration = False')
+            
+            # Start motor calibration only
             result = odrive_manager.execute_command('device.axis0.requested_state = 4')
             if 'error' not in result:
-                logger.info("Motor calibration started successfully")
+                logger.info("Motor-only calibration started successfully")
                 return jsonify({
-                    'message': 'Motor calibration started',
+                    'message': 'Motor calibration started (motor parameters only)',
                     'sequence': ['motor'],
                     'next_state': 'motor_calibration'
                 })
@@ -71,19 +85,18 @@ def calibrate():
             if 'error' not in result:
                 logger.info("Encoder sequence calibration started successfully")
                 return jsonify({
-                    'message': 'Encoder calibration sequence started (Polarity -> Offset)',
+                    'message': 'Encoder calibration started (Polarity -> Offset)',
                     'sequence': ['encoder_polarity', 'encoder_offset'],
-                    'next_state': 'encoder_dir_find',
-                    'auto_continue': True
+                    'next_state': 'encoder_dir_find'
                 })
         else:
-            logger.error(f"Invalid calibration type: {calibration_type}")
-            return jsonify({'error': 'Invalid calibration type'}), 400
+            return jsonify({'error': f'Unknown calibration type: {calibration_type}'}), 400
             
         if 'error' in result:
-            logger.error(f"Calibration command failed: {result}")
             return jsonify(result), 400
             
+        return jsonify({'error': 'Failed to start calibration'}), 500
+        
     except Exception as e:
         logger.error(f"Error in calibrate: {e}")
         return jsonify({'error': str(e)}), 500
@@ -91,20 +104,19 @@ def calibrate():
 @calibration_bp.route('/calibration_status', methods=['GET'])
 def calibration_status():
     try:
+        if not odrive_manager.current_device:
+            return jsonify({'error': 'No device connected'}), 400
+        
+        # Get current axis state
         axis_state_result = odrive_manager.execute_command('device.axis0.current_state')
-        if 'error' in axis_state_result:
-            return jsonify(axis_state_result), 400
-            
-        if 'result' in axis_state_result:
+        axis_state = 1  # Default to IDLE
+        if 'result' in axis_state_result and 'error' not in axis_state_result:
             try:
                 axis_state = int(float(axis_state_result['result']))
             except (ValueError, TypeError):
-                axis_state = 0
-        else:
-            axis_state = axis_state_result.get('value', 0)
-            
-        logger.info(f"Current axis state: {axis_state} (raw result: {axis_state_result})")
+                axis_state = 1
         
+        # Get calibration flags
         motor_calibrated_result = odrive_manager.execute_command('device.axis0.motor.is_calibrated')
         encoder_ready_result = odrive_manager.execute_command('device.axis0.encoder.is_ready')
         
@@ -125,6 +137,7 @@ def calibration_status():
             except (ValueError, TypeError):
                 encoder_polarity_calibrated = False
         
+        # Get error states
         axis_error_result = odrive_manager.execute_command('device.axis0.error')
         motor_error_result = odrive_manager.execute_command('device.axis0.motor.error')
         encoder_error_result = odrive_manager.execute_command('device.axis0.encoder.error')
@@ -152,6 +165,7 @@ def calibration_status():
         
         logger.info(f"Calibration flags - Motor: {motor_calibrated}, Encoder Ready: {encoder_ready}, Encoder Polarity: {encoder_polarity_calibrated}")
         logger.info(f"Errors - Axis: 0x{axis_error:08x}, Motor: 0x{motor_error:08x}, Encoder: 0x{encoder_error:08x}")
+        logger.info(f"Current axis state: {axis_state}")
         
         has_errors = axis_error != 0 or motor_error != 0 or encoder_error != 0
         
@@ -159,16 +173,16 @@ def calibration_status():
         progress_percentage = 0
         auto_continue_action = None
         
-        if axis_state == 4:
+        if axis_state == 4:  # MOTOR_CALIBRATION
             calibration_phase = 'motor_calibration'
-            progress_percentage = 25
-        elif axis_state == 10:
+            progress_percentage = 50
+        elif axis_state == 10:  # ENCODER_DIR_FIND
             calibration_phase = 'encoder_polarity'
             progress_percentage = 50
-        elif axis_state == 7:
+        elif axis_state == 7:  # ENCODER_OFFSET_CALIBRATION
             calibration_phase = 'encoder_offset'
             progress_percentage = 75
-        elif axis_state == 3:
+        elif axis_state == 3:  # FULL_CALIBRATION_SEQUENCE
             if motor_calibrated and encoder_polarity_calibrated and encoder_ready:
                 calibration_phase = 'full_calibration_complete'
                 progress_percentage = 100
@@ -181,13 +195,13 @@ def calibration_status():
             else:
                 calibration_phase = 'full_calibration_motor'
                 progress_percentage = 25
-        elif axis_state == 12:
+        elif axis_state == 12:  # ENCODER_HALL_POLARITY_CALIBRATION
             calibration_phase = 'encoder_hall_polarity'
             progress_percentage = 50
-        elif axis_state == 13:
+        elif axis_state == 13:  # ENCODER_HALL_PHASE_CALIBRATION
             calibration_phase = 'encoder_hall_phase'
             progress_percentage = 75
-        elif axis_state == 1:
+        elif axis_state == 1:  # IDLE
             if has_errors:
                 calibration_phase = 'failed'
                 progress_percentage = 0
@@ -195,17 +209,17 @@ def calibration_status():
                 calibration_phase = 'complete'
                 progress_percentage = 100
             elif motor_calibrated and encoder_polarity_calibrated and not encoder_ready:
-                auto_continue_action = 'encoder_offset'
-                calibration_phase = 'ready_for_offset'
-                progress_percentage = 60
+                # Don't auto-continue for motor-only calibration
+                calibration_phase = 'motor_complete'
+                progress_percentage = 100
             elif motor_calibrated and not encoder_polarity_calibrated:
-                auto_continue_action = 'encoder_polarity'
-                calibration_phase = 'ready_for_polarity'
-                progress_percentage = 30
+                # Don't auto-continue for motor-only calibration  
+                calibration_phase = 'motor_complete'
+                progress_percentage = 100
             else:
                 calibration_phase = 'idle'
                 progress_percentage = 0
-        elif axis_state == 8:
+        elif axis_state == 8:  # CLOSED_LOOP_CONTROL
             if motor_calibrated and encoder_ready:
                 calibration_phase = 'complete'
                 progress_percentage = 100
@@ -213,34 +227,28 @@ def calibration_status():
                 calibration_phase = 'idle'
                 progress_percentage = 0
         else:
-            if axis_state == 2:
+            if axis_state == 2:  # STARTUP_SEQUENCE
                 calibration_phase = 'startup'
                 progress_percentage = 10
-            elif axis_state == 9:
+            elif axis_state == 9:  # LOCKIN_SPIN
                 calibration_phase = 'lockin_spin'
                 progress_percentage = 40
             else:
-                calibration_phase = f'state_{axis_state}'
-                progress_percentage = 20
-        
-        logger.info(f"Determined calibration phase: {calibration_phase}, progress: {progress_percentage}%")
+                calibration_phase = 'unknown'
+                progress_percentage = 0
         
         return jsonify({
             'axis_state': axis_state,
-            'calibration_phase': calibration_phase,
-            'progress_percentage': progress_percentage,
             'motor_calibrated': motor_calibrated,
-            'encoder_polarity_calibrated': encoder_polarity_calibrated,
             'encoder_ready': encoder_ready,
+            'encoder_polarity_calibrated': encoder_polarity_calibrated,
             'axis_error': axis_error,
             'motor_error': motor_error,
             'encoder_error': encoder_error,
-            'auto_continue_action': auto_continue_action if not has_errors else None,
-            'errors': {
-                'axis': axis_error,
-                'motor': motor_error,
-                'encoder': encoder_error
-            }
+            'has_errors': has_errors,
+            'calibration_phase': calibration_phase,
+            'progress_percentage': progress_percentage,
+            'auto_continue_action': auto_continue_action
         })
         
     except Exception as e:

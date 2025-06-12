@@ -94,7 +94,7 @@ useEffect(() => {
   if (isConnected && Object.keys(currentConfig).length > 0) {
     handleAutoBackup()
   }
-}, [isConnected]) // Remove currentConfig from dependencies
+}, [isConnected, currentConfig, handleAutoBackup]) // Remove currentConfig from dependencies
 
   const handleLoadPreset = async () => {
   if (!selectedPreset) {
@@ -206,62 +206,7 @@ useEffect(() => {
   }
 }
 
-const handleDownloadCurrent = async () => {
-  try {
-    // Generate a timestamp-based name for the download
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').split('T')
-    const downloadName = `current_config_${timestamp[0]}_${timestamp[1].split('.')[0]}`
-    
-    // Create a temporary preset object for export
-    const tempPreset = {
-      name: downloadName,
-      description: 'Current configuration export',
-      timestamp: new Date().toISOString(),
-      version: '0.5.6',
-      config: currentConfig
-    }
-    
-    // Create export data
-    const exportData = {
-      exportInfo: {
-        exportDate: new Date().toISOString(),
-        odriveVersion: '0.5.6',
-        guiVersion: '1.0.0',
-        presetCount: 1
-      },
-      presets: {
-        [downloadName]: tempPreset
-      }
-    }
 
-    // Create and download file
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { 
-      type: 'application/json' 
-    })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `${downloadName}.json`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-    
-    toast({
-      title: 'Configuration Downloaded',
-      description: 'Current configuration exported to file',
-      status: 'success',
-      duration: 3000,
-    })
-  } catch (error) {
-    toast({
-      title: 'Download Failed',
-      description: error.message,
-      status: 'error',
-      duration: 3000,
-    })
-  }
-}
 
 // Drag and drop handlers
 const handleDragOver = (e) => {
@@ -431,17 +376,7 @@ return (
           >
             Save Preset
           </Button>
-          <Button
-            leftIcon={<DownloadIcon />}
-            colorScheme="blue"
-            variant="outline"
-            size="md"
-            onClick={handleDownloadCurrent}
-            isDisabled={!isConnected && !(import.meta.env.DEV || import.meta.env.MODE === 'development')}
-            title="Download current configuration as preset file"
-          >
-            Download
-          </Button>
+
         </HStack>
       </HStack>
     </Box>
