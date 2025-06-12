@@ -44,12 +44,6 @@ const PropertyTree = ({
   const [propertyValues, setPropertyValues] = useState({})
   const [collapsedSections, setCollapsedSections] = useState(new Set())
 
-  // Refresh all properties when refreshTrigger changes
-  useEffect(() => {
-    if (refreshTrigger > 0 && isConnected) {
-      refreshAllProperties()
-    }
-  }, [refreshTrigger, isConnected, refreshAllProperties])
 
   // Function to collect all properties recursively from the tree structure
   const collectAllProperties = useCallback((node, basePath = '') => {
@@ -126,6 +120,14 @@ const PropertyTree = ({
     // Clear refreshing state
     setRefreshingProperties(new Set())
   }, [collectAllProperties])
+
+    // Refresh all properties when refreshTrigger changes
+  useEffect(() => {
+    if (refreshTrigger > 0 && isConnected) {
+      refreshAllProperties()
+    }
+  }, [refreshTrigger, isConnected, refreshAllProperties])
+
 
   // Refresh a single property
   const refreshProperty = async (displayPath) => {
