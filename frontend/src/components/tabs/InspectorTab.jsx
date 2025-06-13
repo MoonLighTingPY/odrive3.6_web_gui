@@ -95,24 +95,27 @@ const InspectorTab = () => {
   return (
     <VStack spacing={6} align="stretch" p={6} h="100%">
       {/* Main Content Grid */}
-      <Grid templateColumns="1fr 1.5fr" gap={6} flex="1" h="100%">
+      <Grid templateColumns="1fr 1fr" gap={6} flex="1" h="100%">
         
-        {/* Left Side - Property Tree */}
+        {/* Left Side - Property Tree & Motor Controls */}
         <GridItem>
-          <PropertyTree
-            odriveState={odriveState}
-            searchFilter={searchFilter}
-            setSearchFilter={setSearchFilter}
-            updateProperty={updateProperty}
-            isConnected={isConnected}
-            selectedProperties={selectedProperties}
-            togglePropertyChart={togglePropertyChart}
-            refreshTrigger={refreshTrigger}
-          />
-            <VStack spacing={4} h="100%">
+          <VStack spacing={4} h="100%">
+            {/* Property Tree - Give it more space */}
+            <Box flex="1" minH="0" w="100%">
+              <PropertyTree
+                odriveState={odriveState}
+                searchFilter={searchFilter}
+                setSearchFilter={setSearchFilter}
+                updateProperty={updateProperty}
+                isConnected={isConnected}
+                selectedProperties={selectedProperties}
+                togglePropertyChart={togglePropertyChart}
+                refreshTrigger={refreshTrigger}
+              />
+            </Box>
             
-            {/* Motor Control Buttons */}
-            <Card bg="gray.800" variant="elevated" w="100%">
+            {/* Motor Control Buttons - Compact at bottom */}
+            <Card bg="gray.800" variant="elevated" w="100%" flexShrink={0}>
               <CardHeader py={2}>
                 <Heading size="sm" color="white">Motor Controls</Heading>
               </CardHeader>
@@ -125,8 +128,6 @@ const InspectorTab = () => {
                 </SimpleGrid>
               </CardBody>
             </Card>
-
-            {/* ...existing PropertyDetails component... */}
           </VStack>
         </GridItem>
 
