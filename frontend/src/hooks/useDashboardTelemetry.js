@@ -9,9 +9,8 @@ export const useDashboardTelemetry = (updateRate = 2000, isActive = true) => {
   useEffect(() => {
     if (!isConnected) return // Only check if connected, not isActive
 
-
-
-    const interval = setInterval(async () => {
+    // Immediate fetch function
+    const fetchTelemetry = async () => {
       try {
         const response = await fetch('/api/odrive/dashboard')
         
@@ -25,7 +24,13 @@ export const useDashboardTelemetry = (updateRate = 2000, isActive = true) => {
         console.error('Dashboard telemetry error:', error)
         dispatch(setConnectionLost(true))
       }
-    }, updateRate)
+    }
+
+    // Fetch immediately when connected
+    fetchTelemetry()
+
+    // Then set up interval for regular updates
+    const interval = setInterval(fetchTelemetry, updateRate)
 
     return () => {
       clearInterval(interval)
