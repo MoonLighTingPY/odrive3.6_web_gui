@@ -11,7 +11,7 @@ excludes = [
     'IPython',
     'jupyter',
     'notebook',
-    'tkinter',
+    # 'tkinter',  # Remove tkinter from excludes since we need it for message dialogs
     'PyQt5',
     'PyQt6',
     'PySide2',
@@ -104,7 +104,9 @@ all_hiddenimports = [
     'json',
     'time',
     'logging',
-    'requests'
+    'requests',
+    'tkinter',  # Add tkinter for message dialogs
+    'tkinter.messagebox'  # Add tkinter.messagebox specifically
 ] + pystray_hiddenimports + pil_hiddenimports + flask_hiddenimports
 
 a = Analysis(

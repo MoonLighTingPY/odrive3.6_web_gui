@@ -35,6 +35,8 @@ else:
 
 logger = logging.getLogger(__name__)
 
+from app.constants import VERSION
+
 class ODriveTrayApp:
     def __init__(self):
         self.backend_process = None
@@ -51,22 +53,25 @@ class ODriveTrayApp:
         try:
             # Check for running ODrive processes
             current_pid = os.getpid()
+            current_exe = psutil.Process(current_pid).exe() if hasattr(psutil.Process(current_pid), 'exe') else None
             odrive_processes = []
             
             for proc in psutil.process_iter(['pid', 'name', 'exe']):
                 try:
                     proc_info = proc.info
                     if proc_info['pid'] != current_pid and proc_info['name']:
-                        # Check for ODrive GUI executables
-                        if any(name in proc_info['name'].lower() for name in [
-                            'odrive_gui_tray', 'odrive', 'tray_app'
-                        ]):
+                        # More specific check - only look for exact executable names
+                        if proc_info['name'].lower() in ['odrive_gui_tray.exe', 'tray_app.exe']:
+                            # Additional check: make sure it's not the same executable path
+                            if current_exe and proc_info['exe'] == current_exe:
+                                continue  # Skip if it's the same executable (shouldn't happen but safety check)
                             odrive_processes.append(proc)
-                        # Also check for Python processes running our scripts
+                        # Check for Python processes only if they're running specific ODrive scripts
                         elif 'python' in proc_info['name'].lower() and proc_info['exe']:
                             try:
                                 cmdline = proc.cmdline()
-                                if any('tray_app' in arg or 'odrive' in arg for arg in cmdline):
+                                # Only detect if explicitly running tray_app.py (not just any odrive script)
+                                if any('tray_app.py' in arg for arg in cmdline):
                                     odrive_processes.append(proc)
                             except:
                                 pass
@@ -102,43 +107,25 @@ class ODriveTrayApp:
             root.withdraw()
             root.attributes('-topmost', True)
             
-            # Prepare the message
-            instance_info = []
-            if processes:
-                instance_info.append(f"• {len(processes)} ODrive GUI process(es) running")
-            if port_in_use:
-                instance_info.append("• Backend server (port 5000) is occupied")
+            # Simplified message
+            message = "ODrive GUI is already running!\n\nDo you want to close the existing instance?"
             
-            message = (
-                "Another instance of ODrive GUI is already running!\n\n"
-                f"{chr(10).join(instance_info)}\n\n"
-                "What would you like to do?\n\n"
-                "YES: Close existing instances and start this one\n"
-                "NO: Cancel and exit this instance\n"
-                "CANCEL: Continue anyway (may cause conflicts)"
-            )
-            
-            # Show message box with three options
-            result = messagebox.askyesnocancel(
+            # Show simple yes/no dialog
+            result = messagebox.askyesno(
                 "ODrive GUI Already Running",
                 message,
-                icon='warning'
+                icon='question'
             )
             
             root.destroy()
             
-            if result is True:  # YES - Close existing and continue
+            if result:  # YES - Close existing and continue
                 logger.info("User chose to close existing instances")
                 self.close_existing_instances(processes)
                 return True
-                
-            elif result is False:  # NO - Cancel this instance
+            else:  # NO - Cancel this instance
                 logger.info("User chose to cancel this instance")
                 return False
-                
-            else:  # CANCEL - Continue anyway
-                logger.info("User chose to continue with potential conflicts")
-                return True
                 
         except Exception as e:
             logger.error(f"Error showing dialog: {e}")
@@ -179,7 +166,7 @@ class ODriveTrayApp:
         if self.icon:
             # Update the menu and tooltip to reflect new status
             self.icon.menu = self.create_menu()
-            self.icon.title = f"ODrive GUI - {self.status}"
+            self.icon.title = f"ODrive GUI ({VERSION}) - {self.status}"
 
     def start_backend(self):
         """Start the Flask backend in a separate thread - non-blocking"""
@@ -353,7 +340,7 @@ class ODriveTrayApp:
                 "ODrive GUI", 
                 image, 
                 menu=self.create_menu(),
-                title=f"ODrive GUI - {self.status}"  # Set initial tooltip
+                title=f"ODrive GUI ({VERSION}) - {self.status}"
             )
             
             # Start backend in background immediately
