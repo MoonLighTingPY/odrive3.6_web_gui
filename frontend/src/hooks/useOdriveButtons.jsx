@@ -55,7 +55,7 @@ const useODriveCommand = () => {
   return { sendCommand }
 }
 
-// Base button component for calibration buttons
+// Base button component for calibration buttons - REMOVED MODAL
 const CalibrationButtonBase = ({ 
   axisNumber = 0, 
   size = "sm", 
@@ -64,6 +64,45 @@ const CalibrationButtonBase = ({
   children, 
   title 
 }) => {
+  const { isConnected, odriveState } = useSelector(state => state.device)
+  const { sendCommand } = useODriveCommand()
+  
+  const axisState = odriveState.device?.[`axis${axisNumber}`]?.current_state || 0
+  const axisError = odriveState.device?.[`axis${axisNumber}`]?.error || 0
+  
+  const handleCalibration = () => {
+    // Direct command execution without modal
+    const commands = {
+      'motor': `odrv0.axis${axisNumber}.requested_state = 4`,
+      'encoder_polarity': `odrv0.axis${axisNumber}.requested_state = 10`, 
+      'encoder_offset': `odrv0.axis${axisNumber}.requested_state = 7`,
+      'encoder_index_search': `odrv0.axis${axisNumber}.requested_state = 6`
+    }
+    
+    const command = commands[calibrationType]
+    if (command) {
+      sendCommand(command)
+    }
+  }
+  
+  const isMotorIdle = axisState === 1
+  const hasErrors = axisError !== 0
+  
+  return (
+    <Button
+      size={size}
+      colorScheme={colorScheme}
+      onClick={handleCalibration}
+      isDisabled={!isConnected || !isMotorIdle || hasErrors}
+      title={hasErrors ? "Clear errors before calibration" : title}
+    >
+      {children}
+    </Button>
+  )
+}
+
+// Full Calibration button - KEEPS MODAL
+export const CalibrationButton = ({ axisNumber = 0, size = "sm" }) => {
   const { isConnected, odriveState } = useSelector(state => state.device)
   const { isOpen, onOpen, onClose } = useDisclosure()
   
@@ -81,7 +120,7 @@ const CalibrationButtonBase = ({
   } = useCalibration()
   
   const handleCalibration = () => {
-    startCalibration(calibrationType)
+    startCalibration('full')
     onOpen()
   }
   
@@ -92,12 +131,12 @@ const CalibrationButtonBase = ({
     <>
       <Button
         size={size}
-        colorScheme={colorScheme}
+        colorScheme="orange"
         onClick={handleCalibration}
         isDisabled={!isConnected || !isMotorIdle || hasErrors}
-        title={hasErrors ? "Clear errors before calibration" : title}
+        title={hasErrors ? "Clear errors before calibration" : "Start full calibration sequence (motor + encoder)"}
       >
-        {children}
+        Full Calibration
       </Button>
       
       <CalibrationModal
@@ -114,7 +153,55 @@ const CalibrationButtonBase = ({
   )
 }
 
-// Individual button components
+// Individual calibration buttons - NO MODALS
+export const MotorCalibrationButton = ({ axisNumber = 0, size = "sm" }) => (
+  <CalibrationButtonBase
+    axisNumber={axisNumber}
+    size={size}
+    colorScheme="orange"
+    calibrationType="motor"
+    title="Start motor calibration only"
+  >
+    Motor Calibration
+  </CalibrationButtonBase>
+)
+
+export const EncoderHallCalibrationButton = ({ axisNumber = 0, size = "sm" }) => (
+  <CalibrationButtonBase
+    axisNumber={axisNumber}
+    size={size}
+    colorScheme="orange"
+    calibrationType="encoder_polarity"
+    title="Start encoder hall polarity calibration"
+  >
+    Hall Polarity
+  </CalibrationButtonBase>
+)
+
+export const EncoderOffsetCalibrationButton = ({ axisNumber = 0, size = "sm" }) => (
+  <CalibrationButtonBase
+    axisNumber={axisNumber}
+    size={size}
+    colorScheme="orange"
+    calibrationType="encoder_offset"
+    title="Start encoder offset calibration"
+  >
+    Encoder Offset
+  </CalibrationButtonBase>
+)
+
+export const EncoderIndexSearchButton = ({ axisNumber = 0, size = "sm" }) => (
+  <CalibrationButtonBase
+    axisNumber={axisNumber}
+    size={size}
+    colorScheme="orange"
+    calibrationType="encoder_index_search"
+    title="Start encoder index search"
+  >
+    Encoder Index Search
+  </CalibrationButtonBase>
+)
+
 export const EnableMotorButton = ({ axisNumber = 0, size = "sm" }) => {
   const { isConnected, odriveState } = useSelector(state => state.device)
   const { sendCommand } = useODriveCommand()
@@ -193,67 +280,7 @@ export const ClearErrorsButton = ({ axisNumber = 0, size = "sm" }) => {
   )
 }
 
-// Calibration buttons using the base component
-export const CalibrationButton = ({ axisNumber = 0, size = "sm" }) => (
-  <CalibrationButtonBase
-    axisNumber={axisNumber}
-    size={size}
-    colorScheme="orange"
-    calibrationType="full"
-    title="Start full calibration sequence (motor + encoder)"
-  >
-    Full Calibration
-  </CalibrationButtonBase>
-)
-
-export const MotorCalibrationButton = ({ axisNumber = 0, size = "sm" }) => (
-  <CalibrationButtonBase
-    axisNumber={axisNumber}
-    size={size}
-    colorScheme="orange"
-    calibrationType="motor"
-    title="Start motor calibration only"
-  >
-    Motor Calibration
-  </CalibrationButtonBase>
-)
-
-export const EncoderHallCalibrationButton = ({ axisNumber = 0, size = "sm" }) => (
-  <CalibrationButtonBase
-    axisNumber={axisNumber}
-    size={size}
-    colorScheme="orange"
-    calibrationType="encoder_polarity"
-    title="Start encoder hall polarity calibration (required before offset calibration for hall encoders)"
-  >
-    Hall Polarity
-  </CalibrationButtonBase>
-)
-
-export const EncoderOffsetCalibrationButton = ({ axisNumber = 0, size = "sm" }) => (
-  <CalibrationButtonBase
-    axisNumber={axisNumber}
-    size={size}
-    colorScheme="orange"
-    calibrationType="encoder_offset"
-    title="Start encoder offset calibration"
-  >
-    Encoder Offset
-  </CalibrationButtonBase>
-)
-
-export const EncoderIndexSearchButton = ({ axisNumber = 0, size = "sm" }) => (
-  <CalibrationButtonBase
-    axisNumber={axisNumber}
-    size={size}
-    colorScheme="purple"
-    calibrationType="encoder_index_search"
-    title="Start encoder index search"
-  >
-    Index Search
-  </CalibrationButtonBase>
-)
-
+// Reboot button
 export const RebootButton = ({ size = "sm" }) => {
   const { isConnected } = useSelector(state => state.device)
   const { sendCommand } = useODriveCommand()
