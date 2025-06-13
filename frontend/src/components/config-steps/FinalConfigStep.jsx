@@ -213,7 +213,6 @@ const FinalConfigStep = () => {
 
             </VStack>
 
-                          {/* Configuration Actions - Now at the top */}
               <VStack spacing={4} w="100%" maxW="400px" mx="auto">
               
                 
