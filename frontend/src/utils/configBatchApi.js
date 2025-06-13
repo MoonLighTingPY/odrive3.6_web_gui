@@ -93,7 +93,7 @@ export const loadAllConfigurationBatch = async () => {
     'device.axis0.motor.config.pre_calibrated',
     // Motor thermistor configuration parameters
     'device.axis0.motor.motor_thermistor.config.enabled',
-    'device.axis0.motor.motor_thermistor.config.gpio_pin', 
+    'device.axis0.motor.motor_thermistor.config.gpio_pin',
     'device.axis0.motor.motor_thermistor.config.temp_limit_lower',
     'device.axis0.motor.motor_thermistor.config.temp_limit_upper',
     'device.axis0.motor.motor_thermistor.config.poly_coefficient_0',
@@ -157,7 +157,7 @@ export const loadAllConfigurationBatch = async () => {
   
   // Load all parameters in one batch request
   const allResults = await loadConfigurationBatch(allPaths);
-  
+
   // Import the conversion function at the top level
   const { convertTorqueConstantToKv } = await import('../utils/valueHelpers');
   
@@ -180,12 +180,39 @@ export const loadAllConfigurationBatch = async () => {
     
     if (value !== undefined && value !== null) {
       const configKey = path.split('.').pop();
-      
+    
       // Categorize by path pattern with special handling for specific parameters
       if (path.includes('.config.dc_') || path.includes('.config.brake_') || path.includes('.config.enable_brake_')) {
         // Handle power configuration mappings
         if (configKey === 'enable_brake_resistor') {
           categorizedResults.power['brake_resistor_enabled'] = value;
+        } else {
+          categorizedResults.power[configKey] = value;
+        }
+      } else if (path.includes('.motor.motor_thermistor.config.')) {
+        // Motor thermistor parameters should be categorized under motor configuration
+        // THIS NEEDS TO COME BEFORE THE INTERFACE CHECK!
+        if (configKey === 'enabled') {
+          categorizedResults.motor['motor_thermistor_enabled'] = value;
+        } else if (configKey === 'gpio_pin') {
+          categorizedResults.motor['motor_thermistor_gpio_pin'] = value;
+        } else if (configKey === 'temp_limit_lower') {
+          categorizedResults.motor['motor_temp_limit_lower'] = value;
+        } else if (configKey === 'temp_limit_upper') {
+          categorizedResults.motor['motor_temp_limit_upper'] = value;
+        } else if (configKey.startsWith('poly_coefficient_')) {
+          // Handle polynomial coefficients
+          const coeffNum = configKey.split('_').pop();
+          categorizedResults.motor[`motor_thermistor_poly_coeff_${coeffNum}`] = value;
+        } else {
+          categorizedResults.motor[configKey] = value;
+        }
+      } else if (path.includes('.motor.fet_thermistor.config.')) {
+        // FET thermistor should go to power config with proper key mapping
+        if (configKey === 'temp_limit_lower') {
+          categorizedResults.power['fet_temp_limit_lower'] = value;
+        } else if (configKey === 'temp_limit_upper') {
+          categorizedResults.power['fet_temp_limit_upper'] = value;
         } else {
           categorizedResults.power[configKey] = value;
         }
@@ -234,32 +261,6 @@ export const loadAllConfigurationBatch = async () => {
         } else {
           categorizedResults.interface[configKey] = value;
         }
-      } else if (path.includes('.motor.motor_thermistor.config.')) {
-        // Motor thermistor parameters should be categorized under motor configuration
-        if (configKey === 'enabled') {
-          categorizedResults.motor['motor_thermistor_enabled'] = value;
-        } else if (configKey === 'gpio_pin') {
-          categorizedResults.motor['motor_thermistor_gpio_pin'] = value;
-        } else if (configKey === 'temp_limit_lower') {
-          categorizedResults.motor['motor_temp_limit_lower'] = value;
-        } else if (configKey === 'temp_limit_upper') {
-          categorizedResults.motor['motor_temp_limit_upper'] = value;
-        } else if (configKey.startsWith('poly_coefficient_')) {
-          // Handle polynomial coefficients
-          const coeffNum = configKey.split('_').pop();
-          categorizedResults.motor[`motor_thermistor_poly_coeff_${coeffNum}`] = value;
-        } else {
-          categorizedResults.motor[configKey] = value;
-        }
-      } else if (path.includes('.motor.fet_thermistor.config.')) {
-        // FET thermistor should go to power config with proper key mapping
-        if (configKey === 'temp_limit_lower') {
-          categorizedResults.power['fet_temp_limit_lower'] = value;
-        } else if (configKey === 'temp_limit_upper') {
-          categorizedResults.power['fet_temp_limit_upper'] = value;
-        } else {
-          categorizedResults.power[configKey] = value;
-        }
       } else {
         // Catch any uncategorized parameters
         console.warn(`Uncategorized parameter: ${path} = ${value}`);
@@ -267,6 +268,6 @@ export const loadAllConfigurationBatch = async () => {
       }
     }
   }
-  
+
   return categorizedResults;
 };
