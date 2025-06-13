@@ -28,10 +28,9 @@ import { InfoIcon, WarningIcon } from '@chakra-ui/icons'
 import { getAxisStateName } from '../../utils/odriveEnums'
 import { getErrorDescription, isErrorCritical } from '../../utils/odriveErrors'
 import ErrorTroubleshooting from "../modals/ErrorTroubleshootingModal"
-import CalibrationModal from '../modals/CalibrationModal'
-import { useCalibration } from '../../hooks/useCalibration'
 import '../../styles/DashboardTab.css'
 import { useDashboardTelemetry } from '../../hooks/useDashboardTelemetry'
+import MotorControls from '../MotorControls'
 
 const DashboardTab = ({ isActive = false }) => {
   
@@ -40,18 +39,7 @@ const DashboardTab = ({ isActive = false }) => {
   const [selectedError, setSelectedError] = useState({ code: null, type: null })
   
   const { isOpen: isTroubleshootingOpen, onOpen: onTroubleshootingOpen, onClose: onTroubleshootingClose } = useDisclosure()
-  const { isOpen: isCalibrationOpen, onOpen: onCalibrationOpen, onClose: onCalibrationClose } = useDisclosure()
 
-  // Use the calibration hook
-  const {
-    calibrationStatus,
-    calibrationProgress,
-    isCalibrating,
-    calibrationPhase,
-    calibrationSequence,
-    startCalibration,
-    getCalibrationPhaseDescription
-  } = useCalibration()
 
   // Move useDashboardTelemetry hook to top level, with isActive parameter
   useDashboardTelemetry(isActive ? 100 : 2000, isActive)
@@ -153,7 +141,7 @@ const DashboardTab = ({ isActive = false }) => {
 
   // Add null checks before accessing properties
   const axisState = axis0Data?.state || 0
-  const motorCurrent = odriveState.device?.axis0?.motor?.current_meas_phB || 0
+  const motorCurrent = odriveState.device?.axis0?.motor?.current_control?.Iq_measured || 0
   const encoderPos = odriveState.device?.axis0?.encoder?.pos_estimate || 0
   const encoderVel = odriveState.device?.axis0?.encoder?.vel_estimate || 0
   const vbusVoltage = odriveState.device?.vbus_voltage || 0
@@ -213,13 +201,6 @@ const DashboardTab = ({ isActive = false }) => {
     )
   }
 
-  // Update the calibration button click handler:
-  const handleFullCalibration = async () => {
-    const result = await startCalibration('full')
-    if (result.success) {
-      onCalibrationOpen()
-    }
-  }
 
   return (
     <Box className="dashboard-tab" h="100%" overflow="hidden">
@@ -406,67 +387,21 @@ const DashboardTab = ({ isActive = false }) => {
         
 
         {/* Control Actions */}
+                {/* Control Actions */}
         <Card bg="gray.800" variant="elevated">
           <CardHeader>
             <Heading size="md" color="white">Quick Actions</Heading>
           </CardHeader>
           <CardBody>
-            <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
-              <Button
-                colorScheme="green"
-                onClick={() => fetch('/api/odrive/command', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ command: 'odrv0.axis0.requested_state = 8' })
-                })}
-                isDisabled={axisState === 8}
-              >
-                Enable Motor
-              </Button>
-              <Button
-                colorScheme="red"
-                onClick={() => fetch('/api/odrive/command', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ command: 'odrv0.axis0.requested_state = 1' })
-                })}
-                isDisabled={axisState === 1}
-              >
-                Disable Motor
-              </Button>
-              <Button
-                colorScheme="orange"
-                onClick={handleFullCalibration}
-                isDisabled={axisState !== 1}
-              >
-                Full Calibration
-              </Button>
-              <Button
-                colorScheme="blue"
-                onClick={() => fetch('/api/odrive/command', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ command: 'odrv0.clear_errors()' })
-                })}
-              >
-                Clear Errors
-              </Button>
-            </SimpleGrid>
+            <MotorControls 
+              axisNumber={0} 
+              size="md" 
+              orientation="horizontal" 
+            />
           </CardBody>
         </Card>
       </VStack>
 
-      {/* Add the Calibration Modal before the Error Troubleshooting Modal */}
-      <CalibrationModal
-        isOpen={isCalibrationOpen}
-        onClose={onCalibrationClose}
-        isCalibrating={isCalibrating}
-        calibrationProgress={calibrationProgress}
-        calibrationPhase={calibrationPhase}
-        calibrationSequence={calibrationSequence}
-        calibrationStatus={calibrationStatus}
-        getCalibrationPhaseDescription={getCalibrationPhaseDescription}
-      />
 
       {/* Error Troubleshooting Modal */}
       <ErrorTroubleshooting

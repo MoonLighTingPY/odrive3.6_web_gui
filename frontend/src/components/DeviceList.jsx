@@ -354,7 +354,7 @@ const DeviceList = () => {
                 <HStack justify="space-between">
                   <Text fontSize="sm" color="gray.300">Motor Current:</Text>
                   <Text fontSize="sm" fontWeight="bold" color="white">
-                    {odriveState.device?.axis0?.motor?.current_meas_phB?.toFixed(2) || '0.00'} A
+                    {odriveState.device?.axis0?.motor?.current_control?.Iq_measured?.toFixed(2) || '0.00'} A
                   </Text>
                 </HStack>
                 <HStack justify="space-between">
