@@ -11,7 +11,8 @@ import {
   AlertIcon,
   Flex,
   useToast,
-  Spinner
+  Spinner,
+  useDisclosure
 } from '@chakra-ui/react'
 import PowerConfigStep from '../config-steps/PowerConfigStep'
 import MotorConfigStep from '../config-steps/MotorConfigStep'
@@ -24,6 +25,7 @@ import { applyAndSaveConfiguration } from '../../utils/configurationActions'
 import { 
   loadAllConfigurationBatch
 } from '../../utils/configBatchApi'
+import EraseConfigModal from '../modals/EraseConfigModal'
 
 const ConfigurationTab = () => {
   const dispatch = useDispatch()
@@ -44,6 +46,8 @@ const ConfigurationTab = () => {
   const [pullProgress, setPullProgress] = useState(0)
   const [isApplyingSave, setIsApplyingSave] = useState(false)
   const [hasAutoLoaded, setHasAutoLoaded] = useState(false)
+
+  const { isOpen: isEraseOpen, onOpen: onEraseOpen, onClose: onEraseClose } = useDisclosure()
 
   const steps = [
     { id: 1, name: 'Power', icon: '⚡', component: PowerConfigStep },
@@ -438,6 +442,17 @@ useEffect(() => {
             {activeConfigStep < steps.length && (
               <HStack spacing={3} justify="center">
                 <Button
+                  colorScheme="red"
+                  variant="outline"
+                  size="md"
+                  onClick={onEraseOpen}
+                  isDisabled={!isConnected}
+                  leftIcon={<Text>🗑️</Text>}
+                >
+                  Erase Config
+                </Button>
+
+                <Button
                   colorScheme="green"
                   variant="outline"
                   size="md"
@@ -449,6 +464,8 @@ useEffect(() => {
                 >
                   Pull Current Config
                 </Button>
+                
+
                 
                 <Button
                   colorScheme="blue"
@@ -478,6 +495,12 @@ useEffect(() => {
           />
         )}
       </Box>
+
+      {/* Erase Configuration Modal */}
+      <EraseConfigModal 
+        isOpen={isEraseOpen} 
+        onClose={onEraseClose} 
+      />
     </Flex>
   )
 }

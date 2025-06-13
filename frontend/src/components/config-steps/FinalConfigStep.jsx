@@ -139,12 +139,6 @@ const FinalConfigStep = () => {
 
   const getActionDetails = (action) => {
     const details = {
-      erase: {
-        title: 'Erase Configuration and Reboot',
-        description: 'This will reset all ODrive settings to factory defaults and reboot the device.',
-        color: 'red',
-        confirmText: 'Yes, erase and reboot'
-      },
       apply_and_save: {
         title: 'Apply & Save Configuration',
         description: 'This will apply all configuration commands to the ODrive and save them to non-volatile memory. The device will reboot automatically.',
@@ -227,18 +221,6 @@ const FinalConfigStep = () => {
                   mt={4}
                 >
                   ⚙️💾 Apply & Save Configuration
-                </Button>
-
-                <Button
-                  colorScheme="red"
-                  size="lg"
-                  w="100%"
-                  h="60px"
-                  onClick={() => handleAction('erase')}
-                  isDisabled={!isConnected}
-                  isLoading={isLoading && pendingAction === 'erase'}
-                >
-                  🗑️ Erase Old Configuration
                 </Button>
 
               </VStack>
