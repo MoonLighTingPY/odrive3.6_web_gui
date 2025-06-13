@@ -6,7 +6,7 @@ import {
   Badge,
   HStack
 } from '@chakra-ui/react'
-import { getAllAvailablePresets, isFactoryPreset } from '../../utils/configurationPresetsManager'
+import { getAllAvailablePresets, isFactoryPreset } from '../../utils/presetsManager'
 
 const PresetSelector = ({ 
   value = '', 

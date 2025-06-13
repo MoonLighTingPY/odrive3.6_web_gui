@@ -25,7 +25,7 @@ import { DownloadIcon, AttachmentIcon, CheckIcon, WarningIcon } from '@chakra-ui
 import {
   exportPresetsToFile,
   importPresetsFromFile
-} from '../../utils/configurationPresetsManager'
+} from '../../utils/presetsManager'
 
 const PresetImportExport = ({ onImportComplete, compact = false }) => {
   const fileInputRef = useRef(null)

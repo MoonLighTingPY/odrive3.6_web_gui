@@ -37,7 +37,7 @@ import {
   exportPresetsToFile,
   loadPresetConfig,
   getStoredPresets
-} from '../../utils/configurationPresetsManager'
+} from '../../utils/presetsManager'
 
 const PresetList = ({ onPresetLoad, onRefreshNeeded }) => {
   const [presets, setPresets] = useState({})

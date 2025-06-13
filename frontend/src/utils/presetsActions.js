@@ -8,7 +8,7 @@ import {
   loadPresetConfig, 
   exportPresetsToFile,
   importPresetsFromFile 
-} from './configurationPresetsManager'
+} from './presetsManager'
 import { executeConfigAction } from './configurationActions'
 import { generateConfigCommands } from './configCommandGenerator'
 

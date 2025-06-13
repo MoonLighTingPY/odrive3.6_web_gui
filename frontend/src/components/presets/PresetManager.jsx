@@ -28,7 +28,7 @@ import {
   saveCurrentConfigAsPreset,
   loadPresetConfig,
   importPresetsFromFile
-} from '../../utils/configurationPresetsManager'
+} from '../../utils/presetsManager'
 import PresetSaveDialog from './PresetSaveDialog'
 
 const PresetManager = ({ 
@@ -148,7 +148,7 @@ const PresetManager = ({
     
     // Auto-export the saved preset as a file
     try {
-      const { exportPresetsToFile } = await import('../../utils/configurationPresetsManager')
+      const { exportPresetsToFile } = await import('../../utils/presetsManager')
       exportPresetsToFile(name)
       
       toast({

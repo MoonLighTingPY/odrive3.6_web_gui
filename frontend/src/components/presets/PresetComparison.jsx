@@ -20,7 +20,7 @@ import {
   Td,
   Code
 } from '@chakra-ui/react'
-import { compareConfigWithPreset } from '../../utils/configurationPresetsActions'
+import { compareConfigWithPreset } from '../../utils/presetsActions'
 
 const PresetComparison = ({ currentConfig, presetName }) => {
   if (!currentConfig || !presetName) {
