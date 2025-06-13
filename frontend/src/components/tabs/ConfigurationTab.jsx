@@ -111,22 +111,35 @@ const ConfigurationTab = () => {
     }
   }, [isConnected, isPullingConfig, toast, dispatch])
 
-  useEffect(() => {
-    const handlePresetLoad = (event) => {
-      const { config } = event.detail
-      console.log('ConfigurationTab: Received preset load event:', config)
-      
-      // Update local deviceConfig with the loaded preset
-      setDeviceConfig(config)
-      
-    }
-
-    window.addEventListener('presetLoaded', handlePresetLoad)
+useEffect(() => {
+  const handlePresetLoaded = (event) => {
+    const { config, presetName } = event.detail
     
-    return () => {
-      window.removeEventListener('presetLoaded', handlePresetLoad)
-    }
-  }, [toast])
+    // Update LOCAL deviceConfig state (this is what was missing!)
+    setDeviceConfig(config)
+    
+    // Update Redux store with the loaded preset configuration
+    if (config.power) dispatch({ type: 'config/updatePowerConfig', payload: config.power })
+    if (config.motor) dispatch({ type: 'config/updateMotorConfig', payload: config.motor })
+    if (config.encoder) dispatch({ type: 'config/updateEncoderConfig', payload: config.encoder })
+    if (config.control) dispatch({ type: 'config/updateControlConfig', payload: config.control })
+    if (config.interface) dispatch({ type: 'config/updateInterfaceConfig', payload: config.interface })
+    
+    // Show a toast notification
+    toast({
+      title: 'Preset Loaded',
+      description: `Configuration "${presetName}" loaded to all steps`,
+      status: 'success',
+      duration: 3000,
+    })
+  }
+
+  window.addEventListener('presetLoaded', handlePresetLoaded)
+  
+  return () => {
+    window.removeEventListener('presetLoaded', handlePresetLoaded)
+  }
+}, [dispatch, toast])
 
   // Auto-pull configuration when connected - only once per connection
   useEffect(() => {
