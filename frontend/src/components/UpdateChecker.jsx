@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import ReactMarkdown from 'react-markdown'
 import {
   Box,
   Button,
@@ -16,7 +17,6 @@ import {
   useDisclosure,
   useToast,
   Progress,
-  Textarea,
   Alert,
   AlertIcon,
   AlertTitle,
@@ -244,14 +244,104 @@ const UpdateChecker = () => {
 
               {updateInfo?.release_notes && (
                 <Box>
-                  <Text fontWeight="bold" mb={2}>Release Notes:</Text>
-                  <Textarea
-                    value={updateInfo.release_notes}
-                    isReadOnly
-                    resize="vertical"
-                    minH="120px"
+                  <Text fontWeight="bold" mb={2}>Release Notes:</Text>                  
+                  <Box
                     maxH="200px"
-                  />
+                    overflowY="auto"
+                    py={2}
+                  >
+                    <ReactMarkdown
+                      components={{
+                        // Style headings
+                        h1: ({ children }) => {
+                          // Skip if it's a "release notes" header
+                          const text = children?.toString?.()?.toLowerCase() || ''
+                          if (text.includes('release notes')) return null
+                          
+                          return (
+                            <Text fontSize="xl" fontWeight="bold" mb={2} color="blue.600" _dark={{ color: "blue.300" }}>
+                              {children}
+                            </Text>
+                          )
+                        },
+                        h2: ({ children }) => {
+                          // Skip if it's a "release notes" header
+                          const text = children?.toString?.()?.toLowerCase() || ''
+                          if (text.includes('release notes')) return null
+                          
+                          return (
+                            <Text fontSize="lg" fontWeight="bold" mb={2} mt={3} color="blue.600" _dark={{ color: "blue.400" }}>
+                              {children}
+                            </Text>
+                          )
+                        },
+                        h3: ({ children }) => {
+                          // Skip if it's a "release notes" header
+                          const text = children?.toString?.()?.toLowerCase() || ''
+                          if (text.includes('release notes')) return null
+                          
+                          return (
+                            <Text fontSize="md" fontWeight="bold" mb={1} mt={2} color="blue.600" _dark={{ color: "blue.300" }}>
+                              {children}
+                            </Text>
+                          )
+                        },
+                        // Style lists
+                        ul: ({ children }) => (
+                          <Box as="ul" pl={4} mb={2}>
+                            {children}
+                          </Box>
+                        ),
+                        li: ({ children }) => (
+                          <Box as="li" mb={1} fontSize="md" color="blue.700" _dark={{ color: "blue.200" }}>
+                            {children}
+                          </Box>
+                        ),
+                        // Style paragraphs
+                        p: ({ children }) => (
+                          <Text mb={2} fontSize="md" lineHeight="1.5" color="blue.700" _dark={{ color: "blue.200" }}>
+                            {children}
+                          </Text>
+                        ),
+                        // Style code
+                        code: ({ children, inline }) => (
+                        <Text
+                          as={inline ? 'span' : 'div'}
+                          fontFamily="mono"
+                          fontSize="sm"
+                          bg="blue.50"
+                          px={1}
+                          borderRadius="sm"
+                          color="blue.800"
+                          _dark={{ 
+                            bg: "blue.900",
+                            color: "blue.200"
+                          }}
+                        >
+                          {children}
+                        </Text>
+                      ),
+                        // Style strong/bold text
+                        strong: ({ children }) => (
+                          <Text as="span" fontWeight="bold" color="blue.800" _dark={{ color: "blue.100" }}>
+                            {children}
+                          </Text>
+                        ),
+                        // Style horizontal rules
+                        hr: () => (
+                          <Box
+                            w="100%"
+                            h="1px"
+                            bg="blue.300"
+                            _dark={{ bg: "blue.600" }}
+                            my={3}
+                          />
+                        )
+                      }}
+                    >
+                      {updateInfo.release_notes}
+                    </ReactMarkdown>
+                  </Box>
                 </Box>
               )}
 
