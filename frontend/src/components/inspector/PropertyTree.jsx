@@ -103,11 +103,46 @@ const PropertyTree = ({
         })
 
         if (response.ok) {
-          const data = await response.json()
-          setPropertyValues(prev => ({
-            ...prev,
-            [displayPath]: data.value
-          }))
+          const responseText = await response.text()
+          
+          try {
+            // Try to parse as normal JSON first
+            const data = JSON.parse(responseText)
+            setPropertyValues(prev => ({
+              ...prev,
+              [displayPath]: data.value
+            }))
+          // eslint-disable-next-line no-unused-vars
+          } catch (jsonError) {
+            // If JSON parsing fails, try to handle Infinity values
+            console.warn(`Invalid JSON response for property ${displayPath}:`, responseText)
+            
+            try {
+              // Replace Infinity with a string representation for display
+              const cleanedResponse = responseText.replace(/:Infinity/g, ':"Infinity"').replace(/:-Infinity/g, ':"-Infinity"')
+              const data = JSON.parse(cleanedResponse)
+              
+              // Convert string back to actual Infinity for proper handling
+              let value = data.value
+              if (value === "Infinity") {
+                value = Infinity
+              } else if (value === "-Infinity") {
+                value = -Infinity
+              }
+              
+              setPropertyValues(prev => ({
+                ...prev,
+                [displayPath]: value
+              }))
+            } catch (cleanupError) {
+              console.error(`Cleaned response also failed to parse:`, cleanupError)
+              // Set a fallback value
+              setPropertyValues(prev => ({
+                ...prev,
+                [displayPath]: 'Parse Error'
+              }))
+            }
+          }
         }
       } catch (error) {
         console.error(`Failed to refresh property ${displayPath}:`, error)
@@ -155,11 +190,45 @@ const PropertyTree = ({
       })
       
       if (response.ok) {
-        const data = await response.json()
-        setPropertyValues(prev => ({
-          ...prev,
-          [displayPath]: data.value
-        }))
+        const responseText = await response.text()
+        
+        try {
+          // Try to parse as normal JSON first
+          const data = JSON.parse(responseText)
+          setPropertyValues(prev => ({
+            ...prev,
+            [displayPath]: data.value
+          }))
+        // eslint-disable-next-line no-unused-vars
+        } catch (jsonError) {
+          // If JSON parsing fails, try to handle Infinity values
+          
+          try {
+            // Replace Infinity with a string representation for parsing
+            const cleanedResponse = responseText.replace(/:Infinity/g, ':"Infinity"').replace(/:-Infinity/g, ':"-Infinity"')
+            const data = JSON.parse(cleanedResponse)
+            
+            // Convert string back to actual Infinity for proper handling
+            let value = data.value
+            if (value === "Infinity") {
+              value = Infinity
+            } else if (value === "-Infinity") {
+              value = -Infinity
+            }
+            
+            setPropertyValues(prev => ({
+              ...prev,
+              [displayPath]: value
+            }))
+          } catch (cleanupError) {
+            console.error(`Cleaned response also failed to parse:`, cleanupError)
+            // Set a fallback value
+            setPropertyValues(prev => ({
+              ...prev,
+              [displayPath]: 'Parse Error'
+            }))
+          }
+        }
       }
     } catch (error) {
       console.error('Failed to refresh property:', error)
@@ -283,7 +352,6 @@ const PropertyTree = ({
 
   const renderProperty = (prop, value, displayPath) => {
     if (!prop || typeof prop !== 'object') {
-      console.warn(`Invalid property structure for ${displayPath}:`, prop)
       return (
         <Box key={displayPath} p={2} bg="red.900" borderRadius="md">
           <Text color="red.300" fontSize="sm">Invalid property: {displayPath}</Text>
