@@ -100,7 +100,7 @@ export const usePropertyRefresh = (odrivePropertyTree, collectAllProperties, isC
         if (nullProperties.length > 0) {
           console.log('Properties with null/undefined values after refresh:', nullProperties)
         } else {
-          console.log('All properties have been successfully refreshed - no null values found')
+          console.log('All properties have been successfully refreshed - no null values found! Povna imba! :)')
         }
         
         return currentValues

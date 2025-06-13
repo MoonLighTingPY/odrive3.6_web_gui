@@ -50,8 +50,6 @@ export const odrivePropertyTree = {
       enable_can_a: { name: 'Enable CAN A', description: 'Enable CAN A interface', writable: true, type: 'boolean' },
       enable_i2c_a: { name: 'Enable I2C A', description: 'Enable I2C A interface', writable: true, type: 'boolean' },
       error_gpio_pin: { name: 'Error GPIO Pin', description: 'GPIO pin for error output', writable: true, type: 'number' },
-      gpio3_analog_mapping: { name: 'GPIO3 Analog Mapping', description: 'GPIO3 analog input mapping', writable: true, type: 'number' },
-      gpio4_analog_mapping: { name: 'GPIO4 Analog Mapping', description: 'GPIO4 analog input mapping', writable: true, type: 'number' },
       enable_dc_bus_overvoltage_ramp: { name: 'Enable DC Bus Overvoltage Ramp', description: 'Enable DC bus overvoltage ramping', writable: true, type: 'boolean' },
       dc_bus_overvoltage_ramp_start: { name: 'DC Bus Overvoltage Ramp Start', description: 'DC bus overvoltage ramp start voltage (V)', writable: true, type: 'number', decimals: 1 },
       dc_bus_overvoltage_ramp_end: { name: 'DC Bus Overvoltage Ramp End', description: 'DC bus overvoltage ramp end voltage (V)', writable: true, type: 'number', decimals: 1 },
@@ -74,18 +72,6 @@ export const odrivePropertyTree = {
           protocol: { name: 'Protocol', description: 'CAN protocol selection', writable: true, type: 'number' },
         }
       }
-    }
-  },
-
-  // System task times - these are actual TaskTimer objects
-  task_times: {
-    name: 'System Task Times',
-    description: 'System task timing measurements',
-    properties: {
-      sampling: { name: 'Sampling Time', description: 'Sampling task time (μs)', writable: false, type: 'number', decimals: 3 },
-      control_loop_misc: { name: 'Control Loop Misc Time', description: 'Control loop misc task time (μs)', writable: false, type: 'number', decimals: 3 },
-      control_loop_checks: { name: 'Control Loop Checks Time', description: 'Control loop checks task time (μs)', writable: false, type: 'number', decimals: 3 },
-      dc_calib_wait: { name: 'DC Calibration Wait Time', description: 'DC calibration wait time (μs)', writable: false, type: 'number', decimals: 3 },
     }
   },
 
