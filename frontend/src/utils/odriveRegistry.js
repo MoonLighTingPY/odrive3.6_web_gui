@@ -1217,7 +1217,7 @@ export const generateMotorCommands = (motorConfig = {}) => {
 
   // Motor thermistor configuration
   if (motorConfig.motor_thermistor_enabled !== undefined) {
-    commands.push(`odrv0.axis${axisNum}.motor.motor_thermistor.config.enabled = ${motorConfig.motor_thermistor_enabled}`)
+    commands.push(`odrv0.axis${axisNum}.motor.motor_thermistor.config.enabled = ${motorConfig.motor_thermistor_enabled ? 'True' : 'False'}`)
   }
   
   if (motorConfig.motor_thermistor_gpio_pin !== undefined) {

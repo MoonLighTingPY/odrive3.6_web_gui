@@ -13,10 +13,8 @@ import {
   Select,
   Icon,
   Tooltip,
-  SimpleGrid,
+
   Badge,
-  Alert,
-  AlertIcon,
   Switch
 } from '@chakra-ui/react'
 import { InfoIcon } from '@chakra-ui/icons'
@@ -170,37 +168,6 @@ const MotorConfigStep = ({
               </HStack>
             </VStack>
           </CardBody>
-        </Card>
-        <Card bg="gray.800" variant="elevated">
-          <CardHeader py={2}>
-            <Heading size="sm" color="white">Calculated Values</Heading>
-          </CardHeader>
-          <CardBody py={2}>
-            <VStack spacing={2} align="stretch">
-              <HStack justify="space-between">
-                <Text color="gray.300" fontSize="sm">Torque Constant (Kt):</Text>
-                <Text fontWeight="bold" color="green.300" fontSize="sm">
-                  {calculatedKt.toFixed(4)} Nm/A
-                </Text>
-              </HStack>
-              <HStack justify="space-between">
-                <Text color="gray.300" fontSize="sm">Max Torque:</Text>
-                <Text fontWeight="bold" color="green.300" fontSize="sm">
-                  {maxTorque.toFixed(2)} Nm
-                </Text>
-              </HStack>
-              <HStack justify="space-between">
-                <Text color="gray.300" fontSize="sm">Motor Type:</Text>
-                <Badge colorScheme={motorConfig.motor_type === 0 ? "blue" : "purple"} fontSize="xs">
-                  {motorConfig.motor_type === 0 ? "High Current" : "Gimbal"}
-                </Badge>
-              </HStack>
-            </VStack>
-          </CardBody>
-        </Card>
-
-        {/* Motor Thermistor Configuration */}
-        <Card bg="gray.800" variant="elevated">
           <CardHeader py={2}>
             <Heading size="sm" color="white">Motor Thermistor</Heading>
           </CardHeader>
@@ -225,21 +192,14 @@ const MotorConfigStep = ({
                 <>
                   <FormControl>
                     <FormLabel color="white" mb={1} fontSize="sm">GPIO Pin</FormLabel>
-                    <Select
-                      value={motorConfig.motor_thermistor_gpio_pin || ''}
-                      onChange={(e) => handleConfigChange('motor_thermistor_gpio_pin', parseInt(e.target.value))}
-                      bg="gray.700"
-                      color="white"
-                      size="sm"
-                    >
-                      <option value="">Select GPIO Pin</option>
-                      <option value="3">GPIO 3</option>
-                      <option value="4">GPIO 4</option>
-                      <option value="5">GPIO 5</option>
-                      <option value="6">GPIO 6</option>
-                      <option value="7">GPIO 7</option>
-                      <option value="8">GPIO 8</option>
-                    </Select>
+                    <ParameterInput
+                      value={motorConfig.motor_thermistor_gpio_pin}
+                      onChange={(value) => handleConfigChange('motor_thermistor_gpio_pin', parseInt(value) || 0)}
+                      onRefresh={() => handleRefresh('motor_thermistor_gpio_pin')}
+                      isLoading={isLoading('motor_thermistor_gpio_pin')}
+                      precision={0}
+                      placeholder="GPIO Pin (3-8)"
+                    />
                   </FormControl>
 
                   <HStack spacing={4} w="100%">
@@ -267,17 +227,43 @@ const MotorConfigStep = ({
                       />
                     </FormControl>
                   </HStack>
-
-                  <Alert status="warning" bg="orange.900" size="sm">
-                    <AlertIcon />
-                    <Text fontSize="xs">
-                      Note: For custom thermistors, use odrivetool function: set_motor_thermistor_coeffs(odrv0.axis0, Rload, R_25, Beta, Tmin, Tmax)
-                    </Text>
-                  </Alert>
                 </>
               )}
             </VStack>
           </CardBody>
+        </Card>
+        <Card bg="gray.800" variant="elevated">
+          <CardHeader py={2}>
+            <Heading size="sm" color="white">Calculated Values</Heading>
+          </CardHeader>
+          <CardBody py={2}>
+            <VStack spacing={2} align="stretch">
+              <HStack justify="space-between">
+                <Text color="gray.300" fontSize="sm">Torque Constant (Kt):</Text>
+                <Text fontWeight="bold" color="green.300" fontSize="sm">
+                  {calculatedKt.toFixed(4)} Nm/A
+                </Text>
+              </HStack>
+              <HStack justify="space-between">
+                <Text color="gray.300" fontSize="sm">Max Torque:</Text>
+                <Text fontWeight="bold" color="green.300" fontSize="sm">
+                  {maxTorque.toFixed(2)} Nm
+                </Text>
+              </HStack>
+              <HStack justify="space-between">
+                <Text color="gray.300" fontSize="sm">Motor Type:</Text>
+                <Badge colorScheme={motorConfig.motor_type === 0 ? "blue" : "purple"} fontSize="xs">
+                  {motorConfig.motor_type === 0 ? "High Current" : "Gimbal"}
+                </Badge>
+              </HStack>
+            </VStack>
+          </CardBody>
+          
+        </Card>
+
+        {/* Motor Thermistor Configuration */}
+        <Card bg="gray.800" variant="elevated">
+          
         </Card>
       </VStack>
     </Box>
