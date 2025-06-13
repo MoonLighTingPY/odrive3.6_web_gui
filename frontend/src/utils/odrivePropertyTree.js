@@ -17,7 +17,7 @@ export const odrivePropertyTree = {
       ibus: { name: 'DC Bus Current', description: 'Current DC bus current (A)', writable: false, type: 'number', decimals: 3 },
       test_property: { name: 'Test Property', description: 'Test property for debugging', writable: true, type: 'number', decimals: 3, hasSlider: true },
       
-      // System config properties
+      // System config properties - corrected based on v0.5.6 API
       dc_bus_overvoltage_trip_level: { name: 'DC Bus Overvoltage Trip', description: 'DC bus overvoltage protection level (V)', writable: true, type: 'number', min: 12, max: 60, step: 0.1, decimals: 1, hasSlider: true },
       dc_bus_undervoltage_trip_level: { name: 'DC Bus Undervoltage Trip', description: 'DC bus undervoltage protection level (V)', writable: true, type: 'number', min: 8, max: 30, step: 0.1, decimals: 1, hasSlider: true },
       dc_max_positive_current: { name: 'DC Max Positive Current', description: 'Maximum positive DC current (A)', writable: true, type: 'number', min: 0, max: 60, step: 0.1, decimals: 1, hasSlider: true },
@@ -25,13 +25,16 @@ export const odrivePropertyTree = {
       enable_brake_resistor: { name: 'Enable Brake Resistor', description: 'Enable/disable brake resistor', writable: true, type: 'boolean' },
       brake_resistance: { name: 'Brake Resistance', description: 'Brake resistor resistance (Ω)', writable: true, type: 'number', min: 0.1, max: 100, step: 0.1, decimals: 2, hasSlider: true },
       max_regen_current: { name: 'Max Regen Current', description: 'Maximum regenerative braking current (A)', writable: true, type: 'number', min: 0, max: 60, step: 0.1, decimals: 1, hasSlider: true },
-      enable_uart_a: { name: 'Enable UART A', description: 'Enable UART A interface', writable: true, type: 'boolean' },
-      uart_a_baudrate: { name: 'UART A Baudrate', description: 'UART A communication baudrate', writable: true, type: 'number' },
+      // Updated UART naming for v0.5.6
+      enable_uart0: { name: 'Enable UART0', description: 'Enable UART0 interface', writable: true, type: 'boolean' },
+      uart0_baudrate: { name: 'UART0 Baudrate', description: 'UART0 communication baudrate', writable: true, type: 'number' },
       uart0_protocol: { name: 'UART0 Protocol', description: 'UART0 protocol selection', writable: true, type: 'number' },
-      enable_uart_b: { name: 'Enable UART B', description: 'Enable UART B interface', writable: true, type: 'boolean' },
-      uart_b_baudrate: { name: 'UART B Baudrate', description: 'UART B communication baudrate', writable: true, type: 'number' },
+      enable_uart1: { name: 'Enable UART1', description: 'Enable UART1 interface', writable: true, type: 'boolean' },
+      uart1_baudrate: { name: 'UART1 Baudrate', description: 'UART1 communication baudrate', writable: true, type: 'number' },
       uart1_protocol: { name: 'UART1 Protocol', description: 'UART1 protocol selection', writable: true, type: 'number' },
-      enable_i2c_instead_of_can: { name: 'Enable I2C Instead of CAN', description: 'Use I2C interface instead of CAN', writable: true, type: 'boolean' },
+      // Corrected CAN/I2C settings for v0.5.6
+      enable_i2c0: { name: 'Enable I2C0', description: 'Enable I2C0 interface', writable: true, type: 'boolean' },
+      enable_can0: { name: 'Enable CAN0', description: 'Enable CAN0 interface', writable: true, type: 'boolean' },
       enable_ascii_protocol_on_usb: { name: 'Enable ASCII on USB', description: 'Enable ASCII protocol on USB', writable: true, type: 'boolean' },
       gpio1_mode: { name: 'GPIO1 Mode', description: 'GPIO pin 1 mode configuration', writable: true, type: 'number' },
       gpio2_mode: { name: 'GPIO2 Mode', description: 'GPIO pin 2 mode configuration', writable: true, type: 'number' },
@@ -80,8 +83,7 @@ export const odrivePropertyTree = {
       current_state: { name: 'Current State', description: 'Current axis state', writable: false, type: 'number' },
       requested_state: { name: 'Requested State', description: 'Requested axis state', writable: true, type: 'number' },
       task_timer_armed: { name: 'Task Timer Armed', description: 'Whether task timer is armed', writable: false, type: 'boolean' },
-      motor_thermistor_temp: { name: 'Motor Thermistor Temp', description: 'Motor thermistor temperature (°C)', writable: false, type: 'number', decimals: 1 },
-      fet_thermistor_temp: { name: 'FET Thermistor Temp', description: 'FET thermistor temperature (°C)', writable: false, type: 'number', decimals: 1 },
+      // CORRECTED: Thermistor temperature readings moved to motor object in v0.5.6
     },
     children: {
       config: {
@@ -93,7 +95,8 @@ export const odrivePropertyTree = {
           startup_encoder_offset_calibration: { name: 'Startup Encoder Offset Cal', description: 'Run encoder offset calibration on startup', writable: true, type: 'boolean' },
           startup_closed_loop_control: { name: 'Startup Closed Loop Control', description: 'Enter closed loop control on startup', writable: true, type: 'boolean' },
           startup_sensorless_control: { name: 'Startup Sensorless Control', description: 'Enter sensorless control on startup', writable: true, type: 'boolean' },
-          enable_step_dir: { name: 'Enable Step/Dir', description: 'Enable step/direction interface', writable: true, type: 'boolean' },
+          // CORRECTED: step_dir_active renamed from enable_step_dir in v0.5.6
+          step_dir_active: { name: 'Step/Dir Active', description: 'Enable step/direction interface', writable: true, type: 'boolean' },
           step_dir_always_on: { name: 'Step/Dir Always On', description: 'Keep step/direction interface always enabled', writable: true, type: 'boolean' },
           turns_per_step: { name: 'Turns per Step', description: 'Motor turns per step input', writable: true, type: 'number', decimals: 6 },
           watchdog_timeout: { name: 'Watchdog Timeout', description: 'Watchdog timeout period (s)', writable: true, type: 'number', decimals: 3 },
@@ -109,6 +112,10 @@ export const odrivePropertyTree = {
               node_id: { name: 'Node ID', description: 'CAN node identifier', writable: true, type: 'number', min: 0, max: 63 },
               is_extended: { name: 'Extended ID', description: 'Use 29-bit extended CAN IDs', writable: true, type: 'boolean' },
               heartbeat_rate_ms: { name: 'Heartbeat Rate', description: 'CAN heartbeat transmission rate (ms)', writable: true, type: 'number' },
+              // Additional CAN config parameters for v0.5.6
+              encoder_rate_ms: { name: 'Encoder Rate', description: 'CAN encoder message rate (ms)', writable: true, type: 'number' },
+              controller_error_rate_ms: { name: 'Controller Error Rate', description: 'CAN controller error message rate (ms)', writable: true, type: 'number' },
+              motor_error_rate_ms: { name: 'Motor Error Rate', description: 'CAN motor error message rate (ms)', writable: true, type: 'number' },
             }
           },
           calibration_lockin: {
@@ -191,6 +198,7 @@ export const odrivePropertyTree = {
               mod_q: { name: 'Modulation Q', description: 'Q-axis modulation', writable: false, type: 'number', decimals: 6 },
             }
           },
+          // CORRECTED: Gate driver moved from motor.gate_driver to axis.gate_driver in some versions
           gate_driver: {
             name: 'Gate Driver',
             description: 'Motor gate driver status and configuration',
@@ -218,7 +226,7 @@ export const odrivePropertyTree = {
             description: 'Motor configuration and calibration parameters',
             properties: {
               pre_calibrated: { name: 'Pre-calibrated', description: 'Motor marked as pre-calibrated', writable: true, type: 'boolean' },
-              motor_type: { name: 'Motor Type', description: 'Motor type (0=HIGH_CURRENT, 1=GIMBAL)', writable: true, type: 'number' },
+              motor_type: { name: 'Motor Type', description: 'Motor type (0=HIGH_CURRENT, 1=GIMBAL, 2=ACIM)', writable: true, type: 'number' },
               pole_pairs: { name: 'Pole Pairs', description: 'Number of motor pole pairs', writable: true, type: 'number', step: 1 },
               calibration_current: { name: 'Calibration Current', description: 'Current used for motor calibration (A)', writable: true, type: 'number', step: 0.1, decimals: 1, hasSlider: true },
               resistance_calib_max_voltage: { name: 'Resistance Calibration Max Voltage', description: 'Maximum voltage for resistance calibration (V)', writable: true, type: 'number', step: 0.1, decimals: 1, hasSlider: true },
@@ -226,14 +234,56 @@ export const odrivePropertyTree = {
               phase_resistance: { name: 'Phase Resistance', description: 'Motor phase resistance (Ω)', writable: true, type: 'number', min: 0, max: 10, step: 0.001, decimals: 3, hasSlider: true },
               torque_constant: { name: 'Torque Constant', description: 'Motor torque constant (Nm/A)', writable: true, type: 'number', min: 0, max: 1, step: 0.001, decimals: 6, hasSlider: true },
               direction: { name: 'Direction', description: 'Motor direction (1 or -1)', writable: true, type: 'number', min: -1, max: 1, step: 2 },
-              motor_kv: { name: 'Motor Kv', description: 'Motor Kv rating (RPM/V)', writable: true, type: 'number', decimals: 1, hasSlider: true },
               current_lim: { name: 'Current Limit', description: 'Motor current limit (A)', writable: true, type: 'number', step: 0.1, decimals: 1, hasSlider: true },
               current_lim_margin: { name: 'Current Limit Margin', description: 'Current limit safety margin (A)', writable: true, type: 'number', step: 0.1, decimals: 1, hasSlider: true },
               torque_lim: { name: 'Torque Limit', description: 'Motor torque limit (Nm)', writable: true, type: 'number', step: 0.1, decimals: 3, hasSlider: true },
-              inverter_temp_limit_lower: { name: 'Inverter Temp Limit Lower', description: 'Lower inverter temperature limit (°C)', writable: true, type: 'number', decimals: 1, hasSlider: true },
-              inverter_temp_limit_upper: { name: 'Inverter Temp Limit Upper', description: 'Upper inverter temperature limit (°C)', writable: true, type: 'number', decimals: 1, hasSlider: true },
+              // CORRECTED: These were moved to thermistor objects in v0.5.6
               requested_current_range: { name: 'Requested Current Range', description: 'Requested current measurement range (A)', writable: true, type: 'number', decimals: 1, hasSlider: true },
               current_control_bandwidth: { name: 'Current Control Bandwidth', description: 'Current control loop bandwidth (Hz)', writable: true, type: 'number', decimals: 1, hasSlider: true },
+            }
+          },
+          // CORRECTED: FET thermistor structure for v0.5.6
+          fet_thermistor: {
+            name: 'FET Thermistor',
+            description: 'FET temperature monitoring',
+            properties: {
+              temperature: { name: 'FET Temperature', description: 'FET thermistor temperature (°C)', writable: false, type: 'number', decimals: 1 },
+            },
+            children: {
+              config: {
+                name: 'FET Thermistor Configuration',
+                description: 'FET thermistor configuration parameters',
+                properties: {
+                  enabled: { name: 'Enabled', description: 'Enable FET thermistor monitoring', writable: true, type: 'boolean' },
+                  temp_limit_lower: { name: 'Lower Temperature Limit', description: 'Lower temperature limit for current limiting (°C)', writable: true, type: 'number', decimals: 1, hasSlider: true },
+                  temp_limit_upper: { name: 'Upper Temperature Limit', description: 'Upper temperature limit for shutdown (°C)', writable: true, type: 'number', decimals: 1, hasSlider: true },
+                }
+              }
+            }
+          },
+          // CORRECTED: Motor thermistor structure for v0.5.6
+          motor_thermistor: {
+            name: 'Motor Thermistor',
+            description: 'Motor temperature monitoring',
+            properties: {
+              temperature: { name: 'Motor Temperature', description: 'Motor thermistor temperature (°C)', writable: false, type: 'number', decimals: 1 },
+            },
+            children: {
+              config: {
+                name: 'Motor Thermistor Configuration',
+                description: 'Motor thermistor configuration parameters',
+                properties: {
+                  enabled: { name: 'Enabled', description: 'Enable motor thermistor monitoring', writable: true, type: 'boolean' },
+                  gpio_pin: { name: 'GPIO Pin', description: 'GPIO pin for motor thermistor input', writable: true, type: 'number' },
+                  temp_limit_lower: { name: 'Lower Temperature Limit', description: 'Lower temperature limit for current limiting (°C)', writable: true, type: 'number', decimals: 1, hasSlider: true },
+                  temp_limit_upper: { name: 'Upper Temperature Limit', description: 'Upper temperature limit for shutdown (°C)', writable: true, type: 'number', decimals: 1, hasSlider: true },
+                  // Thermistor polynomial coefficients for temperature calculation
+                  poly_coefficient_0: { name: 'Polynomial Coefficient 0', description: 'Thermistor polynomial coefficient 0', writable: true, type: 'number', decimals: 6 },
+                  poly_coefficient_1: { name: 'Polynomial Coefficient 1', description: 'Thermistor polynomial coefficient 1', writable: true, type: 'number', decimals: 6 },
+                  poly_coefficient_2: { name: 'Polynomial Coefficient 2', description: 'Thermistor polynomial coefficient 2', writable: true, type: 'number', decimals: 6 },
+                  poly_coefficient_3: { name: 'Polynomial Coefficient 3', description: 'Thermistor polynomial coefficient 3', writable: true, type: 'number', decimals: 6 },
+                }
+              }
             }
           }
         }
@@ -290,6 +340,9 @@ export const odrivePropertyTree = {
               sincos_gpio_pin_cos: { name: 'Sin/Cos GPIO Pin Cos', description: 'GPIO pin for cosine signal', writable: true, type: 'number' },
               hall_polarity_calibrated: { name: 'Hall Polarity Calibrated', description: 'Hall sensor polarity calibration status', writable: false, type: 'number' },
               hall_polarity: { name: 'Hall Polarity', description: 'Hall sensor polarity', writable: true, type: 'number' },
+              // Additional encoder config parameters
+              direction: { name: 'Direction', description: 'Encoder direction (1 or -1)', writable: true, type: 'number', min: -1, max: 1, step: 2 },
+              use_index_offset: { name: 'Use Index Offset', description: 'Use encoder index offset', writable: true, type: 'boolean' },
             }
           }
         }
@@ -335,6 +388,9 @@ export const odrivePropertyTree = {
           pos_vel_setpoint: { name: 'Position Velocity Setpoint', description: 'Velocity setpoint from position controller (counts/s)', writable: false, type: 'number', decimals: 3 },
           electrical_power: { name: 'Electrical Power', description: 'Electrical power consumption (W)', writable: false, type: 'number', decimals: 1 },
           mechanical_power: { name: 'Mechanical Power', description: 'Mechanical power output (W)', writable: false, type: 'number', decimals: 1 },
+          // Additional controller properties for v0.5.6
+          pos_estimate: { name: 'Position Estimate', description: 'Controller position estimate (counts)', writable: false, type: 'number', decimals: 3 },
+          vel_estimate: { name: 'Velocity Estimate', description: 'Controller velocity estimate (counts/s)', writable: false, type: 'number', decimals: 3 },
         },
         children: {
           config: {
@@ -465,74 +521,5 @@ export const odrivePropertyTree = {
         }
       }
     }
-  },
-
-  // Axis 1 (copy of axis0 structure)
-  axis1: {
-    name: 'Axis 1',
-    description: 'Motor axis 1 configuration and status',
-    properties: {
-      error: { name: 'Axis Error', description: 'Current axis error flags', writable: false, type: 'number' },
-      current_state: { name: 'Current State', description: 'Current axis state', writable: false, type: 'number' },
-      requested_state: { name: 'Requested State', description: 'Requested axis state', writable: true, type: 'number' },
-      task_timer_armed: { name: 'Task Timer Armed', description: 'Whether task timer is armed', writable: false, type: 'boolean' },
-      motor_thermistor_temp: { name: 'Motor Thermistor Temp', description: 'Motor thermistor temperature (°C)', writable: false, type: 'number', decimals: 1 },
-      fet_thermistor_temp: { name: 'FET Thermistor Temp', description: 'FET thermistor temperature (°C)', writable: false, type: 'number', decimals: 1 },
-    },
-    children: {
-      // Same structure as axis0 - motor, encoder, controller, etc.
-      // (truncated for brevity, but would include all the same nested structures)
-      config: {
-        name: 'Axis Configuration',
-        description: 'Axis-level configuration parameters',
-        properties: {
-          startup_motor_calibration: { name: 'Startup Motor Calibration', description: 'Run motor calibration on startup', writable: true, type: 'boolean' },
-          startup_encoder_index_search: { name: 'Startup Encoder Index Search', description: 'Run encoder index search on startup', writable: true, type: 'boolean' },
-          startup_encoder_offset_calibration: { name: 'Startup Encoder Offset Cal', description: 'Run encoder offset calibration on startup', writable: true, type: 'boolean' },
-          startup_closed_loop_control: { name: 'Startup Closed Loop Control', description: 'Enter closed loop control on startup', writable: true, type: 'boolean' },
-          startup_sensorless_control: { name: 'Startup Sensorless Control', description: 'Enter sensorless control on startup', writable: true, type: 'boolean' },
-          enable_step_dir: { name: 'Enable Step/Dir', description: 'Enable step/direction interface', writable: true, type: 'boolean' },
-          step_dir_always_on: { name: 'Step/Dir Always On', description: 'Keep step/direction interface always enabled', writable: true, type: 'boolean' },
-          turns_per_step: { name: 'Turns per Step', description: 'Motor turns per step input', writable: true, type: 'number', decimals: 6 },
-          watchdog_timeout: { name: 'Watchdog Timeout', description: 'Watchdog timeout period (s)', writable: true, type: 'number', decimals: 3 },
-          enable_watchdog: { name: 'Enable Watchdog', description: 'Enable watchdog timer', writable: true, type: 'boolean' },
-          step_gpio_pin: { name: 'Step GPIO Pin', description: 'GPIO pin for step input', writable: true, type: 'number' },
-          dir_gpio_pin: { name: 'Dir GPIO Pin', description: 'GPIO pin for direction input', writable: true, type: 'number' },
-        }
-      },
-      motor: {
-        name: 'Motor',
-        description: 'Motor status and measurements',
-        properties: {
-          error: { name: 'Motor Error', description: 'Current motor error flags', writable: false, type: 'number' },
-          armed_state: { name: 'Armed State', description: 'Motor armed state', writable: false, type: 'number' },
-          is_calibrated: { name: 'Is Calibrated', description: 'Motor calibration status', writable: false, type: 'boolean' },
-          current_meas_phB: { name: 'Phase B Current', description: 'Measured current in phase B (A)', writable: false, type: 'number', decimals: 3 },
-          current_meas_phC: { name: 'Phase C Current', description: 'Measured current in phase C (A)', writable: false, type: 'number', decimals: 3 },
-          DC_calib_phB: { name: 'DC Calibration Phase B', description: 'DC calibration value for phase B', writable: false, type: 'number', decimals: 3 },
-          DC_calib_phC: { name: 'DC Calibration Phase C', description: 'DC calibration value for phase C', writable: false, type: 'number', decimals: 3 },
-        },
-        children: {
-          config: {
-            name: 'Motor Configuration',
-            description: 'Motor configuration and calibration parameters',
-            properties: {
-              pre_calibrated: { name: 'Pre-calibrated', description: 'Motor marked as pre-calibrated', writable: true, type: 'boolean' },
-              motor_type: { name: 'Motor Type', description: 'Motor type (0=HIGH_CURRENT, 1=GIMBAL)', writable: true, type: 'number' },
-              pole_pairs: { name: 'Pole Pairs', description: 'Number of motor pole pairs', writable: true, type: 'number', step: 1 },
-              calibration_current: { name: 'Calibration Current', description: 'Current used for motor calibration (A)', writable: true, type: 'number', step: 0.1, decimals: 1, hasSlider: true },
-              resistance_calib_max_voltage: { name: 'Resistance Calibration Max Voltage', description: 'Maximum voltage for resistance calibration (V)', writable: true, type: 'number', step: 0.1, decimals: 1, hasSlider: true },
-              phase_inductance: { name: 'Phase Inductance', description: 'Motor phase inductance (H)', writable: false, type: 'number', min: 0, max: 0.01, step: 0.000001, decimals: 6, hasSlider: true },
-              phase_resistance: { name: 'Phase Resistance', description: 'Motor phase resistance (Ω)', writable: false, type: 'number', min: 0, max: 10, step: 0.001, decimals: 3, hasSlider: true },
-              torque_constant: { name: 'Torque Constant', description: 'Motor torque constant (Nm/A)', writable: false, type: 'number', min: 0, max: 1, step: 0.001, decimals: 6, hasSlider: true },
-              direction: { name: 'Direction', description: 'Motor direction (1 or -1)', writable: true, type: 'number', min: -1, max: 1, step: 2 },
-              current_lim: { name: 'Current Limit', description: 'Motor current limit (A)', writable: true, type: 'number', step: 0.1, decimals: 1, hasSlider: true },
-              torque_lim: { name: 'Torque Limit', description: 'Motor torque limit (Nm)', writable: true, type: 'number', step: 0.1, decimals: 3, hasSlider: true },
-            }
-          }
-        }
-      }
-      // Additional axis1 subsections would follow the same pattern as axis0
-    }
   }
-}
+};
