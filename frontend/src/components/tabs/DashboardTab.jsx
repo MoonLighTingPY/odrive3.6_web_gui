@@ -23,7 +23,6 @@ import {
   Tooltip,
   Icon,
   useDisclosure,
-  useToast,
 } from '@chakra-ui/react'
 import { InfoIcon, WarningIcon } from '@chakra-ui/icons'
 import { getAxisStateName } from '../../utils/odriveEnums'
