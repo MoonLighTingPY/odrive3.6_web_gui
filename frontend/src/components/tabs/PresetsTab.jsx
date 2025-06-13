@@ -51,7 +51,8 @@ import {
   saveCurrentConfigAsPreset,
   loadPresetConfig,
   deletePreset,
-  exportPresetsToFile
+  exportPresetsToFile,
+  updatePreset // Add this import
 } from '../../utils/presetsManager'
 import {
   applyPresetAndSaveAction
@@ -81,6 +82,8 @@ const PresetsTab = () => {
   const [newPresetName, setNewPresetName] = useState('')
   const [newPresetDescription, setNewPresetDescription] = useState('')
   const [editingPreset, setEditingPreset] = useState(null)
+  const [editName, setEditName] = useState('')
+  const [editDescription, setEditDescription] = useState('')
   const [searchText, setSearchText] = useState('')
   const [isImporting, setIsImporting] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
@@ -220,6 +223,63 @@ const PresetsTab = () => {
         duration: 3000,
       })
     }
+  }
+
+  const handleEditPreset = (presetName) => {
+    const preset = presets[presetName]
+    if (!preset) return
+
+    setEditingPreset(presetName)
+    setEditName(presetName)
+    setEditDescription(preset.description || '')
+    onEditOpen()
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editingPreset || !editName.trim()) return
+
+    try {
+      await updatePreset(editingPreset, editName.trim(), editDescription.trim())
+
+      // Update selection if the selected preset was renamed
+      if (selectedPreset === editingPreset && editingPreset !== editName.trim()) {
+        setSelectedPreset(editName.trim())
+      }
+
+      // Reload presets
+      loadPresets()
+
+      // Close modal and reset state
+      setEditingPreset(null)
+      setEditName('')
+      setEditDescription('')
+      onEditClose()
+
+      const message = editingPreset !== editName.trim() 
+        ? `Preset renamed from "${editingPreset}" to "${editName.trim()}"`
+        : `Preset "${editName.trim()}" updated`
+
+      toast({
+        title: 'Preset updated',
+        description: message,
+        status: 'success',
+        duration: 2000,
+      })
+    } catch (error) {
+      toast({
+        title: 'Update failed',
+        description: error.message,
+        status: 'error',
+        duration: 3000,
+      })
+    }
+  }
+
+  const handleCancelEdit = () => {
+    setEditingPreset(null)
+    setEditName('')
+    setEditDescription('')
+    onEditClose()
   }
 
   // Export all presets as ZIP
@@ -440,8 +500,7 @@ const PresetsTab = () => {
                               icon={<Edit3 size={16} />}
                               onClick={(e) => {
                                 e.stopPropagation()
-                                setEditingPreset(name)
-                                onEditOpen()
+                                handleEditPreset(name) // Changed from setEditingPreset(name); onEditOpen()
                               }}
                               title="Edit preset details"
                               aria-label="Edit preset"
@@ -523,16 +582,63 @@ const PresetsTab = () => {
         </Modal>
 
         {/* Edit preset modal */}
-        <Modal isOpen={isEditOpen} onClose={onEditClose}>
+        <Modal isOpen={isEditOpen} onClose={handleCancelEdit} size="md">
           <ModalOverlay />
           <ModalContent>
-            <ModalHeader>Edit Preset Details</ModalHeader>
+            <ModalHeader>Edit Preset</ModalHeader>
             <ModalCloseButton />
             <ModalBody>
-              <Text>Edit functionality for "{editingPreset}" coming soon...</Text>
+              <VStack spacing={4}>
+                <FormControl isRequired>
+                  <FormLabel>Preset Name</FormLabel>
+                  <Input
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    placeholder="Enter preset name..."
+                    autoFocus
+                  />
+                </FormControl>
+                
+                <FormControl>
+                  <FormLabel>Description (Optional)</FormLabel>
+                  <Textarea
+                    value={editDescription}
+                    onChange={(e) => setEditDescription(e.target.value)}
+                    placeholder="Describe this configuration..."
+                    rows={3}
+                  />
+                </FormControl>
+
+                {editingPreset && (
+                  <Alert status="info" size="sm">
+                    <AlertIcon />
+                    <Text fontSize="sm">
+                      Editing preset: <Text as="span" fontWeight="bold">"{editingPreset}"</Text>
+                    </Text>
+                  </Alert>
+                )}
+                
+                {editingPreset && isFactoryPreset(editingPreset) && (
+                  <Alert status="warning" size="sm">
+                    <AlertIcon />
+                    <Text fontSize="sm">
+                      Factory presets cannot be edited. This is view-only mode.
+                    </Text>
+                  </Alert>
+                )}
+              </VStack>
             </ModalBody>
             <ModalFooter>
-              <Button onClick={onEditClose}>Close</Button>
+              <Button variant="ghost" mr={3} onClick={handleCancelEdit}>
+                Cancel
+              </Button>
+              <Button
+                colorScheme="blue"
+                onClick={handleSaveEdit}
+                isDisabled={!editName.trim() || isFactoryPreset(editingPreset)}
+              >
+                {isFactoryPreset(editingPreset) ? 'View Only' : 'Update Preset'}
+              </Button>
             </ModalFooter>
           </ModalContent>
         </Modal>

@@ -82,6 +82,10 @@ const DeviceList = () => {
   // Use the new dashboard telemetry hook
   useDashboardTelemetry(2000) // 2 second updates for device list
 
+  useEffect(() => {
+  scanForDevices()
+}, [scanForDevices])
+
     // Update the reconnection detection useEffect in DeviceList.jsx
   useEffect(() => {
     if (connectedDevice && !isConnected) {
@@ -108,12 +112,7 @@ const DeviceList = () => {
               // Only show toast if this wasn't expected (not during config operations)
               const isExpectedReconnection = sessionStorage.getItem('expectingReconnection') === 'true'
               if (!isExpectedReconnection) {
-                toast({
-                  title: 'Device reconnected',
-                  description: 'ODrive connection has been restored',
-                  status: 'success',
-                  duration: 3000,
-                })
+                console.log('Reconnected to ODrive:', status.device_serial)
               } else {
                 // Clear the flag since reconnection is complete
                 sessionStorage.removeItem('expectingReconnection')

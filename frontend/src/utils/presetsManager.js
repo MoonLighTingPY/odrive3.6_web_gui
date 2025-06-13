@@ -93,6 +93,53 @@ export const deletePreset = (presetName) => {
 }
 
 /**
+ * Update/edit an existing preset
+ * @param {string} oldName - Current name of the preset
+ * @param {string} newName - New name for the preset
+ * @param {string} description - New description
+ * @returns {Object} Updated preset
+ */
+export const updatePreset = (oldName, newName, description = '') => {
+  // Cannot edit factory presets
+  if (isFactoryPreset(oldName)) {
+    throw new Error('Cannot edit factory presets')
+  }
+
+  try {
+    const presets = getStoredPresets()
+    const originalPreset = presets[oldName]
+    
+    if (!originalPreset) {
+      throw new Error(`Preset "${oldName}" not found`)
+    }
+
+    // Create updated preset
+    const updatedPreset = {
+      ...originalPreset,
+      name: newName.trim(),
+      description: description.trim(),
+      timestamp: new Date().toISOString() // Update timestamp
+    }
+
+    // If name changed, remove old entry
+    if (oldName !== newName.trim()) {
+      delete presets[oldName]
+    }
+
+    // Add updated preset
+    presets[newName.trim()] = updatedPreset
+
+    // Save to localStorage
+    localStorage.setItem('odrive_config_presets', JSON.stringify(presets))
+    
+    return updatedPreset
+  } catch (error) {
+    console.error('Error updating preset:', error)
+    throw error
+  }
+}
+
+/**
  * Export preset(s) to downloadable JSON file
  * @param {string|Array<string>|null} presetNames - Specific preset name(s) or null for all
  * @returns {void} Triggers file download

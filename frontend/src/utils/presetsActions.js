@@ -70,22 +70,11 @@ export const loadPresetConfigAction = async (presetName, applyToDevice = false, 
     if (applyToDevice) {
       // Generate commands and apply to ODrive
       const commands = generateConfigCommands(config)
-      
-      toast({
-        title: 'Applying Preset',
-        description: `Loading "${presetName}" configuration to ODrive...`,
-        status: 'info',
-        duration: 2000,
-      })
+
 
       await executeConfigAction('apply', { commands })
 
-      toast({
-        title: 'Preset Applied',
-        description: `Configuration "${presetName}" applied to ODrive`,
-        status: 'success',
-        duration: 3000,
-      })
+
     } else {
       toast({
         title: 'Preset Loaded',
@@ -124,22 +113,11 @@ export const applyPresetAndSaveAction = async (presetName, toast) => {
     // Generate commands and apply to ODrive
     const commands = generateConfigCommands(config)
     
-    toast({
-      title: 'Applying Preset',
-      description: `Applying "${presetName}" configuration...`,
-      status: 'info',
-      duration: 2000,
-    })
+
 
     // Apply configuration
     await executeConfigAction('apply', { commands })
 
-    toast({
-      title: 'Saving Configuration',
-      description: 'Saving to non-volatile memory...',
-      status: 'info',
-      duration: 2000,
-    })
 
     // Save to non-volatile memory
     await executeConfigAction('save')

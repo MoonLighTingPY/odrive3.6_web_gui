@@ -113,7 +113,7 @@ const ConfigurationTab = () => {
 
 useEffect(() => {
   const handlePresetLoaded = (event) => {
-    const { config, presetName } = event.detail
+    const { config } = event.detail
     
     // Update LOCAL deviceConfig state (this is what was missing!)
     setDeviceConfig(config)
@@ -126,12 +126,7 @@ useEffect(() => {
     if (config.interface) dispatch({ type: 'config/updateInterfaceConfig', payload: config.interface })
     
     // Show a toast notification
-    toast({
-      title: 'Preset Loaded',
-      description: `Configuration "${presetName}" loaded to all steps`,
-      status: 'success',
-      duration: 3000,
-    })
+
   }
 
   window.addEventListener('presetLoaded', handlePresetLoaded)
