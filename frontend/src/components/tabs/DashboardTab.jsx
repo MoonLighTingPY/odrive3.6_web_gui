@@ -42,7 +42,7 @@ const DashboardTab = ({ isActive = false }) => {
 
 
   // Move useDashboardTelemetry hook to top level, with isActive parameter
-  useDashboardTelemetry(isActive ? 100 : 2000, isActive)
+  useDashboardTelemetry(isActive ? 1 : 2000, isActive)
 
   // Check if we should show dashboard content
   const shouldShowDashboard = () => {
