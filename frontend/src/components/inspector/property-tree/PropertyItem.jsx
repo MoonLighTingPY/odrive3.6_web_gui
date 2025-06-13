@@ -72,8 +72,11 @@ const PropertyItem = ({
 
   const handleSliderChange = (newValue) => {
     setSliderValue(newValue)
-    
-    // Update the property immediately when slider changes
+    // Only update local slider state during dragging, don't send to device yet
+  }
+
+  const handleSliderChangeEnd = async (newValue) => {
+    // Update the property when slider drag ends
     if (prop.writable && isConnected && updateProperty) {
       let formattedValue = newValue
       if (prop.decimals !== undefined) {
@@ -97,12 +100,21 @@ const PropertyItem = ({
       }
       
       console.log(`Slider updating: ${devicePath} = ${formattedValue}`)
-      updateProperty(devicePath, formattedValue)
+      try {
+        await updateProperty(devicePath, formattedValue)
+        // Refresh the property value after successful update
+        await refreshProperty(displayPath)
+      } catch (error) {
+        console.error('Failed to update property via slider:', error)
+        // Reset slider to previous value on error
+        setSliderValue(parseFloat(value) || 0)
+      }
     }
   }
 
-  const handleZeroClick = () => {
-    handleSliderChange(0)
+  const handleZeroClick = async () => {
+    setSliderValue(0)
+    await handleSliderChangeEnd(0)
   }
 
   return (
@@ -245,6 +257,7 @@ const PropertyItem = ({
               max={getSliderProps().max}
               step={getSliderProps().step}
               onChange={handleSliderChange}
+              onChangeEnd={handleSliderChangeEnd}
               colorScheme="blue"
               flex="1"
             >
