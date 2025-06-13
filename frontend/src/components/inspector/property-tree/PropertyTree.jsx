@@ -159,6 +159,7 @@ const PropertyTree = ({
             isRefreshing={refreshingProperties.has(displayPath)}
             selectedProperties={selectedProperties}
             togglePropertyChart={togglePropertyChart}
+            updateProperty={updateProperty}
           />
         )
       })

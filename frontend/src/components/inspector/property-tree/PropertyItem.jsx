@@ -34,7 +34,7 @@ const PropertyItem = ({
   isRefreshing,
   selectedProperties,
   togglePropertyChart,
-  updateProperty, // Add this prop
+  updateProperty
 }) => {
   const [sliderValue, setSliderValue] = useState(value || 0)
   
@@ -72,13 +72,32 @@ const PropertyItem = ({
 
   const handleSliderChange = (newValue) => {
     setSliderValue(newValue)
+    
     // Update the property immediately when slider changes
     if (prop.writable && isConnected && updateProperty) {
       let formattedValue = newValue
       if (prop.decimals !== undefined) {
         formattedValue = parseFloat(newValue.toFixed(prop.decimals))
       }
-      updateProperty(displayPath, formattedValue)
+      
+      // Convert display path to device path format for the API
+      let devicePath
+      if (displayPath.startsWith('system.')) {
+        const systemProp = displayPath.replace('system.', '')
+        if (['dc_bus_overvoltage_trip_level', 'dc_bus_undervoltage_trip_level', 'dc_max_positive_current', 
+             'dc_max_negative_current', 'enable_brake_resistor', 'brake_resistance'].includes(systemProp)) {
+          devicePath = `device.config.${systemProp}`
+        } else {
+          devicePath = `device.${systemProp}`
+        }
+      } else if (displayPath.startsWith('axis0.') || displayPath.startsWith('axis1.')) {
+        devicePath = `device.${displayPath}`
+      } else {
+        devicePath = `device.${displayPath}`
+      }
+      
+      console.log(`Slider updating: ${devicePath} = ${formattedValue}`)
+      updateProperty(devicePath, formattedValue)
     }
   }
 
