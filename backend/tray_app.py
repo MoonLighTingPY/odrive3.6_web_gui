@@ -5,6 +5,9 @@ import time
 import webbrowser
 import subprocess
 import logging
+import psutil
+import socket
+from tkinter import messagebox, Tk
 from PIL import Image
 import pystray
 from pystray import MenuItem as item
@@ -42,6 +45,132 @@ class ODriveTrayApp:
         self.backend_starting = False
         self.status = "Starting..."
         logger.info("ODrive Tray App initialized")
+
+    def check_existing_instances(self):
+        """Check for existing ODrive GUI instances and handle them"""
+        try:
+            # Check for running ODrive processes
+            current_pid = os.getpid()
+            odrive_processes = []
+            
+            for proc in psutil.process_iter(['pid', 'name', 'exe']):
+                try:
+                    proc_info = proc.info
+                    if proc_info['pid'] != current_pid and proc_info['name']:
+                        # Check for ODrive GUI executables
+                        if any(name in proc_info['name'].lower() for name in [
+                            'odrive_gui_tray', 'odrive', 'tray_app'
+                        ]):
+                            odrive_processes.append(proc)
+                        # Also check for Python processes running our scripts
+                        elif 'python' in proc_info['name'].lower() and proc_info['exe']:
+                            try:
+                                cmdline = proc.cmdline()
+                                if any('tray_app' in arg or 'odrive' in arg for arg in cmdline):
+                                    odrive_processes.append(proc)
+                            except:
+                                pass
+                except (psutil.NoSuchProcess, psutil.AccessDenied):
+                    continue
+            
+            # Check if port 5000 is already in use (backend running)
+            port_in_use = self.is_port_in_use(5000)
+            
+            if odrive_processes or port_in_use:
+                return self.handle_existing_instances(odrive_processes, port_in_use)
+            
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error checking existing instances: {e}")
+            return True  # Continue anyway
+
+    def is_port_in_use(self, port):
+        """Check if a port is already in use"""
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                result = sock.connect_ex(('localhost', port))
+                return result == 0
+        except:
+            return False
+
+    def handle_existing_instances(self, processes, port_in_use):
+        """Handle existing ODrive GUI instances"""
+        try:
+            # Create a hidden root window for the message box
+            root = Tk()
+            root.withdraw()
+            root.attributes('-topmost', True)
+            
+            # Prepare the message
+            instance_info = []
+            if processes:
+                instance_info.append(f"• {len(processes)} ODrive GUI process(es) running")
+            if port_in_use:
+                instance_info.append("• Backend server (port 5000) is occupied")
+            
+            message = (
+                "Another instance of ODrive GUI is already running!\n\n"
+                f"{chr(10).join(instance_info)}\n\n"
+                "What would you like to do?\n\n"
+                "YES: Close existing instances and start this one\n"
+                "NO: Cancel and exit this instance\n"
+                "CANCEL: Continue anyway (may cause conflicts)"
+            )
+            
+            # Show message box with three options
+            result = messagebox.askyesnocancel(
+                "ODrive GUI Already Running",
+                message,
+                icon='warning'
+            )
+            
+            root.destroy()
+            
+            if result is True:  # YES - Close existing and continue
+                logger.info("User chose to close existing instances")
+                self.close_existing_instances(processes)
+                return True
+                
+            elif result is False:  # NO - Cancel this instance
+                logger.info("User chose to cancel this instance")
+                return False
+                
+            else:  # CANCEL - Continue anyway
+                logger.info("User chose to continue with potential conflicts")
+                return True
+                
+        except Exception as e:
+            logger.error(f"Error showing dialog: {e}")
+            # If GUI dialog fails, just continue
+            return True
+
+    def close_existing_instances(self, processes):
+        """Close existing ODrive GUI processes"""
+        closed_count = 0
+        for proc in processes:
+            try:
+                logger.info(f"Terminating process: {proc.info['name']} (PID: {proc.info['pid']})")
+                proc.terminate()
+                
+                # Wait up to 5 seconds for graceful termination
+                try:
+                    proc.wait(timeout=5)
+                    closed_count += 1
+                except psutil.TimeoutExpired:
+                    # Force kill if it doesn't terminate gracefully
+                    logger.warning(f"Force killing process {proc.info['pid']}")
+                    proc.kill()
+                    closed_count += 1
+                    
+            except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
+                logger.warning(f"Could not terminate process {proc.info['pid']}: {e}")
+                continue
+                
+        if closed_count > 0:
+            logger.info(f"Successfully closed {closed_count} existing instances")
+            # Wait a moment for ports to be released
+            time.sleep(2)
 
     def update_status(self, new_status):
         """Update the status and refresh the menu"""
@@ -210,6 +339,11 @@ class ODriveTrayApp:
         """Run the tray application - optimized startup"""
         try:
             logger.info("Starting ODrive Tray Application")
+            
+            # Check for existing instances first
+            if not self.check_existing_instances():
+                logger.info("User cancelled due to existing instances")
+                return
             
             # Create the tray icon immediately (don't wait for backend)
             image = self.create_image()
