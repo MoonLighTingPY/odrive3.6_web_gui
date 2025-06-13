@@ -50,7 +50,6 @@ export const usePropertyRefresh = (odrivePropertyTree, collectAllProperties, isC
           // eslint-disable-next-line no-unused-vars
           } catch (jsonError) {
             // If JSON parsing fails, try to handle Infinity values
-            console.warn(`Invalid JSON response for property ${displayPath}:`, responseText)
             
             try {
               // Replace Infinity with a string representation for display
@@ -89,6 +88,25 @@ export const usePropertyRefresh = (odrivePropertyTree, collectAllProperties, isC
     
     // Clear refreshing state
     setRefreshingProperties(new Set())
+
+    // Log all null/undefined values after refresh is complete
+    setTimeout(() => {
+      setPropertyValues(currentValues => {
+        const nullProperties = allPaths.filter(path => {
+          const value = currentValues[path]
+          return value === null || value === undefined
+        })
+        
+        if (nullProperties.length > 0) {
+          console.log('Properties with null/undefined values after refresh:', nullProperties)
+        } else {
+          console.log('All properties have been successfully refreshed - no null values found')
+        }
+        
+        return currentValues
+      })
+    }, 100) // Small delay to ensure all state updates have completed
+
   }, [collectAllProperties, odrivePropertyTree])
 
   // Refresh a single property
