@@ -256,3 +256,52 @@ export const ClearErrorsButton = ({ axisNumber = 0, size = "sm" }) => {
   )
 }
 
+// Individual calibration buttons - NO MODALS
+export const MotorCalibrationButton = ({ axisNumber = 0, size = "sm" }) => (
+  <CalibrationButtonBase
+    axisNumber={axisNumber}
+    size={size}
+    colorScheme="orange"
+    calibrationType="motor"
+    title="Start motor calibration only"
+  >
+    Motor Calibration
+  </CalibrationButtonBase>
+)
+
+export const EncoderHallCalibrationButton = ({ axisNumber = 0, size = "sm" }) => (
+  <CalibrationButtonBase
+    axisNumber={axisNumber}
+    size={size}
+    colorScheme="orange"
+    calibrationType="encoder_polarity"
+    title="Start encoder hall polarity calibration"
+  >
+    Hall Polarity
+  </CalibrationButtonBase>
+)
+
+export const EncoderOffsetCalibrationButton = ({ axisNumber = 0, size = "sm" }) => (
+  <CalibrationButtonBase
+    axisNumber={axisNumber}
+    size={size}
+    colorScheme="orange"
+    calibrationType="encoder_offset"
+    title="Start encoder offset calibration"
+  >
+    Encoder Offset
+  </CalibrationButtonBase>
+)
+
+export const EncoderIndexSearchButton = ({ axisNumber = 0, size = "sm" }) => (
+  <CalibrationButtonBase
+    axisNumber={axisNumber}
+    size={size}
+    colorScheme="purple"
+    calibrationType="encoder_index_search"
+    title="Start encoder index search"
+  >
+    Index Search
+  </CalibrationButtonBase>
+)
+
