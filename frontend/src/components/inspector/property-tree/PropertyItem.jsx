@@ -34,6 +34,7 @@ const PropertyItem = ({
   isRefreshing,
   selectedProperties,
   togglePropertyChart,
+  updateProperty, // Add this prop
 }) => {
   const [sliderValue, setSliderValue] = useState(value || 0)
   
@@ -56,7 +57,7 @@ const PropertyItem = ({
   const isWritable = prop.writable || false
   const valueType = typeof value
   const isError = displayPath.includes('error') && value !== 0 && value !== undefined
-  const isChartable = typeof value === 'number' && !prop?.name?.toLowerCase().includes('error')
+  const isChartable = true // Make all properties chartable
   const isCharted = selectedProperties.includes(displayPath)
   const propName = prop.name || displayPath.split('.').pop()
   const isSetpoint = prop.isSetpoint === true
@@ -72,12 +73,12 @@ const PropertyItem = ({
   const handleSliderChange = (newValue) => {
     setSliderValue(newValue)
     // Update the property immediately when slider changes
-    if (prop.writable && isConnected && window.updateProperty) {
+    if (prop.writable && isConnected && updateProperty) {
       let formattedValue = newValue
       if (prop.decimals !== undefined) {
         formattedValue = parseFloat(newValue.toFixed(prop.decimals))
       }
-      window.updateProperty(displayPath, formattedValue)
+      updateProperty(displayPath, formattedValue)
     }
   }
 
@@ -101,17 +102,18 @@ const PropertyItem = ({
         <HStack justify="space-between" align="center" spacing={2}>
           {/* Left side - Compact property info */}
           <HStack spacing={2} flex="1" align="center" minW="0">
-            {isChartable && togglePropertyChart && (
-              <Checkbox
-                size="sm"
-                colorScheme="blue"
-                isChecked={isCharted}
-                onChange={() => togglePropertyChart(displayPath)}
-              />
-            )}
-            
             <VStack align="start" spacing={0} flex="1" minW="0">
-              <HStack spacing={1} align="center" w="100%">
+              <HStack spacing={2} align="center" w="100%">
+                {/* Chart checkbox - more prominent position */}
+                {isChartable && togglePropertyChart && (
+                  <Checkbox
+                    size="md"
+                    colorScheme="blue"
+                    isChecked={isCharted}
+                    onChange={() => togglePropertyChart(displayPath)}
+                  />
+                )}
+                
                 <Badge size="xs" colorScheme={isWritable ? "green" : "gray"} variant="subtle">
                   {isWritable ? "RW" : "RO"}
                 </Badge>

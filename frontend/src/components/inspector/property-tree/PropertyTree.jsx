@@ -250,11 +250,6 @@ const PropertyTree = ({
           <HStack justify="space-between">
             <Heading size="sm" color="white">ODrive Properties</Heading>
             <HStack spacing={1}>
-              {selectedProperties.length > 0 && (
-                <Badge colorScheme="blue" size="sm">
-                  {selectedProperties.length} charted
-                </Badge>
-              )}
               <Badge colorScheme="gray" size="sm">
                 {Object.keys(filteredTree).length} sections
               </Badge>
