@@ -14,8 +14,7 @@ import {
   Icon,
   Tooltip,
   SimpleGrid,
-  Alert,
-  AlertIcon
+  Select
 } from '@chakra-ui/react'
 import { InfoIcon } from '@chakra-ui/icons'
 import ParameterInput from '../buttons/ParameterInput'
@@ -169,7 +168,135 @@ const PowerConfigStep = ({
                 </VStack>
               </Box>
 
+            </SimpleGrid>
+          </CardBody>
+        </Card>
+
+        {/* Thermistor Configuration */}
+        <Card bg="gray.800" variant="elevated">
+          <CardHeader py={1}>
+            <Heading size="sm" color="white">Thermistor Configuration</Heading>
+          </CardHeader>
+          <CardBody py={2}>
             
+            <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={4}>
+              
+              {/* FET Thermistor Limits */}
+              <Box>
+                <VStack spacing={2} align="stretch">
+                  <FormControl>
+                    <HStack spacing={2} mb={1}>
+                      <FormLabel color="white" mb={0} fontSize="sm">Lower Temperature Limit</FormLabel>
+                      <Tooltip label="Temperature at which current limiting begins.">
+                        <Icon as={InfoIcon} color="gray.400" />
+                      </Tooltip>
+                    </HStack>
+                    <ParameterInput
+                      value={powerConfig.fet_temp_limit_lower}
+                      onChange={(value) => handleConfigChange('fet_temp_limit_lower', parseFloat(value) || 0)}
+                      onRefresh={() => handleRefresh('fet_temp_limit_lower')}
+                      isLoading={isLoading('fet_temp_limit_lower')}
+                      unit="°C"
+                      precision={1}
+                      min={0}
+                      max={150}
+                    />
+                  </FormControl>
+
+                  <FormControl>
+                    <HStack spacing={2} mb={1}>
+                      <FormLabel color="white" mb={0} fontSize="sm">Upper Temperature Limit</FormLabel>
+                      <Tooltip label="Temperature at which motor control stops and error is set.">
+                        <Icon as={InfoIcon} color="gray.400" />
+                      </Tooltip>
+                    </HStack>
+                    <ParameterInput
+                      value={powerConfig.fet_temp_limit_upper}
+                      onChange={(value) => handleConfigChange('fet_temp_limit_upper', parseFloat(value) || 0)}
+                      onRefresh={() => handleRefresh('fet_temp_limit_upper')}
+                      isLoading={isLoading('fet_temp_limit_upper')}
+                      unit="°C"
+                      precision={1}
+                      min={0}
+                      max={150}
+                    />
+                  </FormControl>
+                </VStack>
+              </Box>
+
+              {/* Motor Thermistor Configuration */}
+              <Box>
+                <VStack spacing={2} align="stretch">
+                  <FormControl>
+                    <HStack spacing={2} mb={1}>
+                      <Switch
+                        isChecked={powerConfig.motor_thermistor_enabled}
+                        onChange={(e) => handleConfigChange('motor_thermistor_enabled', e.target.checked)}
+                        colorScheme="odrive"
+                        size="sm"
+                      />
+                      <FormLabel color="white" mb={0} fontSize="sm">Enable Motor Thermistor</FormLabel>
+                      <Tooltip label="Enable external motor thermistor monitoring.">
+                        <Icon as={InfoIcon} color="gray.400" />
+                      </Tooltip>
+                    </HStack>
+                  </FormControl>
+
+                  {powerConfig.motor_thermistor_enabled && (
+                    <>
+                      <FormControl>
+                        <FormLabel color="white" mb={1} fontSize="sm">GPIO Pin</FormLabel>
+                        <Select
+                          value={powerConfig.motor_thermistor_gpio_pin || ''}
+                          onChange={(e) => handleConfigChange('motor_thermistor_gpio_pin', parseInt(e.target.value))}
+                          bg="gray.700"
+                          color="white"
+                          size="sm"
+                        >
+                          <option value="">Select GPIO Pin</option>
+                          <option value="3">GPIO 3</option>
+                          <option value="4">GPIO 4</option>
+                          <option value="5">GPIO 5</option>
+                          <option value="6">GPIO 6</option>
+                          <option value="7">GPIO 7</option>
+                          <option value="8">GPIO 8</option>
+                        </Select>
+                      </FormControl>
+
+                      <HStack spacing={2}>
+                        <FormControl>
+                          <FormLabel color="white" mb={1} fontSize="sm">Lower Limit</FormLabel>
+                          <ParameterInput
+                            value={powerConfig.motor_temp_limit_lower}
+                            onChange={(value) => handleConfigChange('motor_temp_limit_lower', parseFloat(value) || 0)}
+                            onRefresh={() => handleRefresh('motor_temp_limit_lower')}
+                            isLoading={isLoading('motor_temp_limit_lower')}
+                            unit="°C"
+                            precision={1}
+                            min={0}
+                            max={200}
+                          />
+                        </FormControl>
+
+                        <FormControl>
+                          <FormLabel color="white" mb={1} fontSize="sm">Upper Limit</FormLabel>
+                          <ParameterInput
+                            value={powerConfig.motor_temp_limit_upper}
+                            onChange={(value) => handleConfigChange('motor_temp_limit_upper', parseFloat(value) || 0)}
+                            onRefresh={() => handleRefresh('motor_temp_limit_upper')}
+                            isLoading={isLoading('motor_temp_limit_upper')}
+                            unit="°C"
+                            precision={1}
+                            min={0}
+                            max={200}
+                          />
+                        </FormControl>
+                      </HStack>
+                    </>
+                  )}
+                </VStack>
+              </Box>
+
             </SimpleGrid>
           </CardBody>
         </Card>
