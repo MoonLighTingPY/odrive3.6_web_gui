@@ -9,15 +9,27 @@ from PIL import Image
 import pystray
 from pystray import MenuItem as item
 
-# Configure logging for debugging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('odrive_tray.log'),
-        logging.StreamHandler()
-    ]
-)
+# Configure logging for debugging - disable file logging for executable
+if getattr(sys, 'frozen', False):
+    # Running as executable - only console logging
+    logging.basicConfig(
+        level=logging.WARNING,  # Reduce log level for executable
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.StreamHandler()
+        ]
+    )
+else:
+    # Running as script - include file logging
+    logging.basicConfig(
+        level=logging.INFO,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=[
+            logging.FileHandler('odrive_tray.log'),
+            logging.StreamHandler()
+        ]
+    )
+
 logger = logging.getLogger(__name__)
 
 class ODriveTrayApp:
