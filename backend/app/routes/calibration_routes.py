@@ -89,6 +89,15 @@ def calibrate():
                     'sequence': ['encoder_polarity', 'encoder_offset'],
                     'next_state': 'encoder_dir_find'
                 })
+        elif calibration_type == 'encoder_index_search':
+            result = odrive_manager.execute_command('device.axis0.requested_state = 6')
+            if 'error' not in result:
+                logger.info("Encoder index search started successfully")
+                return jsonify({
+                    'message': 'Encoder index search started',
+                    'sequence': ['encoder_index_search'],
+                    'next_state': 'encoder_index_search'
+                })
         else:
             return jsonify({'error': f'Unknown calibration type: {calibration_type}'}), 400
             

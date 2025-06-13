@@ -189,6 +189,7 @@ export const useCalibration = () => {
       case 'motor_calibration': return 'Measuring motor resistance and inductance...'
       case 'encoder_polarity': return 'Finding encoder direction/polarity...'
       case 'encoder_offset': return 'Calibrating encoder offset...'
+      case 'encoder_index_search': return 'Searching for encoder index pulse...'
       case 'full_calibration': return 'Running full calibration sequence...'
       case 'ready_for_polarity': return 'Ready to start encoder polarity calibration...'
       case 'ready_for_offset': return 'Ready to start encoder offset calibration...'
