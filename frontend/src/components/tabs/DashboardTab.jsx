@@ -49,7 +49,6 @@ const DashboardTab = () => {
     calibrationPhase,
     calibrationSequence,
     startCalibration,
-    stopCalibration,
     getCalibrationPhaseDescription
   } = useCalibration()
 

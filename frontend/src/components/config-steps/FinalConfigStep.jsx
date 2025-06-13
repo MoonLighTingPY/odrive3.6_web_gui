@@ -10,14 +10,12 @@ import {
   CardBody,
   CardHeader,
   Heading,
-  Collapse,
-  useDisclosure,
   useToast,
+  useDisclosure,
   Switch,
   FormControl,
   FormLabel
 } from '@chakra-ui/react'
-import { ChevronDownIcon, ChevronUpIcon } from '@chakra-ui/icons'
 
 // Import our components
 import CommandList from '../CommandList'
@@ -29,7 +27,6 @@ import { executeConfigAction, applyAndSaveConfiguration } from '../../utils/conf
 
 const FinalConfigStep = () => {
   const toast = useToast()
-  const { isOpen: isCommandsOpen, onToggle: onCommandsToggle } = useDisclosure()
   const { isOpen: isConfirmOpen, onOpen: onConfirmOpen, onClose: onConfirmClose } = useDisclosure()
   
   const [isLoading, setIsLoading] = useState(false)
@@ -171,67 +168,68 @@ const FinalConfigStep = () => {
           <CardBody py={3}>
             <VStack spacing={4} align="stretch">
               
-              {/* Configuration Commands Preview */}
+
+              {/* Configuration Commands - Always visible now */}
               <Box>
                 <HStack justify="space-between" mb={3}>
                   <Text fontWeight="bold" color="white" fontSize="lg">
-                    Configuration Commands Preview ({enabledCommandCount} commands)
+                    Configuration Commands ({enabledCommandCount} commands)
                   </Text>
-                  <HStack spacing={3}>
-                    <FormControl display="flex" alignItems="center">
-                      <FormLabel htmlFor="enable-editing" mb="0" color="gray.300" fontSize="sm">
-                        Enable Editing
-                      </FormLabel>
-                      <Switch
-                        id="enable-editing"
-                        size="sm"
-                        colorScheme="odrive"
-                        isChecked={enableCommandEditing}
-                        onChange={(e) => setEnableCommandEditing(e.target.checked)}
-                      />
-                    </FormControl>
-                    <Button
+                  <HStack spacing={2} align="center">
+                    <FormLabel htmlFor="enable-editing" mb="0" color="gray.300" fontSize="sm">
+                      Enable Editing
+                    </FormLabel>
+                    <Switch
+                      id="enable-editing"
                       size="sm"
-                      variant="ghost"
-                      onClick={onCommandsToggle}
-                      rightIcon={isCommandsOpen ? <ChevronUpIcon /> : <ChevronDownIcon />}
-                      color="gray.300"
-                    >
-                      {isCommandsOpen ? 'Hide' : 'Show'} Commands
-                    </Button>
+                      colorScheme="odrive"
+                      isChecked={enableCommandEditing}
+                      onChange={(e) => setEnableCommandEditing(e.target.checked)}
+                    />
                   </HStack>
                 </HStack>
                 
-                <Collapse in={isCommandsOpen}>
-                  <Box
-                    bg="gray.900"
-                    p={4}
-                    borderRadius="md"
-                    maxH="400px"
-                    overflowY="auto"
-                    border="1px solid"
-                    borderColor="gray.600"
-                  >
-                    <CommandList
-                      commands={baseGeneratedCommands}
-                      customCommands={customCommands}
-                      disabledCommands={disabledCommands}
-                      enableEditing={enableCommandEditing}
-                      onCustomCommandChange={handleCustomCommandChange}
-                      onCommandToggle={handleCommandToggle}
-                      onAddCustomCommand={handleAddCustomCommand}
-                    />
-                  </Box>
-                </Collapse>
+                {/* Commands list - no longer collapsible */}
+                <Box
+                  bg="gray.900"
+                  p={4}
+                  borderRadius="md"
+                  maxH="500px"
+                  overflowY="auto"
+                  border="1px solid"
+                  borderColor="gray.600"
+                >
+                  <CommandList
+                    commands={baseGeneratedCommands}
+                    customCommands={customCommands}
+                    disabledCommands={disabledCommands}
+                    enableEditing={enableCommandEditing}
+                    onCustomCommandChange={handleCustomCommandChange}
+                    onCommandToggle={handleCommandToggle}
+                    onAddCustomCommand={handleAddCustomCommand}
+                  />
+                </Box>
               </Box>
 
-              {/* Single Column Layout for Configuration Actions */}
+            </VStack>
+
+                          {/* Configuration Actions - Now at the top */}
               <VStack spacing={4} w="100%" maxW="400px" mx="auto">
+              
                 
-                <Text fontWeight="bold" color="blue.300" fontSize="lg" textAlign="center">
-                  Configuration Management
-                </Text>
-                
+                <Button
+                  colorScheme="blue"
+                  size="lg"
+                  w="100%"
+                  h="60px"
+                  onClick={() => handleAction('apply_and_save')}
+                  isDisabled={!isConnected}
+                  isLoading={isLoading && pendingAction === 'apply_and_save'}
+                  mt={4}
+                >
+                  ⚙️💾 Apply & Save Configuration
+                </Button>
+
                 <Button
                   colorScheme="red"
                   size="lg"
@@ -244,21 +242,7 @@ const FinalConfigStep = () => {
                   🗑️ Erase Old Configuration
                 </Button>
 
-                <Button
-                  colorScheme="blue"
-                  size="lg"
-                  w="100%"
-                  h="60px"
-                  onClick={() => handleAction('apply_and_save')}
-                  isDisabled={!isConnected}
-                  isLoading={isLoading && pendingAction === 'apply_and_save'}
-                >
-                  ⚙️💾 Apply & Save Configuration
-                </Button>
-
               </VStack>
-
-            </VStack>
           </CardBody>
         </Card>
 
