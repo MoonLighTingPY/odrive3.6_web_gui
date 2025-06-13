@@ -41,8 +41,43 @@ const CalibrationModal = ({
     
     // Check if this step has been completed successfully
     const isMotorStep = normalizedStep.includes('motor')
-    const isEncoderPolarityStep = normalizedStep.includes('encoderpolarity') || normalizedStep.includes('polarity')
+    const isEncoderPolarityStep = normalizedStep.includes('encoderpolarity') || normalizedStep.includes('polarity') || normalizedStep.includes('dirfind')
     const isEncoderOffsetStep = normalizedStep.includes('encoderoffset') || normalizedStep.includes('offset')
+    
+    // During calibration, show current active step
+    if (isCalibrating) {
+      // Check if this is the currently active step
+      if (normalizedStep === normalizedPhase || 
+          (isMotorStep && normalizedPhase.includes('motor')) ||
+          (isEncoderPolarityStep && (normalizedPhase.includes('polarity') || normalizedPhase.includes('dirfind'))) ||
+          (isEncoderOffsetStep && normalizedPhase.includes('offset'))) {
+        return 'active'
+      }
+      
+      // FIXED: Only show success for steps that have actually completed during this calibration
+      // We need to track progress through the sequence, not just check final flags
+      const currentStepIndex = calibrationSequence.findIndex(seqStep => 
+        normalizeStep(seqStep) === normalizedPhase ||
+        (isMotorStep && normalizeStep(seqStep).includes('motor') && normalizedPhase.includes('motor')) ||
+        (isEncoderPolarityStep && (normalizeStep(seqStep).includes('polarity') || normalizeStep(seqStep).includes('dirfind')) && (normalizedPhase.includes('polarity') || normalizedPhase.includes('dirfind'))) ||
+        (isEncoderOffsetStep && normalizeStep(seqStep).includes('offset') && normalizedPhase.includes('offset'))
+      )
+      
+      const thisStepIndex = calibrationSequence.findIndex(seqStep => normalizeStep(seqStep) === normalizedStep)
+      
+      // If this step comes before the current step in the sequence, it's completed
+      if (thisStepIndex < currentStepIndex && thisStepIndex !== -1) {
+        // Double-check with calibration status to ensure it actually completed successfully
+        if (calibrationStatus) {
+          if (isMotorStep && calibrationStatus.motor_calibrated) return 'success'
+          if (isEncoderPolarityStep && calibrationStatus.encoder_polarity_calibrated) return 'success'
+          if (isEncoderOffsetStep && calibrationStatus.encoder_ready) return 'success'
+        }
+      }
+      
+      // All other steps during calibration are pending
+      return 'pending'
+    }
     
     // If calibration is complete, check final status
     if (!isCalibrating && calibrationStatus) {
@@ -58,23 +93,6 @@ const CalibrationModal = ({
       }
       if (isEncoderOffsetStep) {
         return calibrationStatus.encoder_ready ? 'success' : (hasErrors ? 'error' : 'pending')
-      }
-    }
-    
-    // During calibration, show current active step
-    if (isCalibrating) {
-      if (normalizedStep === normalizedPhase || 
-          (isMotorStep && normalizedPhase.includes('motor')) ||
-          (isEncoderPolarityStep && (normalizedPhase.includes('polarity') || normalizedPhase.includes('dirfind'))) ||
-          (isEncoderOffsetStep && normalizedPhase.includes('offset'))) {
-        return 'active'
-      }
-      
-      // Check if step was already completed during this calibration
-      if (calibrationStatus) {
-        if (isMotorStep && calibrationStatus.motor_calibrated) return 'success'
-        if (isEncoderPolarityStep && calibrationStatus.encoder_polarity_calibrated) return 'success'
-        if (isEncoderOffsetStep && calibrationStatus.encoder_ready) return 'success'
       }
     }
     
