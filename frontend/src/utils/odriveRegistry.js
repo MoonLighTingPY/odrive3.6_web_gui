@@ -401,6 +401,9 @@ export const ODrivePropertyMappings = {
     dc_max_negative_current: 'config.dc_max_negative_current',
     brake_resistance: 'config.brake_resistance',
     brake_resistor_enabled: 'config.enable_brake_resistor',
+    // Fix FET thermistor mappings to match actual ODrive v0.5.6 API
+    fet_temp_limit_lower: 'axis0.motor.fet_thermistor.config.temp_limit_lower',
+    fet_temp_limit_upper: 'axis0.motor.fet_thermistor.config.temp_limit_upper',
   },
 
   motor: {
@@ -416,6 +419,16 @@ export const ODrivePropertyMappings = {
     phase_inductance: 'axis0.motor.config.phase_inductance',
     torque_constant: 'axis0.motor.config.torque_constant',
     pre_calibrated: 'axis0.motor.config.pre_calibrated',
+    // Fix the motor thermistor mappings - these were incorrect
+    motor_thermistor_enabled: 'axis0.motor.motor_thermistor.config.enabled',
+    motor_thermistor_gpio_pin: 'axis0.motor.motor_thermistor.config.gpio_pin',
+    motor_temp_limit_lower: 'axis0.motor.motor_thermistor.config.temp_limit_lower',
+    motor_temp_limit_upper: 'axis0.motor.motor_thermistor.config.temp_limit_upper',
+    // Add polynomial coefficients for thermistor calculations
+    motor_thermistor_poly_coeff_0: 'axis0.motor.motor_thermistor.config.poly_coefficient_0',
+    motor_thermistor_poly_coeff_1: 'axis0.motor.motor_thermistor.config.poly_coefficient_1',
+    motor_thermistor_poly_coeff_2: 'axis0.motor.motor_thermistor.config.poly_coefficient_2',
+    motor_thermistor_poly_coeff_3: 'axis0.motor.motor_thermistor.config.poly_coefficient_3',
   },
 
   encoder: {
@@ -1124,6 +1137,15 @@ export const generatePowerCommands = (powerConfig = {}) => {
   if (powerConfig.dc_max_negative_current !== undefined) {
     commands.push(`odrv0.config.dc_max_negative_current = ${powerConfig.dc_max_negative_current}`)
   }
+
+    // FET Thermistor configuration
+  if (powerConfig.fet_temp_limit_lower !== undefined) {
+    commands.push(`odrv0.axis0.motor.fet_thermistor.config.temp_limit_lower = ${powerConfig.fet_temp_limit_lower}`)
+  }
+  
+  if (powerConfig.fet_temp_limit_upper !== undefined) {
+    commands.push(`odrv0.axis0.motor.fet_thermistor.config.temp_limit_upper = ${powerConfig.fet_temp_limit_upper}`)
+  }
   
   return commands
 }
@@ -1191,6 +1213,40 @@ export const generateMotorCommands = (motorConfig = {}) => {
   // Pre-calibrated flag
   if (motorConfig.pre_calibrated !== undefined) {
     commands.push(`odrv0.axis${axisNum}.motor.config.pre_calibrated = ${motorConfig.pre_calibrated}`)
+  }
+
+  // Motor thermistor configuration
+  if (motorConfig.motor_thermistor_enabled !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.motor.motor_thermistor.config.enabled = ${motorConfig.motor_thermistor_enabled}`)
+  }
+  
+  if (motorConfig.motor_thermistor_gpio_pin !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.motor.motor_thermistor.config.gpio_pin = ${motorConfig.motor_thermistor_gpio_pin}`)
+  }
+  
+  if (motorConfig.motor_temp_limit_lower !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.motor.motor_thermistor.config.temp_limit_lower = ${motorConfig.motor_temp_limit_lower}`)
+  }
+  
+  if (motorConfig.motor_temp_limit_upper !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.motor.motor_thermistor.config.temp_limit_upper = ${motorConfig.motor_temp_limit_upper}`)
+  }
+  
+  // Polynomial coefficients (if needed for custom thermistors)
+  if (motorConfig.motor_thermistor_poly_coeff_0 !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.motor.motor_thermistor.config.poly_coefficient_0 = ${motorConfig.motor_thermistor_poly_coeff_0}`)
+  }
+  
+  if (motorConfig.motor_thermistor_poly_coeff_1 !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.motor.motor_thermistor.config.poly_coefficient_1 = ${motorConfig.motor_thermistor_poly_coeff_1}`)
+  }
+  
+  if (motorConfig.motor_thermistor_poly_coeff_2 !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.motor.motor_thermistor.config.poly_coefficient_2 = ${motorConfig.motor_thermistor_poly_coeff_2}`)
+  }
+  
+  if (motorConfig.motor_thermistor_poly_coeff_3 !== undefined) {
+    commands.push(`odrv0.axis${axisNum}.motor.motor_thermistor.config.poly_coefficient_3 = ${motorConfig.motor_thermistor_poly_coeff_3}`)
   }
   
   return commands

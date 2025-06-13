@@ -16,7 +16,8 @@ import {
   SimpleGrid,
   Badge,
   Alert,
-  AlertIcon
+  AlertIcon,
+  Switch
 } from '@chakra-ui/react'
 import { InfoIcon } from '@chakra-ui/icons'
 import ParameterInput from '../buttons/ParameterInput'
@@ -194,6 +195,87 @@ const MotorConfigStep = ({
                   {motorConfig.motor_type === 0 ? "High Current" : "Gimbal"}
                 </Badge>
               </HStack>
+            </VStack>
+          </CardBody>
+        </Card>
+
+        {/* Motor Thermistor Configuration */}
+        <Card bg="gray.800" variant="elevated">
+          <CardHeader py={2}>
+            <Heading size="sm" color="white">Motor Thermistor</Heading>
+          </CardHeader>
+          <CardBody py={2}>
+            <VStack spacing={3}>
+              <FormControl>
+                <HStack spacing={2} mb={1}>
+                  <Switch
+                    isChecked={motorConfig.motor_thermistor_enabled || false}
+                    onChange={(e) => handleConfigChange('motor_thermistor_enabled', e.target.checked)}
+                    colorScheme="odrive"
+                    size="sm"
+                  />
+                  <FormLabel color="white" mb={0} fontSize="sm">Enable Motor Thermistor</FormLabel>
+                  <Tooltip label="Enable external motor thermistor monitoring for temperature protection.">
+                    <Icon as={InfoIcon} color="gray.400" />
+                  </Tooltip>
+                </HStack>
+              </FormControl>
+
+              {motorConfig.motor_thermistor_enabled && (
+                <>
+                  <FormControl>
+                    <FormLabel color="white" mb={1} fontSize="sm">GPIO Pin</FormLabel>
+                    <Select
+                      value={motorConfig.motor_thermistor_gpio_pin || ''}
+                      onChange={(e) => handleConfigChange('motor_thermistor_gpio_pin', parseInt(e.target.value))}
+                      bg="gray.700"
+                      color="white"
+                      size="sm"
+                    >
+                      <option value="">Select GPIO Pin</option>
+                      <option value="3">GPIO 3</option>
+                      <option value="4">GPIO 4</option>
+                      <option value="5">GPIO 5</option>
+                      <option value="6">GPIO 6</option>
+                      <option value="7">GPIO 7</option>
+                      <option value="8">GPIO 8</option>
+                    </Select>
+                  </FormControl>
+
+                  <HStack spacing={4} w="100%">
+                    <FormControl flex="1">
+                      <FormLabel color="white" mb={1} fontSize="sm">Lower Temp Limit</FormLabel>
+                      <ParameterInput
+                        value={motorConfig.motor_temp_limit_lower}
+                        onChange={(value) => handleConfigChange('motor_temp_limit_lower', parseFloat(value) || 0)}
+                        onRefresh={() => handleRefresh('motor_temp_limit_lower')}
+                        isLoading={isLoading('motor_temp_limit_lower')}
+                        unit="°C"
+                        precision={1}
+                      />
+                    </FormControl>
+
+                    <FormControl flex="1">
+                      <FormLabel color="white" mb={1} fontSize="sm">Upper Temp Limit</FormLabel>
+                      <ParameterInput
+                        value={motorConfig.motor_temp_limit_upper}
+                        onChange={(value) => handleConfigChange('motor_temp_limit_upper', parseFloat(value) || 0)}
+                        onRefresh={() => handleRefresh('motor_temp_limit_upper')}
+                        isLoading={isLoading('motor_temp_limit_upper')}
+                        unit="°C"
+                        precision={1}
+                      />
+                    </FormControl>
+                  </HStack>
+
+                  <Alert status="warning" bg="orange.900" size="sm">
+                    <AlertIcon />
+                    <Text fontSize="xs">
+                      Note: For custom thermistors, use odrivetool function: set_motor_thermistor_coeffs(odrv0.axis0, Rload, R_25, Beta, Tmin, Tmax)
+                    </Text>
+                  </Alert>
+                </>
+              )}
             </VStack>
           </CardBody>
         </Card>

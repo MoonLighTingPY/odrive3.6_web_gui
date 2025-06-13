@@ -70,15 +70,17 @@ export const loadConfigurationBatch = async (configPaths) => {
 export const loadAllConfigurationBatch = async () => {
   // ALL ODrive v0.5.6 configuration paths in one array - Updated to match configurationMappings
   const allPaths = [
-    // Power configuration (6 parameters)
+    // Power configuration (8 parameters) - Added FET thermistor
     'device.config.dc_bus_overvoltage_trip_level',
     'device.config.dc_bus_undervoltage_trip_level', 
     'device.config.dc_max_positive_current',
     'device.config.dc_max_negative_current',
     'device.config.enable_brake_resistor',
     'device.config.brake_resistance',
+    'device.axis0.motor.fet_thermistor.config.temp_limit_lower',
+    'device.axis0.motor.fet_thermistor.config.temp_limit_upper',
     
-    // Motor configuration (9 parameters)
+    // Motor configuration (17 parameters) - Added motor thermistor parameters
     'device.axis0.motor.config.motor_type',
     'device.axis0.motor.config.pole_pairs',
     'device.axis0.motor.config.current_lim',
@@ -88,7 +90,17 @@ export const loadAllConfigurationBatch = async () => {
     'device.axis0.motor.config.phase_resistance',
     'device.axis0.motor.config.phase_inductance',
     'device.axis0.config.calibration_lockin.current', // This is lock_in_spin_current
-    
+    'device.axis0.motor.config.pre_calibrated',
+    // Motor thermistor configuration parameters
+    'device.axis0.motor.motor_thermistor.config.enabled',
+    'device.axis0.motor.motor_thermistor.config.gpio_pin', 
+    'device.axis0.motor.motor_thermistor.config.temp_limit_lower',
+    'device.axis0.motor.motor_thermistor.config.temp_limit_upper',
+    'device.axis0.motor.motor_thermistor.config.poly_coefficient_0',
+    'device.axis0.motor.motor_thermistor.config.poly_coefficient_1',
+    'device.axis0.motor.motor_thermistor.config.poly_coefficient_2',
+    'device.axis0.motor.motor_thermistor.config.poly_coefficient_3',
+      
     // Encoder configuration (15 parameters)
     'device.axis0.encoder.config.mode',
     'device.axis0.encoder.config.cpr',
@@ -221,6 +233,32 @@ export const loadAllConfigurationBatch = async () => {
           categorizedResults.interface['uart1_protocol'] = value;
         } else {
           categorizedResults.interface[configKey] = value;
+        }
+      } else if (path.includes('.motor.motor_thermistor.config.')) {
+        // Motor thermistor parameters should be categorized under motor configuration
+        if (configKey === 'enabled') {
+          categorizedResults.motor['motor_thermistor_enabled'] = value;
+        } else if (configKey === 'gpio_pin') {
+          categorizedResults.motor['motor_thermistor_gpio_pin'] = value;
+        } else if (configKey === 'temp_limit_lower') {
+          categorizedResults.motor['motor_temp_limit_lower'] = value;
+        } else if (configKey === 'temp_limit_upper') {
+          categorizedResults.motor['motor_temp_limit_upper'] = value;
+        } else if (configKey.startsWith('poly_coefficient_')) {
+          // Handle polynomial coefficients
+          const coeffNum = configKey.split('_').pop();
+          categorizedResults.motor[`motor_thermistor_poly_coeff_${coeffNum}`] = value;
+        } else {
+          categorizedResults.motor[configKey] = value;
+        }
+      } else if (path.includes('.motor.fet_thermistor.config.')) {
+        // FET thermistor should go to power config with proper key mapping
+        if (configKey === 'temp_limit_lower') {
+          categorizedResults.power['fet_temp_limit_lower'] = value;
+        } else if (configKey === 'temp_limit_upper') {
+          categorizedResults.power['fet_temp_limit_upper'] = value;
+        } else {
+          categorizedResults.power[configKey] = value;
         }
       } else {
         // Catch any uncategorized parameters
