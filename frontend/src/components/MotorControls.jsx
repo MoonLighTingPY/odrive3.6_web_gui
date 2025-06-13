@@ -8,7 +8,6 @@ import {
   EncoderHallCalibrationButton,
   EncoderOffsetCalibrationButton,
   EncoderIndexSearchButton,
-  RebootButton
 } from '../hooks/useOdriveButtons.jsx'
 import { HStack, VStack } from '@chakra-ui/react'
 
@@ -33,8 +32,6 @@ const MotorControls = ({ axisNumber = 0, size = "sm", orientation = "horizontal"
           <EncoderOffsetCalibrationButton axisNumber={axisNumber} size={size} />
           <EncoderIndexSearchButton axisNumber={axisNumber} size={size} />
 
-        {/* System Controls */}
-          <RebootButton size={size} />
         </ContainerComponent>
       </VStack>
     )
@@ -61,7 +58,6 @@ export {
   EncoderHallCalibrationButton,
   EncoderOffsetCalibrationButton,
   EncoderIndexSearchButton,
-  RebootButton
 }
 
 export default MotorControls

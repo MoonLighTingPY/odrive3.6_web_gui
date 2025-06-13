@@ -87,14 +87,19 @@ const CalibrationButtonBase = ({
   
   const isMotorIdle = axisState === 1
   const hasErrors = axisError !== 0
+  const isStatusUnknown = axisState === 0 // AXIS_STATE_UNDEFINED
   
   return (
     <Button
       size={size}
       colorScheme={colorScheme}
       onClick={handleCalibration}
-      isDisabled={!isConnected || !isMotorIdle || hasErrors}
-      title={hasErrors ? "Clear errors before calibration" : title}
+      isDisabled={!isConnected || !isMotorIdle || hasErrors || isStatusUnknown}
+      title={
+        isStatusUnknown ? "Unknown axis status - check connection" :
+        hasErrors ? "Clear errors before calibration" : 
+        title
+      }
     >
       {children}
     </Button>
@@ -126,6 +131,7 @@ export const CalibrationButton = ({ axisNumber = 0, size = "sm" }) => {
   
   const isMotorIdle = axisState === 1
   const hasErrors = axisError !== 0
+  const isStatusUnknown = axisState === 0 // AXIS_STATE_UNDEFINED
   
   return (
     <>
@@ -133,8 +139,12 @@ export const CalibrationButton = ({ axisNumber = 0, size = "sm" }) => {
         size={size}
         colorScheme="orange"
         onClick={handleCalibration}
-        isDisabled={!isConnected || !isMotorIdle || hasErrors}
-        title={hasErrors ? "Clear errors before calibration" : "Start full calibration sequence (motor + encoder)"}
+        isDisabled={!isConnected || !isMotorIdle || hasErrors || isStatusUnknown}
+        title={
+          isStatusUnknown ? "Unknown axis status - check connection" :
+          hasErrors ? "Clear errors before calibration" : 
+          "Start full calibration sequence (motor + encoder)"
+        }
       >
         Full Calibration
       </Button>
@@ -153,55 +163,6 @@ export const CalibrationButton = ({ axisNumber = 0, size = "sm" }) => {
   )
 }
 
-// Individual calibration buttons - NO MODALS
-export const MotorCalibrationButton = ({ axisNumber = 0, size = "sm" }) => (
-  <CalibrationButtonBase
-    axisNumber={axisNumber}
-    size={size}
-    colorScheme="orange"
-    calibrationType="motor"
-    title="Start motor calibration only"
-  >
-    Motor Calibration
-  </CalibrationButtonBase>
-)
-
-export const EncoderHallCalibrationButton = ({ axisNumber = 0, size = "sm" }) => (
-  <CalibrationButtonBase
-    axisNumber={axisNumber}
-    size={size}
-    colorScheme="orange"
-    calibrationType="encoder_polarity"
-    title="Start encoder hall polarity calibration"
-  >
-    Hall Polarity
-  </CalibrationButtonBase>
-)
-
-export const EncoderOffsetCalibrationButton = ({ axisNumber = 0, size = "sm" }) => (
-  <CalibrationButtonBase
-    axisNumber={axisNumber}
-    size={size}
-    colorScheme="orange"
-    calibrationType="encoder_offset"
-    title="Start encoder offset calibration"
-  >
-    Encoder Offset
-  </CalibrationButtonBase>
-)
-
-export const EncoderIndexSearchButton = ({ axisNumber = 0, size = "sm" }) => (
-  <CalibrationButtonBase
-    axisNumber={axisNumber}
-    size={size}
-    colorScheme="orange"
-    calibrationType="encoder_index_search"
-    title="Start encoder index search"
-  >
-    Encoder Index Search
-  </CalibrationButtonBase>
-)
-
 export const EnableMotorButton = ({ axisNumber = 0, size = "sm" }) => {
   const { isConnected, odriveState } = useSelector(state => state.device)
   const { sendCommand } = useODriveCommand()
@@ -216,14 +177,20 @@ export const EnableMotorButton = ({ axisNumber = 0, size = "sm" }) => {
   const isMotorEnabled = axisState === 8
   const hasErrors = axisError !== 0
   const isAxisCalibrating = axisState >= 2 && axisState <= 7
+  const isStatusUnknown = axisState === 0 // AXIS_STATE_UNDEFINED
   
   return (
     <Button
       size={size}
       colorScheme="green"
       onClick={handleEnableMotor}
-      isDisabled={!isConnected || isMotorEnabled || hasErrors || isAxisCalibrating}
-      title={hasErrors ? "Clear errors before enabling motor" : isAxisCalibrating ? "Wait for calibration to complete" : "Enable motor (closed loop control)"}
+      isDisabled={!isConnected || isMotorEnabled || hasErrors || isAxisCalibrating || isStatusUnknown}
+      title={
+        isStatusUnknown ? "Unknown axis status - check connection" :
+        hasErrors ? "Clear errors before enabling motor" : 
+        isAxisCalibrating ? "Wait for calibration to complete" : 
+        "Enable motor (closed loop control)"
+      }
     >
       Enable Motor
     </Button>
@@ -241,14 +208,18 @@ export const DisableMotorButton = ({ axisNumber = 0, size = "sm" }) => {
   }
   
   const isMotorIdle = axisState === 1
+  const isStatusUnknown = axisState === 0 // AXIS_STATE_UNDEFINED
   
   return (
     <Button
       size={size}
       colorScheme="red"
       onClick={handleDisableMotor}
-      isDisabled={!isConnected || isMotorIdle}
-      title="Disable motor (idle state)"
+      isDisabled={!isConnected || isMotorIdle || isStatusUnknown}
+      title={
+        isStatusUnknown ? "Unknown axis status - check connection" :
+        "Disable motor (idle state)"
+      }
     >
       Disable Motor
     </Button>
@@ -259,6 +230,7 @@ export const ClearErrorsButton = ({ axisNumber = 0, size = "sm" }) => {
   const { isConnected, odriveState } = useSelector(state => state.device)
   const { sendCommand } = useODriveCommand()
   
+  const axisState = odriveState.device?.[`axis${axisNumber}`]?.current_state || 0
   const axisError = odriveState.device?.[`axis${axisNumber}`]?.error || 0
   
   const handleClearErrors = () => {
@@ -266,84 +238,21 @@ export const ClearErrorsButton = ({ axisNumber = 0, size = "sm" }) => {
   }
   
   const hasErrors = axisError !== 0
+  const isStatusUnknown = axisState === 0 // AXIS_STATE_UNDEFINED
   
   return (
     <Button
       size={size}
       colorScheme="blue"
       onClick={handleClearErrors}
-      isDisabled={!isConnected || !hasErrors}
-      title="Clear all ODrive errors"
+      isDisabled={!isConnected || (!hasErrors && !isStatusUnknown) || isStatusUnknown}
+      title={
+        isStatusUnknown ? "Unknown axis status - check connection" :
+        "Clear all ODrive errors"
+      }
     >
       Clear Errors
     </Button>
   )
 }
 
-// Reboot button
-export const RebootButton = ({ size = "sm" }) => {
-  const { isConnected } = useSelector(state => state.device)
-  const { sendCommand } = useODriveCommand()
-  
-  const handleReboot = () => {
-    if (window.confirm('Are you sure you want to reboot the ODrive? This will disconnect the device.')) {
-      sendCommand('odrv0.reboot()')
-    }
-  }
-  
-  return (
-    <Button
-      size={size}
-      colorScheme="red"
-      variant="outline"
-      onClick={handleReboot}
-      isDisabled={!isConnected}
-      title="Reboot ODrive device"
-    >
-      Reboot
-    </Button>
-  )
-}
-
-// Main component with all buttons
-const MotorControls = ({ axisNumber = 0, size = "sm", orientation = "horizontal", variant = "basic" }) => {
-  const ContainerComponent = orientation === "horizontal" ? HStack : VStack
-  
-  if (variant === "full") {
-    return (
-      <VStack spacing={2}>
-        {/* Basic Controls */}
-        <ContainerComponent spacing={2}>
-          <EnableMotorButton axisNumber={axisNumber} size={size} />
-          <DisableMotorButton axisNumber={axisNumber} size={size} />
-          <ClearErrorsButton axisNumber={axisNumber} size={size} />
-        
-        {/* Calibration Controls */}
-          <CalibrationButton axisNumber={axisNumber} size={size} />
-          <MotorCalibrationButton axisNumber={axisNumber} size={size} />
-        
-        {/* Encoder Calibration Controls */}
-          <EncoderHallCalibrationButton axisNumber={axisNumber} size={size} />
-          <EncoderOffsetCalibrationButton axisNumber={axisNumber} size={size} />
-          <EncoderIndexSearchButton axisNumber={axisNumber} size={size} />
-
-        
-        {/* System Controls */}
-          <RebootButton size={size} />
-        </ContainerComponent>
-      </VStack>
-    )
-  }
-  
-  // Basic variant (default)
-  return (
-    <ContainerComponent spacing={2}>
-      <EnableMotorButton axisNumber={axisNumber} size={size} />
-      <DisableMotorButton axisNumber={axisNumber} size={size} />
-      <CalibrationButton axisNumber={axisNumber} size={size} />
-      <ClearErrorsButton axisNumber={axisNumber} size={size} />
-    </ContainerComponent>
-  )
-}
-
-export default MotorControls
