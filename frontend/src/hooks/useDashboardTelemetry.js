@@ -2,12 +2,14 @@ import { useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { updateOdriveState, setConnectionLost } from '../store/slices/deviceSlice'
 
-export const useDashboardTelemetry = (updateRate = 2000) => { // Increased from 1000ms to 2000ms
+export const useDashboardTelemetry = (updateRate = 2000, isActive = true) => {
   const { isConnected } = useSelector(state => state.device)
   const dispatch = useDispatch()
 
   useEffect(() => {
-    if (!isConnected) return
+    if (!isConnected) return // Only check if connected, not isActive
+
+
 
     const interval = setInterval(async () => {
       try {
@@ -25,6 +27,8 @@ export const useDashboardTelemetry = (updateRate = 2000) => { // Increased from 
       }
     }, updateRate)
 
-    return () => clearInterval(interval)
-  }, [isConnected, dispatch, updateRate])
+    return () => {
+      clearInterval(interval)
+    }
+  }, [isConnected, dispatch, updateRate, isActive]) // Keep isActive in dependencies so it restarts with new rate
 }

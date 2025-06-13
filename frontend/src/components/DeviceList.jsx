@@ -27,7 +27,7 @@ import {
 import { getAxisStateName } from '../utils/odriveEnums'
 import { getErrorDescription, getErrorColor, isErrorCritical } from '../utils/odriveErrors'
 import '../styles/DeviceList.css'
-import { useDashboardTelemetry } from '../hooks/useDashboardTelemetry'
+
 
 const DeviceList = () => {
   const dispatch = useDispatch()
@@ -79,8 +79,7 @@ const DeviceList = () => {
     return "red" // Error or undefined
   }
   
-  // Use the new dashboard telemetry hook
-  useDashboardTelemetry(2000) // 2 second updates for device list
+
 
   useEffect(() => {
   scanForDevices()

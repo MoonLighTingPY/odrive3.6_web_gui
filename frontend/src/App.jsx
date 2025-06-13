@@ -191,7 +191,7 @@ function App() {
               </TabPanel>
               
               <TabPanel p={0} h="100%">
-                <DashboardTab isConnected={isConnected} odriveState={odriveState} />
+                <DashboardTab isConnected={isConnected} odriveState={odriveState} isActive={activeTab === 1} />
               </TabPanel>
               
               <TabPanel p={0} h="100%">

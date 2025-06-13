@@ -31,8 +31,9 @@ import ErrorTroubleshooting from "../modals/ErrorTroubleshootingModal"
 import CalibrationModal from '../modals/CalibrationModal'
 import { useCalibration } from '../../hooks/useCalibration'
 import '../../styles/DashboardTab.css'
+import { useDashboardTelemetry } from '../../hooks/useDashboardTelemetry'
 
-const DashboardTab = () => {
+const DashboardTab = ({ isActive = false }) => {
   
   // Remove duplicate declarations - only use Redux state
   const { odriveState, isConnected, connectedDevice } = useSelector(state => state.device)
@@ -51,6 +52,9 @@ const DashboardTab = () => {
     startCalibration,
     getCalibrationPhaseDescription
   } = useCalibration()
+
+  // Move useDashboardTelemetry hook to top level, with isActive parameter
+  useDashboardTelemetry(isActive ? 100 : 2000, isActive)
 
   // Check if we should show dashboard content
   const shouldShowDashboard = () => {
