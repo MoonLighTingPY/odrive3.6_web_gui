@@ -17,7 +17,7 @@ import {
   GridItem,
 } from '@chakra-ui/react'
 import { RefreshCw } from 'lucide-react'
-import PropertyTree from '../inspector/PropertyTree'
+import PropertyTree from '../inspector/property-tree/PropertyTree'
 import LiveCharts from '../inspector/LiveCharts'
 
 const InspectorTab = () => {

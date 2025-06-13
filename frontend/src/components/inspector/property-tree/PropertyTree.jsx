@@ -26,7 +26,7 @@ import {
   Spinner,
 } from '@chakra-ui/react'
 import { EditIcon, CheckIcon, CloseIcon, SearchIcon, RepeatIcon } from '@chakra-ui/icons'
-import { odrivePropertyTree } from '../../utils/odrivePropertyTree'
+import { odrivePropertyTree } from '../../../utils/odrivePropertyTree'
 
 const PropertyTree = ({ 
   odriveState, 
