@@ -7,6 +7,22 @@ A comprehensive, modern web-based GUI for configuring, monitoring, and controlli
 [![Python](https://img.shields.io/badge/Python-3.8.6-green.svg)](https://python.org)
 [![React](https://img.shields.io/badge/React-18+-61DAFB.svg)](https://reactjs.org)
 
+## 🧭 Quick Navigation
+
+<div align="center">
+
+[**✨ Why This GUI?**](#-why-this-gui) • 
+[**🎯 Key Features**](#-key-features) • 
+[**📥 Quick Start**](#-quick-start) • 
+[**🏗️ Building**](#️-building-from-source) • 
+[**📖 Documentation**](#-documentation) • 
+[**🔧 Architecture**](#-technical-architecture) • 
+[**🤝 Contributing**](#-contributing)
+
+</div>
+
+---
+
 ## ✨ Why This GUI?
 
 The official ODrive GUI only supports newer firmware versions, leaving v0.5.6 users without a modern interface. This project fills that gap with:
