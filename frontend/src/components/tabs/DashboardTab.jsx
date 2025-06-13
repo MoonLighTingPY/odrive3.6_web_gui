@@ -145,8 +145,12 @@ const DashboardTab = ({ isActive = false }) => {
   const encoderPos = odriveState.device?.axis0?.encoder?.pos_estimate || 0
   const encoderVel = odriveState.device?.axis0?.encoder?.vel_estimate || 0
   const vbusVoltage = odriveState.device?.vbus_voltage || 0
+  
+
+  // Fix thermistor temperature readings - use correct ODrive v0.5.6 API paths
   const motorTemp = odriveState.device?.axis0?.motor?.motor_thermistor?.temperature || 0
   const fetTemp = odriveState.device?.axis0?.motor?.fet_thermistor?.temperature || 0
+
 
   const getStateColor = (state) => {
     if (state === 8) return 'green' // CLOSED_LOOP_CONTROL

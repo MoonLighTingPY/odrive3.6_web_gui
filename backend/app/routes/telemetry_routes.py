@@ -53,6 +53,13 @@ def get_dashboard_telemetry():
                             'is_calibrated': odrive_manager.safe_get_property('axis0.motor.is_calibrated'),
                             'current_control': {
                                 'Iq_measured': odrive_manager.safe_get_property('axis0.motor.current_control.Iq_measured'),
+                            },
+                            # Add thermistor temperature readings for ODrive v0.5.6
+                            'motor_thermistor': {
+                                'temperature': odrive_manager.safe_get_property('axis0.motor.motor_thermistor.temperature'),
+                            },
+                            'fet_thermistor': {
+                                'temperature': odrive_manager.safe_get_property('axis0.motor.fet_thermistor.temperature'),
                             }
                         },
                         'encoder': {
