@@ -49,7 +49,7 @@ class ODriveTrayApp:
         logger.info("ODrive Tray App initialized")
 
     def check_existing_instances(self):
-        """Check for existing ODrive GUI instances and handle them"""
+        """Check for existing ODrive GUI instances and prevent startup if found"""
         try:
             # Check for running ODrive processes
             current_pid = os.getpid()
@@ -82,7 +82,7 @@ class ODriveTrayApp:
             port_in_use = self.is_port_in_use(5000)
             
             if odrive_processes or port_in_use:
-                return self.handle_existing_instances(odrive_processes, port_in_use)
+                return self.show_already_running_message()
             
             return True
             
@@ -99,65 +99,34 @@ class ODriveTrayApp:
         except:
             return False
 
-    def handle_existing_instances(self, processes, port_in_use):
-        """Handle existing ODrive GUI instances"""
+    def show_already_running_message(self):
+        """Show message that ODrive GUI is already running and exit"""
         try:
             # Create a hidden root window for the message box
             root = Tk()
             root.withdraw()
             root.attributes('-topmost', True)
             
-            # Simplified message
-            message = "ODrive GUI is already running!\n\nDo you want to close the existing instance?"
+            # Simple informational message
+            message = ("ODrive GUI is already running!\n\n"
+                      "Please close the existing instance before starting a new one.\n\n"
+                      "Look for the ODrive icon in your system tray, or check running processes.")
             
-            # Show simple yes/no dialog
-            result = messagebox.askyesno(
+            # Show info dialog
+            messagebox.showinfo(
                 "ODrive GUI Already Running",
                 message,
-                icon='question'
+                icon='info'
             )
             
             root.destroy()
-            
-            if result:  # YES - Close existing and continue
-                logger.info("User chose to close existing instances")
-                self.close_existing_instances(processes)
-                return True
-            else:  # NO - Cancel this instance
-                logger.info("User chose to cancel this instance")
-                return False
+            return False  # Prevent startup
                 
         except Exception as e:
             logger.error(f"Error showing dialog: {e}")
-            # If GUI dialog fails, just continue
-            return True
-
-    def close_existing_instances(self, processes):
-        """Close existing ODrive GUI processes"""
-        closed_count = 0
-        for proc in processes:
-            try:
-                logger.info(f"Terminating process: {proc.info['name']} (PID: {proc.info['pid']})")
-                proc.terminate()
-                
-                # Wait up to 5 seconds for graceful termination
-                try:
-                    proc.wait(timeout=5)
-                    closed_count += 1
-                except psutil.TimeoutExpired:
-                    # Force kill if it doesn't terminate gracefully
-                    logger.warning(f"Force killing process {proc.info['pid']}")
-                    proc.kill()
-                    closed_count += 1
-                    
-            except (psutil.NoSuchProcess, psutil.AccessDenied) as e:
-                logger.warning(f"Could not terminate process {proc.info['pid']}: {e}")
-                continue
-                
-        if closed_count > 0:
-            logger.info(f"Successfully closed {closed_count} existing instances")
-            # Wait a moment for ports to be released
-            time.sleep(2)
+            # If GUI dialog fails, print to console and exit
+            print("ODrive GUI is already running! Please close the existing instance first.")
+            return False
 
     def update_status(self, new_status):
         """Update the status and refresh the menu"""
