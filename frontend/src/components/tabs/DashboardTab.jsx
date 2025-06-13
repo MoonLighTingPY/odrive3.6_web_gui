@@ -397,6 +397,7 @@ const DashboardTab = ({ isActive = false }) => {
               axisNumber={0} 
               size="md" 
               orientation="horizontal" 
+              variant="full"
             />
           </CardBody>
         </Card>
