@@ -7,6 +7,8 @@ import {
   Box,
   Card,
   CardBody,
+  CardHeader,
+  SimpleGrid,
   Heading,
   Alert,
   AlertIcon,
@@ -19,6 +21,7 @@ import {
 import { RefreshCw } from 'lucide-react'
 import PropertyTree from '../inspector/property-tree/PropertyTree'
 import LiveCharts from '../inspector/LiveCharts'
+import { EnableMotorButton, DisableMotorButton, CalibrationButton, ClearErrorsButton } from '../MotorControls'
 
 const InspectorTab = () => {
   const toast = useToast()
@@ -106,6 +109,25 @@ const InspectorTab = () => {
             togglePropertyChart={togglePropertyChart}
             refreshTrigger={refreshTrigger}
           />
+            <VStack spacing={4} h="100%">
+            
+            {/* Motor Control Buttons */}
+            <Card bg="gray.800" variant="elevated" w="100%">
+              <CardHeader py={2}>
+                <Heading size="sm" color="white">Motor Controls</Heading>
+              </CardHeader>
+              <CardBody py={2}>
+                <SimpleGrid columns={2} spacing={2}>
+                  <EnableMotorButton axisNumber={0} size="sm" />
+                  <DisableMotorButton axisNumber={0} size="sm" />
+                  <CalibrationButton axisNumber={0} size="sm" />
+                  <ClearErrorsButton axisNumber={0} size="sm" />
+                </SimpleGrid>
+              </CardBody>
+            </Card>
+
+            {/* ...existing PropertyDetails component... */}
+          </VStack>
         </GridItem>
 
         {/* Right Side - Live Charts */}
