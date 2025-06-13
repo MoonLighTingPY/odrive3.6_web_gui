@@ -61,6 +61,7 @@ const PropertyItem = ({
   const isCharted = selectedProperties.includes(displayPath)
   const propName = prop.name || displayPath.split('.').pop()
   const isSetpoint = prop.isSetpoint === true
+  const shouldShowSlider = prop.hasSlider === true || isSetpoint
 
   const getSliderProps = () => {
     const min = prop.min !== undefined ? prop.min : -100
@@ -248,8 +249,8 @@ const PropertyItem = ({
           </HStack>
         </HStack>
 
-        {/* Slider row for setpoint properties */}
-        {isSetpoint && isWritable && prop.type === 'number' && isConnected && !isEditing && (
+        {/* Slider row for properties with hasSlider or isSetpoint */}
+        {shouldShowSlider && isWritable && prop.type === 'number' && isConnected && !isEditing && (
           <HStack spacing={2} w="100%">
             <Slider
               value={sliderValue}
