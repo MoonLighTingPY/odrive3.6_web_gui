@@ -37,7 +37,9 @@ const TelemetryDisplay = memo(({ label, value, unit, color = "white" }) => (
   <Stat textAlign="center">
     <StatLabel color="gray.300">{label}</StatLabel>
     <StatNumber color={color} fontSize="2xl">
-      {typeof value === 'number' ? value.toFixed(2) : value} {unit}
+      <Box display="inline-block" minWidth="80px" textAlign="right">
+        {typeof value === 'number' ? value.toFixed(2) : value}
+      </Box> {unit}
     </StatNumber>
   </Stat>
 ))
