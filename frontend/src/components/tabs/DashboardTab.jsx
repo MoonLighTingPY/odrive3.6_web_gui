@@ -276,7 +276,7 @@ const DashboardTab = memo(() => {
                 <VoltageProgress voltage={vbusVoltage} />
                 <Divider />
                 <TelemetryDisplay 
-                  label="Motor Current"
+                  label="Motor Current (measured)"
                   value={motorCurrent}
                   unit="A"
                   color={Math.abs(motorCurrent) > 5 ? "red.300" : "odrive.300"}
