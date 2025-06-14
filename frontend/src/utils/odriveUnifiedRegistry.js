@@ -187,13 +187,39 @@ class ODriveUnifiedRegistry {
 
   // eslint-disable-next-line no-unused-vars
   _inferCommandCategory(path, property) {
-    // System-level properties
+    // System-level properties (should not be prefixed with axis0)
     if (path.startsWith('system.') || 
         path.includes('hw_version') || 
         path.includes('fw_version') || 
         path.includes('serial_number') ||
         path.includes('vbus_voltage') ||
-        path.includes('ibus')) {
+        path.includes('ibus') ||
+        path.includes('test_property') ||
+        path.includes('brake_resistor_') ||
+        path.includes('misconfigured') ||
+        path.includes('otp_valid')) {
+      return 'system'
+    }
+    
+    // System stats
+    if (path.startsWith('system_stats.')) {
+      return 'system'
+    }
+    
+    // CAN properties (device level)
+    if (path.startsWith('can.')) {
+      return 'can_config'
+    }
+    
+    // Config properties (device level)
+    if (path.startsWith('config.')) {
+      const configCategory = this._inferCategory(path)
+      if (configCategory === 'power') {
+        return 'power'
+      }
+      if (configCategory === 'interface') {
+        return 'gpio_interface'
+      }
       return 'system'
     }
     
@@ -205,7 +231,7 @@ class ODriveUnifiedRegistry {
         'power': 'power',
         'motor': 'motor', 
         'encoder': 'encoder',
-        'control': 'controller',  // This is the key fix
+        'control': 'controller',
         'interface': 'gpio_interface'
       }
       return categoryMapping[configCategory] || configCategory
@@ -231,11 +257,6 @@ class ODriveUnifiedRegistry {
         path.includes('requested_state') ||
         path.includes('is_calibrated')) {
       return 'calibration'
-    }
-    
-    // CAN-specific
-    if (path.includes('can.')) {
-      return 'can_config'
     }
     
     // GPIO and interface
@@ -390,6 +411,27 @@ class ODriveUnifiedRegistry {
 
   _pathToODriveCommand(path) {
     const specialMappings = {
+      // System properties - map directly to device root
+      'system.hw_version_major': 'hw_version_major',
+      'system.hw_version_minor': 'hw_version_minor',
+      'system.hw_version_variant': 'hw_version_variant',
+      'system.fw_version_major': 'fw_version_major',
+      'system.fw_version_minor': 'fw_version_minor',
+      'system.fw_version_revision': 'fw_version_revision',
+      'system.fw_version_unreleased': 'fw_version_unreleased',
+      'system.serial_number': 'serial_number',
+      'system.user_config_loaded': 'user_config_loaded',
+      'system.vbus_voltage': 'vbus_voltage',
+      'system.ibus': 'ibus',
+      'system.test_property': 'test_property',
+      'system.error': 'error',
+      'system.brake_resistor_armed': 'brake_resistor_armed',
+      'system.brake_resistor_saturated': 'brake_resistor_saturated',
+      'system.brake_resistor_current': 'brake_resistor_current',
+      'system.misconfigured': 'misconfigured',
+      'system.otp_valid': 'otp_valid',
+      
+      // Config properties that should be at device root
       'config.error_gpio_pin': 'config.error_gpio_pin',
       'config.dc_bus_overvoltage_trip_level': 'config.dc_bus_overvoltage_trip_level',
       'config.dc_bus_undervoltage_trip_level': 'config.dc_bus_undervoltage_trip_level',
@@ -398,8 +440,38 @@ class ODriveUnifiedRegistry {
       'config.max_regen_current': 'config.max_regen_current',
       'config.dc_max_positive_current': 'config.dc_max_positive_current',
       'config.dc_max_negative_current': 'config.dc_max_negative_current',
+      'config.enable_uart_a': 'config.enable_uart_a',
+      'config.uart_a_baudrate': 'config.uart_a_baudrate',
+      'config.enable_uart_b': 'config.enable_uart_b',
+      'config.uart_b_baudrate': 'config.uart_b_baudrate',
+      'config.enable_uart_c': 'config.enable_uart_c',
+      'config.uart_c_baudrate': 'config.uart_c_baudrate',
+      'config.uart0_protocol': 'config.uart0_protocol',
+      'config.uart1_protocol': 'config.uart1_protocol',
+      'config.uart2_protocol': 'config.uart2_protocol',
+      'config.usb_cdc_protocol': 'config.usb_cdc_protocol',
+      'config.enable_can_a': 'config.enable_can_a',
+      'config.enable_i2c_a': 'config.enable_i2c_a',
+      'config.enable_dc_bus_overvoltage_ramp': 'config.enable_dc_bus_overvoltage_ramp',
+      'config.dc_bus_overvoltage_ramp_start': 'config.dc_bus_overvoltage_ramp_start',
+      'config.dc_bus_overvoltage_ramp_end': 'config.dc_bus_overvoltage_ramp_end',
+      
+      // CAN properties
       'can.config.baud_rate': 'can.config.baud_rate',
       'can.config.protocol': 'can.config.protocol',
+      'can.error': 'can.error',
+      
+      // System stats properties - map to system_stats
+      'system_stats.uptime': 'system_stats.uptime',
+      'system_stats.min_heap_space': 'system_stats.min_heap_space',
+      'system_stats.max_stack_usage_axis': 'system_stats.max_stack_usage_axis',
+      'system_stats.max_stack_usage_usb': 'system_stats.max_stack_usage_usb',
+      'system_stats.max_stack_usage_uart': 'system_stats.max_stack_usage_uart',
+      'system_stats.max_stack_usage_can': 'system_stats.max_stack_usage_can',
+      'system_stats.max_stack_usage_startup': 'system_stats.max_stack_usage_startup',
+      'system_stats.max_stack_usage_analog': 'system_stats.max_stack_usage_analog',
+      
+      // Axis properties
       'axis0.requested_state': 'axis0.requested_state',
       'axis0.motor.config.phase_inductance': 'axis0.motor.config.phase_inductance',
       'axis0.motor.config.phase_resistance': 'axis0.motor.config.phase_resistance',
@@ -436,12 +508,38 @@ class ODriveUnifiedRegistry {
       'axis0.config.calibration_lockin.vel': 'axis0.config.calibration_lockin.vel',
     }
 
+    // Check for exact match first
     if (specialMappings[path]) {
       return specialMappings[path]
     }
-    if (path.startsWith('axis0.') || path.startsWith('config.') || path.startsWith('can.')) {
+    
+    // Handle system properties that start with 'system.'
+    if (path.startsWith('system.')) {
+      const systemProp = path.replace('system.', '')
+      return systemProp // Map directly to device root (no axis0 prefix)
+    }
+    
+    // Handle config properties
+    if (path.startsWith('config.')) {
+      return path // Keep as-is for device root config
+    }
+    
+    // Handle CAN properties
+    if (path.startsWith('can.')) {
+      return path // Keep as-is for device root CAN
+    }
+    
+    // Handle system_stats properties
+    if (path.startsWith('system_stats.')) {
+      return path // Keep as-is for device root system_stats
+    }
+    
+    // Handle axis properties (already prefixed)
+    if (path.startsWith('axis0.') || path.startsWith('axis1.')) {
       return path
     }
+    
+    // Default case - prefix with axis0 for motor/encoder/controller properties
     return `axis0.${path}`
   }
 
