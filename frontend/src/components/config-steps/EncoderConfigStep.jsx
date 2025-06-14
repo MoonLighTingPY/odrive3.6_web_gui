@@ -67,8 +67,8 @@ const EncoderConfigStep = ({
                   </Tooltip>
                 </HStack>
                 <Select
-                  value={encoderConfig.mode ?? EncoderMode.HALL}
-                  onChange={(e) => handleConfigChange('mode', parseInt(e.target.value))}
+                  value={encoderConfig.encoder_type ?? EncoderMode.HALL}
+                  onChange={(e) => handleConfigChange('encoder_type', parseInt(e.target.value))}
                   bg="gray.700"
                   border="1px solid"
                   borderColor="gray.600"

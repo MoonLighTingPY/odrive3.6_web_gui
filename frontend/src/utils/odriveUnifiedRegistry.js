@@ -23,7 +23,6 @@ class ODriveUnifiedRegistry {
     })
   }
 
-  // Auto-generate configuration categories from property tree
   _generateConfigCategories() {
     const categories = { power: [], motor: [], encoder: [], control: [], interface: [] }
     
@@ -54,7 +53,6 @@ class ODriveUnifiedRegistry {
     return categories
   }
 
-  // Auto-generate batch loading paths
   _generateBatchPaths() {
     const paths = []
     
@@ -69,11 +67,9 @@ class ODriveUnifiedRegistry {
     return paths
   }
 
-  // Helper method to traverse property tree
   _traversePropertyTree(callback, node = this.propertyTree, basePath = '') {
     if (!node) return
     
-    // Handle the ROOT LEVEL specially - it contains the main sections as direct properties
     if (basePath === '' && !node.properties && !node.children) {
       Object.entries(node).forEach(([sectionName, sectionNode]) => {
         if (typeof sectionNode === 'object' && sectionNode !== null) {
@@ -83,7 +79,6 @@ class ODriveUnifiedRegistry {
       return
     }
     
-    // Process direct properties
     if (node.properties) {
       Object.entries(node.properties).forEach(([propName, prop]) => {
         const fullPath = basePath ? `${basePath}.${propName}` : propName
@@ -91,7 +86,6 @@ class ODriveUnifiedRegistry {
       })
     }
     
-    // Recursively process children
     if (node.children) {
       Object.entries(node.children).forEach(([childName, childNode]) => {
         const childPath = basePath ? `${basePath}.${childName}` : childName
@@ -121,19 +115,15 @@ class ODriveUnifiedRegistry {
         params.forEach(param => {
           const value = config[param.configKey]
           if (value !== undefined && value !== null) {
-            // Skip problematic parameters
             const skip = ['calib_anticogging','anticogging_valid','autotuning_phase','endstop_state','temperature']
             if (skip.includes(param.path.split('.').pop())) return
 
             let commandValue = value
-            // Use convertKvToTorqueConstant for correct conversion
             if (param.configKey === 'motor_kv' && param.path.includes('torque_constant')) {
               commandValue = convertKvToTorqueConstant(value)
-            }
-            else if (param.property.type === 'boolean') {
+            } else if (param.property.type === 'boolean') {
               commandValue = value ? 'True' : 'False'
-            }
-            else if (param.configKey === 'torque_lim' && (value === 'inf' || value === Infinity)) {
+            } else if (param.configKey === 'torque_lim' && (value === 'inf' || value === Infinity)) {
               commandValue = 1000000
             }
 
@@ -147,9 +137,7 @@ class ODriveUnifiedRegistry {
     return generators
   }
 
-  // Helper methods
   _inferCategory(path) {
-    // Smart category inference based on path patterns
     if (path.includes('motor.config') || 
         path.includes('motor_thermistor') ||
         path.includes('calibration_lockin') ||
@@ -212,7 +200,6 @@ class ODriveUnifiedRegistry {
       return 'power'
     }
     
-    // Special case for requested_state - this is a control parameter
     if (path.includes('requested_state')) {
       return 'control'
     }
@@ -221,9 +208,7 @@ class ODriveUnifiedRegistry {
   }
 
   _pathToODriveCommand(path) {
-    // Handle special cases first
     const specialMappings = {
-      // Config-level parameters
       'config.error_gpio_pin': 'config.error_gpio_pin',
       'config.dc_bus_overvoltage_trip_level': 'config.dc_bus_overvoltage_trip_level',
       'config.dc_bus_undervoltage_trip_level': 'config.dc_bus_undervoltage_trip_level',
@@ -232,15 +217,9 @@ class ODriveUnifiedRegistry {
       'config.max_regen_current': 'config.max_regen_current',
       'config.dc_max_positive_current': 'config.dc_max_positive_current',
       'config.dc_max_negative_current': 'config.dc_max_negative_current',
-      
-      // CAN-level parameters
       'can.config.baud_rate': 'can.config.baud_rate',
       'can.config.protocol': 'can.config.protocol',
-      
-      // Axis-level parameters
       'axis0.requested_state': 'axis0.requested_state',
-      
-      // Motor config parameters
       'axis0.motor.config.phase_inductance': 'axis0.motor.config.phase_inductance',
       'axis0.motor.config.phase_resistance': 'axis0.motor.config.phase_resistance',
       'axis0.motor.config.torque_constant': 'axis0.motor.config.torque_constant',
@@ -249,23 +228,17 @@ class ODriveUnifiedRegistry {
       'axis0.motor.config.pole_pairs': 'axis0.motor.config.pole_pairs',
       'axis0.motor.config.current_lim': 'axis0.motor.config.current_lim',
       'axis0.motor.config.torque_lim': 'axis0.motor.config.torque_lim',
-      
-      // Encoder config parameters
       'axis0.encoder.config.pre_calibrated': 'axis0.encoder.config.pre_calibrated',
       'axis0.encoder.config.mode': 'axis0.encoder.config.mode',
       'axis0.encoder.config.cpr': 'axis0.encoder.config.cpr',
       'axis0.encoder.config.enable_phase_interpolation': 'axis0.encoder.config.enable_phase_interpolation',
       'axis0.encoder.config.ignore_illegal_hall_state': 'axis0.encoder.config.ignore_illegal_hall_state',
       'axis0.encoder.config.hall_polarity': 'axis0.encoder.config.hall_polarity',
-      
-      // Controller config parameters
       'axis0.controller.config.enable_overspeed_error': 'axis0.controller.config.enable_overspeed_error',
       'axis0.controller.config.spinout_electrical_power_threshold': 'axis0.controller.config.spinout_electrical_power_threshold',
       'axis0.controller.config.spinout_mechanical_power_threshold': 'axis0.controller.config.spinout_mechanical_power_threshold',
       'axis0.controller.config.anticogging.calib_pos_threshold': 'axis0.controller.config.anticogging.calib_pos_threshold',
       'axis0.controller.config.anticogging.calib_vel_threshold': 'axis0.controller.config.anticogging.calib_vel_threshold',
-      
-      // CAN config parameters
       'axis0.config.can.node_id': 'axis0.config.can.node_id',
       'axis0.config.can.is_extended': 'axis0.config.can.is_extended',
       'axis0.config.can.heartbeat_rate_ms': 'axis0.config.can.heartbeat_rate_ms',
@@ -273,54 +246,36 @@ class ODriveUnifiedRegistry {
       'axis0.config.can.controller_error_rate_ms': 'axis0.config.can.controller_error_rate_ms',
       'axis0.config.can.motor_error_rate_ms': 'axis0.config.can.motor_error_rate_ms',
       'axis0.config.can.sensorless_error_rate_ms': 'axis0.config.can.sensorless_error_rate_ms',
-      
-      // FET Thermistor
       'axis0.motor.fet_thermistor.config.temp_limit_lower': 'axis0.motor.fet_thermistor.config.temp_limit_lower',
       'axis0.motor.fet_thermistor.config.temp_limit_upper': 'axis0.motor.fet_thermistor.config.temp_limit_upper',
     }
-    
-    // Check special mappings first
+
     if (specialMappings[path]) {
       return specialMappings[path]
     }
-    
-    // Default behavior - return path as-is if it looks like a valid ODrive command
     if (path.startsWith('axis0.') || path.startsWith('config.') || path.startsWith('can.')) {
       return path
     }
-    
-    // For paths that don't start with known prefixes, assume they need axis0 prefix
     return `axis0.${path}`
   }
 
   _pathToConfigKey(path) {
-    // Convert path to config key used in UI
     const parts = path.split('.')
     const lastPart = parts[parts.length - 1]
-    
-    // Handle special mappings for UI consistency
     const specialMappings = {
-      // Motor mappings
-      'torque_constant': 'motor_kv', // UI shows KV, ODrive stores torque constant
+      'torque_constant': 'motor_kv',
       'phase_inductance': 'phase_inductance',
       'phase_resistance': 'phase_resistance',
-      'pre_calibrated': path.includes('encoder') ? 'pre_calibrated' : 
-                        path.includes('motor') ? 'motor_pre_calibrated' : 'pre_calibrated',
-      
-      // Encoder mappings
+      'pre_calibrated': path.includes('encoder') ? 'pre_calibrated' : path.includes('motor') ? 'motor_pre_calibrated' : 'pre_calibrated',
       'mode': path.includes('encoder') ? 'encoder_type' : 'mode',
       'enable_phase_interpolation': 'enable_phase_interpolation',
       'ignore_illegal_hall_state': 'ignore_illegal_hall_state',
       'hall_polarity': 'hall_polarity',
-      
-      // Controller mappings
       'enable_overspeed_error': 'enable_overspeed_error',
       'spinout_electrical_power_threshold': 'spinout_electrical_power_threshold',
       'spinout_mechanical_power_threshold': 'spinout_mechanical_power_threshold',
       'calib_pos_threshold': 'calib_pos_threshold',
       'calib_vel_threshold': 'calib_vel_threshold',
-      
-      // Interface mappings
       'error_gpio_pin': 'error_gpio_pin',
       'encoder_error_rate_ms': 'encoder_error_rate_ms',
       'controller_error_rate_ms': 'controller_error_rate_ms',
@@ -329,49 +284,35 @@ class ODriveUnifiedRegistry {
       'node_id': 'can_node_id',
       'is_extended': 'can_node_id_extended',
       'baud_rate': 'can_baudrate',
-      
-      // Power mappings
       'enable_brake_resistor': 'brake_resistor_enabled',
-      
-      // Thermistor mappings
-      'temp_limit_lower': path.includes('fet_thermistor') ? 'fet_temp_limit_lower' : 
-                          path.includes('motor_thermistor') ? 'motor_temp_limit_lower' : 'temp_limit_lower',
-      'temp_limit_upper': path.includes('fet_thermistor') ? 'fet_temp_limit_upper' : 
-                          path.includes('motor_thermistor') ? 'motor_temp_limit_upper' : 'temp_limit_upper',
+      'temp_limit_lower': path.includes('fet_thermistor') ? 'fet_temp_limit_lower' : path.includes('motor_thermistor') ? 'motor_temp_limit_lower' : 'temp_limit_lower',
+      'temp_limit_upper': path.includes('fet_thermistor') ? 'fet_temp_limit_upper' : path.includes('motor_thermistor') ? 'motor_temp_limit_upper' : 'temp_limit_upper',
     }
-    
     return specialMappings[lastPart] || lastPart
   }
 
   _isConfigParameter(path) {
-      // Exclude only the telemetry property exactly named “.error”
-      if (path.endsWith('.error')) {
-        return false
-      }
-
-      // These are definitely not config (read-only telemetry or status).
-      // Match exact property names, not substrings, so we don't catch
-      // spinout_electrical_power_threshold, etc.
-      const nonConfigNames = [
-        'current_state', 'pos_estimate', 'vel_estimate', 'temperature',
-        'is_ready', 'index_found', 'shadow_count', 'count_in_cpr',
-        'pos_estimate_counts', 'pos_circular', 'pos_cpr_counts',
-        'delta_pos_cpr_counts', 'hall_state', 'vel_estimate_counts',
-        'calib_scan_response', 'pos_abs', 'spi_error_rate',
-        'is_armed', 'is_calibrated', 'current_meas_','DC_calib_',
-        'I_bus','phase_current_rev_gain','effective_current_lim',
-        'max_allowed_current','max_dc_calib','n_evt_','last_error_time',
-        'input_pos','input_vel','input_torque','pos_setpoint',
-        'vel_setpoint','torque_setpoint','trajectory_done',
-        'vel_integrator_torque','anticogging_valid','autotuning_phase',
-        'mechanical_power','electrical_power','endstop_state'
-      ]
-
-      const lastPart = path.split('.').pop()
-      return !nonConfigNames.includes(lastPart)
+    if (path.endsWith('.error')) {
+      return false
     }
+    const nonConfigNames = [
+      'current_state', 'pos_estimate', 'vel_estimate', 'temperature',
+      'is_ready', 'index_found', 'shadow_count', 'count_in_cpr',
+      'pos_estimate_counts', 'pos_circular', 'pos_cpr_counts',
+      'delta_pos_cpr_counts', 'hall_state', 'vel_estimate_counts',
+      'calib_scan_response', 'pos_abs', 'spi_error_rate',
+      'is_armed', 'is_calibrated', 'current_meas_','DC_calib_',
+      'I_bus','phase_current_rev_gain','effective_current_lim',
+      'max_allowed_current','max_dc_calib','n_evt_','last_error_time',
+      'input_pos','input_vel','input_torque','pos_setpoint',
+      'vel_setpoint','torque_setpoint','trajectory_done',
+      'vel_integrator_torque','anticogging_valid','autotuning_phase',
+      'mechanical_power','electrical_power','endstop_state'
+    ]
+    const lastPart = path.split('.').pop()
+    return !nonConfigNames.includes(lastPart)
+  }
 
-  // Public API methods
   getBatchPaths() {
     return this.batchPaths || []
   }
@@ -386,9 +327,9 @@ class ODriveUnifiedRegistry {
 
   generateAllCommands(deviceConfig) {
     const allCommands = []
-    Object.entries(deviceConfig).forEach(([category, config]) => {
-      if (config && Object.keys(config).length > 0) {
-        allCommands.push(...this.generateCommands(category, config))
+    Object.entries(deviceConfig).forEach(([category, cfg]) => {
+      if (cfg && Object.keys(cfg).length > 0) {
+        allCommands.push(...this.generateCommands(category, cfg))
       }
     })
     return allCommands
@@ -399,7 +340,6 @@ class ODriveUnifiedRegistry {
   }
 
   findParameter(identifier) {
-    // Search by path, config key, or ODrive command
     for (const [category, params] of Object.entries(this.configCategories)) {
       const found = params.find(p => 
         p.path === identifier || 
@@ -427,15 +367,12 @@ class ODriveUnifiedRegistry {
     Object.entries(config).forEach(([key, value]) => {
       const param = params.find(p => p.configKey === key)
       if (param && value !== undefined && value !== null) {
-        // Type validation
         if (param.property.type === 'number' && typeof value !== 'number') {
           errors.push(`${key}: Expected number, got ${typeof value}`)
         }
         if (param.property.type === 'boolean' && typeof value !== 'boolean') {
           errors.push(`${key}: Expected boolean, got ${typeof value}`)
         }
-        
-        // Range validation
         if (param.property.type === 'number') {
           if (param.property.min !== undefined && value < param.property.min) {
             errors.push(`${key}: Value ${value} below minimum ${param.property.min}`)
@@ -468,10 +405,8 @@ class ODriveUnifiedRegistry {
   }
 }
 
-// Create singleton instance
 const odriveRegistry = new ODriveUnifiedRegistry()
 
-// Convenience exports
 export const getBatchPaths = () => odriveRegistry.getBatchPaths()
 export const getPropertyMappings = (category) => odriveRegistry.getPropertyMappings(category)
 export const generateCommands = (category, config) => odriveRegistry.generateCommands(category, config)
@@ -482,9 +417,6 @@ export const getParameterMetadata = (category, configKey) => odriveRegistry.getP
 export const validateConfig = (category, config) => odriveRegistry.validateConfig(category, config)
 export const getDebugInfo = () => odriveRegistry.getDebugInfo()
 
-// Export the registry instance for direct access
 export { odriveRegistry }
-
-// Legacy compatibility - these will be deprecated
 export const ODriveUnifiedCommands = odriveRegistry.configCategories
-export const ODriveUnifiedMappings = odriveRegistry.propertyMappings
+export const ODriveUnifiedMappings = odriveRegistry.propertyMappingsa
