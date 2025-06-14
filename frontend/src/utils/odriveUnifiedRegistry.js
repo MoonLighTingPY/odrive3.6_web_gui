@@ -453,7 +453,16 @@ class ODriveUnifiedRegistry {
       'node_id': 'can_node_id',
       'is_extended': 'can_node_id_extended',
       'baud_rate': 'can_baudrate',
-      'enable_sensorless_mode': 'enable_sensorless'
+      'enable_sensorless_mode': 'enable_sensorless',
+      
+      // ✅ ADD THERMISTOR MAPPINGS
+      'temp_limit_lower': path.includes('fet_thermistor') ? 'fet_temp_limit_lower' : 
+                          path.includes('motor_thermistor') ? 'motor_temp_limit_lower' : 'temp_limit_lower',
+      'temp_limit_upper': path.includes('fet_thermistor') ? 'fet_temp_limit_upper' : 
+                          path.includes('motor_thermistor') ? 'motor_temp_limit_upper' : 'temp_limit_upper',
+      'enabled': path.includes('fet_thermistor') ? 'fet_thermistor_enabled' :
+                 path.includes('motor_thermistor') ? 'motor_thermistor_enabled' : 'enabled',
+      'gpio_pin': path.includes('motor_thermistor') ? 'motor_thermistor_gpio_pin' : 'gpio_pin'
     }
     
     return specialMappings[lastPart] || lastPart
