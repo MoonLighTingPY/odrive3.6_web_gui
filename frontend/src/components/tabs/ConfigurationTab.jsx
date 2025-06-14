@@ -26,6 +26,7 @@ import {
   loadAllConfigurationBatch
 } from '../../utils/configBatchApi'
 import EraseConfigModal from '../modals/EraseConfigModal'
+import UnifiedRegistryDebug from '../debug/UnifiedRegistryDebug'
 
 const ConfigurationTab = () => {
   const dispatch = useDispatch()
@@ -46,6 +47,7 @@ const ConfigurationTab = () => {
   const [pullProgress, setPullProgress] = useState(0)
   const [isApplyingSave, setIsApplyingSave] = useState(false)
   const [hasAutoLoaded, setHasAutoLoaded] = useState(false)
+  const [showDebug, setShowDebug] = useState(false)
 
   const { isOpen: isEraseOpen, onOpen: onEraseOpen, onClose: onEraseClose } = useDisclosure()
 
@@ -336,6 +338,26 @@ useEffect(() => {
 
   return (
     <Flex direction="column" h="100%" bg="gray.900">
+      {/* Debug Toggle Button */}
+      {import.meta.env.DEV && (
+        <Box position="absolute" top="10px" right="10px" zIndex={1000}>
+          <Button 
+            size="xs" 
+            colorScheme="yellow" 
+            onClick={() => setShowDebug(!showDebug)}
+          >
+            {showDebug ? 'Hide Debug' : 'Show Debug'}
+          </Button>
+        </Box>
+      )}
+
+      {/* Debug Panel */}
+      {showDebug && (
+        <Box maxH="50vh" overflowY="auto" borderBottom="2px solid" borderColor="yellow.500">
+          <UnifiedRegistryDebug />
+        </Box>
+      )}
+
       {/* Combined Header with Navigation and Progress */}
       <Box bg="gray.800" borderBottom="1px solid" borderColor="gray.600" p={4}>
         <VStack spacing={4}>

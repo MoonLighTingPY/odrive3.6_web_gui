@@ -1,18 +1,11 @@
 /**
- * Configuration Command Generator
- * Generates ODrive v0.5.6 configuration commands from configuration objects
+ * Configuration Command Generator - Now powered by Unified Registry
  * 
- * NOTE: This file now imports from the central odriveRegistry.js to avoid duplication
+ * This file now uses the unified registry as the single source of truth
+ * for all command generation, eliminating duplication.
  */
 
-import { 
-  generateConfigCommands as generateAllConfigCommands,
-  generatePowerCommands as generatePowerCmds,
-  generateMotorCommands as generateMotorCmds,
-  generateEncoderCommands as generateEncoderCmds,
-  generateControlCommands as generateControlCmds,
-  generateInterfaceCommands as generateInterfaceCmds
-} from './odriveRegistry'
+import { generateCommands, generateAllCommands, odriveRegistry } from './odriveUnifiedRegistry'
 
 /**
  * Generate all configuration commands for ODrive v0.5.6
@@ -25,7 +18,7 @@ import {
  * @returns {Array<string>} Array of ODrive commands
  */
 export const generateConfigCommands = (config) => {
-  return generateAllConfigCommands(config)
+  return generateAllCommands(config)
 }
 
 /**
@@ -34,7 +27,7 @@ export const generateConfigCommands = (config) => {
  * @returns {Array<string>} Array of power-related ODrive commands
  */
 export const generatePowerCommands = (powerConfig = {}) => {
-  return generatePowerCmds(powerConfig)
+  return generateCommands('power', powerConfig)
 }
 
 /**
@@ -43,7 +36,7 @@ export const generatePowerCommands = (powerConfig = {}) => {
  * @returns {Array<string>} Array of motor-related ODrive commands
  */
 export const generateMotorCommands = (motorConfig = {}) => {
-  return generateMotorCmds(motorConfig)
+  return generateCommands('motor', motorConfig)
 }
 
 /**
@@ -52,7 +45,7 @@ export const generateMotorCommands = (motorConfig = {}) => {
  * @returns {Array<string>} Array of encoder-related ODrive commands
  */
 export const generateEncoderCommands = (encoderConfig = {}) => {
-  return generateEncoderCmds(encoderConfig)
+  return generateCommands('encoder', encoderConfig)
 }
 
 /**
@@ -61,7 +54,7 @@ export const generateEncoderCommands = (encoderConfig = {}) => {
  * @returns {Array<string>} Array of control-related ODrive commands
  */
 export const generateControlCommands = (controlConfig = {}) => {
-  return generateControlCmds(controlConfig)
+  return generateCommands('control', controlConfig)
 }
 
 /**
@@ -70,7 +63,7 @@ export const generateControlCommands = (controlConfig = {}) => {
  * @returns {Array<string>} Array of interface-related ODrive commands
  */
 export const generateInterfaceCommands = (interfaceConfig = {}) => {
-  return generateInterfaceCmds(interfaceConfig)
+  return generateCommands('interface', interfaceConfig)
 }
 
 /**
@@ -82,4 +75,61 @@ export const generateSaveAndRebootCommands = () => {
     'odrv0.save_configuration()',
     'odrv0.reboot()'
   ]
+}
+
+/**
+ * Get parameter metadata for validation and UI rendering
+ * @param {string} category - Configuration category
+ * @param {string} configKey - Configuration key
+ * @returns {Object|null} Parameter metadata or null if not found
+ */
+export const getParameterMetadata = (category, configKey) => {
+  return odriveRegistry.getParameterMetadata(category, configKey)
+}
+
+/**
+ * Validate configuration values against parameter constraints
+ * @param {string} category - Configuration category
+ * @param {Object} config - Configuration object to validate
+ * @returns {Array<string>} Array of validation error messages
+ */
+export const validateConfiguration = (category, config) => {
+  return odriveRegistry.validateConfig(category, config)
+}
+
+/**
+ * Get all parameters for a category with their metadata
+ * @param {string} category - Configuration category
+ * @returns {Array<Object>} Array of parameter objects with metadata
+ */
+export const getCategoryParameters = (category) => {
+  return odriveRegistry.getCategoryParameters(category)
+}
+
+/**
+ * Preview commands that would be generated without executing them
+ * @param {Object} config - Full configuration object
+ * @returns {Object} Preview object with commands by category
+ */
+export const previewCommands = (config) => {
+  const preview = {
+    power: generatePowerCommands(config.power),
+    motor: generateMotorCommands(config.motor),
+    encoder: generateEncoderCommands(config.encoder),
+    control: generateControlCommands(config.control),
+    interface: generateInterfaceCommands(config.interface),
+    saveAndReboot: generateSaveAndRebootCommands()
+  }
+  
+  const totalCommands = Object.values(preview).reduce((sum, commands) => sum + commands.length, 0)
+  
+  return {
+    ...preview,
+    summary: {
+      totalCommands,
+      categoryCounts: Object.fromEntries(
+        Object.entries(preview).map(([category, commands]) => [category, commands.length])
+      )
+    }
+  }
 }
