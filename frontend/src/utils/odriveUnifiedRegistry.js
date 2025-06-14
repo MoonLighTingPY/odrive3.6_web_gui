@@ -6,6 +6,7 @@
  */
 
 import { odrivePropertyTree } from './odrivePropertyTree'
+import { convertKvToTorqueConstant } from './valueHelpers'
 
 class ODriveUnifiedRegistry {
   constructor() {
@@ -120,36 +121,22 @@ class ODriveUnifiedRegistry {
         params.forEach(param => {
           const value = config[param.configKey]
           if (value !== undefined && value !== null) {
-            // Skip problematic parameters that might be read-only or require special handling
-            const skipParameters = [
-              'calib_anticogging',           // Anticogging calibration trigger
-              'anticogging_valid',           // Read-only status
-              'autotuning_phase',            // Read-only status
-              'endstop_state',               // Read-only status
-              'temperature'                  // Read-only sensor value
-            ]
-            
-            const paramKey = param.path.split('.').pop()
-            if (skipParameters.includes(paramKey)) {
-              return
-            }
-            
-            // Handle special values
+            // Skip problematic parameters
+            const skip = ['calib_anticogging','anticogging_valid','autotuning_phase','endstop_state','temperature']
+            if (skip.includes(param.path.split('.').pop())) return
+
             let commandValue = value
-            
-            // Handle 'inf' values for torque_lim - use a very large number instead
-            if (param.configKey === 'torque_lim' && (value === 'inf' || value === Infinity || value === 'float("inf")')) {
-              commandValue = 1000000  // Use a very large number instead of infinity
+            // Use convertKvToTorqueConstant for correct conversion
+            if (param.configKey === 'motor_kv' && param.path.includes('torque_constant')) {
+              commandValue = convertKvToTorqueConstant(value)
             }
-            // Handle boolean values
             else if (param.property.type === 'boolean') {
               commandValue = value ? 'True' : 'False'
             }
-            // Handle motor_kv to torque_constant conversion
-            else if (param.configKey === 'motor_kv' && param.path.includes('torque_constant')) {
-              commandValue = 8.27 / value  // Convert KV to torque constant
+            else if (param.configKey === 'torque_lim' && (value === 'inf' || value === Infinity)) {
+              commandValue = 1000000
             }
-            
+
             commands.push(`odrv0.${param.odriveCommand} = ${commandValue}`)
           }
         })
@@ -234,24 +221,76 @@ class ODriveUnifiedRegistry {
   }
 
   _pathToODriveCommand(path) {
-    // Convert property tree path to ODrive command path
-    if (path.startsWith('config.')) {
+    // Handle special cases first
+    const specialMappings = {
+      // Config-level parameters
+      'config.error_gpio_pin': 'config.error_gpio_pin',
+      'config.dc_bus_overvoltage_trip_level': 'config.dc_bus_overvoltage_trip_level',
+      'config.dc_bus_undervoltage_trip_level': 'config.dc_bus_undervoltage_trip_level',
+      'config.enable_brake_resistor': 'config.enable_brake_resistor',
+      'config.brake_resistance': 'config.brake_resistance',
+      'config.max_regen_current': 'config.max_regen_current',
+      'config.dc_max_positive_current': 'config.dc_max_positive_current',
+      'config.dc_max_negative_current': 'config.dc_max_negative_current',
+      
+      // CAN-level parameters
+      'can.config.baud_rate': 'can.config.baud_rate',
+      'can.config.protocol': 'can.config.protocol',
+      
+      // Axis-level parameters
+      'axis0.requested_state': 'axis0.requested_state',
+      
+      // Motor config parameters
+      'axis0.motor.config.phase_inductance': 'axis0.motor.config.phase_inductance',
+      'axis0.motor.config.phase_resistance': 'axis0.motor.config.phase_resistance',
+      'axis0.motor.config.torque_constant': 'axis0.motor.config.torque_constant',
+      'axis0.motor.config.pre_calibrated': 'axis0.motor.config.pre_calibrated',
+      'axis0.motor.config.motor_type': 'axis0.motor.config.motor_type',
+      'axis0.motor.config.pole_pairs': 'axis0.motor.config.pole_pairs',
+      'axis0.motor.config.current_lim': 'axis0.motor.config.current_lim',
+      'axis0.motor.config.torque_lim': 'axis0.motor.config.torque_lim',
+      
+      // Encoder config parameters
+      'axis0.encoder.config.pre_calibrated': 'axis0.encoder.config.pre_calibrated',
+      'axis0.encoder.config.mode': 'axis0.encoder.config.mode',
+      'axis0.encoder.config.cpr': 'axis0.encoder.config.cpr',
+      'axis0.encoder.config.enable_phase_interpolation': 'axis0.encoder.config.enable_phase_interpolation',
+      'axis0.encoder.config.ignore_illegal_hall_state': 'axis0.encoder.config.ignore_illegal_hall_state',
+      'axis0.encoder.config.hall_polarity': 'axis0.encoder.config.hall_polarity',
+      
+      // Controller config parameters
+      'axis0.controller.config.enable_overspeed_error': 'axis0.controller.config.enable_overspeed_error',
+      'axis0.controller.config.spinout_electrical_power_threshold': 'axis0.controller.config.spinout_electrical_power_threshold',
+      'axis0.controller.config.spinout_mechanical_power_threshold': 'axis0.controller.config.spinout_mechanical_power_threshold',
+      'axis0.controller.config.anticogging.calib_pos_threshold': 'axis0.controller.config.anticogging.calib_pos_threshold',
+      'axis0.controller.config.anticogging.calib_vel_threshold': 'axis0.controller.config.anticogging.calib_vel_threshold',
+      
+      // CAN config parameters
+      'axis0.config.can.node_id': 'axis0.config.can.node_id',
+      'axis0.config.can.is_extended': 'axis0.config.can.is_extended',
+      'axis0.config.can.heartbeat_rate_ms': 'axis0.config.can.heartbeat_rate_ms',
+      'axis0.config.can.encoder_error_rate_ms': 'axis0.config.can.encoder_error_rate_ms',
+      'axis0.config.can.controller_error_rate_ms': 'axis0.config.can.controller_error_rate_ms',
+      'axis0.config.can.motor_error_rate_ms': 'axis0.config.can.motor_error_rate_ms',
+      'axis0.config.can.sensorless_error_rate_ms': 'axis0.config.can.sensorless_error_rate_ms',
+      
+      // FET Thermistor
+      'axis0.motor.fet_thermistor.config.temp_limit_lower': 'axis0.motor.fet_thermistor.config.temp_limit_lower',
+      'axis0.motor.fet_thermistor.config.temp_limit_upper': 'axis0.motor.fet_thermistor.config.temp_limit_upper',
+    }
+    
+    // Check special mappings first
+    if (specialMappings[path]) {
+      return specialMappings[path]
+    }
+    
+    // Default behavior - return path as-is if it looks like a valid ODrive command
+    if (path.startsWith('axis0.') || path.startsWith('config.') || path.startsWith('can.')) {
       return path
     }
     
-    if (path.startsWith('system.')) {
-      return path.replace(/^system\./, 'config.')
-    }
-    
-    if (path.startsWith('can.')) {
-      return path
-    }
-    
-    if (path.startsWith('axis0.')) {
-      return path
-    }
-    
-    return path
+    // For paths that don't start with known prefixes, assume they need axis0 prefix
+    return `axis0.${path}`
   }
 
   _pathToConfigKey(path) {
@@ -261,61 +300,55 @@ class ODriveUnifiedRegistry {
     
     // Handle special mappings for UI consistency
     const specialMappings = {
+      // Motor mappings
+      'torque_constant': 'motor_kv', // UI shows KV, ODrive stores torque constant
+      'phase_inductance': 'phase_inductance',
+      'phase_resistance': 'phase_resistance',
+      'pre_calibrated': path.includes('encoder') ? 'pre_calibrated' : 
+                        path.includes('motor') ? 'motor_pre_calibrated' : 'pre_calibrated',
+      
       // Encoder mappings
       'mode': path.includes('encoder') ? 'encoder_type' : 'mode',
       'enable_phase_interpolation': 'enable_phase_interpolation',
       'ignore_illegal_hall_state': 'ignore_illegal_hall_state',
       'hall_polarity': 'hall_polarity',
-      'pre_calibrated': path.includes('encoder') ? 'pre_calibrated' : 
-                        path.includes('motor') ? 'motor_pre_calibrated' : 'pre_calibrated',
       
-      // Motor mappings
-      'torque_constant': 'motor_kv', // This will be converted in the UI
-      'torque_lim': 'torque_lim',
-      'phase_inductance': 'phase_inductance',
-      'phase_resistance': 'phase_resistance',
-      
-      // Power mappings
-      'enable_brake_resistor': 'brake_resistor_enabled',
-      
-      // Interface mappings
-      'current': path.includes('calibration_lockin') ? 'lock_in_spin_current' : 'current',
-      'node_id': 'can_node_id',
-      'is_extended': 'can_node_id_extended',
-      'baud_rate': 'can_baudrate',
-      'enable_sensorless_mode': 'enable_sensorless',
-      'error_gpio_pin': 'error_gpio_pin',
-      'encoder_error_rate_ms': 'encoder_error_rate_ms',
-      'controller_error_rate_ms': 'controller_error_rate_ms',
-      'motor_error_rate_ms': 'motor_error_rate_ms',
-      'sensorless_error_rate_ms': 'sensorless_error_rate_ms',
-      
-      // Control mappings
+      // Controller mappings
       'enable_overspeed_error': 'enable_overspeed_error',
       'spinout_electrical_power_threshold': 'spinout_electrical_power_threshold',
       'spinout_mechanical_power_threshold': 'spinout_mechanical_power_threshold',
       'calib_pos_threshold': 'calib_pos_threshold',
       'calib_vel_threshold': 'calib_vel_threshold',
       
+      // Interface mappings
+      'error_gpio_pin': 'error_gpio_pin',
+      'encoder_error_rate_ms': 'encoder_error_rate_ms',
+      'controller_error_rate_ms': 'controller_error_rate_ms',
+      'motor_error_rate_ms': 'motor_error_rate_ms',
+      'sensorless_error_rate_ms': 'sensorless_error_rate_ms',
+      'node_id': 'can_node_id',
+      'is_extended': 'can_node_id_extended',
+      'baud_rate': 'can_baudrate',
+      
+      // Power mappings
+      'enable_brake_resistor': 'brake_resistor_enabled',
+      
       // Thermistor mappings
       'temp_limit_lower': path.includes('fet_thermistor') ? 'fet_temp_limit_lower' : 
                           path.includes('motor_thermistor') ? 'motor_temp_limit_lower' : 'temp_limit_lower',
       'temp_limit_upper': path.includes('fet_thermistor') ? 'fet_temp_limit_upper' : 
                           path.includes('motor_thermistor') ? 'motor_temp_limit_upper' : 'temp_limit_upper',
-      'enabled': path.includes('fet_thermistor') ? 'fet_thermistor_enabled' :
-                 path.includes('motor_thermistor') ? 'motor_thermistor_enabled' : 'enabled',
-      'gpio_pin': path.includes('motor_thermistor') ? 'motor_thermistor_gpio_pin' : 'gpio_pin'
     }
     
     return specialMappings[lastPart] || lastPart
   }
 
   _isConfigParameter(path) {
-    // Determine if this is a configuration parameter (not just status/telemetry)
+    // Parameters that are definitely NOT configuration (read-only status/telemetry)
     const nonConfigPaths = [
       'error', 'current_state', 'pos_estimate', 'vel_estimate', 'temperature',
       'is_ready', 'index_found', 'shadow_count', 'count_in_cpr', 'interpolation',
-      'phase', 'pos_estimate_counts', 'pos_circular', 'pos_cpr_counts',
+      'pos_estimate_counts', 'pos_circular', 'pos_cpr_counts',
       'delta_pos_cpr_counts', 'hall_state', 'vel_estimate_counts',
       'calib_scan_response', 'pos_abs', 'spi_error_rate', 'is_armed',
       'is_calibrated', 'current_meas_', 'DC_calib_', 'I_bus', 'phase_current_rev_gain',
@@ -323,10 +356,19 @@ class ODriveUnifiedRegistry {
       'n_evt_', 'last_error_time', 'input_pos', 'input_vel', 'input_torque',
       'pos_setpoint', 'vel_setpoint', 'torque_setpoint', 'trajectory_done',
       'vel_integrator_torque', 'anticogging_valid', 'autotuning_phase',
-      'mechanical_power', 'electrical_power', 'endstop_state',
-      'calib_anticogging', 'calib_pos_threshold', 'calib_vel_threshold'
+      'mechanical_power', 'electrical_power', 'endstop_state'
     ]
     
+    // These parameters that were being incorrectly filtered should be included:
+    // - calib_pos_threshold, calib_vel_threshold (these are configuration, not triggers)
+    // - phase_inductance, phase_resistance (these are configuration parameters)
+    // - enable_phase_interpolation, ignore_illegal_hall_state, hall_polarity (configuration)
+    // - enable_overspeed_error, spinout_*_threshold (configuration)
+    // - error_gpio_pin (configuration)
+    // - encoder_error_rate_ms, etc. (configuration)
+    // - pre_calibrated (configuration flag)
+    
+    // Only exclude if it explicitly matches a non-config pattern
     return !nonConfigPaths.some(pattern => path.includes(pattern))
   }
 

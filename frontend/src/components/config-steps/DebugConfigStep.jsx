@@ -384,31 +384,50 @@ const DebugConfigStep = () => {
   // Helper function for value comparison
   const compareValues = (expected, actual, param) => {
     if (expected === undefined) return true
-    
-    // Handle special cases
+
+    // Normalize actual for numbers & booleans
+    let actualVal = actual
+    if (typeof actual === 'string') {
+      // try numeric conversion
+      const n = parseFloat(actual)
+      if (!isNaN(n) && param.property.type === 'number') {
+        actualVal = n
+      }
+      // handle Python‐style True/False strings
+      else if (actual === 'True' || actual === 'False') {
+        actualVal = actual === 'True'
+      }
+    }
+
+    // Boolean params
+    if (param.property.type === 'boolean') {
+      return expected === Boolean(actualVal)
+    }
+
+    // Special: torque_lim as “infinite”
     if (param.configKey === 'torque_lim') {
-      // Handle large number representations of infinity
-      if (expected >= 1000000 && actual >= 1000000) {
-        return true
-      }
-      // Handle 'inf' string values
-      if ((expected === 'inf' || expected === Infinity) && actual >= 1000000) {
-        return true
-      }
+      if (expected >= 1000000 && actualVal >= 1000000) return true
+      if ((expected === 'inf' || expected === Infinity) && actualVal >= 1000000) return true
     }
-    
+
+    // Special: motor_kv ↔ torque_constant conversion
     if (param.configKey === 'motor_kv') {
-      // Handle torque constant to KV conversion
+      // expected = UI KV, actualVal = stored torque_constant
       const expectedTorqueConstant = 8.27 / expected
-      return Math.abs(expectedTorqueConstant - actual) < 0.001
+      return Math.abs(expectedTorqueConstant - actualVal) < 0.001
     }
-    
-    // Standard comparison
-    if (typeof expected === 'number' && typeof actual === 'number') {
-      return Math.abs(expected - actual) < 0.001
+
+    // Exact match for encoder pre_calibrated
+    if (param.configKey === 'pre_calibrated' && param.path.includes('encoder')) {
+      return expected === actualVal
     }
-    
-    return expected === actual
+
+    // Fallback numeric tolerance
+    if (typeof expected === 'number' && typeof actualVal === 'number') {
+      return Math.abs(expected - actualVal) < 0.001
+    }
+
+    return expected === actualVal
   }
 
   const renderAnalysis = () => {

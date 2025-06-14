@@ -136,7 +136,7 @@ export const loadAllConfigurationBatch = async () => {
         
         // Also store original torque constant if we converted it
         if (param.configKey === 'motor_kv') {
-          categorizedResults[param.category]['torque_constant'] = value
+          categorizedResults[param.category]['motor_kv'] = convertTorqueConstantToKv(value)
         }
       } else {
         // Fallback: try to categorize unknown parameters using old logic
