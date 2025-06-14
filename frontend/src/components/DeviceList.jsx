@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, memo } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import {
   Box,
@@ -21,20 +21,276 @@ import { InfoIcon } from '@chakra-ui/icons'
 import { 
   setAvailableDevices, 
   setConnectedDevice, 
-  updateOdriveState,
   setConnectionLost
 } from '../store/slices/deviceSlice'
 import { getAxisStateName } from '../utils/odriveEnums'
 import { getErrorDescription, getErrorColor, isErrorCritical } from '../utils/odriveErrors'
 import '../styles/DeviceList.css'
 
+// Memoized Status Badge Component
+const StatusBadge = memo(({ isConnected, connectionLost, connectedDevice, device }) => {
+  const getStatusColor = () => {
+    if (isConnected && connectedDevice?.serial === device.serial) {
+      return connectionLost ? 'yellow' : 'green'
+    }
+    return 'gray'
+  }
 
-const DeviceList = () => {
+  const getStatusText = () => {
+    if (isConnected && connectedDevice?.serial === device.serial) {
+      return connectionLost ? 'Reconnecting' : 'Connected'
+    }
+    return 'Disconnected'
+  }
+
+  return (
+    <Badge
+      colorScheme={getStatusColor()}
+      variant="solid"
+    >
+      {getStatusText()}
+    </Badge>
+  )
+})
+
+StatusBadge.displayName = 'StatusBadge'
+
+// Memoized Device Info Component
+const DeviceInfo = memo(({ device, index }) => (
+  <VStack align="start" spacing={1} flex="1">
+    <Text fontWeight="bold">{device.path || `ODrive ${index + 1}`}</Text>
+    <Text fontSize="sm" color="gray.300">
+      Serial: {device.serial || 'Unknown'}
+    </Text>
+    <Text fontSize="sm" color="gray.400">
+      FW: {device.fw_version || 'v0.5.6'}
+    </Text>
+  </VStack>
+))
+
+DeviceInfo.displayName = 'DeviceInfo'
+
+// Memoized Error Display Component
+const ErrorDisplay = memo(({ errorCode, errorType = 'axis', handleErrorClick }) => {
+  if (!errorCode || errorCode === 0) {
+    return (
+      <HStack justify="space-between">
+        <Text fontSize="sm" color="gray.300">Error:</Text>
+        <Text fontSize="sm" fontWeight="bold" color="green.300">None</Text>
+      </HStack>
+    )
+  }
+
+  const description = getErrorDescription(errorCode, errorType)
+  const colorScheme = getErrorColor(errorCode, errorType)
+  const isCritical = isErrorCritical(errorCode, errorType)
+
+  return (
+    <VStack spacing={1} align="stretch">
+      <HStack justify="space-between">
+        <Text fontSize="sm" color="gray.300">Error:</Text>
+        <HStack>
+          <Badge 
+            colorScheme={colorScheme} 
+            variant="solid" 
+            fontSize="xs"
+            cursor="pointer"
+            _hover={{ opacity: 0.8 }}
+            onClick={() => handleErrorClick(errorCode, errorType)}
+          >
+            0x{errorCode.toString(16).toUpperCase()}
+          </Badge>
+          {isCritical && (
+            <Tooltip label="Critical error - immediate attention required">
+              <Icon as={InfoIcon} color="red.400" boxSize={3} />
+            </Tooltip>
+          )}
+        </HStack>
+      </HStack>
+      <Text fontSize="xs" color={`${colorScheme}.300`} textAlign="right" maxW="200px">
+        {description}
+      </Text>
+    </VStack>
+  )
+})
+
+ErrorDisplay.displayName = 'ErrorDisplay'
+
+// Memoized Device Status Component
+const DeviceStatusDisplay = memo(({ telemetry, odriveState }) => {
+  const getAxisStateColorScheme = (state) => {
+    if (state === 8) return "green" // CLOSED_LOOP_CONTROL
+    if (state === 1) return "blue" // IDLE
+    if (state >= 2 && state <= 7) return "yellow" // Calibration states
+    return "red" // Error or undefined
+  }
+
+  // Use telemetry data for real-time values, fallback to odriveState
+  const vbusVoltage = telemetry?.vbus_voltage ?? odriveState.device?.vbus_voltage ?? 0
+  const motorCurrent = telemetry?.motor_current ?? odriveState.device?.axis0?.motor?.current_control?.Iq_measured ?? 0
+  const encoderPos = telemetry?.encoder_pos ?? odriveState.device?.axis0?.encoder?.pos_estimate ?? 0
+  const axisState = telemetry?.axis_state ?? odriveState.device?.axis0?.current_state ?? 0
+
+  return (
+    <VStack spacing={2} align="stretch">
+      <HStack justify="space-between">
+        <Text fontSize="sm" color="gray.300">Vbus Voltage:</Text>
+        <Text fontSize="sm" fontWeight="bold" color="white">
+          {vbusVoltage.toFixed(1)} V
+        </Text>
+      </HStack>
+      <HStack justify="space-between">
+        <Text fontSize="sm" color="gray.300">Axis State:</Text>
+        <Text fontSize="sm" fontWeight="bold" color="white">
+          {axisState}
+        </Text>
+      </HStack>
+      <HStack justify="space-between">
+        <Text fontSize="sm" color="gray.300">Motor Current:</Text>
+        <Text fontSize="sm" fontWeight="bold" color="white">
+          {motorCurrent.toFixed(2)} A
+        </Text>
+      </HStack>
+      <HStack justify="space-between">
+        <Text fontSize="sm" color="gray.300">Encoder Pos:</Text>
+        <Text fontSize="sm" fontWeight="bold" color="white">
+          {encoderPos.toFixed(2)}
+        </Text>
+      </HStack>
+
+      {/* Status Information */}
+      <HStack justify="space-between">
+        <Text fontSize="sm" color="gray.300">Status:</Text>
+        <Badge colorScheme={getAxisStateColorScheme(axisState)}>
+          {getAxisStateName(axisState)}
+        </Badge>
+      </HStack>
+    </VStack>
+  )
+})
+
+DeviceStatusDisplay.displayName = 'DeviceStatusDisplay'
+
+// Memoized Device Card Component
+const DeviceCard = memo(({ 
+  device, 
+  index, 
+  isConnected, 
+  connectedDevice, 
+  connectionLost, 
+  onConnect, 
+  onDisconnect 
+}) => (
+  <Card
+    key={index}
+    w="100%"
+    className="device-card"
+    bg={isConnected && connectedDevice?.serial === device.serial ? 'odrive.700' : 'gray.700'}
+    variant="elevated"
+  >
+    <CardBody>
+      <VStack align="stretch" spacing={2}>
+        <HStack justify="space-between">
+          <DeviceInfo device={device} index={index} />
+          <VStack>
+            <StatusBadge 
+              isConnected={isConnected}
+              connectionLost={connectionLost}
+              connectedDevice={connectedDevice}
+              device={device}
+            />
+            {isConnected && connectedDevice?.serial === device.serial ? (
+              <Button
+                size="sm"
+                colorScheme="red"
+                onClick={onDisconnect}
+                isDisabled={connectionLost}
+              >
+                {connectionLost ? <Spinner size="xs" /> : 'Disconnect'}
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                colorScheme="green"
+                onClick={() => onConnect(device)}
+              >
+                Connect
+              </Button>
+            )}
+          </VStack>
+        </HStack>
+      </VStack>
+    </CardBody>
+  </Card>
+))
+
+DeviceCard.displayName = 'DeviceCard'
+
+// Memoized Error Section Component
+const ErrorSection = memo(({ axis0Data, handleErrorClick }) => {
+  const renderErrorInfo = useCallback((errorCode, errorType = 'axis') => (
+    <ErrorDisplay 
+      errorCode={errorCode}
+      errorType={errorType}
+      handleErrorClick={handleErrorClick}
+    />
+  ), [handleErrorClick])
+
+  if (!axis0Data) return null
+
+  return (
+    <VStack spacing={2} align="stretch">
+      {/* Axis Error */}
+      {renderErrorInfo(axis0Data?.error, 'axis')}
+
+      {/* Motor Error */}
+      {axis0Data?.motor?.error && axis0Data.motor.error !== 0 && (
+        <>
+          <Divider my={2} />
+          <Text fontSize="sm" fontWeight="bold" color="orange.300">Motor Errors:</Text>
+          {renderErrorInfo(axis0Data.motor.error, 'motor')}
+        </>
+      )}
+
+      {/* Encoder Error */}
+      {axis0Data?.encoder?.error && axis0Data.encoder.error !== 0 && (
+        <>
+          <Divider my={2} />
+          <Text fontSize="sm" fontWeight="bold" color="orange.300">Encoder Errors:</Text>
+          {renderErrorInfo(axis0Data.encoder.error, 'encoder')}
+        </>
+      )}
+
+      {/* Controller Error */}
+      {axis0Data?.controller?.error && axis0Data.controller.error !== 0 && (
+        <>
+          <Divider my={2} />
+          <Text fontSize="sm" fontWeight="bold" color="orange.300">Controller Errors:</Text>
+          {renderErrorInfo(axis0Data.controller.error, 'controller')}
+        </>
+      )}
+
+      {/* Sensorless Estimator Error */}
+      {axis0Data?.sensorless_estimator?.error && axis0Data.sensorless_estimator.error !== 0 && (
+        <>
+          <Divider my={2} />
+          <Text fontSize="sm" fontWeight="bold" color="orange.300">Sensorless Errors:</Text>
+          {renderErrorInfo(axis0Data.sensorless_estimator.error, 'sensorless')}
+        </>
+      )}
+    </VStack>
+  )
+})
+
+ErrorSection.displayName = 'ErrorSection'
+
+const DeviceList = memo(() => {
   const dispatch = useDispatch()
   const toast = useToast()
   const [isScanning, setIsScanning] = useState(false)
-  const [ setSelectedError] = useState({ code: null, type: null })
   
+  // Use telemetry slice for real-time data
+  const telemetry = useSelector(state => state.telemetry)
   
   const { 
     availableDevices, 
@@ -72,48 +328,33 @@ const DeviceList = () => {
     }
   }, [dispatch, toast])
 
-    const getAxisStateColorScheme = (state) => {
-    if (state === 8) return "green" // CLOSED_LOOP_CONTROL
-    if (state === 1) return "blue" // IDLE
-    if (state >= 2 && state <= 7) return "yellow" // Calibration states
-    return "red" // Error or undefined
-  }
-  
-
-
   useEffect(() => {
-  scanForDevices()
-}, [scanForDevices])
+    scanForDevices()
+  }, [scanForDevices])
 
-    // Update the reconnection detection useEffect in DeviceList.jsx
+  // Reconnection detection useEffect
   useEffect(() => {
     if (connectedDevice && !isConnected) {
-      // More frequent polling for faster reconnection detection
       const reconnectInterval = setInterval(async () => {
         try {
           const statusResponse = await fetch('/api/odrive/connection_status')
           if (statusResponse.ok) {
             const status = await statusResponse.json()
             if (status.connected && !status.connection_lost && status.device_serial) {
-              // Backend says we're connected - trust it and clear connection lost
               dispatch(setConnectionLost(false))
               dispatch(setConnectedDevice({ 
                 serial: status.device_serial,
                 path: connectedDevice.path || `ODrive ${status.device_serial}`
               }))
               
-              // Trigger configuration pull after successful reconnection
               setTimeout(() => {
-                // Dispatch a custom event to trigger config pull in ConfigurationTab
                 window.dispatchEvent(new CustomEvent('deviceReconnected'))
               }, 500)
               
-              // Only show toast if this wasn't expected (not during config operations)
               const isExpectedReconnection = sessionStorage.getItem('expectingReconnection') === 'true'
               if (!isExpectedReconnection) {
                 console.log('Reconnected to ODrive:', status.device_serial)
               } else {
-                // Clear the flag since reconnection is complete
                 sessionStorage.removeItem('expectingReconnection')
               }
               
@@ -121,17 +362,15 @@ const DeviceList = () => {
             }
           }
         } catch (error) {
-          // Reconnection attempt failed, continue trying
           console.log('Reconnection attempt failed:', error)
         }
-      }, 1000) // Check every second for reconnection
+      }, 1000)
       
       return () => clearInterval(reconnectInterval)
     }
-  }, [isConnected, dispatch, toast, isScanning, connectedDevice])
+  }, [connectedDevice, isConnected, dispatch, toast, isScanning])
 
-
-  const handleConnect = async (device) => {
+  const handleConnect = useCallback(async (device) => {
     try {
       const response = await fetch('/api/odrive/connect', {
         method: 'POST',
@@ -165,82 +404,78 @@ const DeviceList = () => {
         duration: 5000,
       })
     }
-  }
+  }, [dispatch, toast])
 
-  const handleDisconnect = async () => {
+  const handleDisconnect = useCallback(async () => {
     try {
-      await fetch('/api/odrive/disconnect', { method: 'POST' })
-      dispatch(setConnectedDevice(null))
-      dispatch(updateOdriveState({}))
-      toast({
-        title: 'Disconnected',
-        description: 'Disconnected from ODrive',
-        status: 'info',
-        duration: 3000,
+      const response = await fetch('/api/odrive/disconnect', {
+        method: 'POST'
       })
+      
+      if (response.ok) {
+        dispatch(setConnectedDevice(null))
+        toast({
+          title: 'Disconnected',
+          description: 'Disconnected from ODrive',
+          status: 'info',
+          duration: 3000,
+        })
+      } else {
+        const error = await response.json()
+        toast({
+          title: 'Disconnect failed',
+          description: error.error || 'Failed to disconnect from ODrive',
+          status: 'error',
+          duration: 5000,
+        })
+      }
     } catch (error) {
       console.error('Failed to disconnect from ODrive:', error)
+      toast({
+        title: 'Disconnect failed',
+        description: 'Network error while disconnecting from ODrive',
+        status: 'error',
+        duration: 5000,
+      })
     }
-  }
+  }, [dispatch, toast])
 
-  const getStatusColor = (state) => {
-  if (connectionLost) return 'yellow'
-  if (!state.device) return 'gray'
-  const axisState = state.device.axis0?.current_state
-  if (axisState === 8) return 'green'
-  if (axisState === 1) return 'blue'
-  if (axisState >= 2 && axisState <= 7) return 'yellow'
-  return 'red' // Error or undefined
-}
+  const handleErrorClick = useCallback((errorCode, errorType) => {
+    // For now, just log the error click - you can add modal or troubleshooting logic here
+    console.log('Error clicked:', { errorCode: errorCode.toString(16), errorType })
+  }, [])
 
-  // Helper function to open troubleshooting modal
-  const handleErrorClick = (errorCode, errorType) => {
-    setSelectedError({ code: errorCode, type: errorType })
-  }
-
-  // Helper function to render error information with clickable badges
-  const renderErrorInfo = (errorCode, errorType = 'axis') => {
-    if (!errorCode || errorCode === 0) {
-      return (
-        <HStack justify="space-between">
-          <Text fontSize="sm" color="gray.300">Error:</Text>
-          <Text fontSize="sm" fontWeight="bold" color="green.300">None</Text>
-        </HStack>
-      )
+  const handleClearErrors = useCallback(async () => {
+    try {
+      const response = await fetch('/api/odrive/command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command: 'odrv0.clear_errors()' })
+      })
+      
+      if (response.ok) {
+        toast({
+          title: 'Errors cleared',
+          description: 'All error flags have been cleared',
+          status: 'success',
+          duration: 3000,
+        })
+      } else {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to clear errors')
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: `Failed to clear errors: ${error.message}`,
+        status: 'error',
+        duration: 5000,
+      })
     }
+  }, [toast])
 
-    const description = getErrorDescription(errorCode, errorType)
-    const colorScheme = getErrorColor(errorCode, errorType)
-    const isCritical = isErrorCritical(errorCode, errorType)
-
-    return (
-      <VStack spacing={1} align="stretch">
-        <HStack justify="space-between">
-          <Text fontSize="sm" color="gray.300">Error:</Text>
-          <HStack>
-            <Badge 
-              colorScheme={colorScheme} 
-              variant="solid" 
-              fontSize="xs"
-              cursor="pointer"
-              _hover={{ opacity: 0.8 }}
-              onClick={() => handleErrorClick(errorCode, errorType)}
-            >
-              0x{errorCode.toString(16).toUpperCase()}
-            </Badge>
-            {isCritical && (
-              <Tooltip label="Critical error - immediate attention required">
-                <Icon as={InfoIcon} color="red.400" boxSize={3} />
-              </Tooltip>
-            )}
-          </HStack>
-        </HStack>
-        <Text fontSize="xs" color={`${colorScheme}.300`} textAlign="right" maxW="200px">
-          {description}
-        </Text>
-      </VStack>
-    )
-  }
+  // Get axis0 data for error checking
+  const axis0Data = odriveState.device?.axis0
 
   return (
     <Box className="device-list" p={4} h="100%">
@@ -276,56 +511,16 @@ const DeviceList = () => {
           ) : (
             <VStack spacing={3}>
               {availableDevices.map((device, index) => (
-                <Card
-                  key={index}
-                  w="100%"
-                  className="device-card"
-                  bg={isConnected && connectedDevice?.serial === device.serial ? 'odrive.700' : 'gray.700'}
-                  variant="elevated"
-                >
-                  <CardBody>
-                    <VStack align="stretch" spacing={2}>
-                      <HStack justify="space-between">
-                        <VStack align="start" spacing={1} flex="1">
-                          <Text fontWeight="bold">{device.path || `ODrive ${index + 1}`}</Text>
-                          <Text fontSize="sm" color="gray.300">
-                            Serial: {device.serial || 'Unknown'}
-                          </Text>
-                          <Text fontSize="sm" color="gray.400">
-                            FW: {device.fw_version || 'v0.5.6'}
-                          </Text>
-                        </VStack>
-                        <VStack>
-                          <Badge
-                            colorScheme={getStatusColor(odriveState)}
-                            variant="solid"
-                          >
-                            {isConnected && connectedDevice?.serial === device.serial ? 
-                              (connectionLost ? 'Reconnecting' : 'Connected') : 'Disconnected'}
-                          </Badge>
-                          {isConnected && connectedDevice?.serial === device.serial ? (
-                            <Button
-                              size="sm"
-                              colorScheme="red"
-                              onClick={handleDisconnect}
-                              isDisabled={connectionLost}
-                            >
-                              {connectionLost ? <Spinner size="xs" /> : 'Disconnect'}
-                            </Button>
-                          ) : (
-                            <Button
-                              size="sm"
-                              colorScheme="green"
-                              onClick={() => handleConnect(device)}
-                            >
-                              Connect
-                            </Button>
-                          )}
-                        </VStack>
-                      </HStack>
-                    </VStack>
-                  </CardBody>
-                </Card>
+                <DeviceCard
+                  key={device.serial || index}
+                  device={device}
+                  index={index}
+                  isConnected={isConnected}
+                  connectedDevice={connectedDevice}
+                  connectionLost={connectionLost}
+                  onConnect={handleConnect}
+                  onDisconnect={handleDisconnect}
+                />
               ))}
             </VStack>
           )}
@@ -338,131 +533,37 @@ const DeviceList = () => {
               <Text fontSize="md" fontWeight="bold" mb={3} color="white">
                 Device Status
               </Text>
-              <VStack spacing={2} align="stretch">
-                <HStack justify="space-between">
-                  <Text fontSize="sm" color="gray.300">Vbus Voltage:</Text>
-                  <Text fontSize="sm" fontWeight="bold" color="white">
-                    {odriveState.device?.vbus_voltage?.toFixed(1) || '0.0'} V
-                  </Text>
-                </HStack>
-                <HStack justify="space-between">
-                  <Text fontSize="sm" color="gray.300">Axis State:</Text>
-                  <Text fontSize="sm" fontWeight="bold" color="white">
-                    {odriveState.device?.axis0?.current_state || 0}
-                  </Text>
-                </HStack>
-                <HStack justify="space-between">
-                  <Text fontSize="sm" color="gray.300">Motor Current:</Text>
-                  <Text fontSize="sm" fontWeight="bold" color="white">
-                    {odriveState.device?.axis0?.motor?.current_control?.Iq_measured?.toFixed(2) || '0.00'} A
-                  </Text>
-                </HStack>
-                <HStack justify="space-between">
-                  <Text fontSize="sm" color="gray.300">Encoder Pos:</Text>
-                  <Text fontSize="sm" fontWeight="bold" color="white">
-                    {odriveState.device?.axis0?.encoder?.pos_estimate?.toFixed(2) || '0.00'}
-                  </Text>
-                </HStack>
+              <DeviceStatusDisplay telemetry={telemetry} odriveState={odriveState} />
 
-                {/* Status Information */}
-                <HStack justify="space-between">
-                  <Text fontSize="sm" color="gray.300">Status:</Text>
-                  <Badge colorScheme={getAxisStateColorScheme(odriveState.device?.axis0?.current_state)}>
-                    {getAxisStateName(odriveState.device?.axis0?.current_state)}
-                  </Badge>
-                </HStack>
+              {/* Clear Errors Button - only shown if errors exist */}
+              {(axis0Data?.error || 
+                axis0Data?.motor?.error || 
+                axis0Data?.encoder?.error || 
+                axis0Data?.controller?.error ||
+                axis0Data?.sensorless_estimator?.error) && (
+                <Button
+                  size="xs"
+                  colorScheme="red"
+                  variant="outline"
+                  mt={2}
+                  onClick={handleClearErrors}
+                >
+                  Clear All Errors
+                </Button>
+              )}
 
-                {/* Clear Errors Button - only shown if errors exist */}
-                {(odriveState.device?.axis0?.error || 
-                  odriveState.device?.axis0?.motor?.error || 
-                  odriveState.device?.axis0?.encoder?.error || 
-                  odriveState.device?.axis0?.controller?.error ||
-                  odriveState.device?.axis0?.sensorless_estimator?.error) && (
-                  <Button
-                    size="xs"
-                    colorScheme="red"
-                    variant="outline"
-                    mt={2}
-                    onClick={async () => {
-                      try {
-                        const response = await fetch('/api/odrive/command', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ command: 'odrv0.clear_errors()' })
-                        });
-                        
-                        if (response.ok) {
-                          toast({
-                            title: 'Errors cleared',
-                            description: 'All error flags have been cleared',
-                            status: 'success',
-                            duration: 3000,
-                          });
-
-                        } else {
-                          const error = await response.json();
-                          throw new Error(error.error || 'Failed to clear errors');
-                        }
-                      } catch (error) {
-                        toast({
-                          title: 'Error',
-                          description: `Failed to clear errors: ${error.message}`,
-                          status: 'error',
-                          duration: 5000,
-                        });
-                      }
-                    }}
-                  >
-                    Clear All Errors
-                  </Button>
-                )}
-
-                {/* Axis Error */}
-                {renderErrorInfo(odriveState.device?.axis0?.error, 'axis')}
-
-                {/* Motor Error */}
-                {odriveState.device?.axis0?.motor?.error && odriveState.device.axis0.motor.error !== 0 && (
-                  <>
-                    <Divider my={2} />
-                    <Text fontSize="sm" fontWeight="bold" color="orange.300">Motor Errors:</Text>
-                    {renderErrorInfo(odriveState.device.axis0.motor.error, 'motor')}
-                  </>
-                )}
-
-                {/* Encoder Error */}
-                {odriveState.device?.axis0?.encoder?.error && odriveState.device.axis0.encoder.error !== 0 && (
-                  <>
-                    <Divider my={2} />
-                    <Text fontSize="sm" fontWeight="bold" color="orange.300">Encoder Errors:</Text>
-                    {renderErrorInfo(odriveState.device.axis0.encoder.error, 'encoder')}
-                  </>
-                )}
-
-                {/* Controller Error */}
-                {odriveState.device?.axis0?.controller?.error && odriveState.device.axis0.controller.error !== 0 && (
-                  <>
-                    <Divider my={2} />
-                    <Text fontSize="sm" fontWeight="bold" color="orange.300">Controller Errors:</Text>
-                    {renderErrorInfo(odriveState.device.axis0.controller.error, 'controller')}
-                  </>
-                )}
-
-                {/* Sensorless Estimator Error */}
-                {odriveState.device?.axis0?.sensorless_estimator?.error && odriveState.device.axis0.sensorless_estimator.error !== 0 && (
-                  <>
-                    <Divider my={2} />
-                    <Text fontSize="sm" fontWeight="bold" color="orange.300">Sensorless Errors:</Text>
-                    {renderErrorInfo(odriveState.device.axis0.sensorless_estimator.error, 'sensorless')}
-                  </>
-                )}
-              </VStack>
+              <ErrorSection 
+                axis0Data={axis0Data}
+                handleErrorClick={handleErrorClick}
+              />
             </Box>
           </>
         )}
       </VStack>
-
     </Box>
   )
-}
+})
+
+DeviceList.displayName = 'DeviceList'
 
 export default DeviceList

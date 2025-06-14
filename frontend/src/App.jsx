@@ -22,12 +22,14 @@ import InspectorTab from './components/tabs/InspectorTab'
 import PresetsTab from './components/tabs/PresetsTab'
 import CommandConsoleTab from './components/tabs/CommandConsoleTab'
 import UpdateChecker from './components/UpdateChecker'
+import { useDashboardTelemetry } from './hooks/useDashboardTelemetry'
 import './App.css'
 
 function App() {
   const { isConnected, connectedDevice, odriveState } = useSelector(state => state.device)
   const [activeTab, setActiveTab] = useState(0)
 
+  useDashboardTelemetry()
 
   return (
     <Box bg="gray.900" minH="100vh" color="white">

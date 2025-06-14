@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react'
 
-export const useChartsTelemetry = (properties, onData, updateRate = 100) => {
+export const useChartsTelemetry = (properties, onData) => {
   const intervalRef = useRef(null)
   const lastRequestTime = useRef(0)
+  const updateRate = 1 // milliseconmds
 
   useEffect(() => {
     if (!properties.length) {
@@ -17,7 +18,7 @@ export const useChartsTelemetry = (properties, onData, updateRate = 100) => {
       try {
         // Add small random delay to stagger requests
         const now = Date.now()
-        const minInterval = 50 // Minimum 50ms between any requests
+        const minInterval = 1
         const timeSinceLastRequest = now - lastRequestTime.current
         
         if (timeSinceLastRequest < minInterval) {
