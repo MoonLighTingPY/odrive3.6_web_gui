@@ -67,13 +67,14 @@ const EncoderConfigStep = ({
                   </Tooltip>
                 </HStack>
                 <Select
-                  value={encoderConfig.encoder_type ?? EncoderMode.HALL}
+                  value={encoderConfig.encoder_type ?? ""}
                   onChange={(e) => handleConfigChange('encoder_type', parseInt(e.target.value))}
                   bg="gray.700"
                   border="1px solid"
                   borderColor="gray.600"
                   color="white"
                   size="sm"
+                  placeholder="Select encoder type"
                 >
                   <option value={EncoderMode.INCREMENTAL}>Incremental</option>
                   <option value={EncoderMode.HALL}>Hall Effect</option>
@@ -95,13 +96,14 @@ const EncoderConfigStep = ({
                     </Tooltip>
                   </HStack>
                   <Select
-                    value={encoderConfig.hall_polarity || 0}
+                    value={encoderConfig.hall_polarity ?? ""}
                     onChange={(e) => handleConfigChange('hall_polarity', parseInt(e.target.value))}
                     bg="gray.700"
                     border="1px solid"
                     borderColor="gray.600"
                     color="white"
                     size="sm"
+                    placeholder="Select polarity"
                   >
                     <option value={0}>Normal</option>
                     <option value={1}>Inverted</option>
@@ -116,13 +118,14 @@ const EncoderConfigStep = ({
                     </Tooltip>
                   </HStack>
                   <Select
-                    value={encoderConfig.abs_spi_cs_gpio_pin || 4}
+                    value={encoderConfig.abs_spi_cs_gpio_pin ?? ""}
                     onChange={(e) => handleConfigChange('abs_spi_cs_gpio_pin', parseInt(e.target.value))}
                     bg="gray.700"
                     border="1px solid"
                     borderColor="gray.600"
                     color="white"
                     size="sm"
+                    placeholder="Select GPIO pin"
                   >
                     <option value={1}>GPIO1</option>
                     <option value={2}>GPIO2</option>
@@ -219,14 +222,15 @@ const EncoderConfigStep = ({
                   <FormControl>
                     <FormLabel color="white" mb={1} fontSize="xs">Direction</FormLabel>
                     <Select
-                      value={encoderConfig.direction || 1}
+                      value={encoderConfig.direction ?? ""}
                       onChange={(e) => handleConfigChange('direction', parseInt(e.target.value))}
                       bg="gray.700"
                       border="1px solid"
                       borderColor="gray.600"
                       color="white"
                       size="sm"
-                      maxW="100px"
+                      maxW="150px"
+                      placeholder="Select direction"
                     >
                       <option value={1}>Forward</option>
                       <option value={-1}>Reverse</option>

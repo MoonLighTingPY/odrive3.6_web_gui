@@ -46,8 +46,8 @@ const MotorConfigStep = ({
   }
 
   // Calculate derived values
-  const calculatedKt = 8.27 / (motorConfig.motor_kv || 230)
-  const maxTorque = calculatedKt * (motorConfig.current_lim || 10)
+  const calculatedKt = 8.27 / (motorConfig.motor_kv || 0) // Kt = 8.27 / Kv
+  const maxTorque = calculatedKt * (motorConfig.current_lim || 0)
 
   return (
     <Box h="100%" p={3} overflow="auto">
@@ -62,13 +62,14 @@ const MotorConfigStep = ({
                 <FormControl flex="1">
                   <FormLabel color="white" mb={1} fontSize="sm">Motor Type</FormLabel>
                   <Select
-                    value={motorConfig.motor_type || 0}
+                    value={motorConfig.motor_type ?? ""}
                     onChange={(e) => handleConfigChange('motor_type', parseInt(e.target.value))}
                     bg="gray.700"
                     border="1px solid"
                     borderColor="gray.600"
                     color="white"
                     size="sm"
+                    placeholder="Select Motor Type"
                   >
                     <option value={0}>High Current</option>
                     <option value={1}>Gimbal</option>
