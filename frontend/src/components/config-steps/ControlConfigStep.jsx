@@ -28,7 +28,7 @@ import {
 } from '@chakra-ui/react'
 import { InfoIcon, RepeatIcon, ChevronUpIcon, ChevronDownIcon } from '@chakra-ui/icons'
 import ParameterInput from '../buttons/ParameterInput'
-import { configurationMappings } from '../../utils/odriveCommands'
+import { ODrivePropertyMappings as configurationMappings } from '../../utils/odriveUnifiedRegistry'
 import { ControlMode, InputMode} from '../../utils/odriveEnums'
 import { 
   radToRpm, 
@@ -65,8 +65,8 @@ const ControlConfigStep = ({
 
   // Calculate optimal gains based on motor parameters
   const calculatedGains = useMemo(() => {
-    const motor_kv = motorConfig.motor_kv || 230
-    const cpr = encoderConfig.cpr || 4000
+    const motor_kv = motorConfig.motor_kv || 0
+    const cpr = encoderConfig.cpr || 0
     
     const torque_constant = 8.27 / motor_kv
     const pos_gain = motor_kv / 10.0 / cpr * 60
@@ -297,7 +297,7 @@ const ControlConfigStep = ({
                     <AlertIcon boxSize={3} />
                     <VStack align="start" spacing={0}>
                       <Text fontWeight="bold" fontSize="xs">Auto-calculated based on your motor configuration:</Text>
-                      <Text fontSize="xs">Motor Kv: {motorConfig.motor_kv || 230} RPM/V, Encoder CPR: {encoderConfig.cpr || 4000}</Text>
+                      <Text fontSize="xs">Motor Kv: {motorConfig.motor_kv || 0} RPM/V, Encoder CPR: {encoderConfig.cpr || 0}</Text>
                       <Text fontSize="xs">Calculated Torque Constant: {calculatedGains.torque_constant.toFixed(4)} Nm/A</Text>
                     </VStack>
                   </Alert>
@@ -398,7 +398,7 @@ const ControlConfigStep = ({
                       </Tooltip>
                     </HStack>
                     <ParameterInput
-                      value={useRpm ? radToRpm(controlConfig.vel_limit || 20) : (controlConfig.vel_limit || 20)}
+                      value={useRpm ? radToRpm(controlConfig.vel_limit) : (controlConfig.vel_limit)}
                       onChange={handleVelLimitChange}
                       onRefresh={() => handleRefresh('vel_limit')}
                       isLoading={isLoading('vel_limit')}
@@ -415,7 +415,7 @@ const ControlConfigStep = ({
                       </Tooltip>
                     </HStack>
                     <ParameterInput
-                      value={useRpm ? radToRpm(controlConfig.vel_ramp_rate || 10) : (controlConfig.vel_ramp_rate || 10)}
+                      value={useRpm ? radToRpm(controlConfig.vel_ramp_rate) : (controlConfig.vel_ramp_rate)}
                       onChange={handleVelRampRateChange}
                       onRefresh={() => handleRefresh('vel_ramp_rate')}
                       isLoading={isLoading('vel_ramp_rate')}

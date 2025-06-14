@@ -233,10 +233,10 @@ const DashboardTab = ({ isActive = false }) => {
               <Stat>
                 <StatLabel color="gray.300">Firmware</StatLabel>
                 <StatNumber color="white" fontSize="md">
-                  v{systemData?.fw_version_major || 0}.{systemData?.fw_version_minor || 5}.{systemData?.fw_version_revision || 6}
+                  v{systemData?.fw_version_major || 0}.{systemData?.fw_version_minor}.{systemData?.fw_version_revision}
                 </StatNumber>
                 <StatHelpText color="gray.400">
-                  HW: v{systemData?.hw_version_major || 3}.{systemData?.hw_version_minor || 6}
+                  HW: v{systemData?.hw_version_major}.{systemData?.hw_version_minor}
                 </StatHelpText>
               </Stat>
               <Stat>

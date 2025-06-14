@@ -20,7 +20,7 @@ import {
 } from '@chakra-ui/react'
 import { InfoIcon } from '@chakra-ui/icons'
 import ParameterInput from '../buttons/ParameterInput'
-import { configurationMappings } from '../../utils/odriveCommands'
+import { ODrivePropertyMappings as configurationMappings } from '../../utils/odriveUnifiedRegistry'
 
 const InterfaceConfigStep = ({ 
   deviceConfig, 
@@ -91,13 +91,14 @@ const InterfaceConfigStep = ({
                     <FormControl flex="1">
                       <FormLabel color="white" mb={1} fontSize="sm">CAN Baudrate</FormLabel>
                       <Select
-                        value={interfaceConfig.can_baudrate || 250000}
+                        value={interfaceConfig.can_baudrate ?? 0}
                         onChange={(e) => handleConfigChange('can_baudrate', parseInt(e.target.value))}
                         bg="gray.700"
                         border="1px solid"
                         borderColor="gray.600"
                         color="white"
                         size="sm"
+                        placeholder="Select Baudrate"
                       >
                         <option value={125000}>125 kbps</option>
                         <option value={250000}>250 kbps</option>
@@ -163,7 +164,7 @@ const InterfaceConfigStep = ({
                       <FormControl flex="1">
                         <FormLabel color="white" mb={1} fontSize="sm">Protocol</FormLabel>
                         <Select
-                          value={interfaceConfig.uart0_protocol || 3}
+                          value={interfaceConfig.uart0_protocol}
                           onChange={(e) => handleConfigChange('uart0_protocol', parseInt(e.target.value))}
                           bg="gray.700"
                           border="1px solid"
@@ -214,7 +215,7 @@ const InterfaceConfigStep = ({
                       <FormControl flex="1">
                         <FormLabel color="white" mb={1} fontSize="sm">Protocol</FormLabel>
                         <Select
-                          value={interfaceConfig.uart1_protocol || 1}
+                          value={interfaceConfig.uart1_protocol}
                           onChange={(e) => handleConfigChange('uart1_protocol', parseInt(e.target.value))}
                           bg="gray.700"
                           border="1px solid"

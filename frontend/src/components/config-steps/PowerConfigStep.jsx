@@ -18,7 +18,7 @@ import {
 } from '@chakra-ui/react'
 import { InfoIcon } from '@chakra-ui/icons'
 import ParameterInput from '../buttons/ParameterInput'
-import { configurationMappings } from '../../utils/odriveCommands'
+import { ODrivePropertyMappings as configurationMappings } from '../../utils/odriveUnifiedRegistry'
 
 const PowerConfigStep = ({ 
   deviceConfig, 

@@ -326,8 +326,14 @@ export const odrivePropertyTree = {
               ignore_illegal_hall_state: { name: 'Ignore Illegal Hall State', description: 'Ignore illegal Hall sensor states', writable: true, type: 'boolean' },
               sincos_gpio_pin_sin: { name: 'Sin/Cos GPIO Pin Sin', description: 'GPIO pin for sine signal', writable: true, type: 'number' },
               sincos_gpio_pin_cos: { name: 'Sin/Cos GPIO Pin Cos', description: 'GPIO pin for cosine signal', writable: true, type: 'number' },
+              hall_polarity: {
+                name: 'Hall Polarity',
+                description: 'Hall sensor polarity',
+                writable: true,
+                type: 'number'
+              },
               hall_polarity_calibrated: { name: 'Hall Polarity Calibrated', description: 'Hall sensor polarity calibration status', writable: true, type: 'number' },
-              hall_polarity: { name: 'Hall Polarity', description: 'Hall sensor polarity', writable: true, type: 'number' },
+
               direction: { name: 'Direction', description: 'Encoder direction (1 or -1)', writable: true, type: 'number', min: -1, max: 1, step: 2 },
               use_index_offset: { name: 'Use Index Offset', description: 'Use encoder index offset', writable: true, type: 'boolean' },
               index_offset: { name: 'Index Offset', description: 'Encoder index offset', writable: true, type: 'number', decimals: 6 },
@@ -412,11 +418,11 @@ export const odrivePropertyTree = {
                 description: 'Anticogging compensation parameters',
                 properties: {
                   index: { name: 'Anticogging Index', description: 'Current anticogging table index', writable: false, type: 'number' },
-                  pre_calibrated: { name: 'Pre-calibrated', description: 'Anticogging table pre-calibrated', writable: true, type: 'boolean' },
+                  pre_calibrated: { name: 'Anticogging Pre-calibrated', description: 'Anticogging table pre-calibrated', writable: true, type: 'boolean' },
                   anticogging_enabled: { name: 'Anticogging Enabled', description: 'Enable anticogging compensation', writable: true, type: 'boolean' },
-                  calib_anticogging: { name: 'Calibrate Anticogging', description: 'Start anticogging calibration', writable: true, type: 'boolean' },
-                  calib_pos_threshold: { name: 'Calibration Position Threshold', description: 'Position threshold for anticogging calibration', writable: true, type: 'number', decimals: 6, hasSlider: true },
-                  calib_vel_threshold: { name: 'Calibration Velocity Threshold', description: 'Velocity threshold for anticogging calibration', writable: true, type: 'number', decimals: 3, hasSlider: true },
+                  calib_anticogging: { name: 'Calibrate Anticogging', description: 'Start anticogging calibration', writable: false, type: 'boolean' },
+                  calib_pos_threshold: { name: 'Calib Position Threshold', description: 'Position threshold for anticogging calibration', writable: true, type: 'number', decimals: 6, hasSlider: true },
+                  calib_vel_threshold: { name: 'Calib Velocity Threshold', description: 'Velocity threshold for anticogging calibration', writable: true, type: 'number', decimals: 3, hasSlider: true },
                 }
               }
             }
