@@ -7,7 +7,7 @@ import { updateTelemetry, setTelemetryConnectionHealth } from '../store/slices/t
 export const useDashboardTelemetry = () => {
   const { isConnected } = useSelector(state => state.device)
   const dispatch = useDispatch()
-  const updateRate = 1 // Update rate in milliseconds
+  const updateRate = 50 // Update rate in milliseconds
 
   // Debounced dispatcher for device state (updates every 500ms max)
   const debouncedDeviceDispatch = useMemo(
