@@ -302,21 +302,21 @@ const DashboardTab = memo(() => {
             <CardBody>
               <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
                 <TelemetryDisplay 
-                  label="Position"
+                  label="Position (counts)"
                   value={encoderPos}
-                  unit="counts"
+                  unit=""
                   color="odrive.300"
                 />
                 <TelemetryDisplay 
-                  label="Velocity"
+                  label="Velocity (counts/s)"
                   value={encoderVel}
-                  unit="counts/s"
+                  unit=""
                   color="odrive.300"
                 />
                 <TelemetryDisplay 
                   label="Position (turns)"
                   value={(encoderPos / 4000)}
-                  unit="rev"
+                  unit=""
                   color="odrive.300"
                 />
               </SimpleGrid>
