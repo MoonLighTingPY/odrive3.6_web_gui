@@ -49,7 +49,8 @@ const uiSlice = createSlice({
       state.activeConfigStep = action.payload
     },
     nextConfigStep: (state) => {
-      if (state.activeConfigStep < 6) { // Maximum 6 steps
+      const maxSteps = import.meta.env.DEV ? 7 : 6 // 7 steps in dev mode, 6 in production
+      if (state.activeConfigStep < maxSteps) {
         state.activeConfigStep += 1
       }
     },
