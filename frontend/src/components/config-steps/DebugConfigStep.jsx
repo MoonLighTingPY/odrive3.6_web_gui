@@ -395,9 +395,10 @@ const compareValues = (expected, actual, param) => {
     }
   }
 
-  if (param.property.type === 'boolean') {
-    // coerce any 0/1 or 'True'/'False' to JS boolean
-    return expected === Boolean(actualVal)
+  if (param.type === 'boolean' || typeof expected === 'boolean') {
+    const expectedBool = Boolean(expected)
+    const actualBool = Boolean(actual)
+    return expectedBool === actualBool
   }
 
   // infinite torque_lim special case
