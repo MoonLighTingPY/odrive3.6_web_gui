@@ -129,8 +129,13 @@ useEffect(() => {
     if (config.control) dispatch({ type: 'config/updateControlConfig', payload: config.control })
     if (config.interface) dispatch({ type: 'config/updateInterfaceConfig', payload: config.interface })
     
-    // Show a toast notification
-
+    // Show success toast
+    toast({
+      title: 'Preset Loaded',
+      description: 'Configuration loaded into wizard. You can now review and modify settings in each step.',
+      status: 'success',
+      duration: 4000,
+    })
   }
 
   window.addEventListener('presetLoaded', handlePresetLoaded)
