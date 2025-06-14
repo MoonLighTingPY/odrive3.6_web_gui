@@ -32,7 +32,7 @@ export const useDashboardTelemetry = () => {
     // Expanded telemetry paths for dashboard
     const telemetryPaths = [
       'vbus_voltage',
-      'axis0.motor.current_control.Iq_setpoint',
+      'axis0.motor.current_control.Iq_measured',
       'axis0.encoder.pos_estimate',
       'axis0.encoder.vel_estimate',
       'axis0.motor.motor_thermistor.temperature',
@@ -54,7 +54,7 @@ export const useDashboardTelemetry = () => {
           // Update high-frequency telemetry slice immediately
           const telemetryData = {
             vbus_voltage: data.data['vbus_voltage'] || 0,
-            motor_current: data.data['axis0.motor.current_control.Iq_setpoint'] || 0,
+            motor_current: data.data['axis0.motor.current_control.Iq_measured'] || 0,
             encoder_pos: data.data['axis0.encoder.pos_estimate'] || 0,
             encoder_vel: data.data['axis0.encoder.vel_estimate'] || 0,
             motor_temp: data.data['axis0.motor.motor_thermistor.temperature'] || 0,
