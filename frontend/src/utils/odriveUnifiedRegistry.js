@@ -344,33 +344,32 @@ class ODriveUnifiedRegistry {
   }
 
   _isConfigParameter(path) {
-    // Parameters that are definitely NOT configuration (read-only status/telemetry)
-    const nonConfigPaths = [
-      'error', 'current_state', 'pos_estimate', 'vel_estimate', 'temperature',
-      'is_ready', 'index_found', 'shadow_count', 'count_in_cpr', 'interpolation',
-      'pos_estimate_counts', 'pos_circular', 'pos_cpr_counts',
-      'delta_pos_cpr_counts', 'hall_state', 'vel_estimate_counts',
-      'calib_scan_response', 'pos_abs', 'spi_error_rate', 'is_armed',
-      'is_calibrated', 'current_meas_', 'DC_calib_', 'I_bus', 'phase_current_rev_gain',
-      'effective_current_lim', 'max_allowed_current', 'max_dc_calib',
-      'n_evt_', 'last_error_time', 'input_pos', 'input_vel', 'input_torque',
-      'pos_setpoint', 'vel_setpoint', 'torque_setpoint', 'trajectory_done',
-      'vel_integrator_torque', 'anticogging_valid', 'autotuning_phase',
-      'mechanical_power', 'electrical_power', 'endstop_state'
-    ]
-    
-    // These parameters that were being incorrectly filtered should be included:
-    // - calib_pos_threshold, calib_vel_threshold (these are configuration, not triggers)
-    // - phase_inductance, phase_resistance (these are configuration parameters)
-    // - enable_phase_interpolation, ignore_illegal_hall_state, hall_polarity (configuration)
-    // - enable_overspeed_error, spinout_*_threshold (configuration)
-    // - error_gpio_pin (configuration)
-    // - encoder_error_rate_ms, etc. (configuration)
-    // - pre_calibrated (configuration flag)
-    
-    // Only exclude if it explicitly matches a non-config pattern
-    return !nonConfigPaths.some(pattern => path.includes(pattern))
-  }
+      // Exclude only the telemetry property exactly named “.error”
+      if (path.endsWith('.error')) {
+        return false
+      }
+
+      // These are definitely not config (read-only telemetry or status).
+      // Match exact property names, not substrings, so we don't catch
+      // spinout_electrical_power_threshold, etc.
+      const nonConfigNames = [
+        'current_state', 'pos_estimate', 'vel_estimate', 'temperature',
+        'is_ready', 'index_found', 'shadow_count', 'count_in_cpr',
+        'pos_estimate_counts', 'pos_circular', 'pos_cpr_counts',
+        'delta_pos_cpr_counts', 'hall_state', 'vel_estimate_counts',
+        'calib_scan_response', 'pos_abs', 'spi_error_rate',
+        'is_armed', 'is_calibrated', 'current_meas_','DC_calib_',
+        'I_bus','phase_current_rev_gain','effective_current_lim',
+        'max_allowed_current','max_dc_calib','n_evt_','last_error_time',
+        'input_pos','input_vel','input_torque','pos_setpoint',
+        'vel_setpoint','torque_setpoint','trajectory_done',
+        'vel_integrator_torque','anticogging_valid','autotuning_phase',
+        'mechanical_power','electrical_power','endstop_state'
+      ]
+
+      const lastPart = path.split('.').pop()
+      return !nonConfigNames.includes(lastPart)
+    }
 
   // Public API methods
   getBatchPaths() {

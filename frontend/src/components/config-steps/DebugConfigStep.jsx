@@ -382,53 +382,42 @@ const DebugConfigStep = () => {
   }
 
   // Helper function for value comparison
-  const compareValues = (expected, actual, param) => {
-    if (expected === undefined) return true
+const compareValues = (expected, actual, param) => {
+  if (expected === undefined) return true
 
-    // Normalize actual for numbers & booleans
-    let actualVal = actual
-    if (typeof actual === 'string') {
-      // try numeric conversion
-      const n = parseFloat(actual)
-      if (!isNaN(n) && param.property.type === 'number') {
-        actualVal = n
-      }
-      // handle Python‐style True/False strings
-      else if (actual === 'True' || actual === 'False') {
-        actualVal = actual === 'True'
-      }
+  let actualVal = actual
+  if (typeof actual === 'string') {
+    const n = parseFloat(actual)
+    if (!isNaN(n) && param.property.type === 'number') {
+      actualVal = n
+    } else if (actual === 'True' || actual === 'False') {
+      actualVal = actual === 'True'
     }
-
-    // Boolean params
-    if (param.property.type === 'boolean') {
-      return expected === Boolean(actualVal)
-    }
-
-    // Special: torque_lim as “infinite”
-    if (param.configKey === 'torque_lim') {
-      if (expected >= 1000000 && actualVal >= 1000000) return true
-      if ((expected === 'inf' || expected === Infinity) && actualVal >= 1000000) return true
-    }
-
-    // Special: motor_kv ↔ torque_constant conversion
-    if (param.configKey === 'motor_kv') {
-      // expected = UI KV, actualVal = stored torque_constant
-      const expectedTorqueConstant = 8.27 / expected
-      return Math.abs(expectedTorqueConstant - actualVal) < 0.001
-    }
-
-    // Exact match for encoder pre_calibrated
-    if (param.configKey === 'pre_calibrated' && param.path.includes('encoder')) {
-      return expected === actualVal
-    }
-
-    // Fallback numeric tolerance
-    if (typeof expected === 'number' && typeof actualVal === 'number') {
-      return Math.abs(expected - actualVal) < 0.001
-    }
-
-    return expected === actualVal
   }
+
+  if (param.property.type === 'boolean') {
+    // coerce any 0/1 or 'True'/'False' to JS boolean
+    return expected === Boolean(actualVal)
+  }
+
+  // infinite torque_lim special case
+  if (param.configKey === 'torque_lim') {
+    if (expected >= 1e6 && actualVal >= 1e6) return true
+    if ((expected === 'inf' || expected === Infinity) && actualVal >= 1e6) return true
+  }
+
+  // motor_kv is stored and pulled as KV directly, so compare KV→KV
+  if (param.configKey === 'motor_kv') {
+    return Math.abs(expected - actualVal) < 1e-3
+  }
+
+  // numeric tolerance fallback
+  if (typeof expected === 'number' && typeof actualVal === 'number') {
+    return Math.abs(expected - actualVal) < 1e-3
+  }
+
+  return expected === actualVal
+}
 
   const renderAnalysis = () => {
     if (!debugResults?.analysis) return null
