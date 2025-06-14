@@ -114,31 +114,38 @@ const PresetManager = ({
   const handleSavePreset = async (name, description) => {
   setIsLoading(true)
   try {
-    // Get the actual current configuration - don't use mock data
+    // Get the actual current configuration
     let configToSave = currentConfig
     
-    // In dev mode, we need to check if we have valid config data
-    if (!isConnected && (import.meta.env.DEV || import.meta.env.MODE === 'development')) {
-      // Only use mock if we truly have NO config data at all
-      if (!configToSave || Object.keys(configToSave).length === 0 || 
-          Object.values(configToSave).every(category => !category || Object.keys(category).length === 0)) {
-        console.warn('No configuration available, using minimal mock config')
+    // Debug log to see what we're actually saving
+    console.log('Current config to save:', configToSave)
+    
+    // Check if we have actual configuration data
+    const hasValidData = Object.values(configToSave).some(category => 
+      category && Object.keys(category).length > 0 && 
+      Object.values(category).some(value => value !== undefined && value !== null && value !== '')
+    )
+    
+    if (!hasValidData) {
+      // In dev mode, we can save minimal config for testing
+      if (!isConnected && (import.meta.env.DEV || import.meta.env.MODE === 'development')) {
+        console.warn('No real configuration data available, creating minimal test config')
         configToSave = {
-          power: { dc_bus_overvoltage_trip_level: 56, dc_max_positive_current: 10 },
-          motor: { motor_type: 0, pole_pairs: 7, motor_kv: 150 },
-          encoder: { encoder_type: 1, cpr: 4000 },
-          control: { control_mode: 3, vel_limit: 10 },
+          power: { dc_bus_overvoltage_trip_level: 56.0, dc_max_positive_current: 10.0 },
+          motor: { motor_type: 0, pole_pairs: 7, current_lim: 10.0 },
+          encoder: { mode: 1, cpr: 4000 },
+          control: { control_mode: 3, vel_limit: 10.0 },
           interface: { enable_can: false }
         }
+      } else {
+        throw new Error('No configuration data to save. Please configure some parameters first or connect to ODrive.')
       }
-    } else if (!configToSave || Object.keys(configToSave).length === 0) {
-      throw new Error('No configuration to save. Please ensure ODrive is connected.')
     }
     
-    console.log('Saving configuration:', configToSave) // Debug log
-    
     // Save to localStorage
-    saveCurrentConfigAsPreset(configToSave, name, description)
+    const savedPreset = saveCurrentConfigAsPreset(configToSave, name, description)
+    console.log('Saved preset:', savedPreset)
+    
     loadPresets() // Refresh preset list
     setShowSaveDialog(false)
 
@@ -161,9 +168,9 @@ const PresetManager = ({
       console.warn('Failed to auto-export preset:', exportError)
       toast({
         title: 'Preset Saved',
-        description: `"${name}" saved successfully (export failed: ${exportError.message})`,
-        status: 'warning',
-        duration: 5000,
+        description: `"${name}" saved successfully`,
+        status: 'success',
+        duration: 3000,
       })
     }
     

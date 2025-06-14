@@ -3,26 +3,54 @@
  * Handles saving, loading, importing, and exporting ODrive configuration presets
  */
 
+import { FACTORY_PRESETS, generateFullConfig } from './factoryPresets'
+import { odriveRegistry } from './odriveUnifiedRegistry'
+
 /**
- * Save current device configuration as a preset
+ * Save current device configuration as a preset with all writable parameters
  * @param {Object} deviceConfig - Current device configuration
  * @param {string} presetName - Name for the preset
  * @param {string} description - Optional description
  * @returns {Object} The saved preset
  */
 export const saveCurrentConfigAsPreset = (deviceConfig, presetName, description = '') => {
+  // Use the actual device config, but ensure all categories exist
+  const fullConfig = {
+    power: deviceConfig.power || {},
+    motor: deviceConfig.motor || {},
+    encoder: deviceConfig.encoder || {},
+    control: deviceConfig.control || {},
+    interface: deviceConfig.interface || {}
+  }
+  
+  // Only add missing parameters with defaults if we have some real data
+  const hasRealData = Object.values(fullConfig).some(category => 
+    Object.keys(category).length > 0
+  )
+  
+  if (hasRealData) {
+    // Merge with full parameter set but keep existing values
+    const completeConfig = generateFullConfig(deviceConfig)
+    
+    // Preserve actual values over defaults
+    Object.keys(fullConfig).forEach(category => {
+      if (fullConfig[category] && Object.keys(fullConfig[category]).length > 0) {
+        fullConfig[category] = {
+          ...completeConfig[category], // defaults first
+          ...fullConfig[category]      // actual values override
+        }
+      } else {
+        fullConfig[category] = completeConfig[category]
+      }
+    })
+  }
+  
   const preset = {
     name: presetName,
     description,
     timestamp: new Date().toISOString(),
     version: '0.5.6',
-    config: {
-      power: { ...deviceConfig.power },
-      motor: { ...deviceConfig.motor },
-      encoder: { ...deviceConfig.encoder },
-      control: { ...deviceConfig.control },
-      interface: { ...deviceConfig.interface }
-    }
+    config: fullConfig
   }
 
   // Get existing presets from localStorage
@@ -347,151 +375,6 @@ export const validatePresetConfig = (config) => {
 }
 
 /**
- * Factory presets for common motor configurations
- * These are built-in presets that users can access
- */
-export const FACTORY_PRESETS = {
-  'High Current Motor - D6374 150KV': {
-    name: 'High Current Motor - D6374 150KV',
-    description: 'Preset for D6374 high current motor with 150KV rating',
-    timestamp: '2024-01-01T00:00:00.000Z',
-    version: '0.5.6',
-    isFactory: true,
-    config: {
-      power: {
-        dc_bus_overvoltage_trip_level: 56.0,
-        dc_bus_undervoltage_trip_level: 10.0,
-        dc_max_positive_current: 10.0,
-        dc_max_negative_current: -10.0,
-        brake_resistance: 2.0,
-        brake_resistor_enabled: true
-      },
-      motor: {
-        motor_type: 0, // HIGH_CURRENT
-        pole_pairs: 7,
-        motor_kv: 150,
-        current_lim: 40.0,
-        calibration_current: 10.0,
-        resistance_calib_max_voltage: 12.0,
-        lock_in_spin_current: 10.0,
-        phase_resistance: 0.0,
-        phase_inductance: 0.0
-      },
-      encoder: {
-        encoder_type: 1, // INCREMENTAL
-        cpr: 4000,
-        bandwidth: 1000,
-        use_index: false,
-        calib_range: 0.02,
-        calib_scan_distance: 16384,
-        calib_scan_omega: 12.566
-      },
-      control: {
-        control_mode: 3, // POSITION_CONTROL
-        input_mode: 1, // PASSTHROUGH
-        vel_limit: 10.0,
-        pos_gain: 1.0,
-        vel_gain: 0.1,
-        vel_integrator_gain: 0.01,
-        vel_limit_tolerance: 1.2,
-        vel_ramp_rate: 10.0,
-        torque_ramp_rate: 0.01,
-        circular_setpoints: false,
-        inertia: 0.0,
-        input_filter_bandwidth: 2.0
-      },
-      interface: {
-        can_node_id: 0,
-        can_node_id_extended: false,
-        can_baudrate: 250000,
-        can_heartbeat_rate_ms: 100,
-        enable_can: false,
-        uart_baudrate: 115200,
-        enable_uart: false,
-        gpio1_mode: 0,
-        gpio2_mode: 0,
-        gpio3_mode: 0,
-        gpio4_mode: 0,
-        enable_watchdog: false,
-        watchdog_timeout: 0.0,
-        enable_step_dir: false,
-        step_dir_always_on: false,
-        enable_sensorless: false
-      }
-    }
-  },
-  'Gimbal Motor - GBM2804 100KV': {
-    name: 'Gimbal Motor - GBM2804 100KV',
-    description: 'Preset for GBM2804 gimbal motor with 100KV rating',
-    timestamp: '2024-01-01T00:00:00.000Z',
-    version: '0.5.6',
-    isFactory: true,
-    config: {
-      power: {
-        dc_bus_overvoltage_trip_level: 56.0,
-        dc_bus_undervoltage_trip_level: 10.0,
-        dc_max_positive_current: 10.0,
-        dc_max_negative_current: -10.0,
-        brake_resistance: 2.0,
-        brake_resistor_enabled: false
-      },
-      motor: {
-        motor_type: 1, // GIMBAL
-        pole_pairs: 7,
-        motor_kv: 100,
-        current_lim: 5.0,
-        calibration_current: 1.0,
-        resistance_calib_max_voltage: 4.0,
-        lock_in_spin_current: 1.0,
-        phase_resistance: 12.0,
-        phase_inductance: 0.0
-      },
-      encoder: {
-        encoder_type: 1, // INCREMENTAL
-        cpr: 4000,
-        bandwidth: 1000,
-        use_index: false,
-        calib_range: 0.02,
-        calib_scan_distance: 16384,
-        calib_scan_omega: 12.566
-      },
-      control: {
-        control_mode: 3, // POSITION_CONTROL
-        input_mode: 1, // PASSTHROUGH
-        vel_limit: 20.0,
-        pos_gain: 1.0,
-        vel_gain: 0.228,
-        vel_integrator_gain: 0.228,
-        vel_limit_tolerance: 1.2,
-        vel_ramp_rate: 10.0,
-        torque_ramp_rate: 0.01,
-        circular_setpoints: false,
-        inertia: 0.0,
-        input_filter_bandwidth: 2.0
-      },
-      interface: {
-        can_node_id: 0,
-        can_node_id_extended: false,
-        can_baudrate: 250000,
-        can_heartbeat_rate_ms: 100,
-        enable_can: false,
-        uart_baudrate: 115200,
-        enable_uart: false,
-        gpio1_mode: 0,
-        gpio2_mode: 0,
-        gpio3_mode: 0,
-        gpio4_mode: 0,
-        enable_watchdog: false,
-        watchdog_timeout: 0.0,
-        enable_step_dir: false,
-        step_dir_always_on: false,
-        enable_sensorless: false
-      }
-    }
-  }
-}
-
-/**
  * Get factory presets combined with user presets
  * @returns {Object} All available presets
  */
@@ -516,4 +399,77 @@ export const isFactoryPreset = (presetName) => {
 export const shouldShowPresets = () => {
   const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development'
   return isDevelopment // Always show in dev mode, regardless of connection
+}
+
+/**
+ * Get statistics about preset parameter coverage
+ * @param {string} presetName - Name of preset to analyze
+ * @returns {Object} Coverage statistics
+ */
+export const getPresetCoverage = (presetName) => {
+  const preset = getPreset(presetName)
+  if (!preset || !preset.config) {
+    return { total: 0, covered: 0, percentage: 0, missing: [] }
+  }
+
+  const categories = odriveRegistry.getConfigCategories()
+  let totalParams = 0
+  let coveredParams = 0
+  const missing = []
+
+  Object.entries(categories).forEach(([category, parameters]) => {
+    const presetCategory = preset.config[category] || {}
+    
+    parameters.forEach(param => {
+      const metadata = odriveRegistry.getParameterMetadata(category, param.configKey)
+      
+      if (metadata && metadata.writable) {
+        totalParams++
+        if (presetCategory[param.configKey] !== undefined) {
+          coveredParams++
+        } else {
+          missing.push(`${category}.${param.configKey}`)
+        }
+      }
+    })
+  })
+
+  return {
+    total: totalParams,
+    covered: coveredParams,
+    percentage: totalParams > 0 ? Math.round((coveredParams / totalParams) * 100) : 0,
+    missing
+  }
+}
+
+/**
+ * Upgrade an existing preset to include all available parameters
+ * @param {string} presetName - Name of preset to upgrade
+ * @returns {Object} Upgraded preset
+ */
+export const upgradePreset = (presetName) => {
+  const preset = getPreset(presetName)
+  if (!preset) {
+    throw new Error(`Preset "${presetName}" not found`)
+  }
+
+  // Generate full config using existing values as base
+  const upgradedConfig = generateFullConfig(preset.config)
+  
+  const upgradedPreset = {
+    ...preset,
+    config: upgradedConfig,
+    timestamp: new Date().toISOString(),
+    upgraded: true,
+    originalTimestamp: preset.timestamp
+  }
+
+  // Save upgraded preset (only for user presets)
+  if (!isFactoryPreset(presetName)) {
+    const existingPresets = getStoredPresets()
+    existingPresets[presetName] = upgradedPreset
+    localStorage.setItem('odrive_config_presets', JSON.stringify(existingPresets))
+  }
+
+  return upgradedPreset
 }
