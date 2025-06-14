@@ -248,6 +248,11 @@ class ODriveUnifiedRegistry {
       'axis0.config.can.sensorless_error_rate_ms': 'axis0.config.can.sensorless_error_rate_ms',
       'axis0.motor.fet_thermistor.config.temp_limit_lower': 'axis0.motor.fet_thermistor.config.temp_limit_lower',
       'axis0.motor.fet_thermistor.config.temp_limit_upper': 'axis0.motor.fet_thermistor.config.temp_limit_upper',
+      'axis0.config.calibration_lockin.current': 'axis0.config.calibration_lockin.current',
+      'axis0.config.calibration_lockin.ramp_time': 'axis0.config.calibration_lockin.ramp_time',
+      'axis0.config.calibration_lockin.ramp_distance': 'axis0.config.calibration_lockin.ramp_distance',
+      'axis0.config.calibration_lockin.accel': 'axis0.config.calibration_lockin.accel',
+      'axis0.config.calibration_lockin.vel': 'axis0.config.calibration_lockin.vel',
     }
 
     if (specialMappings[path]) {
@@ -287,6 +292,7 @@ class ODriveUnifiedRegistry {
       'enable_brake_resistor': 'brake_resistor_enabled',
       'temp_limit_lower': path.includes('fet_thermistor') ? 'fet_temp_limit_lower' : path.includes('motor_thermistor') ? 'motor_temp_limit_lower' : 'temp_limit_lower',
       'temp_limit_upper': path.includes('fet_thermistor') ? 'fet_temp_limit_upper' : path.includes('motor_thermistor') ? 'motor_temp_limit_upper' : 'temp_limit_upper',
+      'current': path.includes('calibration_lockin') ? 'lock_in_spin_current' : 'current',
     }
     return specialMappings[lastPart] || lastPart
   }
