@@ -326,8 +326,14 @@ export const odrivePropertyTree = {
               ignore_illegal_hall_state: { name: 'Ignore Illegal Hall State', description: 'Ignore illegal Hall sensor states', writable: true, type: 'boolean' },
               sincos_gpio_pin_sin: { name: 'Sin/Cos GPIO Pin Sin', description: 'GPIO pin for sine signal', writable: true, type: 'number' },
               sincos_gpio_pin_cos: { name: 'Sin/Cos GPIO Pin Cos', description: 'GPIO pin for cosine signal', writable: true, type: 'number' },
+              hall_polarity: {
+                name: 'Hall Polarity',
+                description: 'Hall sensor polarity',
+                writable: true,
+                type: 'number'
+              },
               hall_polarity_calibrated: { name: 'Hall Polarity Calibrated', description: 'Hall sensor polarity calibration status', writable: true, type: 'number' },
-              hall_polarity: { name: 'Hall Polarity', description: 'Hall sensor polarity', writable: true, type: 'number' },
+
               direction: { name: 'Direction', description: 'Encoder direction (1 or -1)', writable: true, type: 'number', min: -1, max: 1, step: 2 },
               use_index_offset: { name: 'Use Index Offset', description: 'Use encoder index offset', writable: true, type: 'boolean' },
               index_offset: { name: 'Index Offset', description: 'Encoder index offset', writable: true, type: 'number', decimals: 6 },

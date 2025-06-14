@@ -17,11 +17,12 @@ import {
   SimpleGrid,
   Alert,
   AlertIcon,
-  Divider
+  Divider,
+  IconButton
 } from '@chakra-ui/react'
-import { InfoIcon } from '@chakra-ui/icons'
+import { InfoIcon, RepeatIcon } from '@chakra-ui/icons'
 import ParameterInput from '../buttons/ParameterInput'
-import { configurationMappings } from '../../utils/odriveCommands'
+import { ODrivePropertyMappings as configurationMappings } from '../../utils/odriveRegistry'
 import { EncoderMode} from '../../utils/odriveEnums'
 
 const EncoderConfigStep = ({ 
