@@ -29,7 +29,7 @@ function App() {
   const { isConnected, connectedDevice, odriveState } = useSelector(state => state.device)
   const [activeTab, setActiveTab] = useState(0)
 
-  useDashboardTelemetry(50) // 50 ms
+  useDashboardTelemetry()
 
   return (
     <Box bg="gray.900" minH="100vh" color="white">
