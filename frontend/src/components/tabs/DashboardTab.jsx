@@ -29,7 +29,7 @@ import { getAxisStateName } from '../../utils/odriveEnums'
 import { getErrorDescription, isErrorCritical } from '../../utils/odriveErrors'
 import ErrorTroubleshooting from "../modals/ErrorTroubleshootingModal"
 import '../../styles/DashboardTab.css'
-import { useDashboardTelemetry } from '../../hooks/useDashboardTelemetry'
+import { useDashboardTelemetry } from '../../hooks/useTelemetry'
 import MotorControls from '../MotorControls'
 
 const DashboardTab = ({ isActive = false }) => {
@@ -40,9 +40,8 @@ const DashboardTab = ({ isActive = false }) => {
   
   const { isOpen: isTroubleshootingOpen, onOpen: onTroubleshootingOpen, onClose: onTroubleshootingClose } = useDisclosure()
 
-
   // Move useDashboardTelemetry hook to top level, with isActive parameter
-  useDashboardTelemetry(isActive ? 1 : 2000, isActive)
+  useDashboardTelemetry(isActive ? 1000 : 2000, isActive)
 
   // Check if we should show dashboard content
   const shouldShowDashboard = () => {
@@ -387,11 +386,7 @@ const DashboardTab = ({ isActive = false }) => {
         </Card>
         </SimpleGrid>
 
-        {/* Encoder Data */}
-        
-
         {/* Control Actions */}
-                {/* Control Actions */}
         <Card bg="gray.800" variant="elevated">
           <CardHeader>
             <Heading size="md" color="white">Quick Actions</Heading>

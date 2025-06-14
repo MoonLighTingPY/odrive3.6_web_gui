@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import {
   VStack,
   HStack,
@@ -19,7 +19,7 @@ import {
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
 } from 'recharts'
-import { useChartsTelemetry } from '../../hooks/useChartsTelemetry'
+import { useTelemetry } from '../../hooks/useTelemetry'
 
 const LiveCharts = ({ selectedProperties }) => {
   const [chartData, setChartData] = useState([])
@@ -30,8 +30,8 @@ const LiveCharts = ({ selectedProperties }) => {
     '#EC4899', '#6366F1', '#14B8A6', '#F472B6'
   ]
 
-  const handleChartData = (data) => {
-    if (!data.data) return
+  const handleChartData = useCallback((data) => {
+    if (!data || !data.data) return
     
     const timestamp = data.timestamp
     const sample = { 
@@ -53,17 +53,22 @@ const LiveCharts = ({ selectedProperties }) => {
       const filteredData = newData.filter(d => d.time > cutoffTime)
       return filteredData.length > 1000 ? filteredData.slice(-1000) : filteredData
     })
-  }
+  }, [chartData])
 
-  // Use the new charts telemetry hook
-  useChartsTelemetry(selectedProperties, handleChartData, 1)
+  // Use the unified telemetry system for charts
+  useTelemetry({
+    chartPaths: selectedProperties,
+    onChartData: handleChartData,
+    chartUpdateRate: 100,
+    isActive: selectedProperties.length > 0
+  })
 
   // Only clear data when ALL properties are removed (not when adding new ones)
   useEffect(() => {
     if (selectedProperties.length === 0) {
       setChartData([])
     }
-  }, [selectedProperties.length])  // Changed dependency to only length
+  }, [selectedProperties.length])
 
   const getPropertyDisplayName = (property) => {
     return property.split('.').pop()

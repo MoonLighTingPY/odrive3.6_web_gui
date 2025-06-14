@@ -21,71 +21,114 @@ def init_routes(manager):
     global odrive_manager
     odrive_manager = manager
 
-@telemetry_bp.route('/dashboard', methods=['GET'])
-def get_dashboard_telemetry():
-    """Simplified telemetry for dashboard and device list"""
+@telemetry_bp.route('/telemetry', methods=['POST'])
+def get_telemetry():
+    """Unified telemetry endpoint for both dashboard and charts"""
     try:
         if not odrive_manager.is_connected():
             return jsonify({"error": "No ODrive connected"}), 404
         
-        # Use thread-safe access for dashboard data
-        def _get_dashboard_data():
-            # Quick health check
-            vbus = odrive_manager.safe_get_property('vbus_voltage')
-            if vbus <= 0:
-                odrive_manager.connection_lost = True
-                raise Exception("Device disconnected")
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No request data"}), 400
             
-            return {
-                'device': {
-                    'vbus_voltage': vbus,
-                    'ibus': odrive_manager.safe_get_property('ibus') or 0,
-                    'hw_version_major': odrive_manager.safe_get_property('hw_version_major'),
-                    'hw_version_minor': odrive_manager.safe_get_property('hw_version_minor'),
-                    'fw_version_major': odrive_manager.safe_get_property('fw_version_major'),
-                    'fw_version_minor': odrive_manager.safe_get_property('fw_version_minor'),
-                    'serial_number': odrive_manager.safe_get_property('serial_number'),
-                    'axis0': {
-                        'current_state': odrive_manager.safe_get_property('axis0.current_state'),
-                        'error': odrive_manager.safe_get_property('axis0.error'),
-                        'motor': {
-                            'error': odrive_manager.safe_get_property('axis0.motor.error'),
-                            'is_calibrated': odrive_manager.safe_get_property('axis0.motor.is_calibrated'),
-                            'current_control': {
-                                'Iq_measured': odrive_manager.safe_get_property('axis0.motor.current_control.Iq_measured'),
-                            },
-                            # Add thermistor temperature readings for ODrive v0.5.6
-                            'motor_thermistor': {
-                                'temperature': odrive_manager.safe_get_property('axis0.motor.motor_thermistor.temperature'),
-                            },
-                            'fet_thermistor': {
-                                'temperature': odrive_manager.safe_get_property('axis0.motor.fet_thermistor.temperature'),
-                            }
-                        },
-                        'encoder': {
-                            'error': odrive_manager.safe_get_property('axis0.encoder.error'),
-                            'pos_estimate': odrive_manager.safe_get_property('axis0.encoder.pos_estimate'),
-                            'vel_estimate': odrive_manager.safe_get_property('axis0.encoder.vel_estimate'),
-                            'is_ready': odrive_manager.safe_get_property('axis0.encoder.is_ready'),
-                        },
-                        'controller': {
-                            'error': odrive_manager.safe_get_property('axis0.controller.error'),
-                            'pos_setpoint': odrive_manager.safe_get_property('axis0.controller.pos_setpoint'),
-                            'vel_setpoint': odrive_manager.safe_get_property('axis0.controller.vel_setpoint'),
-                            'torque_setpoint': odrive_manager.safe_get_property('axis0.controller.torque_setpoint') or 0,
-                        }
-                    }
-                },
-                'timestamp': time.time() * 1000
-            }
+        dashboard_paths = data.get('dashboard_paths', [])
+        chart_paths = data.get('chart_paths', [])
+        request_type = data.get('type', 'unified')  # 'dashboard', 'charts', or 'unified'
         
-        data = _get_dashboard_data()
-        return jsonify(sanitize_for_json(data))
+        result = {
+            'timestamp': time.time() * 1000
+        }
+        
+        # Collect all unique paths
+        all_paths = []
+        if dashboard_paths:
+            all_paths.extend(dashboard_paths)
+        if chart_paths:
+            all_paths.extend(chart_paths)
+        
+        # Remove duplicates while preserving order
+        unique_paths = []
+        seen = set()
+        for path in all_paths:
+            if path not in seen:
+                unique_paths.append(path)
+                seen.add(path)
+        
+        if not unique_paths:
+            return jsonify({"error": "No paths specified"}), 400
+        
+        # Get all data in one optimized sweep
+        telemetry_data = _get_telemetry_data(unique_paths, is_charts_priority=bool(chart_paths))
+        
+        # Split data based on request
+        if dashboard_paths:
+            dashboard_data = {path: telemetry_data.get(path) for path in dashboard_paths if path in telemetry_data}
+            result['dashboard'] = dashboard_data
+        
+        if chart_paths:
+            chart_data = {path: telemetry_data.get(path) for path in chart_paths if path in telemetry_data}
+            result['charts'] = chart_data
+        
+        return jsonify(sanitize_for_json(result))
         
     except Exception as e:
-        logger.error(f"Error getting dashboard telemetry: {e}")
+        logger.error(f"Error in unified telemetry: {e}")
         odrive_manager.connection_lost = True
         return jsonify({"error": str(e)}), 500
+
+def _get_telemetry_data(paths, is_charts_priority=False):
+    """Get telemetry data for specified paths with optional timeout for charts"""
+    local_result = {}
+    start_time = time.time()
+    
+    # Set timeout based on priority - charts need to be fast
+    max_time = 0.1 if is_charts_priority else 0.5  # 100ms for charts, 500ms for dashboard
+    
+    for path in paths:
+        # Hard timeout check for charts priority
+        if is_charts_priority and time.time() - start_time > max_time:
+            logger.debug(f"Telemetry hard timeout after {len(local_result)} properties")
+            break
+            
+        try:
+            # Handle system properties mapping
+            actual_path = _map_property_path(path)
+            
+            # Use the fastest possible property access
+            value = odrive_manager.safe_get_property(actual_path)
+            if value is not None:
+                # Convert to appropriate type
+                if isinstance(value, (int, float)):
+                    local_result[path] = float(value)
+                elif isinstance(value, bool):
+                    local_result[path] = float(value) if is_charts_priority else value
+                else:
+                    local_result[path] = value
+                    
+        except Exception:
+            # Silent fail for speed - don't log in tight loop for charts
+            if not is_charts_priority:
+                logger.debug(f"Error getting {path}")
+            continue
+            
+    return local_result
+
+def _map_property_path(path):
+    """Map frontend path to actual ODrive property path"""
+    # Handle system properties
+    if path.startswith('system.'):
+        prop = path.replace('system.', '')
+        if prop in [
+            'dc_bus_overvoltage_trip_level', 'dc_bus_undervoltage_trip_level', 
+            'dc_max_positive_current', 'dc_max_negative_current', 
+            'enable_brake_resistor', 'brake_resistance'
+        ]:
+            return f'config.{prop}'
+        else:
+            return prop
+    else:
+        return path
 
 @telemetry_bp.route('/property', methods=['POST'])
 def get_single_property():
