@@ -412,11 +412,11 @@ export const odrivePropertyTree = {
                 description: 'Anticogging compensation parameters',
                 properties: {
                   index: { name: 'Anticogging Index', description: 'Current anticogging table index', writable: false, type: 'number' },
-                  pre_calibrated: { name: 'Pre-calibrated', description: 'Anticogging table pre-calibrated', writable: true, type: 'boolean' },
+                  pre_calibrated: { name: 'Anticogging Pre-calibrated', description: 'Anticogging table pre-calibrated', writable: true, type: 'boolean' },
                   anticogging_enabled: { name: 'Anticogging Enabled', description: 'Enable anticogging compensation', writable: true, type: 'boolean' },
-                  calib_anticogging: { name: 'Calibrate Anticogging', description: 'Start anticogging calibration', writable: true, type: 'boolean' },
-                  calib_pos_threshold: { name: 'Calibration Position Threshold', description: 'Position threshold for anticogging calibration', writable: true, type: 'number', decimals: 6, hasSlider: true },
-                  calib_vel_threshold: { name: 'Calibration Velocity Threshold', description: 'Velocity threshold for anticogging calibration', writable: true, type: 'number', decimals: 3, hasSlider: true },
+                  calib_anticogging: { name: 'Calibrate Anticogging', description: 'Start anticogging calibration', writable: false, type: 'boolean' },
+                  calib_pos_threshold: { name: 'Calib Position Threshold', description: 'Position threshold for anticogging calibration', writable: true, type: 'number', decimals: 6, hasSlider: true },
+                  calib_vel_threshold: { name: 'Calib Velocity Threshold', description: 'Velocity threshold for anticogging calibration', writable: true, type: 'number', decimals: 3, hasSlider: true },
                 }
               }
             }
