@@ -134,12 +134,23 @@ class ODriveUnifiedRegistry {
               return
             }
             
-            // Handle boolean values
-            if (param.property.type === 'boolean') {
-              commands.push(`odrv0.${param.odriveCommand} = ${value ? 'True' : 'False'}`)
-            } else {
-              commands.push(`odrv0.${param.odriveCommand} = ${value}`)
+            // Handle special values
+            let commandValue = value
+            
+            // Handle 'inf' values for torque_lim - use a very large number instead
+            if (param.configKey === 'torque_lim' && (value === 'inf' || value === Infinity || value === 'float("inf")')) {
+              commandValue = 1000000  // Use a very large number instead of infinity
             }
+            // Handle boolean values
+            else if (param.property.type === 'boolean') {
+              commandValue = value ? 'True' : 'False'
+            }
+            // Handle motor_kv to torque_constant conversion
+            else if (param.configKey === 'motor_kv' && param.path.includes('torque_constant')) {
+              commandValue = 8.27 / value  // Convert KV to torque constant
+            }
+            
+            commands.push(`odrv0.${param.odriveCommand} = ${commandValue}`)
           }
         })
         return commands
@@ -156,17 +167,28 @@ class ODriveUnifiedRegistry {
         path.includes('motor_thermistor') ||
         path.includes('calibration_lockin') ||
         path.includes('general_lockin') ||
-        path.includes('sensorless_ramp')) {
+        path.includes('sensorless_ramp') ||
+        path.includes('phase_inductance') ||
+        path.includes('phase_resistance') ||
+        path.includes('torque_lim') ||
+        path.includes('torque_constant')) {
       return 'motor'
     }
     
-    if (path.includes('encoder.config')) {
+    if (path.includes('encoder.config') ||
+        path.includes('enable_phase_interpolation') ||
+        path.includes('ignore_illegal_hall_state') ||
+        path.includes('hall_polarity')) {
       return 'encoder'
     }
     
     if (path.includes('controller.config') || 
         path.includes('trap_traj.config') ||
-        path.includes('autotuning.')) {
+        path.includes('autotuning.') ||
+        path.includes('enable_overspeed_error') ||
+        path.includes('spinout_') ||
+        path.includes('anticogging.calib_pos_threshold') ||
+        path.includes('anticogging.calib_vel_threshold')) {
       return 'control'
     }
     
@@ -183,7 +205,12 @@ class ODriveUnifiedRegistry {
         path.includes('mechanical_brake.config') ||
         path.includes('sensorless_estimator.config') ||
         path.includes('enable_can_') ||
-        path.includes('enable_i2c_')) {
+        path.includes('enable_i2c_') ||
+        path.includes('error_gpio_pin') ||
+        path.includes('encoder_error_rate_ms') ||
+        path.includes('controller_error_rate_ms') ||
+        path.includes('motor_error_rate_ms') ||
+        path.includes('sensorless_error_rate_ms')) {
       return 'interface'
     }
     
@@ -234,14 +261,41 @@ class ODriveUnifiedRegistry {
     
     // Handle special mappings for UI consistency
     const specialMappings = {
+      // Encoder mappings
       'mode': path.includes('encoder') ? 'encoder_type' : 'mode',
+      'enable_phase_interpolation': 'enable_phase_interpolation',
+      'ignore_illegal_hall_state': 'ignore_illegal_hall_state',
+      'hall_polarity': 'hall_polarity',
+      'pre_calibrated': path.includes('encoder') ? 'pre_calibrated' : 
+                        path.includes('motor') ? 'motor_pre_calibrated' : 'pre_calibrated',
+      
+      // Motor mappings
+      'torque_constant': 'motor_kv', // This will be converted in the UI
+      'torque_lim': 'torque_lim',
+      'phase_inductance': 'phase_inductance',
+      'phase_resistance': 'phase_resistance',
+      
+      // Power mappings
       'enable_brake_resistor': 'brake_resistor_enabled',
-      'torque_constant': 'motor_kv',
+      
+      // Interface mappings
       'current': path.includes('calibration_lockin') ? 'lock_in_spin_current' : 'current',
       'node_id': 'can_node_id',
       'is_extended': 'can_node_id_extended',
       'baud_rate': 'can_baudrate',
       'enable_sensorless_mode': 'enable_sensorless',
+      'error_gpio_pin': 'error_gpio_pin',
+      'encoder_error_rate_ms': 'encoder_error_rate_ms',
+      'controller_error_rate_ms': 'controller_error_rate_ms',
+      'motor_error_rate_ms': 'motor_error_rate_ms',
+      'sensorless_error_rate_ms': 'sensorless_error_rate_ms',
+      
+      // Control mappings
+      'enable_overspeed_error': 'enable_overspeed_error',
+      'spinout_electrical_power_threshold': 'spinout_electrical_power_threshold',
+      'spinout_mechanical_power_threshold': 'spinout_mechanical_power_threshold',
+      'calib_pos_threshold': 'calib_pos_threshold',
+      'calib_vel_threshold': 'calib_vel_threshold',
       
       // Thermistor mappings
       'temp_limit_lower': path.includes('fet_thermistor') ? 'fet_temp_limit_lower' : 

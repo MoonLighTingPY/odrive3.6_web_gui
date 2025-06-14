@@ -63,7 +63,7 @@ const DebugConfigStep = () => {
       resistance_calib_max_voltage: 4.0,
       current_lim: 10.0,
       current_lim_margin: 8.0,
-      torque_lim: 'inf',
+      torque_lim: 1000000,  // Use large number instead of 'inf'
       accel: 200,
       motor_thermistor_enabled: true,
       motor_temp_limit_lower: 100,
@@ -119,7 +119,7 @@ const DebugConfigStep = () => {
       resistance_calib_max_voltage: 2.0,
       current_lim: 15.0,
       current_lim_margin: 12.0,
-      torque_lim: 'inf',
+      torque_lim: 1000000,  // Use large number instead of 'inf'
       accel: 300,
       motor_thermistor_enabled: false,
       motor_temp_limit_lower: 80,
@@ -337,8 +337,9 @@ const DebugConfigStep = () => {
           const test2ExpectedVal = test2Expected[category] ? test2Expected[category][key] : undefined
           const test2ActualVal = test2Actual[category] ? test2Actual[category][key] : undefined
 
-          const test1Works = test1ExpectedVal === undefined || Math.abs(test1ExpectedVal - test1ActualVal) < 0.001
-          const test2Works = test2ExpectedVal === undefined || Math.abs(test2ExpectedVal - test2ActualVal) < 0.001
+          // Special comparison logic
+          const test1Works = compareValues(test1ExpectedVal, test1ActualVal, param)
+          const test2Works = compareValues(test2ExpectedVal, test2ActualVal, param)
 
           if (test1Works && test2Works) {
             categoryAnalysis.workingParams++
@@ -378,6 +379,36 @@ const DebugConfigStep = () => {
     })
 
     return analysis
+  }
+
+  // Helper function for value comparison
+  const compareValues = (expected, actual, param) => {
+    if (expected === undefined) return true
+    
+    // Handle special cases
+    if (param.configKey === 'torque_lim') {
+      // Handle large number representations of infinity
+      if (expected >= 1000000 && actual >= 1000000) {
+        return true
+      }
+      // Handle 'inf' string values
+      if ((expected === 'inf' || expected === Infinity) && actual >= 1000000) {
+        return true
+      }
+    }
+    
+    if (param.configKey === 'motor_kv') {
+      // Handle torque constant to KV conversion
+      const expectedTorqueConstant = 8.27 / expected
+      return Math.abs(expectedTorqueConstant - actual) < 0.001
+    }
+    
+    // Standard comparison
+    if (typeof expected === 'number' && typeof actual === 'number') {
+      return Math.abs(expected - actual) < 0.001
+    }
+    
+    return expected === actual
   }
 
   const renderAnalysis = () => {
