@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { updateOdriveState, setConnectionLost } from '../store/slices/deviceSlice'
 
-export const useDashboardTelemetry = (updateRate = 2000, isActive = true) => {
+export const useDashboardTelemetry = (updateRate = 50) => {
   const { isConnected } = useSelector(state => state.device)
   const dispatch = useDispatch()
 
@@ -35,5 +35,5 @@ export const useDashboardTelemetry = (updateRate = 2000, isActive = true) => {
     return () => {
       clearInterval(interval)
     }
-  }, [isConnected, dispatch, updateRate, isActive]) // Keep isActive in dependencies so it restarts with new rate
+  }, [isConnected, dispatch, updateRate]) // Keep isActive in dependencies so it restarts with new rate
 }

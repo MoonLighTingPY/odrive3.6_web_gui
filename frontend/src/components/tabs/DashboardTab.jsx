@@ -29,10 +29,10 @@ import { getAxisStateName } from '../../utils/odriveEnums'
 import { getErrorDescription, isErrorCritical } from '../../utils/odriveErrors'
 import ErrorTroubleshooting from "../modals/ErrorTroubleshootingModal"
 import '../../styles/DashboardTab.css'
-import { useDashboardTelemetry } from '../../hooks/useDashboardTelemetry'
+
 import MotorControls from '../MotorControls'
 
-const DashboardTab = ({ isActive = false }) => {
+const DashboardTab = () => {
   
   // Remove duplicate declarations - only use Redux state
   const { odriveState, isConnected, connectedDevice } = useSelector(state => state.device)
@@ -41,8 +41,6 @@ const DashboardTab = ({ isActive = false }) => {
   const { isOpen: isTroubleshootingOpen, onOpen: onTroubleshootingOpen, onClose: onTroubleshootingClose } = useDisclosure()
 
 
-  // Move useDashboardTelemetry hook to top level, with isActive parameter
-  useDashboardTelemetry(isActive ? 1 : 2000, isActive)
 
   // Check if we should show dashboard content
   const shouldShowDashboard = () => {
