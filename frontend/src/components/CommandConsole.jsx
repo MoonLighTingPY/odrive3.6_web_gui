@@ -18,7 +18,7 @@ import {
   SimpleGrid,
 } from '@chakra-ui/react'
 import { Send, Clock, AlertCircle, CheckCircle, Copy, Trash2 } from 'lucide-react'
-import { odriveCommands } from '../utils/odriveCommands'
+import { ODriveCommands as odriveCommands } from '../utils/odriveUnifiedRegistry'
 
 const CommandConsole = ({ isConnected }) => {
   const toast = useToast()

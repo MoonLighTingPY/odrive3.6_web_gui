@@ -15,11 +15,13 @@ class ODriveUnifiedRegistry {
     this.batchPaths = this._generateBatchPaths()
     this.propertyMappings = this._generatePropertyMappings()
     this.commandGenerators = this._generateCommandGenerators()
+    this.commands = this._generateCommands() // Add this line
     
     console.log('ODrive Unified Registry initialized:', {
       categories: Object.keys(this.configCategories),
       totalParams: Object.values(this.configCategories).reduce((sum, params) => sum + params.length, 0),
-      batchPathsCount: this.batchPaths.length
+      batchPathsCount: this.batchPaths.length,
+      commandsCount: Object.values(this.commands).reduce((sum, cmds) => sum + cmds.length, 0) // Add this
     })
   }
 
@@ -135,6 +137,185 @@ class ODriveUnifiedRegistry {
     })
     
     return generators
+  }
+
+  _generateCommands() {
+    const commands = {
+      system: [],
+      power: [],
+      motor: [],
+      encoder: [],
+      controller: [],
+      calibration: [],
+      gpio_interface: [],
+      can_config: []
+    }
+
+    // Generate read commands for all properties (both readable and writable)
+    this._traversePropertyTree((path, property) => {
+      const category = this._inferCommandCategory(path, property)
+      if (category && commands[category]) {  // Add safety check here
+        const odriveCommand = this._pathToODriveCommand(path)
+        
+        // Read command
+        commands[category].push({
+          name: `Get ${property.name}`,
+          command: `odrv0.${odriveCommand}`,
+          description: `Read ${property.description}`
+        })
+        
+        // Write command for writable properties
+        if (property.writable) {
+          let exampleValue = this._getExampleValue(property)
+          commands[category].push({
+            name: `Set ${property.name}`,
+            command: `odrv0.${odriveCommand} = ${exampleValue}`,
+            description: `Set ${property.description}`
+          })
+        }
+      } else if (category) {
+        // Debug: log unmapped categories
+        console.warn(`Unmapped command category: ${category} for path: ${path}`)
+      }
+    })
+
+    // Add special commands that don't directly map to properties
+    this._addSpecialCommands(commands)
+    
+    return commands
+  }
+
+  // eslint-disable-next-line no-unused-vars
+  _inferCommandCategory(path, property) {
+    // System-level properties
+    if (path.startsWith('system.') || 
+        path.includes('hw_version') || 
+        path.includes('fw_version') || 
+        path.includes('serial_number') ||
+        path.includes('vbus_voltage') ||
+        path.includes('ibus')) {
+      return 'system'
+    }
+    
+    // Use existing category inference but map to command categories
+    const configCategory = this._inferCategory(path)
+    if (configCategory) {
+      // Map config categories to command categories
+      const categoryMapping = {
+        'power': 'power',
+        'motor': 'motor', 
+        'encoder': 'encoder',
+        'control': 'controller',  // This is the key fix
+        'interface': 'gpio_interface'
+      }
+      return categoryMapping[configCategory] || configCategory
+    }
+    
+    // Motor status and control
+    if (path.includes('motor.') && !path.includes('config')) {
+      return 'motor'
+    }
+    
+    // Encoder status
+    if (path.includes('encoder.') && !path.includes('config')) {
+      return 'encoder'
+    }
+    
+    // Controller status and inputs
+    if (path.includes('controller.') && !path.includes('config')) {
+      return 'controller'
+    }
+    
+    // Calibration-related
+    if (path.includes('calibration') || 
+        path.includes('requested_state') ||
+        path.includes('is_calibrated')) {
+      return 'calibration'
+    }
+    
+    // CAN-specific
+    if (path.includes('can.')) {
+      return 'can_config'
+    }
+    
+    // GPIO and interface
+    if (path.includes('gpio') || 
+        path.includes('uart') || 
+        path.includes('step_dir') ||
+        path.includes('endstop') ||
+        path.includes('mechanical_brake')) {
+      return 'gpio_interface'
+    }
+    
+    return null
+  }
+
+  _getExampleValue(property) {
+    switch (property.type) {
+      case 'boolean':
+        return 'True'
+      case 'number':
+        if (property.min !== undefined) {
+          return property.min
+        }
+        if (property.max !== undefined && property.max < 100) {
+          return Math.round(property.max / 2)
+        }
+        return property.step || 1
+      default:
+        return '0'
+    }
+  }
+
+  _addSpecialCommands(commands) {
+    // Add system commands that don't map directly to properties
+    commands.system.push(
+      { name: "Reboot Device", command: "odrv0.reboot()", description: "Reboot the ODrive device" },
+      { name: "Save Configuration", command: "odrv0.save_configuration()", description: "Save current configuration to non-volatile memory" },
+      { name: "Erase Configuration", command: "odrv0.erase_configuration()", description: "Erase configuration and restore factory defaults" },
+      { name: "Clear Errors", command: "odrv0.clear_errors()", description: "Clear all error flags on the device" }
+    )
+    
+    // Add calibration state commands
+    commands.calibration.push(
+      { name: "Set Axis State - Idle", command: "odrv0.axis0.requested_state = 1", description: "Set axis to idle state" },
+      { name: "Set Axis State - Full Calibration", command: "odrv0.axis0.requested_state = 3", description: "Start full calibration sequence" },
+      { name: "Set Axis State - Motor Calibration", command: "odrv0.axis0.requested_state = 4", description: "Start motor calibration only" },
+      { name: "Set Axis State - Encoder Index Search", command: "odrv0.axis0.requested_state = 6", description: "Search for encoder index pulse" },
+      { name: "Set Axis State - Encoder Offset Calibration", command: "odrv0.axis0.requested_state = 7", description: "Calibrate encoder offset" },
+      { name: "Set Axis State - Closed Loop Control", command: "odrv0.axis0.requested_state = 8", description: "Enter closed loop control mode" },
+      { name: "Set Axis State - Encoder Dir Find", command: "odrv0.axis0.requested_state = 10", description: "Start encoder direction finding" }
+    )
+  }
+
+  _generatePropertyCategories() {
+    const categories = { power: [], motor: [], encoder: [], control: [], interface: [] }
+    
+    this._traversePropertyTree((path, property) => {
+      if (property.writable) {
+        const category = this._inferCategory(path)
+        if (category) {
+          const param = {
+            path,
+            property,
+            odriveCommand: this._pathToODriveCommand(path),
+            configKey: this._pathToConfigKey(path),
+            name: property.name,
+            description: property.description,
+            type: property.type,
+            min: property.min,
+            max: property.max,
+            step: property.step,
+            decimals: property.decimals,
+            hasSlider: property.hasSlider,
+            isSetpoint: property.isSetpoint
+          }
+          categories[category].push(param)
+        }
+      }
+    })
+    
+    return categories
   }
 
   _inferCategory(path) {
@@ -409,6 +590,10 @@ class ODriveUnifiedRegistry {
       sampleBatchPaths: this.batchPaths.slice(0, 10)
     }
   }
+
+  getCommands() {
+    return this.commands
+  }
 }
 
 const odriveRegistry = new ODriveUnifiedRegistry()
@@ -423,6 +608,11 @@ export const getParameterMetadata = (category, configKey) => odriveRegistry.getP
 export const validateConfig = (category, config) => odriveRegistry.validateConfig(category, config)
 export const getDebugInfo = () => odriveRegistry.getDebugInfo()
 
+// Add the missing export that the components expect
+export const ODrivePropertyMappings = odriveRegistry.getPropertyMappings()
+
 export { odriveRegistry }
 export const ODriveUnifiedCommands = odriveRegistry.configCategories
-export const ODriveUnifiedMappings = odriveRegistry.propertyMappingsa
+export const ODriveUnifiedMappings = odriveRegistry.propertyMappings
+
+export const ODriveCommands = odriveRegistry.getCommands()

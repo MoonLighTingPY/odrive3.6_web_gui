@@ -22,7 +22,7 @@ import {
 } from '@chakra-ui/react'
 import { InfoIcon, RepeatIcon } from '@chakra-ui/icons'
 import ParameterInput from '../buttons/ParameterInput'
-import { ODrivePropertyMappings as configurationMappings } from '../../utils/odriveRegistry'
+import { ODrivePropertyMappings as configurationMappings } from '../../utils/odriveUnifiedRegistry'
 import { EncoderMode} from '../../utils/odriveEnums'
 
 const EncoderConfigStep = ({ 
