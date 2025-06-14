@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, memo } from 'react'
 import { useSelector } from 'react-redux'
 import {
   Box,
@@ -32,123 +32,94 @@ import '../../styles/DashboardTab.css'
 
 import MotorControls from '../MotorControls'
 
-const DashboardTab = () => {
+// Memoized components for expensive renders
+const TelemetryDisplay = memo(({ label, value, unit, color = "white" }) => (
+  <Stat textAlign="center">
+    <StatLabel color="gray.300">{label}</StatLabel>
+    <StatNumber color={color} fontSize="2xl">
+      {typeof value === 'number' ? value.toFixed(2) : value} {unit}
+    </StatNumber>
+  </Stat>
+))
+
+const VoltageProgress = memo(({ voltage }) => (
+  <Box w="100%">
+    <HStack justify="space-between" mb={2}>
+      <Text color="gray.300">DC Bus Voltage</Text>
+      <Text fontWeight="bold" color="white">{voltage.toFixed(1)} V</Text>
+    </HStack>
+    <Progress 
+      value={(voltage / 56) * 100} 
+      colorScheme={voltage > 50 ? "red" : voltage > 40 ? "yellow" : "green"}
+      size="sm"
+    />
+  </Box>
+))
+
+const TemperatureDisplay = memo(({ temp, label, maxTemp = 100 }) => (
+  <Box w="100%">
+    <HStack justify="space-between" mb={2}>
+      <Text color="gray.300">{label}</Text>
+      <Text fontWeight="bold" color={temp > 80 ? "red.300" : "white"}>
+        {temp.toFixed(1)} °C
+      </Text>
+    </HStack>
+    <Progress 
+      value={(temp / maxTemp) * 100} 
+      colorScheme={temp > 80 ? "red" : temp > 60 ? "yellow" : "green"}
+      size="sm"
+    />
+  </Box>
+))
+
+const DashboardTab = memo(() => {
+  // Use telemetry slice for high-frequency data
+  const telemetry = useSelector(state => state.telemetry)
+  const { connectedDevice, odriveState } = useSelector(state => state.device) // Removed unused isConnected
   
-  // Remove duplicate declarations - only use Redux state
-  const { odriveState, isConnected, connectedDevice } = useSelector(state => state.device)
   const [selectedError, setSelectedError] = useState({ code: null, type: null })
-  
   const { isOpen: isTroubleshootingOpen, onOpen: onTroubleshootingOpen, onClose: onTroubleshootingClose } = useDisclosure()
 
+  // Use telemetry data for real-time values
+  const {
+    vbus_voltage: vbusVoltage,
+    motor_current: motorCurrent,
+    encoder_pos: encoderPos,
+    encoder_vel: encoderVel,
+    motor_temp: motorTemp,
+    fet_temp: fetTemp,
+    axis_state: axisState,
+    connectionHealth
+  } = telemetry
 
+  // Get axis0 data from odriveState for error checking
+  const axis0Data = odriveState.device?.axis0
 
-  // Check if we should show dashboard content
-  const shouldShowDashboard = () => {
-    const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development'
-    return isDevelopment || isConnected
-  }
-
-  // If we shouldn't show dashboard, show the connection warning
-  if (!shouldShowDashboard()) {
-    return (
-      <Box p={6} bg="gray.900" h="100%">
-        <Alert status="warning" bg="orange.900" borderColor="orange.500">
-          <AlertIcon />
-          Connect to an ODrive device to view dashboard data.
-        </Alert>
-      </Box>
-    )
-  }
-
-  const getAxisData = (odriveState, axisNum = 0) => {
-    // Add safety check for odriveState structure
-    if (!odriveState || !odriveState.device) {
+  // Fallback to device state for other data
+  const getSystemData = (odriveState) => {
+    const device = odriveState.device
+    if (!device) {
       return {
-        state: 0,
-        error: 0,
-        motor: { error: 0, current_phB: 0, current_phC: 0, is_calibrated: false },
-        encoder: { error: 0, pos_estimate: 0, vel_estimate: 0, is_ready: false, index_found: false },
-        controller: { error: 0, pos_setpoint: 0, vel_setpoint: 0, torque_setpoint: 0 }
-      }
-    }
-
-    const axis = odriveState.device[`axis${axisNum}`]
-    if (!axis) {
-      return {
-        state: 0,
-        error: 0,
-        motor: { error: 0, current_phB: 0, current_phC: 0, is_calibrated: false },
-        encoder: { error: 0, pos_estimate: 0, vel_estimate: 0, is_ready: false, index_found: false },
-        controller: { error: 0, pos_setpoint: 0, vel_setpoint: 0, torque_setpoint: 0 }
+        fw_version_major: 0,
+        fw_version_minor: 5,
+        fw_version_revision: 6,
+        hw_version_major: 3,
+        hw_version_minor: 6,
+        serial_number: 'Unknown'
       }
     }
     
     return {
-      state: axis.current_state || 0,
-      error: axis.error || 0,
-      motor: {
-        error: axis.motor?.error || 0,
-        current_phB: axis.motor?.current_meas_phB || 0,
-        current_phC: axis.motor?.current_meas_phC || 0,
-        is_calibrated: axis.motor?.is_calibrated || false
-      },
-      encoder: {
-        error: axis.encoder?.error || 0,
-        pos_estimate: axis.encoder?.pos_estimate || 0,
-        vel_estimate: axis.encoder?.vel_estimate || 0,
-        is_ready: axis.encoder?.is_ready || false,
-        index_found: axis.encoder?.index_found || false
-      },
-      controller: {
-        error: axis.controller?.error || 0,
-        pos_setpoint: axis.controller?.pos_setpoint || 0,
-        vel_setpoint: axis.controller?.vel_setpoint || 0,
-        torque_setpoint: axis.controller?.torque_setpoint || 0
-      }
-    }
-  }
-
-  const getSystemData = (odriveState) => {
-    // Add safety check
-    if (!odriveState || !odriveState.device) {
-      return {
-        vbus_voltage: 0,
-        ibus: 0,
-        hw_version_major: 0,
-        hw_version_minor: 0,
-        fw_version_major: 0,
-        fw_version_minor: 0,
-        serial_number: 'Unknown'
-      }
-    }
-
-    const device = odriveState.device
-    return {
-      vbus_voltage: device.vbus_voltage || 0,
-      ibus: device.ibus || 0,
-      hw_version_major: device.hw_version_major || 0,
-      hw_version_minor: device.hw_version_minor || 0,
       fw_version_major: device.fw_version_major || 0,
-      fw_version_minor: device.fw_version_minor || 0,
+      fw_version_minor: device.fw_version_minor || 5,
+      fw_version_revision: device.fw_version_revision || 6,
+      hw_version_major: device.hw_version_major || 3,
+      hw_version_minor: device.hw_version_minor || 6,
       serial_number: device.serial_number || 'Unknown'
     }
   }
 
-  const axis0Data = getAxisData(odriveState, 0)
   const systemData = getSystemData(odriveState)
-
-  // Add null checks before accessing properties
-  const axisState = axis0Data?.state || 0
-  const motorCurrent = odriveState.device?.axis0?.motor?.current_control?.Iq_measured || 0
-  const encoderPos = odriveState.device?.axis0?.encoder?.pos_estimate || 0
-  const encoderVel = odriveState.device?.axis0?.encoder?.vel_estimate || 0
-  const vbusVoltage = odriveState.device?.vbus_voltage || 0
-  
-
-  // Fix thermistor temperature readings - use correct ODrive v0.5.6 API paths
-  const motorTemp = odriveState.device?.axis0?.motor?.motor_thermistor?.temperature || 0
-  const fetTemp = odriveState.device?.axis0?.motor?.fet_thermistor?.temperature || 0
-
 
   const getStateColor = (state) => {
     if (state === 8) return 'green' // CLOSED_LOOP_CONTROL
@@ -203,10 +174,18 @@ const DashboardTab = () => {
     )
   }
 
-
   return (
     <Box className="dashboard-tab" h="100%" overflow="hidden">
       <VStack spacing={6} align="stretch" h="100%" overflow="auto" p={6}>
+        
+        {/* Connection Health Indicator */}
+        {!connectionHealth && (
+          <Alert status="warning">
+            <AlertIcon />
+            Telemetry connection degraded - some data may be outdated
+          </Alert>
+        )}
+
         {/* Device Info */}
         <Card bg="gray.800" variant="elevated">
           <CardHeader>
@@ -243,7 +222,7 @@ const DashboardTab = () => {
                   {systemData?.serial_number || connectedDevice?.serial || 'Unknown'}
                 </StatNumber>
                 <StatHelpText color="gray.400">
-                  VBus: {systemData?.vbus_voltage?.toFixed(1) || '0.0'} V
+                  VBus: {vbusVoltage.toFixed(1)} V
                 </StatHelpText>
               </Stat>
               <Stat>
@@ -255,7 +234,6 @@ const DashboardTab = () => {
                   {getAxisStateName(axisState)}
                 </StatHelpText>
               </Stat>
-          
             </SimpleGrid>
           </CardBody>
         </Card>
@@ -265,7 +243,7 @@ const DashboardTab = () => {
           axis0Data?.motor?.error || 
           axis0Data?.encoder?.error || 
           axis0Data?.controller?.error ||
-          odriveState.device?.axis0?.sensorless_estimator?.error) && (
+          axis0Data?.sensorless_estimator?.error) && (
           <Card bg="red.900" variant="elevated">
             <CardHeader>
               <HStack>
@@ -279,13 +257,13 @@ const DashboardTab = () => {
                 {renderErrorCard("Motor Error", axis0Data?.motor?.error, 'motor', 'orange')}
                 {renderErrorCard("Encoder Error", axis0Data?.encoder?.error, 'encoder', 'yellow')}
                 {renderErrorCard("Controller Error", axis0Data?.controller?.error, 'controller', 'purple')}
-                {renderErrorCard("Sensorless Error", odriveState.device?.axis0?.sensorless_estimator?.error, 'sensorless', 'blue')}
+                {renderErrorCard("Sensorless Error", axis0Data?.sensorless_estimator?.error, 'sensorless', 'blue')}
               </VStack>
             </CardBody>
           </Card>
         )}
 
-        {/* Power & Thermal */}
+        {/* Power & Thermal - Using Memoized Components */}
         <SimpleGrid columns={{ base: 1, lg: 3 }} spacing={6}>
           <Card bg="gray.800" variant="elevated">
             <CardHeader>
@@ -293,27 +271,14 @@ const DashboardTab = () => {
             </CardHeader>
             <CardBody>
               <VStack spacing={4}>
-                <Box w="100%">
-                  <HStack justify="space-between" mb={2}>
-                    <Text color="gray.300">DC Bus Voltage</Text>
-                    <Text fontWeight="bold" color="white">{vbusVoltage.toFixed(1)} V</Text>
-                  </HStack>
-                  <Progress 
-                    value={(vbusVoltage / 56) * 100} 
-                    colorScheme={vbusVoltage > 50 ? "red" : vbusVoltage > 40 ? "yellow" : "green"}
-                    size="sm"
-                  />
-                </Box>
+                <VoltageProgress voltage={vbusVoltage} />
                 <Divider />
-                <Stat textAlign="center">
-                  <StatLabel color="gray.300">Motor Current</StatLabel>
-                  <StatNumber color={Math.abs(motorCurrent) > 5 ? "red.300" : "odrive.300"} fontSize="2xl">
-                    {motorCurrent.toFixed(2)} A
-                  </StatNumber>
-                  <StatHelpText color="gray.400">
-                    {motorCurrent > 0 ? "Motoring" : motorCurrent < 0 ? "Regenerating" : "Idle"}
-                  </StatHelpText>
-                </Stat>
+                <TelemetryDisplay 
+                  label="Motor Current"
+                  value={motorCurrent}
+                  unit="A"
+                  color={Math.abs(motorCurrent) > 5 ? "red.300" : "odrive.300"}
+                />
               </VStack>
             </CardBody>
           </Card>
@@ -324,72 +289,42 @@ const DashboardTab = () => {
             </CardHeader>
             <CardBody>
               <VStack spacing={4}>
-                <Box w="100%">
-                  <HStack justify="space-between" mb={2}>
-                    <Text color="gray.300">Motor Temperature</Text>
-                    <Text fontWeight="bold" color={motorTemp > 80 ? "red.300" : "white"}>
-                      {motorTemp.toFixed(1)} °C
-                    </Text>
-                  </HStack>
-                  <Progress 
-                    value={(motorTemp / 100) * 100} 
-                    colorScheme={motorTemp > 80 ? "red" : motorTemp > 60 ? "yellow" : "green"}
-                    size="sm"
-                  />
-                </Box>
-                <Box w="100%">
-                  <HStack justify="space-between" mb={2}>
-                    <Text color="gray.300">FET Temperature</Text>
-                    <Text fontWeight="bold" color={fetTemp > 80 ? "red.300" : "white"}>
-                      {fetTemp.toFixed(1)} °C
-                    </Text>
-                  </HStack>
-                  <Progress 
-                    value={(fetTemp / 100) * 100} 
-                    colorScheme={fetTemp > 80 ? "red" : fetTemp > 60 ? "yellow" : "green"}
-                    size="sm"
-                  />
-                </Box>
+                <TemperatureDisplay temp={motorTemp} label="Motor Temperature" />
+                <TemperatureDisplay temp={fetTemp} label="FET Temperature" />
               </VStack>
             </CardBody>
           </Card>
+
           <Card bg="gray.800" variant="elevated">
-          <CardHeader>
-            <Heading size="md" color="white">Encoder Feedback</Heading>
-          </CardHeader>
-          <CardBody>
-            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
-              <Stat textAlign="center">
-                <StatLabel color="gray.300">Position</StatLabel>
-                <StatNumber color="odrive.300" fontSize="2xl">
-                  {encoderPos.toFixed(1)}
-                </StatNumber>
-                <StatHelpText color="gray.400">counts</StatHelpText>
-              </Stat>
-              <Stat textAlign="center">
-                <StatLabel color="gray.300">Velocity</StatLabel>
-                <StatNumber color="odrive.300" fontSize="2xl">
-                  {encoderVel.toFixed(1)}
-                </StatNumber>
-                <StatHelpText color="gray.400">counts/s</StatHelpText>
-              </Stat>
-              <Stat textAlign="center">
-                <StatLabel color="gray.300">Position (turns)</StatLabel>
-                <StatNumber color="odrive.300" fontSize="2xl">
-                  {(encoderPos / (odriveState.axis0?.encoder?.config?.cpr || 4000)).toFixed(3)}
-                </StatNumber>
-                <StatHelpText color="gray.400">revolutions</StatHelpText>
-              </Stat>
-            </SimpleGrid>
-          </CardBody>
-        </Card>
+            <CardHeader>
+              <Heading size="md" color="white">Encoder Feedback</Heading>
+            </CardHeader>
+            <CardBody>
+              <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
+                <TelemetryDisplay 
+                  label="Position"
+                  value={encoderPos}
+                  unit="counts"
+                  color="odrive.300"
+                />
+                <TelemetryDisplay 
+                  label="Velocity"
+                  value={encoderVel}
+                  unit="counts/s"
+                  color="odrive.300"
+                />
+                <TelemetryDisplay 
+                  label="Position (turns)"
+                  value={(encoderPos / 4000)}
+                  unit="rev"
+                  color="odrive.300"
+                />
+              </SimpleGrid>
+            </CardBody>
+          </Card>
         </SimpleGrid>
 
-        {/* Encoder Data */}
-        
-
         {/* Control Actions */}
-                {/* Control Actions */}
         <Card bg="gray.800" variant="elevated">
           <CardHeader>
             <Heading size="md" color="white">Quick Actions</Heading>
@@ -405,7 +340,6 @@ const DashboardTab = () => {
         </Card>
       </VStack>
 
-
       {/* Error Troubleshooting Modal */}
       <ErrorTroubleshooting
         isOpen={isTroubleshootingOpen}
@@ -415,6 +349,8 @@ const DashboardTab = () => {
       />
     </Box>
   )
-}
+})
+
+DashboardTab.displayName = 'DashboardTab'
 
 export default DashboardTab
