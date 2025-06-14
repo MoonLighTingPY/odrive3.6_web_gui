@@ -1,8 +1,9 @@
 import { useEffect, useRef } from 'react'
 
-export const useChartsTelemetry = (properties, onData, updateRate = 100) => {
+export const useChartsTelemetry = (properties, onData) => {
   const intervalRef = useRef(null)
   const lastRequestTime = useRef(0)
+  const updateRate = 1 // milliseconmds
 
   useEffect(() => {
     if (!properties.length) {
