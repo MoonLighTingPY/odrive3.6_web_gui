@@ -55,7 +55,7 @@ const useODriveCommand = () => {
   return { sendCommand }
 }
 
-// Base button component for calibration buttons - REMOVED MODAL
+// Base button component for calibration buttons - FIXED LOGIC
 const CalibrationButtonBase = ({ 
   axisNumber = 0, 
   size = "sm", 
@@ -67,7 +67,11 @@ const CalibrationButtonBase = ({
   const { isConnected, odriveState } = useSelector(state => state.device)
   const { sendCommand } = useODriveCommand()
   
-  const axisState = odriveState.device?.[`axis${axisNumber}`]?.current_state || 0
+  // Use telemetry slice for real-time axis state updates
+  const telemetry = useSelector(state => state.telemetry)
+  
+  // Get axis state from telemetry first (real-time), fallback to odriveState
+  const axisState = telemetry?.axis_state ?? odriveState.device?.[`axis${axisNumber}`]?.current_state ?? 0
   const axisError = odriveState.device?.[`axis${axisNumber}`]?.error || 0
   
   const handleCalibration = () => {
@@ -87,31 +91,44 @@ const CalibrationButtonBase = ({
   
   const isMotorIdle = axisState === 1
   const hasErrors = axisError !== 0
-  const isStatusUnknown = axisState === 0 // AXIS_STATE_UNDEFINED
+  const isAxisCalibrating = axisState >= 2 && axisState <= 7 // Calibration states (2-7)
+  
+
+  
+  // FIXED: Don't disable for UNDEFINED state if connected
+  const isButtonDisabled = !isConnected || hasErrors || isAxisCalibrating || (!isMotorIdle && axisState !== 0)
+  
+  const getButtonTitle = () => {
+    if (!isConnected) return "Not connected to ODrive"
+    if (hasErrors) return "Clear errors before calibration"
+    if (isAxisCalibrating) return "Wait for calibration to complete"
+    if (axisState === 0) return "Waiting for axis to initialize - button will enable when ready"
+    if (!isMotorIdle) return "Motor must be in idle state for calibration"
+    return title
+  }
   
   return (
     <Button
       size={size}
       colorScheme={colorScheme}
       onClick={handleCalibration}
-      isDisabled={!isConnected || !isMotorIdle || hasErrors || isStatusUnknown}
-      title={
-        isStatusUnknown ? "Unknown axis status - check connection" :
-        hasErrors ? "Clear errors before calibration" : 
-        title
-      }
+      isDisabled={isButtonDisabled}
+      title={getButtonTitle()}
     >
       {children}
     </Button>
   )
 }
 
-// Full Calibration button - KEEPS MODAL
 export const CalibrationButton = ({ axisNumber = 0, size = "sm" }) => {
   const { isConnected, odriveState } = useSelector(state => state.device)
   const { isOpen, onOpen, onClose } = useDisclosure()
   
-  const axisState = odriveState.device?.[`axis${axisNumber}`]?.current_state || 0
+  // Use telemetry slice for real-time axis state updates
+  const telemetry = useSelector(state => state.telemetry)
+  
+  // Get axis state from telemetry first (real-time), fallback to odriveState
+  const axisState = telemetry?.axis_state ?? odriveState.device?.[`axis${axisNumber}`]?.current_state ?? 0
   const axisError = odriveState.device?.[`axis${axisNumber}`]?.error || 0
   
   const {
@@ -131,7 +148,19 @@ export const CalibrationButton = ({ axisNumber = 0, size = "sm" }) => {
   
   const isMotorIdle = axisState === 1
   const hasErrors = axisError !== 0
-  const isStatusUnknown = axisState === 0 // AXIS_STATE_UNDEFINED
+  const isAxisCalibrating = axisState >= 2 && axisState <= 7 // Calibration states (2-7)
+  
+  // FIXED: More lenient status checking
+  const isButtonDisabled = !isConnected || hasErrors || isAxisCalibrating || (!isMotorIdle && axisState !== 0)
+  
+  const getButtonTitle = () => {
+    if (!isConnected) return "Not connected to ODrive"
+    if (hasErrors) return "Clear errors before calibration"
+    if (isAxisCalibrating) return "Wait for calibration to complete"
+    if (axisState === 0) return "Waiting for axis to initialize - button will enable when ready"
+    if (!isMotorIdle) return "Motor must be in idle state for calibration"
+    return "Start full calibration sequence (motor + encoder)"
+  }
   
   return (
     <>
@@ -139,12 +168,8 @@ export const CalibrationButton = ({ axisNumber = 0, size = "sm" }) => {
         size={size}
         colorScheme="orange"
         onClick={handleCalibration}
-        isDisabled={!isConnected || !isMotorIdle || hasErrors || isStatusUnknown}
-        title={
-          isStatusUnknown ? "Unknown axis status - check connection" :
-          hasErrors ? "Clear errors before calibration" : 
-          "Start full calibration sequence (motor + encoder)"
-        }
+        isDisabled={isButtonDisabled}
+        title={getButtonTitle()}
       >
         Full Calibration
       </Button>
@@ -182,21 +207,16 @@ export const EnableMotorButton = ({ axisNumber = 0, size = "sm" }) => {
   const isMotorEnabled = axisState === 8 // CLOSED_LOOP_CONTROL
   const hasErrors = axisError !== 0
   const isAxisCalibrating = axisState >= 2 && axisState <= 7 // Calibration states (2-7)
-  const isStatusUnknown = axisState === 0 // AXIS_STATE_UNDEFINED
   
-  // Button should be disabled if:
-  // - Not connected
-  // - Motor is already enabled (closed loop control)
-  // - Has errors
-  // - Currently calibrating
-  // - Status is unknown
-  const isButtonDisabled = !isConnected || isMotorEnabled || hasErrors || isAxisCalibrating || isStatusUnknown
+  // FIXED: Allow UNDEFINED state if connected - don't treat as unknown
+  const isButtonDisabled = !isConnected || isMotorEnabled || hasErrors || isAxisCalibrating
   
   const getButtonTitle = () => {
-    if (isStatusUnknown) return "Unknown axis status - check connection"
+    if (!isConnected) return "Not connected to ODrive"
     if (hasErrors) return "Clear errors before enabling motor"
     if (isAxisCalibrating) return "Wait for calibration to complete"
     if (isMotorEnabled) return "Motor already enabled (in closed loop control)"
+    if (axisState === 0) return "Waiting for axis to initialize - button will enable when ready"
     return "Enable motor (closed loop control)"
   }
   
@@ -227,22 +247,18 @@ export const DisableMotorButton = ({ axisNumber = 0, size = "sm" }) => {
     sendCommand(`odrv0.axis${axisNumber}.requested_state = 1`) // AXIS_STATE_IDLE
   }
   
-  // State checking logic - Remove unused variables
+  // State checking logic
   const isMotorIdle = axisState === 1 // IDLE
   const isAxisCalibrating = axisState >= 2 && axisState <= 7 // Calibration states (2-7)
-  const isStatusUnknown = axisState === 0 // AXIS_STATE_UNDEFINED
   
-  // Button should be disabled if:
-  // - Not connected
-  // - Motor is already idle/disabled
-  // - Currently calibrating
-  // - Status is unknown
-  const isButtonDisabled = !isConnected || isMotorIdle || isAxisCalibrating || isStatusUnknown
+  // FIXED: Allow UNDEFINED state if connected
+  const isButtonDisabled = !isConnected || isMotorIdle || isAxisCalibrating
   
   const getButtonTitle = () => {
-    if (isStatusUnknown) return "Unknown axis status - check connection"
+    if (!isConnected) return "Not connected to ODrive"
     if (isAxisCalibrating) return "Wait for calibration to complete"
     if (isMotorIdle) return "Motor already disabled (idle state)"
+    if (axisState === 0) return "Waiting for axis to initialize - button will enable when ready"
     return "Disable motor (idle state)"
   }
   
