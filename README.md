@@ -27,7 +27,7 @@ A comprehensive, modern web-based GUI for configuring, monitoring, and controlli
 
 The official ODrive GUI only supports newer firmware versions, leaving v0.5.6 users without a modern interface. This project fills that gap with:
 
-- **Native v0.5.6 Support**: Built specifically for ODrive firmware v0.5.6 (v3.6-56V)
+- **Native v0.5.6 Support**: Built specifically for ODrive firmware v0.5.6 (v3.6-##V)
 - **Complete Feature Parity**: All functionality of the official GUI adapted for older firmware
 - **Modern Web Interface**: Responsive React-based UI with real-time updates
 - **Standalone Deployment**: Windows executable requires no Python/Node.js installation
