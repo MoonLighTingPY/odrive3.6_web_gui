@@ -62,7 +62,7 @@ The official ODrive GUI only supports newer firmware versions, leaving v0.5.6 us
 - **System Health**: Error monitoring and diagnostics
 
 ### 🔍 Inspector & Debugging
-- **ASCII Console**: Direct ODrive command interface with autocomplete
+- **Console**: Direct ODrive command interface with autocomplete
 - **Command History**: Persistent command history with search
 - **JSON Property Viewer**: Live device state in structured format
 - **Property Tree**: Navigate and modify all ODrive parameters
