@@ -221,7 +221,7 @@ const PropertyTree = ({
   return (
     <VStack spacing={3} align="stretch" h="100%">
       {/* Compact Search Controls */}
-      <Card bg="gray.800" variant="elevated">
+      <Card bg="gray.800" variant="elevated" flexShrink={0}>
         <CardBody py={2}>
           <HStack spacing={2}>
             <SearchIcon color="gray.400" boxSize={4} />
@@ -251,14 +251,14 @@ const PropertyTree = ({
           <HStack justify="space-between">
             <Heading size="sm" color="white">ODrive Properties</Heading>
             <HStack spacing={1}>
-              <Badge colorScheme="gray" size="sm">
-                {Object.keys(filteredTree).length} sections
+              <Badge colorScheme="green" size="sm">
+                {Object.values(propertyValues).length}/{Object.values(propertyValues).length} loaded
               </Badge>
             </HStack>
           </HStack>
         </CardHeader>
         <CardBody py={2}>
-          <Box maxH="75vh" overflowY="auto">
+          <Box h="100vh" overflowY="auto">
             <VStack spacing={2} align="stretch">
               {Object.entries(filteredTree).map(([sectionName, section]) => {
                 const isCollapsed = collapsedSections.has(sectionName)

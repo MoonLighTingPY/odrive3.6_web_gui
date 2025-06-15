@@ -96,7 +96,7 @@ const InspectorTab = () => {
     <Box h="100vh" overflow="hidden" bg="gray.900">
       <Box h="100%" p={6}>
         {/* Main Content Grid with fixed height */}
-        <Grid templateColumns="1fr 1fr" gap={6} h="100%">
+        <Grid templateColumns="1fr 1.5fr" gap={6} h="100%">
           
           {/* Left Side - Property Tree & Motor Controls */}
           <GridItem display="flex" flexDirection="column" overflow="hidden">
@@ -114,24 +114,24 @@ const InspectorTab = () => {
               />
             </Box>
             
-            {/* Motor Control Buttons - Fixed size at bottom */}
-            <Card bg="gray.800" variant="elevated" flexShrink={0}>
-              <CardHeader py={2}>
-                <Heading size="sm" color="white">Motor Controls</Heading>
-              </CardHeader>
-              <CardBody py={2}>
-                <SimpleGrid columns={2} spacing={2}>
-                  <EnableMotorButton axisNumber={0} size="sm" />
-                  <DisableMotorButton axisNumber={0} size="sm" />
-                  <CalibrationButton axisNumber={0} size="sm" />
-                  <ClearErrorsButton axisNumber={0} size="sm" />
-                </SimpleGrid>
-              </CardBody>
-            </Card>
+            {/* Motor Control Buttons - Fixed at bottom */}
+              <Card bg="gray.800" variant="elevated">
+                <CardHeader py={2}>
+                  <Heading size="sm" color="white">Motor Controls</Heading>
+                </CardHeader>
+                <CardBody py={2}>
+                  <SimpleGrid columns={2} spacing={2}>
+                    <EnableMotorButton axisNumber={0} size="sm" />
+                    <DisableMotorButton axisNumber={0} size="sm" />
+                    <CalibrationButton axisNumber={0} size="sm" />
+                    <ClearErrorsButton axisNumber={0} size="sm" />
+                  </SimpleGrid>
+                </CardBody>
+              </Card>
           </GridItem>
 
           {/* Right Side - Live Charts */}
-          <GridItem overflow="hidden">
+          <GridItem overflow="hidden" h="100%">
             <LiveCharts
               selectedProperties={selectedProperties}
               togglePropertyChart={togglePropertyChart}

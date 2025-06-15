@@ -201,9 +201,6 @@ const LiveCharts = ({ selectedProperties, togglePropertyChart }) => {
                 <Badge colorScheme="blue" variant="outline">
                   {selectedProperties.length} chart{selectedProperties.length !== 1 ? 's' : ''}
                 </Badge>
-                <Badge colorScheme="green" variant="outline">
-                  {chartData.length} data points
-                </Badge>
               </HStack>
             </HStack>
           </CardHeader>
