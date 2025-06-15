@@ -3,7 +3,7 @@
 A comprehensive, modern web-based GUI for configuring, monitoring, and controlling ODrive motor controllers running firmware v0.5.6 (aka v3.6). Built with React frontend and Python Flask backend for maximum compatibility and performance.
 
 [![Latest Release](https://img.shields.io/github/release/MoonLighTingPY/odrive3.6_web_gui.svg?logo=github)](https://github.com/MoonLighTingPY/odrive3.6_web_gui/releases)
-[![ODrive Firmware](https://img.shields.io/badge/ODrive-v0.5.6%20(v3.6--56V)-blue.svg)](https://docs.odriverobotics.com/v/0.5.6/)
+[![ODrive Firmware](https://img.shields.io/badge/ODrive-v3.6%20(v0.5.6)-blue.svg)](https://docs.odriverobotics.com/v/0.5.6/)
 [![Python](https://img.shields.io/badge/Python-3.8.6-green.svg)](https://python.org)
 [![React](https://img.shields.io/badge/React-18+-61DAFB.svg)](https://reactjs.org)
 
@@ -27,7 +27,7 @@ A comprehensive, modern web-based GUI for configuring, monitoring, and controlli
 
 The official ODrive GUI only supports newer firmware versions, leaving v0.5.6 users without a modern interface. This project fills that gap with:
 
-- **Native v0.5.6 Support**: Built specifically for ODrive firmware v0.5.6 (v3.6-56V)
+- **Native v0.5.6 Support**: Built specifically for ODrive firmware v0.5.6 (v3.6-##V)
 - **Complete Feature Parity**: All functionality of the official GUI adapted for older firmware
 - **Modern Web Interface**: Responsive React-based UI with real-time updates
 - **Standalone Deployment**: Windows executable requires no Python/Node.js installation
@@ -56,13 +56,13 @@ The official ODrive GUI only supports newer firmware versions, leaving v0.5.6 us
 - **Preset Management**: Save and load common motor configurations
 
 ### 📊 Real-Time Dashboard
-- **Live Telemetry Plots**: Position, velocity, current, and voltage over time
+- **Live Telemetry**: Position, velocity, current, and voltage stats
 - **Thermal Monitoring**: FET and motor temperature gauges with limits
 - **Power Metrics**: Real-time power consumption and efficiency
-- **System Health**: Comprehensive error monitoring and diagnostics
+- **System Health**: Error monitoring and diagnostics
 
 ### 🔍 Inspector & Debugging
-- **ASCII Console**: Direct ODrive command interface with autocomplete
+- **Console**: Direct ODrive command interface with autocomplete
 - **Command History**: Persistent command history with search
 - **JSON Property Viewer**: Live device state in structured format
 - **Property Tree**: Navigate and modify all ODrive parameters
