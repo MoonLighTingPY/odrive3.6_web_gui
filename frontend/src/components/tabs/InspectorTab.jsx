@@ -83,7 +83,7 @@ const InspectorTab = () => {
 
   if (!shouldShowInspector()) {
     return (
-      <Box p={6} bg="gray.900" h="100%">
+      <Box p={6} bg="gray.900" h="100vh">
         <Alert status="warning" bg="orange.900" borderColor="orange.500">
           <AlertIcon />
           Connect to an ODrive device to view Inspector.
@@ -93,15 +93,15 @@ const InspectorTab = () => {
   }
 
   return (
-    <VStack spacing={6} align="stretch" p={6} h="100%">
-      {/* Main Content Grid */}
-      <Grid templateColumns="1fr 1fr" gap={6} flex="1" h="100%">
-        
-        {/* Left Side - Property Tree & Motor Controls */}
-        <GridItem>
-          <VStack spacing={4} h="100%">
-            {/* Property Tree - Give it more space */}
-            <Box flex="1" minH="0" w="100%">
+    <Box h="100vh" overflow="hidden" bg="gray.900">
+      <Box h="100%" p={6}>
+        {/* Main Content Grid with fixed height */}
+        <Grid templateColumns="1fr 1fr" gap={6} h="100%">
+          
+          {/* Left Side - Property Tree & Motor Controls */}
+          <GridItem display="flex" flexDirection="column" overflow="hidden">
+            {/* Property Tree - Takes most space */}
+            <Box flex="1" minH="0" mb={4}>
               <PropertyTree
                 odriveState={odriveState}
                 searchFilter={searchFilter}
@@ -114,8 +114,8 @@ const InspectorTab = () => {
               />
             </Box>
             
-            {/* Motor Control Buttons - Compact at bottom */}
-            <Card bg="gray.800" variant="elevated" w="100%" flexShrink={0}>
+            {/* Motor Control Buttons - Fixed size at bottom */}
+            <Card bg="gray.800" variant="elevated" flexShrink={0}>
               <CardHeader py={2}>
                 <Heading size="sm" color="white">Motor Controls</Heading>
               </CardHeader>
@@ -128,18 +128,19 @@ const InspectorTab = () => {
                 </SimpleGrid>
               </CardBody>
             </Card>
-          </VStack>
-        </GridItem>
+          </GridItem>
 
-        {/* Right Side - Live Charts */}
-        <GridItem>
-          <LiveCharts
-            selectedProperties={selectedProperties}
-          />
-        </GridItem>
+          {/* Right Side - Live Charts */}
+          <GridItem overflow="hidden">
+            <LiveCharts
+              selectedProperties={selectedProperties}
+              togglePropertyChart={togglePropertyChart}
+            />
+          </GridItem>
 
-      </Grid>
-    </VStack>
+        </Grid>
+      </Box>
+    </Box>
   )
 }
 

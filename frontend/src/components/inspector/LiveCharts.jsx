@@ -9,7 +9,10 @@ import {
   CardHeader,
   Heading,
   Badge,
+  IconButton,
+  Tooltip,
 } from '@chakra-ui/react'
+import { CloseIcon } from '@chakra-ui/icons'
 import {
   LineChart,
   Line,
@@ -21,7 +24,7 @@ import {
 } from 'recharts'
 import { useChartsTelemetry } from '../../hooks/useChartsTelemetry'
 
-const LiveCharts = ({ selectedProperties }) => {
+const LiveCharts = ({ selectedProperties, togglePropertyChart }) => {
   const [chartData, setChartData] = useState([])
   
   const chartColors = [
@@ -63,29 +66,61 @@ const LiveCharts = ({ selectedProperties }) => {
     if (selectedProperties.length === 0) {
       setChartData([])
     }
-  }, [selectedProperties.length])  // Changed dependency to only length
+  }, [selectedProperties.length])
 
   const getPropertyDisplayName = (property) => {
     return property.split('.').pop()
   }
 
+  const handleRemoveChart = (property) => {
+    if (togglePropertyChart) {
+      togglePropertyChart(property)
+    }
+  }
+
   const renderChart = (property, index) => (
-    <Box key={property} p={3} bg="gray.900" borderRadius="md" borderWidth="1px" borderColor="gray.700" h="300px">
+    <Box 
+      key={property} 
+      p={3} 
+      bg="gray.900" 
+      borderRadius="md" 
+      borderWidth="1px" 
+      borderColor="gray.700" 
+      h="280px"
+      flexShrink={0}
+    >
       <VStack spacing={2} align="stretch" h="100%">
         <HStack justify="space-between" flexShrink={0}>
-          <Text 
-            fontSize="sm" 
-            fontWeight="bold" 
-            color={chartColors[index % chartColors.length]}
-          >
-            {getPropertyDisplayName(property)}
-          </Text>
-          <Text fontSize="xs" color="gray.400" fontFamily="mono">
-            {chartData.length > 0 ? chartData[chartData.length - 1][property]?.toFixed(3) || 'N/A' : 'N/A'}
-          </Text>
+          <HStack spacing={2}>
+            <Text 
+              fontSize="sm" 
+              fontWeight="bold" 
+              color={chartColors[index % chartColors.length]}
+            >
+              {getPropertyDisplayName(property)}
+            </Text>
+            <Text fontSize="xs" color="gray.500" fontFamily="mono">
+              {property}
+            </Text>
+          </HStack>
+          <HStack spacing={2}>
+            <Text fontSize="xs" color="gray.400" fontFamily="mono" minW="80px" textAlign="right">
+              {chartData.length > 0 ? chartData[chartData.length - 1][property]?.toFixed(3) || 'N/A' : 'N/A'}
+            </Text>
+            <Tooltip label="Remove from charts" placement="top">
+              <IconButton
+                size="xs"
+                variant="ghost"
+                colorScheme="red"
+                icon={<CloseIcon />}
+                onClick={() => handleRemoveChart(property)}
+                aria-label="Remove chart"
+              />
+            </Tooltip>
+          </HStack>
         </HStack>
         
-        <Box flex="1" minH="250px">
+        <Box flex="1" minH="200px">
           <ResponsiveContainer width="100%" height="100%">
             <LineChart 
               data={chartData} 
@@ -141,44 +176,55 @@ const LiveCharts = ({ selectedProperties }) => {
   )
 
   return (
-    <VStack spacing={4} align="stretch" h="100%">
-      <Box flex="1" minH="0">
-        {selectedProperties.length === 0 ? (
-          <Card bg="gray.800" variant="elevated" h="100%">
-            <CardBody display="flex" alignItems="center" justifyContent="center">
-              <VStack>
-                <Text color="gray.400" fontSize="lg">
-                  Select properties from the tree to start charting
-                </Text>
-                <Text color="gray.500" fontSize="sm" mt={2}>
-                  Click the checkbox next to any property in the Property Tree
-                </Text>
-              </VStack>
-            </CardBody>
-          </Card>
-        ) : (
-          <Card bg="gray.800" variant="elevated" h="100%" display="flex" flexDirection="column">
-            <CardHeader py={3} flexShrink={0}>
-              <HStack justify="space-between">
-                <Heading size="md" color="white">
-                  Live Charts
-                </Heading>
+    <Box h="100%" display="flex" flexDirection="column">
+      {selectedProperties.length === 0 ? (
+        <Card bg="gray.800" variant="elevated" h="100%">
+          <CardBody display="flex" alignItems="center" justifyContent="center">
+            <VStack>
+              <Text color="gray.400" fontSize="lg">
+                Select properties from the tree to start charting
+              </Text>
+              <Text color="gray.500" fontSize="sm" mt={2}>
+                Click the checkbox next to any property in the Property Tree
+              </Text>
+            </VStack>
+          </CardBody>
+        </Card>
+      ) : (
+        <Card bg="gray.800" variant="elevated" h="100%" display="flex" flexDirection="column">
+          <CardHeader py={3} flexShrink={0}>
+            <HStack justify="space-between">
+              <Heading size="md" color="white">
+                Live Charts
+              </Heading>
+              <HStack spacing={2}>
                 <Badge colorScheme="blue" variant="outline">
+                  {selectedProperties.length} chart{selectedProperties.length !== 1 ? 's' : ''}
+                </Badge>
+                <Badge colorScheme="green" variant="outline">
                   {chartData.length} data points
                 </Badge>
               </HStack>
-            </CardHeader>
-            <CardBody flex="1" minH="0" p={4} overflowY="auto">
+            </HStack>
+          </CardHeader>
+          <CardBody flex="1" minH="0" p={0}>
+            <Box 
+              h="100%" 
+              overflowY="auto" 
+              overflowX="hidden"
+              px={4}
+              py={2}
+            >
               <VStack spacing={3} align="stretch">
                 {selectedProperties.map((property, index) => 
                   renderChart(property, index)
                 )}
               </VStack>
-            </CardBody>
-          </Card>
-        )}
-      </Box>
-    </VStack>
+            </Box>
+          </CardBody>
+        </Card>
+      )}
+    </Box>
   )
 }
 

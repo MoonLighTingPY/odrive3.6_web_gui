@@ -258,7 +258,7 @@ const PropertyTree = ({
           </HStack>
         </CardHeader>
         <CardBody py={2}>
-          <Box maxH="70vh" overflowY="auto">
+          <Box maxH="75vh" overflowY="auto">
             <VStack spacing={2} align="stretch">
               {Object.entries(filteredTree).map(([sectionName, section]) => {
                 const isCollapsed = collapsedSections.has(sectionName)
