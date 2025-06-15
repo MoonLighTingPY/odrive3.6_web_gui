@@ -219,7 +219,7 @@ const PropertyTree = ({
   }
 
   return (
-    <Box h="95%" display="flex" flexDirection="column">
+    <Box h="100%" display="flex" flexDirection="column">
       {/* Search Controls - Fixed height */}
       <Card bg="gray.800" variant="elevated" flexShrink={0} mb={3}>
         <CardBody py={2}>

@@ -93,15 +93,15 @@ const InspectorTab = () => {
   }
 
   return (
-    <Box h="100vh" overflow="hidden" bg="gray.900">
-      <Box h="100%" p={6}>
-        {/* Main Content Grid with fixed height */}
-        <Grid templateColumns="1fr 1.5fr" gap={6} h="100%">
+    <Box display="flex" flexDirection="column" flex="1" overflow="hidden" bg="gray.900" height="calc(100vh - 64px)">
+      <Box display="flex" flexDirection="column" flex="1" p={6} minH="0">
+        {/* Main Content Grid */}
+        <Grid templateColumns="1fr 1.5fr" gap={6} flex="1" minH="0">
           
-          {/* Left Side - Property Tree & Motor Controls */}
-<GridItem display="flex" flexDirection="column" overflow="hidden" minH="0">
-  <Box flex="1" overflow="auto" minH="0" mb={4}>
-
+          {/* Left Side – Property Tree & Motor Controls */}
+          <GridItem display="flex" flexDirection="column" flex="1" minH="0">
+            {/* make this box scrollable */}
+            <Box flex="1" minH="0" overflowY="auto">
               <PropertyTree
                 odriveState={odriveState}
                 searchFilter={searchFilter}
@@ -113,34 +113,32 @@ const InspectorTab = () => {
                 refreshTrigger={refreshTrigger}
               />
             </Box>
-            
-            {/* Motor Control Buttons - Fixed at bottom */}
-<Card bg="gray.800" variant="elevated" flexShrink={0}>
 
-                <CardHeader py={2}>
-                  <Heading size="sm" color="white">Motor Controls</Heading>
-                </CardHeader>
-                <CardBody py={2}>
-                  <SimpleGrid columns={2} spacing={2}>
-                    <EnableMotorButton axisNumber={0} size="sm" />
-                    <DisableMotorButton axisNumber={0} size="sm" />
-                    <CalibrationButton axisNumber={0} size="sm" />
-                    <ClearErrorsButton axisNumber={0} size="sm" />
-                  </SimpleGrid>
-                </CardBody>
-              </Card>
+            {/* Motor controls stay fixed */}
+            <Card bg="gray.800" variant="elevated" flexShrink={0} mt={4}>
+              <CardHeader py={2}>
+                <Heading size="sm" color="white">Motor Controls</Heading>
+              </CardHeader>
+              <CardBody py={2}>
+                <SimpleGrid columns={2} spacing={2}>
+                  <EnableMotorButton axisNumber={0} size="sm" />
+                  <DisableMotorButton axisNumber={0} size="sm" />
+                  <CalibrationButton axisNumber={0} size="sm" />
+                  <ClearErrorsButton axisNumber={0} size="sm" />
+                </SimpleGrid>
+              </CardBody>
+            </Card>
           </GridItem>
 
-          {/* Right Side - Live Charts */}
-          <GridItem overflow="hidden" h="100%">
-  <Box h="100%" overflow="auto">
-    <LiveCharts
-      selectedProperties={selectedProperties}
-      togglePropertyChart={togglePropertyChart}
-    />
-  </Box>
-</GridItem>
-
+          {/* Right Side – Live Charts */}
+          <GridItem display="flex" flexDirection="column" flex="1" overflow="hidden" minH="0">
+            <Box flex="1" overflow="auto">
+              <LiveCharts
+                selectedProperties={selectedProperties}
+                togglePropertyChart={togglePropertyChart}
+              />
+            </Box>
+          </GridItem>
         </Grid>
       </Box>
     </Box>
