@@ -192,165 +192,171 @@ const DashboardTab = memo(() => {
   }
 
   return (
-    <Box className="dashboard-tab" h="100%" overflow="hidden">
-      <VStack spacing={6} align="stretch" h="100%" overflow="auto" p={6}>
+    <Box p={4} h="100%" maxW="1400px" mx="auto" overflow="hidden">
+      <VStack spacing={4} align="stretch" h="100%">
         
         {/* Connection Health Indicator */}
         {!connectionHealth && (
-          <Alert status="warning">
+          <Alert status="warning" flexShrink={0}>
             <AlertIcon />
             Telemetry connection degraded - some data may be outdated
           </Alert>
         )}
 
-        {/* Device Info */}
-        <Card bg="gray.800" variant="elevated">
-          <CardHeader>
-            <HStack justify="space-between">
-              <Heading size="md" color="white">Device Status</Heading>
-              <Badge colorScheme={getStateColor(axisState)} variant="solid" fontSize="sm" px={3} py={1}>
-                {getAxisStateName(axisState)}
-              </Badge>
-            </HStack>
-          </CardHeader>
-          <CardBody>
-            <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
-              <Stat>
-                <StatLabel color="gray.300">Device</StatLabel>
-                <StatNumber color="white" fontSize="md">
-                  {connectedDevice?.path || 'ODrive'}
-                </StatNumber>
-                <StatHelpText color="gray.400">
-                  Serial: {connectedDevice?.serial || 'Unknown'}
-                </StatHelpText>
-              </Stat>
-              <Stat>
-                <StatLabel color="gray.300">Firmware</StatLabel>
-                <StatNumber color="white" fontSize="md">
-                  v{systemData?.fw_version_major || 0}.{systemData?.fw_version_minor}.{systemData?.fw_version_revision}
-                </StatNumber>
-                <StatHelpText color="gray.400">
-                  HW: v{systemData?.hw_version_major}.{systemData?.hw_version_minor}
-                </StatHelpText>
-              </Stat>
-              <Stat>
-                <StatLabel color="gray.300">Serial Number</StatLabel>
-                <StatNumber color="white" fontSize="md">
-                  {systemData?.serial_number || connectedDevice?.serial || 'Unknown'}
-                </StatNumber>
-                <StatHelpText color="gray.400">
-                  VBus: {vbusVoltage.toFixed(1)} V
-                </StatHelpText>
-              </Stat>
-              <Stat>
-                <StatLabel color="gray.300">Axis State</StatLabel>
-                <StatNumber color="white" fontSize="md">
-                  {axisState}
-                </StatNumber>
-                <StatHelpText color="gray.400">
-                  {getAxisStateName(axisState)}
-                </StatHelpText>
-              </Stat>
+        {/* Scrollable Content Area */}
+        <Box flex="1" overflow="auto">
+          <VStack spacing={6} align="stretch">
+            
+            {/* Device Info */}
+            <Card bg="gray.800" variant="elevated">
+              <CardHeader>
+                <HStack justify="space-between">
+                  <Heading size="md" color="white">Device Status</Heading>
+                  <Badge colorScheme={getStateColor(axisState)} variant="solid" fontSize="sm" px={3} py={1}>
+                    {getAxisStateName(axisState)}
+                  </Badge>
+                </HStack>
+              </CardHeader>
+              <CardBody>
+                <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
+                  <Stat>
+                    <StatLabel color="gray.300">Device</StatLabel>
+                    <StatNumber color="white" fontSize="md">
+                      {connectedDevice?.path || 'ODrive'}
+                    </StatNumber>
+                    <StatHelpText color="gray.400">
+                      Serial: {connectedDevice?.serial || 'Unknown'}
+                    </StatHelpText>
+                  </Stat>
+                  <Stat>
+                    <StatLabel color="gray.300">Firmware</StatLabel>
+                    <StatNumber color="white" fontSize="md">
+                      v{systemData?.fw_version_major || 0}.{systemData?.fw_version_minor}.{systemData?.fw_version_revision}
+                    </StatNumber>
+                    <StatHelpText color="gray.400">
+                      HW: v{systemData?.hw_version_major}.{systemData?.hw_version_minor}
+                    </StatHelpText>
+                  </Stat>
+                  <Stat>
+                    <StatLabel color="gray.300">Serial Number</StatLabel>
+                    <StatNumber color="white" fontSize="md">
+                      {systemData?.serial_number || connectedDevice?.serial || 'Unknown'}
+                    </StatNumber>
+                    <StatHelpText color="gray.400">
+                      VBus: {vbusVoltage.toFixed(1)} V
+                    </StatHelpText>
+                  </Stat>
+                  <Stat>
+                    <StatLabel color="gray.300">Axis State</StatLabel>
+                    <StatNumber color="white" fontSize="md">
+                      {axisState}
+                    </StatNumber>
+                    <StatHelpText color="gray.400">
+                      {getAxisStateName(axisState)}
+                    </StatHelpText>
+                  </Stat>
+                </SimpleGrid>
+              </CardBody>
+            </Card>
+
+            {/* Error Status Section */}
+            {hasAnyErrors && (
+              <Card bg="red.900" variant="elevated">
+                <CardHeader>
+                  <HStack>
+                    <Icon as={WarningIcon} color="red.300" />
+                    <Heading size="md" color="red.300">System Errors - Click for Help</Heading>
+                  </HStack>
+                </CardHeader>
+                <CardBody>
+                  <VStack spacing={3} align="stretch">
+                    {currentErrors.axis_error !== 0 && renderErrorCard("Axis Error", currentErrors.axis_error, 'axis', 'red')}
+                    {currentErrors.motor_error !== 0 && renderErrorCard("Motor Error", currentErrors.motor_error, 'motor', 'orange')}
+                    {currentErrors.encoder_error !== 0 && renderErrorCard("Encoder Error", currentErrors.encoder_error, 'encoder', 'yellow')}
+                    {currentErrors.controller_error !== 0 && renderErrorCard("Controller Error", currentErrors.controller_error, 'controller', 'purple')}
+                    {currentErrors.sensorless_error !== 0 && renderErrorCard("Sensorless Error", currentErrors.sensorless_error, 'sensorless', 'blue')}
+                  </VStack>
+                </CardBody>
+              </Card>
+            )}
+
+            {/* Power & Thermal - Using Memoized Components */}
+            <SimpleGrid columns={{ base: 1, lg: 3 }} spacing={6}>
+              <Card bg="gray.800" variant="elevated">
+                <CardHeader>
+                  <Heading size="md" color="white">Power & Voltage</Heading>
+                </CardHeader>
+                <CardBody>
+                  <VStack spacing={4}>
+                    <VoltageProgress voltage={vbusVoltage} />
+                    <Divider />
+                    <TelemetryDisplay 
+                      label="Motor Current (measured)"
+                      value={motorCurrent}
+                      unit="A"
+                      color={Math.abs(motorCurrent) > 5 ? "red.300" : "odrive.300"}
+                    />
+                  </VStack>
+                </CardBody>
+              </Card>
+
+              <Card bg="gray.800" variant="elevated">
+                <CardHeader>
+                  <Heading size="md" color="white">Temperature Monitoring</Heading>
+                </CardHeader>
+                <CardBody>
+                  <VStack spacing={4}>
+                    <TemperatureDisplay temp={motorTemp} label="Motor Temperature" />
+                    <TemperatureDisplay temp={fetTemp} label="FET Temperature" />
+                  </VStack>
+                </CardBody>
+              </Card>
+
+              <Card bg="gray.800" variant="elevated">
+                <CardHeader>
+                  <Heading size="md" color="white">Encoder Feedback</Heading>
+                </CardHeader>
+                <CardBody>
+                  <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
+                    <TelemetryDisplay 
+                      label="Position (counts)"
+                      value={encoderPos}
+                      unit=""
+                      color="odrive.300"
+                    />
+                    <TelemetryDisplay 
+                      label="Velocity (counts/s)"
+                      value={encoderVel}
+                      unit=""
+                      color="odrive.300"
+                    />
+                    <TelemetryDisplay 
+                      label="Position (turns)"
+                      value={(encoderPos / 4000)}
+                      unit=""
+                      color="odrive.300"
+                    />
+                  </SimpleGrid>
+                </CardBody>
+              </Card>
             </SimpleGrid>
-          </CardBody>
-        </Card>
 
-        {/* Error Status Section - Use current errors */}
-        {hasAnyErrors && (
-          <Card bg="red.900" variant="elevated">
-            <CardHeader>
-              <HStack>
-                <Icon as={WarningIcon} color="red.300" />
-                <Heading size="md" color="red.300">System Errors - Click for Help</Heading>
-              </HStack>
-            </CardHeader>
-            <CardBody>
-              <VStack spacing={3} align="stretch">
-                {currentErrors.axis_error !== 0 && renderErrorCard("Axis Error", currentErrors.axis_error, 'axis', 'red')}
-                {currentErrors.motor_error !== 0 && renderErrorCard("Motor Error", currentErrors.motor_error, 'motor', 'orange')}
-                {currentErrors.encoder_error !== 0 && renderErrorCard("Encoder Error", currentErrors.encoder_error, 'encoder', 'yellow')}
-                {currentErrors.controller_error !== 0 && renderErrorCard("Controller Error", currentErrors.controller_error, 'controller', 'purple')}
-                {currentErrors.sensorless_error !== 0 && renderErrorCard("Sensorless Error", currentErrors.sensorless_error, 'sensorless', 'blue')}
-              </VStack>
-            </CardBody>
-          </Card>
-        )}
-
-        {/* Power & Thermal - Using Memoized Components */}
-        <SimpleGrid columns={{ base: 1, lg: 3 }} spacing={6}>
-          <Card bg="gray.800" variant="elevated">
-            <CardHeader>
-              <Heading size="md" color="white">Power & Voltage</Heading>
-            </CardHeader>
-            <CardBody>
-              <VStack spacing={4}>
-                <VoltageProgress voltage={vbusVoltage} />
-                <Divider />
-                <TelemetryDisplay 
-                  label="Motor Current (measured)"
-                  value={motorCurrent}
-                  unit="A"
-                  color={Math.abs(motorCurrent) > 5 ? "red.300" : "odrive.300"}
+            {/* Control Actions */}
+            <Card bg="gray.800" variant="elevated">
+              <CardHeader>
+                <Heading size="md" color="white">Quick Actions</Heading>
+              </CardHeader>
+              <CardBody>
+                <MotorControls 
+                  axisNumber={0} 
+                  size="md" 
+                  orientation="horizontal" 
+                  variant="full"
                 />
-              </VStack>
-            </CardBody>
-          </Card>
-
-          <Card bg="gray.800" variant="elevated">
-            <CardHeader>
-              <Heading size="md" color="white">Temperature Monitoring</Heading>
-            </CardHeader>
-            <CardBody>
-              <VStack spacing={4}>
-                <TemperatureDisplay temp={motorTemp} label="Motor Temperature" />
-                <TemperatureDisplay temp={fetTemp} label="FET Temperature" />
-              </VStack>
-            </CardBody>
-          </Card>
-
-          <Card bg="gray.800" variant="elevated">
-            <CardHeader>
-              <Heading size="md" color="white">Encoder Feedback</Heading>
-            </CardHeader>
-            <CardBody>
-              <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
-                <TelemetryDisplay 
-                  label="Position (counts)"
-                  value={encoderPos}
-                  unit=""
-                  color="odrive.300"
-                />
-                <TelemetryDisplay 
-                  label="Velocity (counts/s)"
-                  value={encoderVel}
-                  unit=""
-                  color="odrive.300"
-                />
-                <TelemetryDisplay 
-                  label="Position (turns)"
-                  value={(encoderPos / 4000)}
-                  unit=""
-                  color="odrive.300"
-                />
-              </SimpleGrid>
-            </CardBody>
-          </Card>
-        </SimpleGrid>
-
-        {/* Control Actions */}
-        <Card bg="gray.800" variant="elevated">
-          <CardHeader>
-            <Heading size="md" color="white">Quick Actions</Heading>
-          </CardHeader>
-          <CardBody>
-            <MotorControls 
-              axisNumber={0} 
-              size="md" 
-              orientation="horizontal" 
-              variant="full"
-            />
-          </CardBody>
-        </Card>
+              </CardBody>
+            </Card>
+          </VStack>
+        </Box>
       </VStack>
 
       {/* Error Troubleshooting Modal */}
