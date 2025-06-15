@@ -56,10 +56,10 @@ The official ODrive GUI only supports newer firmware versions, leaving v0.5.6 us
 - **Preset Management**: Save and load common motor configurations
 
 ### 📊 Real-Time Dashboard
-- **Live Telemetry Plots**: Position, velocity, current, and voltage over time
+- **Live Telemetry**: Position, velocity, current, and voltage stats
 - **Thermal Monitoring**: FET and motor temperature gauges with limits
 - **Power Metrics**: Real-time power consumption and efficiency
-- **System Health**: Comprehensive error monitoring and diagnostics
+- **System Health**: Error monitoring and diagnostics
 
 ### 🔍 Inspector & Debugging
 - **ASCII Console**: Direct ODrive command interface with autocomplete
