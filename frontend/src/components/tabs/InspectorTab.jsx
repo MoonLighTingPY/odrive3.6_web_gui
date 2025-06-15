@@ -99,9 +99,9 @@ const InspectorTab = () => {
         <Grid templateColumns="1fr 1.5fr" gap={6} h="100%">
           
           {/* Left Side - Property Tree & Motor Controls */}
-          <GridItem display="flex" flexDirection="column" overflow="hidden">
-            {/* Property Tree - Takes most space */}
-            <Box flex="1" minH="0" mb={4}>
+<GridItem display="flex" flexDirection="column" overflow="hidden" minH="0">
+  <Box flex="1" overflow="auto" minH="0" mb={4}>
+
               <PropertyTree
                 odriveState={odriveState}
                 searchFilter={searchFilter}
@@ -115,7 +115,8 @@ const InspectorTab = () => {
             </Box>
             
             {/* Motor Control Buttons - Fixed at bottom */}
-              <Card bg="gray.800" variant="elevated">
+<Card bg="gray.800" variant="elevated" flexShrink={0}>
+
                 <CardHeader py={2}>
                   <Heading size="sm" color="white">Motor Controls</Heading>
                 </CardHeader>
@@ -132,11 +133,13 @@ const InspectorTab = () => {
 
           {/* Right Side - Live Charts */}
           <GridItem overflow="hidden" h="100%">
-            <LiveCharts
-              selectedProperties={selectedProperties}
-              togglePropertyChart={togglePropertyChart}
-            />
-          </GridItem>
+  <Box h="100%" overflow="auto">
+    <LiveCharts
+      selectedProperties={selectedProperties}
+      togglePropertyChart={togglePropertyChart}
+    />
+  </Box>
+</GridItem>
 
         </Grid>
       </Box>

@@ -219,9 +219,9 @@ const PropertyTree = ({
   }
 
   return (
-    <VStack spacing={3} align="stretch" h="100%">
-      {/* Compact Search Controls */}
-      <Card bg="gray.800" variant="elevated" flexShrink={0}>
+    <Box h="95%" display="flex" flexDirection="column">
+      {/* Search Controls - Fixed height */}
+      <Card bg="gray.800" variant="elevated" flexShrink={0} mb={3}>
         <CardBody py={2}>
           <HStack spacing={2}>
             <SearchIcon color="gray.400" boxSize={4} />
@@ -245,20 +245,28 @@ const PropertyTree = ({
         </CardBody>
       </Card>
 
-      {/* Compact Property Tree */}
-      <Card bg="gray.800" variant="elevated" flex="1">
-        <CardHeader py={2}>
+      {/* Property Tree - Takes remaining space */}
+      <Card 
+        bg="gray.800" 
+        variant="elevated" 
+        flex="1" 
+        minH="0" 
+        display="flex" 
+        flexDirection="column"
+        overflow="hidden"
+      >
+        <CardHeader py={2} flexShrink={0}>
           <HStack justify="space-between">
             <Heading size="sm" color="white">ODrive Properties</Heading>
             <HStack spacing={1}>
               <Badge colorScheme="green" size="sm">
-                {Object.values(propertyValues).length}/{Object.values(propertyValues).length} loaded
+                {Object.values(propertyValues).length} loaded
               </Badge>
             </HStack>
           </HStack>
         </CardHeader>
-        <CardBody py={2}>
-          <Box h="100vh" overflowY="auto">
+        <CardBody py={2} flex="1" minH="0" overflow="hidden" p={0}>
+          <Box h="100%" overflowY="auto" px={4} py={2}>
             <VStack spacing={2} align="stretch">
               {Object.entries(filteredTree).map(([sectionName, section]) => {
                 const isCollapsed = collapsedSections.has(sectionName)
@@ -304,7 +312,7 @@ const PropertyTree = ({
           </Box>
         </CardBody>
       </Card>
-    </VStack>
+    </Box>
   )
 }
 
