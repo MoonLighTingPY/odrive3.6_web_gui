@@ -542,7 +542,7 @@ const DeviceList = memo(() => {
           <>
             <Divider />
             <Box>
-              <Text fontSize="md" fontWeight="bold" mb={3} color="white">
+              <Text fontSize="md" fontWeight="bold" mb={1} color="white">
                 Device Status
               </Text>
               <DeviceStatusDisplay telemetry={telemetry} odriveState={odriveState} />
@@ -553,6 +553,7 @@ const DeviceList = memo(() => {
                   size="xs"
                   colorScheme="red"
                   variant="outline"
+                  width="100%"
                   mt={2}
                   onClick={handleClearErrors}
                 >
