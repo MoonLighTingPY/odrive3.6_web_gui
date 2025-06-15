@@ -227,7 +227,7 @@ const DeviceCard = memo(({
 DeviceCard.displayName = 'DeviceCard'
 
 // Memoized Error Section Component
-const ErrorSection = memo(({ axis0Data, handleErrorClick }) => {
+const ErrorSection = memo(({ currentErrors, handleErrorClick }) => {
   const renderErrorInfo = useCallback((errorCode, errorType = 'axis') => (
     <ErrorDisplay 
       errorCode={errorCode}
@@ -236,46 +236,44 @@ const ErrorSection = memo(({ axis0Data, handleErrorClick }) => {
     />
   ), [handleErrorClick])
 
-  if (!axis0Data) return null
-
   return (
     <VStack spacing={2} align="stretch">
       {/* Axis Error */}
-      {renderErrorInfo(axis0Data?.error, 'axis')}
+      {renderErrorInfo(currentErrors.axis_error, 'axis')}
 
       {/* Motor Error */}
-      {axis0Data?.motor?.error && axis0Data.motor.error !== 0 && (
+      {currentErrors.motor_error !== 0 && (
         <>
           <Divider my={2} />
           <Text fontSize="sm" fontWeight="bold" color="orange.300">Motor Errors:</Text>
-          {renderErrorInfo(axis0Data.motor.error, 'motor')}
+          {renderErrorInfo(currentErrors.motor_error, 'motor')}
         </>
       )}
 
       {/* Encoder Error */}
-      {axis0Data?.encoder?.error && axis0Data.encoder.error !== 0 && (
+      {currentErrors.encoder_error !== 0 && (
         <>
           <Divider my={2} />
           <Text fontSize="sm" fontWeight="bold" color="orange.300">Encoder Errors:</Text>
-          {renderErrorInfo(axis0Data.encoder.error, 'encoder')}
+          {renderErrorInfo(currentErrors.encoder_error, 'encoder')}
         </>
       )}
 
       {/* Controller Error */}
-      {axis0Data?.controller?.error && axis0Data.controller.error !== 0 && (
+      {currentErrors.controller_error !== 0 && (
         <>
           <Divider my={2} />
           <Text fontSize="sm" fontWeight="bold" color="orange.300">Controller Errors:</Text>
-          {renderErrorInfo(axis0Data.controller.error, 'controller')}
+          {renderErrorInfo(currentErrors.controller_error, 'controller')}
         </>
       )}
 
       {/* Sensorless Estimator Error */}
-      {axis0Data?.sensorless_estimator?.error && axis0Data.sensorless_estimator.error !== 0 && (
+      {currentErrors.sensorless_error !== 0 && (
         <>
           <Divider my={2} />
           <Text fontSize="sm" fontWeight="bold" color="orange.300">Sensorless Errors:</Text>
-          {renderErrorInfo(axis0Data.sensorless_estimator.error, 'sensorless')}
+          {renderErrorInfo(currentErrors.sensorless_error, 'sensorless')}
         </>
       )}
     </VStack>
@@ -299,6 +297,19 @@ const DeviceList = memo(() => {
     odriveState,
     connectionLost 
   } = useSelector(state => state.device)
+
+  // Helper function to get current error codes from both sources
+  const getCurrentErrors = () => {
+    const axis0Data = odriveState.device?.axis0
+    
+    return {
+      axis_error: telemetry?.axis_error || axis0Data?.error || 0,
+      motor_error: telemetry?.motor_error || axis0Data?.motor?.error || 0,
+      encoder_error: telemetry?.encoder_error || axis0Data?.encoder?.error || 0,
+      controller_error: telemetry?.controller_error || axis0Data?.controller?.error || 0,
+      sensorless_error: telemetry?.sensorless_error || axis0Data?.sensorless_estimator?.error || 0,
+    }
+  }
 
   const scanForDevices = useCallback(async () => {
     setIsScanning(true)
@@ -474,8 +485,9 @@ const DeviceList = memo(() => {
     }
   }, [toast])
 
-  // Get axis0 data for error checking
-  const axis0Data = odriveState.device?.axis0
+  // Get current errors
+  const currentErrors = getCurrentErrors()
+  const hasAnyErrors = Object.values(currentErrors).some(error => error !== 0)
 
   return (
     <Box className="device-list" p={4} h="100%">
@@ -536,11 +548,7 @@ const DeviceList = memo(() => {
               <DeviceStatusDisplay telemetry={telemetry} odriveState={odriveState} />
 
               {/* Clear Errors Button - only shown if errors exist */}
-              {(axis0Data?.error || 
-                axis0Data?.motor?.error || 
-                axis0Data?.encoder?.error || 
-                axis0Data?.controller?.error ||
-                axis0Data?.sensorless_estimator?.error) && (
+              {hasAnyErrors && (
                 <Button
                   size="xs"
                   colorScheme="red"
@@ -552,8 +560,9 @@ const DeviceList = memo(() => {
                 </Button>
               )}
 
+              {/* Pass current errors to ErrorSection */}
               <ErrorSection 
-                axis0Data={axis0Data}
+                currentErrors={currentErrors}
                 handleErrorClick={handleErrorClick}
               />
             </Box>

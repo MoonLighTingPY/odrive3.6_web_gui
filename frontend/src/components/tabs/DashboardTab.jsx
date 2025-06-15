@@ -77,7 +77,7 @@ const TemperatureDisplay = memo(({ temp, label, maxTemp = 100 }) => (
 const DashboardTab = memo(() => {
   // Use telemetry slice for high-frequency data
   const telemetry = useSelector(state => state.telemetry)
-  const { connectedDevice, odriveState } = useSelector(state => state.device) // Removed unused isConnected
+  const { connectedDevice, odriveState } = useSelector(state => state.device)
   
   const [selectedError, setSelectedError] = useState({ code: null, type: null })
   const { isOpen: isTroubleshootingOpen, onOpen: onTroubleshootingOpen, onClose: onTroubleshootingClose } = useDisclosure()
@@ -96,6 +96,21 @@ const DashboardTab = memo(() => {
 
   // Get axis0 data from odriveState for error checking
   const axis0Data = odriveState.device?.axis0
+
+  // Helper function to get current error codes from both sources
+  const getCurrentErrors = () => {
+    return {
+      axis_error: telemetry?.axis_error || axis0Data?.error || 0,
+      motor_error: telemetry?.motor_error || axis0Data?.motor?.error || 0,
+      encoder_error: telemetry?.encoder_error || axis0Data?.encoder?.error || 0,
+      controller_error: telemetry?.controller_error || axis0Data?.controller?.error || 0,
+      sensorless_error: telemetry?.sensorless_error || axis0Data?.sensorless_estimator?.error || 0,
+    }
+  }
+
+  const currentErrors = getCurrentErrors()
+  const hasAnyErrors = Object.values(currentErrors).some(error => error !== 0)
+
 
   // Fallback to device state for other data
   const getSystemData = (odriveState) => {
@@ -240,12 +255,8 @@ const DashboardTab = memo(() => {
           </CardBody>
         </Card>
 
-        {/* Error Status Section */}
-        {(axis0Data?.error || 
-          axis0Data?.motor?.error || 
-          axis0Data?.encoder?.error || 
-          axis0Data?.controller?.error ||
-          axis0Data?.sensorless_estimator?.error) && (
+        {/* Error Status Section - Use current errors */}
+        {hasAnyErrors && (
           <Card bg="red.900" variant="elevated">
             <CardHeader>
               <HStack>
@@ -255,11 +266,11 @@ const DashboardTab = memo(() => {
             </CardHeader>
             <CardBody>
               <VStack spacing={3} align="stretch">
-                {renderErrorCard("Axis Error", axis0Data?.error, 'axis', 'red')}
-                {renderErrorCard("Motor Error", axis0Data?.motor?.error, 'motor', 'orange')}
-                {renderErrorCard("Encoder Error", axis0Data?.encoder?.error, 'encoder', 'yellow')}
-                {renderErrorCard("Controller Error", axis0Data?.controller?.error, 'controller', 'purple')}
-                {renderErrorCard("Sensorless Error", axis0Data?.sensorless_estimator?.error, 'sensorless', 'blue')}
+                {currentErrors.axis_error !== 0 && renderErrorCard("Axis Error", currentErrors.axis_error, 'axis', 'red')}
+                {currentErrors.motor_error !== 0 && renderErrorCard("Motor Error", currentErrors.motor_error, 'motor', 'orange')}
+                {currentErrors.encoder_error !== 0 && renderErrorCard("Encoder Error", currentErrors.encoder_error, 'encoder', 'yellow')}
+                {currentErrors.controller_error !== 0 && renderErrorCard("Controller Error", currentErrors.controller_error, 'controller', 'purple')}
+                {currentErrors.sensorless_error !== 0 && renderErrorCard("Sensorless Error", currentErrors.sensorless_error, 'sensorless', 'blue')}
               </VStack>
             </CardBody>
           </Card>

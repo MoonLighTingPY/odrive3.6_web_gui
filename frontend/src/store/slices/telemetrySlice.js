@@ -10,6 +10,13 @@ const initialState = {
   fet_temp: 0,
   axis_state: 0,
   
+  // Error codes for immediate error detection
+  axis_error: 0,
+  motor_error: 0,
+  encoder_error: 0,
+  controller_error: 0,
+  sensorless_error: 0,
+  
   // Metadata
   lastUpdate: 0,
   updateCount: 0,
