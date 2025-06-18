@@ -12,13 +12,11 @@ from .odrive_manager import ODriveManager
 from .utils.utils import is_running_as_executable, open_browser
 from .constants import VERSION
 
-
 # Import route blueprints - using relative imports
 from .routes.device_routes import device_bp, init_routes as init_device_routes
 from .routes.config_routes import config_bp, init_routes as init_config_routes
 from .routes.calibration_routes import calibration_bp, init_routes as init_calibration_routes
 from .routes.telemetry_routes import telemetry_bp, init_routes as init_telemetry_routes
-from .routes.charts_routes import charts_bp, init_routes as init_charts_routes
 from .routes.system_routes import system_bp
 
 current_version = VERSION
@@ -90,7 +88,6 @@ app.register_blueprint(device_bp)
 app.register_blueprint(config_bp)
 app.register_blueprint(calibration_bp)
 app.register_blueprint(telemetry_bp)
-app.register_blueprint(charts_bp)
 app.register_blueprint(system_bp)
 
 # Initialize routes with ODrive manager
@@ -98,12 +95,11 @@ init_device_routes(odrive_manager)
 init_config_routes(odrive_manager)
 init_calibration_routes(odrive_manager)
 init_telemetry_routes(odrive_manager)
-init_charts_routes(odrive_manager)
 
 @app.after_request
 def after_request(response):
     # Add headers to prevent caching of telemetry data
-    if request.path.startswith('/api/odrive/telemetry'):
+    if request.path.startswith('/api/telemetry') or request.path.startswith('/api/odrive/telemetry'):
         response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
         response.headers['Pragma'] = 'no-cache'
         response.headers['Expires'] = '0'

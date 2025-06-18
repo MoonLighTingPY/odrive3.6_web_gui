@@ -1,17 +1,10 @@
 import logging
 import time
 from flask import Blueprint, request, jsonify
-
-try:
-    from ..utils.utils import sanitize_for_json
-except Exception as e:
-    print(f"Import failed: {e}")
-    # Use a fallback
-    def sanitize_for_json(data):
-        return data
+from ..utils.utils import sanitize_for_json
 
 logger = logging.getLogger(__name__)
-telemetry_bp = Blueprint('telemetry', __name__, url_prefix='/api/odrive')
+telemetry_bp = Blueprint('telemetry', __name__, url_prefix='/api/telemetry')
 
 # Global ODrive manager (will be set by init_routes)
 odrive_manager = None
@@ -21,57 +14,75 @@ def init_routes(manager):
     global odrive_manager
     odrive_manager = manager
 
-@telemetry_bp.route('/property', methods=['POST'])
-def get_single_property():
-    """Get a single property value for refresh buttons"""
+def get_property_value(odrv, path):
+    """Get a single property value - fast and direct"""
+    try:
+        # Use the thread-safe method from ODrive manager
+        return odrive_manager.safe_get_property(path)
+    except Exception as e:
+        logger.debug(f"Error getting {path}: {e}")
+        return None
+
+@telemetry_bp.route('/get-telemetry', methods=['POST'])
+def get_charts_telemetry():
+    """Ultra-fast telemetry endpoint"""
     try:
         if not odrive_manager.is_connected():
             return jsonify({"error": "No ODrive connected"}), 404
-            
-        data = request.get_json()
-        if not data or not data.get('path'):
-            return jsonify({"error": "No path specified"}), 400
-            
-        path = data.get('path')
         
-        # Remove 'device.' prefix if present
-        if path.startswith('device.'):
-            path = path[7:]
+        data = request.get_json()
+        if not data or not data.get('paths'):
+            return jsonify({"error": "No paths specified"}), 400
             
-        # Get the value
-        value = get_property_value_direct(odrive_manager.odrv, path)
+        paths = data.get('paths', [])
+        
+        # Ultra-fast property collection with immediate timeout
+        def _get_properties_fast():
+            local_result = {}
+            start_time = time.time()
+            max_time = 0.1  # 100ms absolute maximum for charts
+            
+            for path in paths:
+                # Hard timeout check
+                if time.time() - start_time > max_time:
+                    logger.debug(f"Telemetry hard timeout after {len(local_result)} properties")
+                    break
+                    
+                try:
+                    # Direct property access without complex mapping for speed
+                    if path.startswith('system.'):
+                        prop = path.replace('system.', '')
+                        actual_path = f'config.{prop}' if prop in [
+                            'dc_bus_overvoltage_trip_level', 'dc_bus_undervoltage_trip_level', 
+                            'dc_max_positive_current', 'dc_max_negative_current', 
+                            'enable_brake_resistor', 'brake_resistance'
+                        ] else prop
+                    else:
+                        actual_path = path
+                    
+                    # Use the fastest possible property access
+                    value = odrive_manager.safe_get_property(actual_path)
+                    if value is not None:
+                        # Convert to float for charts if numeric
+                        if isinstance(value, (int, float)):
+                            local_result[path] = float(value)
+                        elif isinstance(value, bool):
+                            local_result[path] = float(value)  # 0/1 for charts
+                        
+                except Exception:
+                    # Silent fail for speed - don't log in tight loop
+                    continue
+                    
+            return local_result
+
+        result = _get_properties_fast()
         
         return jsonify({
-            'path': path,
-            'value': value,
+            'data': result,
             'timestamp': time.time() * 1000
         })
         
     except Exception as e:
-        logger.error(f"Error getting property {data.get('path', 'unknown') if 'data' in locals() and data else 'unknown'}: {e}")
+        logger.error(f"Error in charts telemetry: {e}")
         return jsonify({"error": str(e)}), 500
 
-def get_property_value_direct(odrv, path):
-    """Direct property access for single property requests"""
-    try:
-        # Handle system/config properties
-        if path.startswith('config.'):
-            prop = path.replace('config.', '')
-            return getattr(odrv.config, prop, None)
-        elif path in ['hw_version_major', 'hw_version_minor', 'fw_version_major', 
-                     'fw_version_minor', 'serial_number', 'vbus_voltage', 'ibus']:
-            return getattr(odrv, path, None)
-            
-        # Handle axis properties
-        parts = path.split('.')
-        current = odrv
-        for part in parts:
-            current = getattr(current, part, None)
-            if current is None:
-                return None
-                
-        return current
-        
-    except Exception as e:
-        logger.debug(f"Error getting {path}: {e}")
-        return None

@@ -27,7 +27,7 @@ export const useChartsTelemetry = (properties, onData) => {
         
         lastRequestTime.current = Date.now()
         
-        const response = await fetch('/api/charts/telemetry', {
+        const response = await fetch('/api/telemetry/get-telemetry', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ paths: properties })
