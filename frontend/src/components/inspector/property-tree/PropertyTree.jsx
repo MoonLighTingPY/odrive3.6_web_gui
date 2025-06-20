@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, memo } from 'react'
+import React, { useState, useCallback, useEffect, memo, useMemo } from 'react'
 import {
   VStack,
   HStack,
@@ -17,10 +17,9 @@ import { odrivePropertyTree } from '../../../utils/odrivePropertyTree'
 import { usePropertyRefresh } from '../../../hooks/property-tree/usePropertyRefresh'
 import { usePropertyEditor } from '../../../hooks/property-tree/usePropertyEditor'
 import { usePropertyTreeFilter } from '../../../hooks/property-tree/usePropertyTreeFilter'
-import { useFlattenedProperties } from '../../../hooks/property-tree/useFlattenedProperties'
-import VirtualizedPropertyTree from './VirtualizedPropertyTree'
+import PropertyItem from './PropertyItem'
 
-const PropertyTree = memo(({ 
+const PropertyTree = ({ 
   odriveState, 
   searchFilter, 
   setSearchFilter, 
@@ -36,6 +35,7 @@ const PropertyTree = memo(({
   const collectAllProperties = useCallback((node, basePath = '') => {
     const properties = []
     
+    // Add direct properties
     if (node.properties) {
       Object.entries(node.properties).forEach(([propName, prop]) => {
         const fullPath = basePath ? `${basePath}.${propName}` : propName
@@ -43,6 +43,7 @@ const PropertyTree = memo(({
       })
     }
     
+    // Recursively add properties from children
     if (node.children) {
       Object.entries(node.children).forEach(([childName, childNode]) => {
         const childPath = basePath ? `${basePath}.${childName}` : childName
@@ -72,13 +73,21 @@ const PropertyTree = memo(({
 
   const { filteredTree } = usePropertyTreeFilter(odrivePropertyTree, searchFilter)
 
-  // Get value from state with optimized lookup
+  // Refresh all properties when refreshTrigger changes
+  useEffect(() => {
+    if (refreshTrigger > 0 && isConnected) {
+      refreshAllProperties()
+    }
+  }, [refreshTrigger, isConnected, refreshAllProperties])
+
   const getValueFromState = useCallback((path) => {
+    // First check if we have a refreshed value
     if (propertyValues[path] !== undefined) {
       return propertyValues[path]
     }
     
-    if (!odriveState?.device) {
+    // Fallback to state value (last known)
+    if (!odriveState || !odriveState.device) {
       return undefined
     }
     
@@ -101,7 +110,7 @@ const PropertyTree = memo(({
     let current = odriveState
     
     for (const part of parts) {
-      if (current?.[part] !== undefined) {
+      if (current && current[part] !== undefined) {
         current = current[part]
       } else {
         return undefined
@@ -111,11 +120,7 @@ const PropertyTree = memo(({
     return current
   }, [odriveState, propertyValues])
 
-  // Flatten properties for virtual scrolling
-  const flattenedItems = useFlattenedProperties(filteredTree, collapsedSections, getValueFromState)
-
-  // Toggle section collapsed state
-  const toggleSection = useCallback((sectionPath) => {
+  const toggleSection = (sectionPath) => {
     setCollapsedSections(prev => {
       const newSet = new Set(prev)
       if (newSet.has(sectionPath)) {
@@ -125,14 +130,127 @@ const PropertyTree = memo(({
       }
       return newSet
     })
-  }, [])
+  }
 
-  // Refresh all properties when refreshTrigger changes
-  useEffect(() => {
-    if (refreshTrigger > 0 && isConnected) {
-      refreshAllProperties()
+  // Create a simple SectionHeader component
+  const SectionHeader = memo(({ name, section, sectionPath }) => (
+    <Box
+      bg="gray.700"
+      borderRadius="md"
+      p={3}
+      mb={2}
+      border="1px solid"
+      borderColor="gray.600"
+      cursor="pointer"
+      onClick={() => toggleSection(sectionPath)}
+      _hover={{ bg: "gray.650" }}
+      transition="all 0.2s"
+    >
+      <HStack justify="space-between">
+        <HStack spacing={2}>
+          <Text fontWeight="bold" color="blue.300" fontSize="sm">
+            {collapsedSections.has(sectionPath) ? '▶' : '▼'} {name}
+          </Text>
+          <Badge colorScheme="purple" variant="outline" size="xs">
+            {collectAllProperties(section).length}
+          </Badge>
+        </HStack>
+      </HStack>
+      {!collapsedSections.has(sectionPath) && section.description && (
+        <Text fontSize="xs" color="gray.400" mt={1}>
+          {section.description}
+        </Text>
+      )}
+    </Box>
+  ))
+
+  SectionHeader.displayName = 'SectionHeader'
+
+  // Function to render a section recursively with collapsible subsections
+  const renderSection = (section, sectionPath = '', depth = 0) => {
+    const sectionItems = []
+    
+    // Render direct properties first
+    if (section.properties) {
+      Object.entries(section.properties).forEach(([propName, prop]) => {
+        const displayPath = sectionPath ? `${sectionPath}.${propName}` : propName
+        const value = getValueFromState(displayPath)
+        
+        sectionItems.push(
+          <PropertyItem
+            key={displayPath}
+            prop={prop}
+            value={value}
+            displayPath={displayPath}
+            isEditing={editingProperty === displayPath}
+            editValue={editValue}
+            setEditValue={setEditValue}
+            startEditing={startEditing}
+            saveEdit={saveEdit}
+            cancelEdit={cancelEdit}
+            refreshProperty={refreshProperty}
+            isConnected={isConnected}
+            isRefreshing={refreshingProperties.has(displayPath)}
+            selectedProperties={selectedProperties}
+            togglePropertyChart={togglePropertyChart}
+            updateProperty={updateProperty}
+          />
+        )
+      })
     }
-  }, [refreshTrigger, isConnected, refreshAllProperties])
+    
+    // Then render child sections
+    if (section.children) {
+      Object.entries(section.children).forEach(([childName, childSection]) => {
+        const childPath = sectionPath ? `${sectionPath}.${childName}` : childName
+        const isCollapsed = collapsedSections.has(childPath)
+        const childPropertyCount = collectAllProperties(childSection).length
+        
+        sectionItems.push(
+          <Box key={`section-${childPath}`} ml={depth > 0 ? 3 : 0}>
+            {/* Collapsible section header */}
+            <Box
+              bg="gray.700"
+              borderRadius="md"
+              p={2}
+              mb={2}
+              border="1px solid"
+              borderColor="gray.600"
+              cursor="pointer"
+              onClick={() => toggleSection(childPath)}
+              _hover={{ bg: "gray.650" }}
+              transition="all 0.2s"
+            >
+              <HStack justify="space-between">
+                <HStack spacing={2}>
+                  <Text fontWeight="bold" color="blue.300" fontSize="sm">
+                    {isCollapsed ? '▶' : '▼'} {childSection.name}
+                  </Text>
+                  <Badge colorScheme="purple" variant="outline" size="xs">
+                    {childPropertyCount}
+                  </Badge>
+                </HStack>
+              </HStack>
+              {!isCollapsed && childSection.description && (
+                <Text fontSize="xs" color="gray.400" mt={1}>
+                  {childSection.description}
+                </Text>
+              )}
+            </Box>
+            
+            {/* Collapsible content */}
+            {!isCollapsed && (
+              <VStack spacing={1} align="stretch" ml={2}>
+                {renderSection(childSection, childPath, depth + 1)}
+              </VStack>
+            )}
+          </Box>
+        )
+      })
+    }
+    
+    return sectionItems
+  }
 
   return (
     <Box h="100%" display="flex" flexDirection="column">
@@ -161,7 +279,7 @@ const PropertyTree = memo(({
         </CardBody>
       </Card>
 
-      {/* Property Tree - Takes remaining space with virtual scrolling */}
+      {/* Property Tree - Takes remaining space */}
       <Card 
         bg="gray.800" 
         variant="elevated" 
@@ -181,29 +299,29 @@ const PropertyTree = memo(({
             </HStack>
           </HStack>
         </CardHeader>
-        <CardBody py={0} flex="1" minH="0" overflow="hidden" p={0}>
-          <VirtualizedPropertyTree
-            flattenedItems={flattenedItems}
-            height={window.innerHeight - 300} // Adjust based on your layout
-            editingProperty={editingProperty}
-            editValue={editValue}
-            setEditValue={setEditValue}
-            startEditing={startEditing}
-            saveEdit={saveEdit}
-            cancelEdit={cancelEdit}
-            refreshProperty={refreshProperty}
-            isConnected={isConnected}
-            refreshingProperties={refreshingProperties}
-            selectedProperties={selectedProperties}
-            togglePropertyChart={togglePropertyChart}
-            updateProperty={updateProperty}
-            toggleSection={toggleSection}
-          />
+        <CardBody py={2} flex="1" minH="0" overflow="hidden" p={0}>
+          <Box h="100%" overflowY="auto" px={4} py={2}>
+            <VStack spacing={2} align="stretch">
+              {Object.entries(filteredTree).map(([sectionName, section]) => (
+                <Box key={sectionName}>
+                  <SectionHeader 
+                    name={sectionName} 
+                    section={section} 
+                    sectionPath={sectionName}
+                  />
+                  {!collapsedSections.has(sectionName) && (
+                    <VStack spacing={1} align="stretch" ml={2}>
+                      {renderSection(section, sectionName)}
+                    </VStack>
+                  )}
+                </Box>
+              ))}
+            </VStack>
+          </Box>
         </CardBody>
       </Card>
     </Box>
   )
-})
+}
 
-PropertyTree.displayName = 'PropertyTree'
 export default PropertyTree

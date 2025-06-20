@@ -137,13 +137,12 @@ const PropertyItem = memo(({
       borderRadius="md"
       border="1px solid"
       borderColor={isError ? "red.600" : "gray.600"}
-      p={3} // Slightly more padding for better spacing
+      p={2}
       _hover={{ bg: isError ? "red.800" : "gray.700" }}
       transition="all 0.2s"
-      w="100%" // Ensure full width
     >
-      <VStack spacing={2} align="stretch" w="100%">
-        <HStack justify="space-between" align="center" spacing={2} w="100%">
+      <VStack spacing={2} align="stretch">
+        <HStack justify="space-between" align="center" spacing={2}>
           <HStack spacing={2} flex="1" align="center" minW="0">
             <VStack align="start" spacing={0} flex="1" minW="0">
               <HStack spacing={2} align="center" w="100%">
