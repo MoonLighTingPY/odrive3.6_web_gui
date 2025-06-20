@@ -1,36 +1,19 @@
-import { useState, lazy, Suspense } from 'react'
 import { useSelector } from 'react-redux'
 import {
   Box,
   Flex,
   VStack,
   HStack,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  TabPanel,
   Heading,
-  Spacer,
   Badge,
 } from '@chakra-ui/react'
 
 import DeviceList from './components/DeviceList'
-import UpdateChecker from './components/UpdateChecker'
-import { useDashboardTelemetry } from './hooks/useDashboardTelemetry'
+import MainTabs from './components/MainTabs'
 import './App.css'
 
-const ConfigurationTab = lazy(() => import('./components/tabs/ConfigurationTab'))
-const InspectorTab = lazy(() => import('./components/tabs/InspectorTab'))
-const DashboardTab = lazy(() => import('./components/tabs/DashboardTab'))
-const PresetsTab = lazy(() => import('./components/tabs/PresetsTab'))
-const CommandConsoleTab = lazy(() => import('./components/tabs/CommandConsoleTab'))
-
 function App() {
-  const { isConnected, connectedDevice, odriveState } = useSelector(state => state.device)
-  const [activeTab, setActiveTab] = useState(0)
-
-  useDashboardTelemetry()
+  const { isConnected, connectedDevice } = useSelector(state => state.device)
 
   return (
     <Box bg="gray.900" minH="100vh" color="white">
@@ -39,11 +22,10 @@ function App() {
         <Box w="300px" bg="gray.800" borderRight="1px solid" borderColor="gray.600" p={4}>
           <VStack spacing={4} align="stretch" h="100%">
             <HStack justify="space-between" mb={4}>
-            <Heading size="md" color="odrive.300" textAlign="center">
-              ODrive GUI v0.5.6
-            </Heading>
-        
-          </HStack>
+              <Heading size="md" color="odrive.300" textAlign="center">
+                ODrive GUI v0.5.6
+              </Heading>
+            </HStack>
             
             <DeviceList />
             
@@ -75,141 +57,7 @@ function App() {
         </Box>
 
         {/* Main Content Area */}
-        <Box flex="1" bg="gray.900">
-          <Tabs 
-            index={activeTab} 
-            onChange={setActiveTab}
-            variant="enclosed" 
-            colorScheme="odrive"
-            h="100%"
-            display="flex"
-            flexDirection="column"
-          >
-            <TabList bg="gray.800" borderBottom="1px solid" borderColor="gray.600" px={6}>
-              {/* Configuration Tab */}
-              <Tab
-                bg="gray.700"
-                color="gray.300"
-                borderRadius="md"
-                _hover={{ bg: 'gray.800' }}
-                _selected={{
-                  bg: 'gray.900',
-                  color: 'odrive.300',
-                  borderBottom: '3px solid',
-                  borderBottomColor: 'odrive.300',
-                  borderBottomLeftRadius: '0px',
-                  borderBottomRightRadius: '0px',
-                }}
-              >
-                Configuration
-              </Tab>
-
-              {/* Presets Tab */}
-              <Tab
-                bg="gray.700"
-                color="gray.300"
-                borderRadius="md"
-                _hover={{ bg: 'gray.800' }}
-                _selected={{
-                  bg: 'gray.900',
-                  color: 'odrive.300',
-                  borderBottom: '3px solid',
-                  borderBottomColor: 'odrive.300',
-                  borderBottomLeftRadius: '0px',
-                  borderBottomRightRadius: '0px',
-                }}
-              >
-                Presets
-              </Tab>
-
-              {/* Dashboard Tab */}
-              <Tab
-                bg="gray.700"
-                color="gray.300"
-                borderRadius="md"
-                _hover={{ bg: 'gray.800' }}
-                _selected={{
-                  bg: 'gray.900',
-                  color: 'odrive.300',
-                  borderBottom: '3px solid',
-                  borderBottomColor: 'odrive.300',
-                  borderBottomLeftRadius: '0px',
-                  borderBottomRightRadius: '0px',
-                }}
-              >
-                Dashboard
-              </Tab>
-
-              {/* Inspector Tab */}
-              <Tab
-                bg="gray.700"
-                color="gray.300"
-                borderRadius="md"
-                _hover={{ bg: 'gray.800' }}
-                _selected={{
-                  bg: 'gray.900',
-                  color: 'odrive.300',
-                  borderBottom: '3px solid',
-                  borderBottomColor: 'odrive.300',
-                  borderBottomLeftRadius: '0px',
-                  borderBottomRightRadius: '0px',
-                }}
-              >
-                Inspector
-              </Tab>
-
-              { /* Command Console Tab */}
-              <Tab
-                bg="gray.700"
-                color="gray.300"
-                borderRadius="md"
-                _hover={{ bg: 'gray.800' }}
-                _selected={{
-                  bg: 'gray.900',
-                  color: 'odrive.300',
-                  borderBottom: '3px solid',
-                  borderBottomColor: 'odrive.300',
-                  borderBottomLeftRadius: '0px',
-                  borderBottomRightRadius: '0px',
-                }}
-              >
-                Command Console
-              </Tab>
-
-              <Spacer />
-              <HStack spacing={4} pr={4}>
-                <UpdateChecker />
-              </HStack>
-            </TabList>
-
-            <Suspense fallback={<Box>Loading...</Box>}>
-              <TabPanels flex="1" bg="gray.900">
-                <TabPanel p={0} h="100%">
-                  <ConfigurationTab isConnected={isConnected} />
-                </TabPanel>
-
-                <TabPanel p={0} h="100%">
-                  <PresetsTab />
-                </TabPanel>
-                
-                <TabPanel p={0} h="100%">
-                  <DashboardTab isConnected={isConnected} odriveState={odriveState} isActive={activeTab === 1} />
-                </TabPanel>
-                
-                <TabPanel p={0} h="100%">
-                  <InspectorTab isConnected={isConnected} odriveState={odriveState} />
-                </TabPanel>
-
-
-
-                <TabPanel p={0} h="100%">
-                  <CommandConsoleTab />
-                </TabPanel>
-              </TabPanels>
-            </Suspense>
-
-          </Tabs>
-        </Box>
+        <MainTabs />
       </Flex>
     </Box>
   )
