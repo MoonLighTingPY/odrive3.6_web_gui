@@ -123,7 +123,7 @@ export const useCalibration = () => {
                 title: 'Calibration Complete!',
                 description: 'Motor and encoder calibration completed successfully.',
                 status: 'success',
-                duration: 5000,
+                duration: 200,
               })
             }
           } else {
@@ -132,7 +132,7 @@ export const useCalibration = () => {
         } catch (error) {
           console.error('Failed to fetch calibration status:', error)
         }
-      }, 2000)
+      }, 500)
       
       return () => clearInterval(interval)
     }
