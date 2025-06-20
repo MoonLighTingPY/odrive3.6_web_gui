@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, memo } from 'react'
 import {
   HStack,
   VStack,
@@ -19,7 +19,7 @@ import {
 } from '@chakra-ui/react'
 import { EditIcon, CheckIcon, CloseIcon, RepeatIcon } from '@chakra-ui/icons'
 
-const PropertyItem = ({
+const PropertyItem = memo(({
   prop,
   value,
   displayPath,
@@ -56,35 +56,27 @@ const PropertyItem = ({
   const displayValue = value !== undefined ? value : 'N/A'
   const isWritable = prop.writable || false
   const valueType = typeof value
+  
   const isActualError = (path, val) => {
-    // Only flag as error if it's an actual error register (not config) with non-zero value
     const errorRegisters = [
-      '.error', // axis.error, motor.error, encoder.error, etc.
-      'axis_error',
-      'motor_error', 
-      'encoder_error',
-      'controller_error',
-      'sensorless_error'
+      '.error', 'axis_error', 'motor_error', 'encoder_error',
+      'controller_error', 'sensorless_error'
     ]
     
-    // Exclude configuration properties that contain "error" in their name
     const configProperties = [
-      'enable_overspeed_error',
-      'enable_current_limit_error', 
-      'last_error_time',
-      'error_rate_ms'
+      'enable_overspeed_error', 'enable_current_limit_error', 
+      'last_error_time', 'error_rate_ms'
     ]
     
-    // Check if it's a config property (should not be flagged as error)
     if (configProperties.some(config => path.includes(config))) {
       return false
     }
     
-    // Check if it's an actual error register with non-zero value
     return errorRegisters.some(errorReg => path.includes(errorReg)) && val !== 0 && val !== undefined
   }
+  
   const isError = isActualError(displayPath, value)
-  const isChartable = true // Make all properties chartable
+  const isChartable = true
   const isCharted = selectedProperties.includes(displayPath)
   const propName = prop.name || displayPath.split('.').pop()
   const isSetpoint = prop.isSetpoint === true
@@ -100,18 +92,15 @@ const PropertyItem = ({
 
   const handleSliderChange = (newValue) => {
     setSliderValue(newValue)
-    // Only update local slider state during dragging, don't send to device yet
   }
 
   const handleSliderChangeEnd = async (newValue) => {
-    // Update the property when slider drag ends
     if (prop.writable && isConnected && updateProperty) {
       let formattedValue = newValue
       if (prop.decimals !== undefined) {
         formattedValue = parseFloat(newValue.toFixed(prop.decimals))
       }
       
-      // Convert display path to device path format for the API
       let devicePath
       if (displayPath.startsWith('system.')) {
         const systemProp = displayPath.replace('system.', '')
@@ -127,14 +116,11 @@ const PropertyItem = ({
         devicePath = `device.${displayPath}`
       }
       
-      console.log(`Slider updating: ${devicePath} = ${formattedValue}`)
       try {
         await updateProperty(devicePath, formattedValue)
-        // Refresh the property value after successful update
         await refreshProperty(displayPath)
       } catch (error) {
         console.error('Failed to update property via slider:', error)
-        // Reset slider to previous value on error
         setSliderValue(parseFloat(value) || 0)
       }
     }
@@ -147,7 +133,6 @@ const PropertyItem = ({
 
   return (
     <Box
-      key={displayPath}
       bg={isError ? "red.900" : "gray.750"}
       borderRadius="md"
       border="1px solid"
@@ -157,13 +142,10 @@ const PropertyItem = ({
       transition="all 0.2s"
     >
       <VStack spacing={2} align="stretch">
-        {/* Top row */}
         <HStack justify="space-between" align="center" spacing={2}>
-          {/* Left side - Compact property info */}
           <HStack spacing={2} flex="1" align="center" minW="0">
             <VStack align="start" spacing={0} flex="1" minW="0">
               <HStack spacing={2} align="center" w="100%">
-                {/* Chart checkbox - more prominent position */}
                 {isChartable && togglePropertyChart && (
                   <Checkbox
                     size="md"
@@ -198,7 +180,6 @@ const PropertyItem = ({
             </VStack>
           </HStack>
           
-          {/* Right side - Compact value and controls */}
           <HStack spacing={1} minW="fit-content">
             {isEditing ? (
               <>
@@ -276,7 +257,6 @@ const PropertyItem = ({
           </HStack>
         </HStack>
 
-        {/* Slider row for properties with hasSlider or isSetpoint */}
         {shouldShowSlider && isWritable && prop.type === 'number' && isConnected && !isEditing && (
           <HStack spacing={2} w="100%">
             <Slider
@@ -308,6 +288,17 @@ const PropertyItem = ({
       </VStack>
     </Box>
   )
-}
+}, (prevProps, nextProps) => {
+  // Custom comparison for better performance
+  return (
+    prevProps.value === nextProps.value &&
+    prevProps.isEditing === nextProps.isEditing &&
+    prevProps.isRefreshing === nextProps.isRefreshing &&
+    prevProps.isConnected === nextProps.isConnected &&
+    prevProps.selectedProperties.length === nextProps.selectedProperties.length &&
+    prevProps.selectedProperties.every((prop, index) => prop === nextProps.selectedProperties[index])
+  )
+})
 
+PropertyItem.displayName = 'PropertyItem'
 export default PropertyItem
