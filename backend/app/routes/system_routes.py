@@ -91,7 +91,7 @@ del "%~f0"
 """
         
         script_path = os.path.join(temp_dir, "update.bat")
-        with open(script_path, 'w') as f:
+        with open(script_path, 'w', encoding='utf-8') as f:
             f.write(update_script)
         
         logger.info("Starting update process...")
