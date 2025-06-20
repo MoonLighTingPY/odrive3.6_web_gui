@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, memo } from 'react'
 import {
   HStack,
   Input,

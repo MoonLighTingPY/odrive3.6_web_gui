@@ -25,8 +25,11 @@
     "react-dom": "^18.2.0",
     "react-markdown": "^10.1.0",
     "react-redux": "^9.0.4",
+    "react-window": "^1.8.11",
+    "react-window-infinite-loader": "^1.0.10",
     "recharts": "^2.15.3",
-    "redux-persist": "^6.0.0"
+    "redux-persist": "^6.0.0",
+    "rollup-plugin-visualizer": "^6.0.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.25.0",
