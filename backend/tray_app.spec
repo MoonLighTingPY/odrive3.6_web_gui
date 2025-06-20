@@ -26,6 +26,22 @@ excludes = [
 pystray_datas, pystray_binaries, pystray_hiddenimports = collect_all('pystray')
 pil_datas, pil_binaries, pil_hiddenimports = collect_all('PIL')
 flask_datas, flask_binaries, flask_hiddenimports = collect_all('flask')
+psutil_datas, psutil_binaries, psutil_hiddenimports = collect_all('psutil')
+
+# Add explicit psutil collection to ensure it's included
+try:
+    import psutil
+    psutil_submodules = collect_submodules('psutil')
+    # Add psutil's platform-specific modules
+    if sys.platform == 'win32':
+        psutil_hiddenimports.extend(['psutil._pswindows', 'psutil._psutil_windows'])
+    elif sys.platform == 'darwin':
+        psutil_hiddenimports.extend(['psutil._psosx', 'psutil._psutil_osx'])
+    else:
+        psutil_hiddenimports.extend(['psutil._pslinux', 'psutil._psutil_linux'])
+except ImportError:
+    psutil_submodules = []
+
 odrive_submodules = collect_submodules('odrive')
 
 # ODrive library binaries and data collection (optimized)
@@ -75,11 +91,11 @@ for icon_path in possible_icons:
         break
 
 # Combine all binaries and datas
-all_binaries = odrive_binaries + pystray_binaries + pil_binaries + flask_binaries
+all_binaries = odrive_binaries + pystray_binaries + pil_binaries + flask_binaries + psutil_binaries
 all_datas = [
     ('../frontend/dist', 'static'),
     ('app', 'app'),  # Include the entire app folder
-] + odrive_datas + pystray_datas + pil_datas + flask_datas + ([
+] + odrive_datas + pystray_datas + pil_datas + flask_datas + psutil_datas + ([
     (icon_file, '.'),
 ] if icon_file else [])
 
@@ -89,6 +105,9 @@ all_hiddenimports = [
     'odrive.utils',
     'flask',
     'flask_cors',
+    'psutil',
+    'psutil._common',
+    'psutil._compat',
     'app.app',  # Updated import path
     'app.odrive_manager',  # Add app module imports
     'app.odrive_telemetry_config',
@@ -107,7 +126,7 @@ all_hiddenimports = [
     'requests',
     'tkinter',  # Add tkinter for message dialogs
     'tkinter.messagebox'  # Add tkinter.messagebox specifically
-] + pystray_hiddenimports + pil_hiddenimports + flask_hiddenimports
+] + psutil_submodules + pystray_hiddenimports + pil_hiddenimports + flask_hiddenimports + psutil_hiddenimports
 
 a = Analysis(
     ['tray_app.py'],

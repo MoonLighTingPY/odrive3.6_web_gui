@@ -3,6 +3,10 @@
  * Handles API calls for ODrive configuration operations
  */
 
+
+import { generateConfigCommands } from './configCommandGenerator'
+
+
 /**
  * Execute configuration action via API
  * @param {string} action - The action to execute ('erase', 'apply', 'save_and_reboot', 'calibrate', 'save', 'clear_errors')
@@ -208,7 +212,7 @@ export const executeCommand = async (command) => {
  * @returns {Promise<void>} Resolves when both apply and save are complete
  */
 export const applyAndSaveConfiguration = async (deviceConfig, toast) => {
-  const { generateConfigCommands } = await import('./configCommandGenerator')
+
   const commands = generateConfigCommands(deviceConfig)
   
   // Mark that we're expecting a reconnection

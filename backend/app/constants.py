@@ -1,1 +1,1 @@
-VERSION = "plutonium_1.2.8"
+VERSION = "plutonium_1.3.0"
