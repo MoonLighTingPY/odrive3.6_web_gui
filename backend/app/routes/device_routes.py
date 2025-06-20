@@ -110,22 +110,48 @@ def set_property():
 
 @device_bp.route('/property', methods=['POST'])
 def get_single_property():
-    """Get a single property value for refresh buttons"""
+    """Get single property value or batch of properties"""
     try:
         if not odrive_manager.is_connected():
             return jsonify({"error": "No ODrive connected"}), 404
         
         data = request.get_json()
-        if not data or not data.get('path'):
-            return jsonify({"error": "No path specified"}), 400
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
         
-        path = data.get('path')
-        value = get_property_value_direct(odrive_manager.current_device, path)
-        
-        if value is not None:
-            return jsonify({'value': sanitize_for_json(value)})  # Changed from 'result' to 'value'
+        # Check if this is a batch request (array of paths) or single property
+        if 'paths' in data:
+            # Batch request
+            paths = data.get('paths', [])
+            if not paths:
+                return jsonify({"error": "No paths specified"}), 400
+            
+            results = {}
+            for path in paths:
+                try:
+                    value = get_property_value_direct(odrive_manager.current_device, path)
+                    if value is not None:
+                        results[path] = sanitize_for_json(value)
+                    else:
+                        results[path] = None
+                except Exception as e:
+                    logger.debug(f"Error getting property {path}: {e}")
+                    results[path] = None
+            
+            return jsonify({'results': results})
+            
+        elif 'path' in data:
+            # Single property request (existing functionality)
+            path = data.get('path')
+            value = get_property_value_direct(odrive_manager.current_device, path)
+            
+            if value is not None:
+                return jsonify({'value': sanitize_for_json(value)})
+            else:
+                return jsonify({'error': f'Failed to get property: {path}'}), 400
         else:
-            return jsonify({'error': f'Failed to get property: {path}'}), 400
+            return jsonify({"error": "Neither 'path' nor 'paths' specified"}), 400
+            
     except Exception as e:
         logger.error(f"Error in get_single_property: {e}")
         return jsonify({'error': str(e)}), 500
