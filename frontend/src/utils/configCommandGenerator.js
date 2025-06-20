@@ -111,7 +111,9 @@ export const generateMotorCommands = (motorConfig = {}) => {
   
   // Direct torque constant setting (takes precedence over motor_kv)
   if (motorConfig.torque_constant !== undefined) {
-    commands.push(`odrv0.axis${axisNum}.motor.config.torque_constant = ${motorConfig.torque_constant}`)
+    // Round to reasonable precision to avoid floating point issues
+    const roundedTorqueConstant = parseFloat(motorConfig.torque_constant.toFixed(6))
+    commands.push(`odrv0.axis${axisNum}.motor.config.torque_constant = ${roundedTorqueConstant}`)
   }
   
   // Pre-calibrated flag
