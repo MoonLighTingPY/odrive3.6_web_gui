@@ -18,6 +18,7 @@ import {
 import DeviceList from './components/DeviceList'
 import ConfigurationTab from './components/tabs/ConfigurationTab'
 import DashboardTab from './components/tabs/DashboardTab'
+import PIDCalibrationTab from './components/tabs/PIDCalibrationTab'
 import InspectorTab from './components/tabs/InspectorTab'
 import PresetsTab from './components/tabs/PresetsTab'
 import CommandConsoleTab from './components/tabs/CommandConsoleTab'
@@ -102,6 +103,25 @@ function App() {
               >
                 Configuration
               </Tab>
+              
+              {/* Presets Tab */}
+              <Tab
+                bg="gray.700"
+                color="gray.300"
+                borderRadius="md"
+                _hover={{ bg: 'gray.800' }}
+                _selected={{
+                  bg: 'gray.900',
+                  color: 'odrive.300',
+                  borderBottom: '3px solid',
+                  borderBottomColor: 'odrive.300',
+                  borderBottomLeftRadius: '0px',
+                  borderBottomRightRadius: '0px',
+                }}
+              >
+                Presets
+              </Tab>
+
 
               {/* Dashboard Tab */}
               <Tab
@@ -139,7 +159,9 @@ function App() {
                 Inspector
               </Tab>
 
-              {/* Presets Tab */}
+
+
+              {/* PID Calibration Tab */}
               <Tab
                 bg="gray.700"
                 color="gray.300"
@@ -154,7 +176,7 @@ function App() {
                   borderBottomRightRadius: '0px',
                 }}
               >
-                Presets
+                PID Tuning
               </Tab>
 
               { /* Command Console Tab */}
@@ -191,7 +213,11 @@ function App() {
               <TabPanel p={0} h="100%">
                 <ConfigurationTab isConnected={isConnected} />
               </TabPanel>
-              
+
+              <TabPanel p={0} h="100%">
+                <PresetsTab />
+              </TabPanel>
+
               <TabPanel p={0} h="100%">
                 <DashboardTab isConnected={isConnected} odriveState={odriveState} isActive={activeTab === 1} />
               </TabPanel>
@@ -201,7 +227,7 @@ function App() {
               </TabPanel>
 
               <TabPanel p={0} h="100%">
-                <PresetsTab />
+                <PIDCalibrationTab isConnected={isConnected} />
               </TabPanel>
 
               <TabPanel p={0} h="100%">
