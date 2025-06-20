@@ -158,8 +158,6 @@ function App() {
                 Inspector
               </Tab>
 
-
-
               { /* Command Console Tab */}
               <Tab
                 bg="gray.700"
@@ -178,15 +176,9 @@ function App() {
                 Command Console
               </Tab>
 
-              <UpdateChecker />
-
               <Spacer />
               <HStack spacing={4} pr={4}>
-                {isConnected && (
-                  <Badge colorScheme="green" variant="outline" fontSize="xs">
-                    Connected to {connectedDevice?.path}
-                  </Badge>
-                )}
+                <UpdateChecker />
               </HStack>
             </TabList>
 
