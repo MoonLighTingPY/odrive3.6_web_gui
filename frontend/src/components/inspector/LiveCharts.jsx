@@ -23,7 +23,6 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { useChartsTelemetry } from '../../hooks/useChartsTelemetry'
-import debounce from 'lodash/debounce'
 
 // Move ChartComponent outside as a separate component
 const ChartComponent = memo(({ property, index, data, chartColors, chartConfig, getPropertyDisplayName }) => (
@@ -41,11 +40,7 @@ const ChartComponent = memo(({ property, index, data, chartColors, chartConfig, 
         tick={{ fill: '#9CA3AF', fontSize: 10 }}
         domain={['auto', 'auto']}
         width={60}
-        tickFormatter={(value) => 
-          Math.abs(value) >= 1000 ? 
-            `${(value / 1000).toFixed(1)}k` : 
-            value.toFixed(2)
-        }
+        tickFormatter={(value) => `${value}`}  // raw values
       />
       <RechartsTooltip 
         contentStyle={{ 
