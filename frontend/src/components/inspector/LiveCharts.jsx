@@ -23,7 +23,7 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { useChartsTelemetry } from '../../hooks/useChartsTelemetry'
-import { debounce } from 'lodash'
+import debounce from 'lodash/debounce'
 
 // Move ChartComponent outside as a separate component
 const ChartComponent = memo(({ property, index, data, chartColors, chartConfig, getPropertyDisplayName }) => (

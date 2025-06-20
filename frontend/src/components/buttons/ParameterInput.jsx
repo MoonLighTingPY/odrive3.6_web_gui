@@ -9,7 +9,7 @@ import {
   Spinner,
 } from '@chakra-ui/react'
 import { RefreshCw } from 'lucide-react'
-import { debounce } from 'lodash'
+import debounce from 'lodash/debounce'
 
 const ParameterInput = ({ 
   value, 
