@@ -56,25 +56,31 @@ export const useDashboardTelemetry = () => {
         
         if (response.ok) {
           const data = await response.json()
-          
-          // Update high-frequency telemetry slice immediately
-          const telemetryData = {
-            vbus_voltage: data.data['vbus_voltage'] || 0,
-            motor_current: data.data['axis0.motor.current_control.Iq_measured'] || 0,
-            encoder_pos: data.data['axis0.encoder.pos_estimate'] || 0,
-            encoder_vel: data.data['axis0.encoder.vel_estimate'] || 0,
-            motor_temp: data.data['axis0.motor.motor_thermistor.temperature'] || 0,
-            fet_temp: data.data['axis0.motor.fet_thermistor.temperature'] || 0,
-            axis_state: data.data['axis0.current_state'] || 0,
-            // Include error codes for immediate error detection
-            axis_error: data.data['axis0.error'] || 0,
-            motor_error: data.data['axis0.motor.error'] || 0,
-            encoder_error: data.data['axis0.encoder.error'] || 0,
-            controller_error: data.data['axis0.controller.error'] || 0,
-            sensorless_error: data.data['axis0.sensorless_estimator.error'] || 0,
+
+          // only include values that the API actually returned
+          const mapping = {
+            vbus_voltage:                         'vbus_voltage',
+            motor_current:                        'axis0.motor.current_control.Iq_measured',
+            encoder_pos:                          'axis0.encoder.pos_estimate',
+            encoder_vel:                          'axis0.encoder.vel_estimate',
+            motor_temp:                           'axis0.motor.motor_thermistor.temperature',
+            fet_temp:                             'axis0.motor.fet_thermistor.temperature',
+            axis_state:                           'axis0.current_state',
+            axis_error:                           'axis0.error',
+            motor_error:                          'axis0.motor.error',
+            encoder_error:                        'axis0.encoder.error',
+            controller_error:                     'axis0.controller.error',
+            sensorless_error:                     'axis0.sensorless_estimator.error',
           }
-          
-          // Immediate update to telemetry slice (no debouncing)
+          const telemetryData = {}
+          Object.entries(mapping).forEach(([key, path]) => {
+            const val = data.data[path]
+            if (val !== undefined) {
+              telemetryData[key] = val
+            }
+          })
+
+          // immediate update (no defaults to 0)
           dispatch(updateTelemetry(telemetryData))
           
           // Debounced update to main device state (for compatibility and error codes)

@@ -28,8 +28,11 @@ const telemetrySlice = createSlice({
   initialState,
   reducers: {
     updateTelemetry: (state, action) => {
-      // Update only the specific telemetry values
-      Object.assign(state, action.payload)
+      Object.entries(action.payload).forEach(([key, value]) => {
+        if (value !== undefined) {
+          state[key] = value
+        }
+      })
       state.lastUpdate = Date.now()
       state.updateCount += 1
       state.connectionHealth = true
