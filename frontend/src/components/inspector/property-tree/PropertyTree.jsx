@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react'
+import React, { useState, useCallback, useEffect, memo, useMemo } from 'react'
 import {
   VStack,
   HStack,
@@ -131,6 +131,40 @@ const PropertyTree = ({
       return newSet
     })
   }
+
+  // Create a simple SectionHeader component
+  const SectionHeader = memo(({ name, section, sectionPath }) => (
+    <Box
+      bg="gray.700"
+      borderRadius="md"
+      p={3}
+      mb={2}
+      border="1px solid"
+      borderColor="gray.600"
+      cursor="pointer"
+      onClick={() => toggleSection(sectionPath)}
+      _hover={{ bg: "gray.650" }}
+      transition="all 0.2s"
+    >
+      <HStack justify="space-between">
+        <HStack spacing={2}>
+          <Text fontWeight="bold" color="blue.300" fontSize="sm">
+            {collapsedSections.has(sectionPath) ? '▶' : '▼'} {name}
+          </Text>
+          <Badge colorScheme="purple" variant="outline" size="xs">
+            {collectAllProperties(section).length}
+          </Badge>
+        </HStack>
+      </HStack>
+      {!collapsedSections.has(sectionPath) && section.description && (
+        <Text fontSize="xs" color="gray.400" mt={1}>
+          {section.description}
+        </Text>
+      )}
+    </Box>
+  ))
+
+  SectionHeader.displayName = 'SectionHeader'
 
   // Function to render a section recursively with collapsible subsections
   const renderSection = (section, sectionPath = '', depth = 0) => {
@@ -268,46 +302,20 @@ const PropertyTree = ({
         <CardBody py={2} flex="1" minH="0" overflow="hidden" p={0}>
           <Box h="100%" overflowY="auto" px={4} py={2}>
             <VStack spacing={2} align="stretch">
-              {Object.entries(filteredTree).map(([sectionName, section]) => {
-                const isCollapsed = collapsedSections.has(sectionName)
-                const totalProperties = collectAllProperties(section).length
-                
-                return (
-                  <Box key={sectionName}>
-                    {/* Main section header */}
-                    <Box
-                      bg="gray.700"
-                      borderRadius="md"
-                      p={3}
-                      mb={2}
-                      border="2px solid"
-                      borderColor="gray.600"
-                      cursor="pointer"
-                      onClick={() => toggleSection(sectionName)}
-                      _hover={{ bg: "gray.650", borderColor: "gray.500" }}
-                      transition="all 0.2s"
-                    >
-                      <HStack justify="space-between">
-                        <HStack spacing={2}>
-                          <Text fontWeight="bold" color="white" fontSize="md">
-                            {isCollapsed ? '▶' : '▼'} {section.name}
-                          </Text>
-                          <Badge colorScheme="blue" variant="solid" size="sm">
-                            {totalProperties}
-                          </Badge>
-                        </HStack>
-                      </HStack>
-                    </Box>
-                    
-                    {/* Main section content */}
-                    {!isCollapsed && (
-                      <VStack spacing={1} align="stretch" ml={2}>
-                        {renderSection(section, sectionName)}
-                      </VStack>
-                    )}
-                  </Box>
-                )
-              })}
+              {Object.entries(filteredTree).map(([sectionName, section]) => (
+                <Box key={sectionName}>
+                  <SectionHeader 
+                    name={sectionName} 
+                    section={section} 
+                    sectionPath={sectionName}
+                  />
+                  {!collapsedSections.has(sectionName) && (
+                    <VStack spacing={1} align="stretch" ml={2}>
+                      {renderSection(section, sectionName)}
+                    </VStack>
+                  )}
+                </Box>
+              ))}
             </VStack>
           </Box>
         </CardBody>
