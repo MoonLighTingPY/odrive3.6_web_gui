@@ -36,9 +36,9 @@ export const safeBool = (value, defaultValue = false) => {
  */
 export const convertTorqueConstantToKv = (torqueConstant) => {
   if (torqueConstant > 0) {
-    return 60 / (2 * Math.PI * torqueConstant)
+    return 8.27 / torqueConstant
   }
-  return 230
+  return 0
 }
 
 /**
@@ -48,7 +48,7 @@ export const convertTorqueConstantToKv = (torqueConstant) => {
  */
 export const convertKvToTorqueConstant = (motorKv) => {
   if (motorKv > 0) {
-    return 60 / (2 * Math.PI * motorKv)
+    return 8.27 / motorKv
   }
-  return 0.04
+  return 0.0
 }
