@@ -62,7 +62,7 @@ import {
   handleFileImport
 } from '../../utils/presetsOperations'
 
-const PresetsTab = () => {
+const PresetsTab = memo(() => {
   const dispatch = useDispatch()
   const toast = useToast()
   const fileInputRef = useRef(null)
@@ -646,6 +646,8 @@ const PresetsTab = () => {
       </VStack>
     </Box>
   )
-}
+})
+
+PresetsTab.displayName = 'PresetsTab'
 
 export default PresetsTab

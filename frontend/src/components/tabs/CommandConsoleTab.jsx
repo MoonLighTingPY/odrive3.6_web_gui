@@ -11,7 +11,7 @@ import {
 import { Terminal, Wifi, WifiOff } from 'lucide-react'
 import CommandConsole from '../CommandConsole'
 
-const CommandConsoleTab = () => {
+const CommandConsoleTab = memo(() => {
   const { isConnected, connectedDevice } = useSelector(state => state.device)
 
   return (
@@ -82,6 +82,8 @@ const CommandConsoleTab = () => {
       </VStack>
     </Box>
   )
-}
+})
+
+CommandConsoleTab.displayName = 'CommandConsoleTab'
 
 export default CommandConsoleTab

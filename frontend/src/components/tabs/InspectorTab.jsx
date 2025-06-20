@@ -23,7 +23,7 @@ import PropertyTree from '../inspector/property-tree/PropertyTree'
 import LiveCharts from '../inspector/LiveCharts'
 import { EnableMotorButton, DisableMotorButton, CalibrationButton, ClearErrorsButton } from '../MotorControls'
 
-const InspectorTab = () => {
+const InspectorTab = memo(() => {
   const toast = useToast()
   const { isConnected, odriveState } = useSelector(state => state.device)
   const [searchFilter, setSearchFilter] = useState('')
@@ -143,6 +143,8 @@ const InspectorTab = () => {
       </Box>
     </Box>
   )
-}
+})
+
+InspectorTab.displayName = 'InspectorTab'
 
 export default InspectorTab

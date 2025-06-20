@@ -28,7 +28,7 @@ import {
 } from '../../utils/configBatchApi'
 import EraseConfigModal from '../modals/EraseConfigModal'
 
-const ConfigurationTab = () => {
+const ConfigurationTab = memo(() => {
   const dispatch = useDispatch()
   const toast = useToast()
   
@@ -524,6 +524,8 @@ useEffect(() => {
       />
     </Flex>
   )
-}
+})
+
+ConfigurationTab.displayName = 'ConfigurationTab'
 
 export default ConfigurationTab
