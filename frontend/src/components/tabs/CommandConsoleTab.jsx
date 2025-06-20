@@ -1,4 +1,5 @@
 import { useSelector } from 'react-redux'
+import { memo } from 'react'
 import {
   Box,
   VStack,

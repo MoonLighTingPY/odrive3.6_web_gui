@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, memo, useMemo } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import {
   Box,
@@ -28,6 +28,16 @@ import {
 } from '../../utils/configBatchApi'
 import EraseConfigModal from '../modals/EraseConfigModal'
 
+// Configuration steps array
+const CONFIGURATION_STEPS = [
+  { id: 1, name: 'Power', icon: '⚡', component: PowerConfigStep },
+  { id: 2, name: 'Motor', icon: '🔧', component: MotorConfigStep },
+  { id: 3, name: 'Encoder', icon: '📐', component: EncoderConfigStep },
+  { id: 4, name: 'Control', icon: '🎮', component: ControlConfigStep },
+  { id: 5, name: 'Interface', icon: '🔌', component: InterfaceConfigStep },
+  { id: 6, name: 'Apply', icon: '✅', component: FinalConfigStep },
+]
+
 const ConfigurationTab = memo(() => {
   const dispatch = useDispatch()
   const toast = useToast()
@@ -51,16 +61,10 @@ const ConfigurationTab = memo(() => {
 
   const { isOpen: isEraseOpen, onOpen: onEraseOpen, onClose: onEraseClose } = useDisclosure()
 
-  const steps = [
-    { id: 1, name: 'Power', icon: '⚡', component: PowerConfigStep },
-    { id: 2, name: 'Motor', icon: '🔧', component: MotorConfigStep },
-    { id: 3, name: 'Encoder', icon: '📐', component: EncoderConfigStep },
-    { id: 4, name: 'Control', icon: '🎮', component: ControlConfigStep },
-    { id: 5, name: 'Interface', icon: '🔌', component: InterfaceConfigStep },
-    { id: 6, name: 'Apply', icon: '✅', component: FinalConfigStep },
-    // Add debug step only in development mode
+  const steps = useMemo(() => [
+    ...CONFIGURATION_STEPS,
     ...(import.meta.env.DEV ? [{ id: 7, name: 'Debug', icon: '🐛', component: DebugConfigStep }] : [])
-  ]
+  ], [])
 
   const currentStep = steps.find(step => step.id === activeConfigStep)
   const CurrentStepComponent = currentStep?.component

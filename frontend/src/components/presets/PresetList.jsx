@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, memo, useMemo } from 'react'
 import { useSelector } from 'react-redux'
 import {
   VStack,
@@ -210,15 +210,15 @@ const confirmEdit = () => {
 }
 
 
-  const presetEntries = Object.entries(presets).sort(([a], [b]) => {
-    // Factory presets first, then user presets alphabetically
-    const aFactory = isFactoryPreset(a)
-    const bFactory = isFactoryPreset(b)
-    
-    if (aFactory && !bFactory) return -1
-    if (!aFactory && bFactory) return 1
-    return a.localeCompare(b)
-  })
+  const presetEntries = useMemo(() => 
+    Object.entries(presets).sort(([a], [b]) => {
+      const aFactory = isFactoryPreset(a)
+      const bFactory = isFactoryPreset(b)
+      if (aFactory && !bFactory) return -1
+      if (!aFactory && bFactory) return 1
+      return a.localeCompare(b)
+    }), [presets]
+  )
 
   // Show connection warning if not in dev mode and not connected
   {!isConnected && (import.meta.env.DEV || import.meta.env.MODE === 'development') && (
