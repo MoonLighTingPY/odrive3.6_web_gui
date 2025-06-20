@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo, useMemo, useCallback } from 'react'
 import {
   VStack,
   HStack,
@@ -23,17 +23,69 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { useChartsTelemetry } from '../../hooks/useChartsTelemetry'
+import { debounce } from 'lodash'
 
-const LiveCharts = ({ selectedProperties, togglePropertyChart }) => {
+// Move ChartComponent outside as a separate component
+const ChartComponent = memo(({ property, index, data, chartColors, chartConfig, getPropertyDisplayName }) => (
+  <ResponsiveContainer width="100%" height="100%">
+    <LineChart data={data} {...chartConfig}>
+      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+      <XAxis 
+        dataKey="relativeTime" 
+        stroke="#9CA3AF"
+        tick={{ fill: '#9CA3AF', fontSize: 10 }}
+        tickFormatter={(value) => `${value.toFixed(0)}s`}
+      />
+      <YAxis 
+        stroke="#9CA3AF"
+        tick={{ fill: '#9CA3AF', fontSize: 10 }}
+        domain={['auto', 'auto']}
+        width={60}
+        tickFormatter={(value) => 
+          Math.abs(value) >= 1000 ? 
+            `${(value / 1000).toFixed(1)}k` : 
+            value.toFixed(2)
+        }
+      />
+      <RechartsTooltip 
+        contentStyle={{ 
+          backgroundColor: '#1F2937', 
+          border: '1px solid #374151',
+          borderRadius: '6px',
+          color: '#F9FAFB',
+          fontSize: '11px'
+        }}
+        labelFormatter={(value) => `Time: ${value.toFixed(1)}s`}
+        formatter={(value) => [
+          typeof value === 'number' ? value.toFixed(6) : value, 
+          getPropertyDisplayName(property)
+        ]}
+      />
+      <Line
+        type="linear"
+        dataKey={property}
+        stroke={chartColors[index % chartColors.length]}
+        strokeWidth={2}
+        dot={false}
+        connectNulls={false}
+        isAnimationActive={false}
+      />
+    </LineChart>
+  </ResponsiveContainer>
+))
+
+ChartComponent.displayName = 'ChartComponent'
+
+const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
   const [chartData, setChartData] = useState([])
   
-  const chartColors = [
+  const chartColors = useMemo(() => [
     '#3B82F6', '#EF4444', '#10B981', '#F59E0B', 
     '#8B5CF6', '#06B6D4', '#84CC16', '#F97316',
     '#EC4899', '#6366F1', '#14B8A6', '#F472B6'
-  ]
+  ], [])
 
-  const handleChartData = (data) => {
+  const handleChartData = useCallback((data) => {
     if (!data.data) return
     
     const timestamp = data.timestamp
@@ -56,7 +108,7 @@ const LiveCharts = ({ selectedProperties, togglePropertyChart }) => {
       const filteredData = newData.filter(d => d.time > cutoffTime)
       return filteredData.length > 1000 ? filteredData.slice(-1000) : filteredData
     })
-  }
+  }, [chartData])
 
   // Use the new charts telemetry hook
   useChartsTelemetry(selectedProperties, handleChartData)
@@ -68,17 +120,32 @@ const LiveCharts = ({ selectedProperties, togglePropertyChart }) => {
     }
   }, [selectedProperties.length])
 
-  const getPropertyDisplayName = (property) => {
+  const getPropertyDisplayName = useCallback((property) => {
     return property.split('.').pop()
-  }
+  }, [])
 
-  const handleRemoveChart = (property) => {
+  const handleRemoveChart = useCallback((property) => {
     if (togglePropertyChart) {
       togglePropertyChart(property)
     }
-  }
+  }, [togglePropertyChart])
 
-  const renderChart = (property, index) => (
+  // Memoize chart configurations
+  const chartConfig = useMemo(() => ({
+    margin: { top: 5, right: 5, left: 20, bottom: 5 },
+    isAnimationActive: false
+  }), [])
+
+  // Use useMemo for expensive chart data transformations
+  const processedChartData = useMemo(() => {
+    return chartData.map((sample, index) => ({
+      ...sample,
+      // Pre-calculate any derived values here
+      relativeTime: index > 0 ? (sample.time - chartData[0].time) / 1000 : 0
+    }))
+  }, [chartData])
+
+  const renderChart = useCallback((property, index) => (
     <Box 
       key={property} 
       p={3} 
@@ -121,59 +188,18 @@ const LiveCharts = ({ selectedProperties, togglePropertyChart }) => {
         </HStack>
         
         <Box flex="1" minH="200px">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart 
-              data={chartData} 
-              margin={{ top: 5, right: 5, left: 20, bottom: 5 }}
-              isAnimationActive={false}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-              <XAxis 
-                dataKey="relativeTime" 
-                stroke="#9CA3AF"
-                tick={{ fill: '#9CA3AF', fontSize: 10 }}
-                tickFormatter={(value) => `${value.toFixed(0)}s`}
-              />
-              <YAxis 
-                stroke="#9CA3AF"
-                tick={{ fill: '#9CA3AF', fontSize: 10 }}
-                domain={['auto', 'auto']}
-                width={60}
-                tickFormatter={(value) => 
-                  Math.abs(value) >= 1000 ? 
-                    `${(value / 1000).toFixed(1)}k` : 
-                    value.toFixed(2)
-                }
-              />
-              <RechartsTooltip 
-                contentStyle={{ 
-                  backgroundColor: '#1F2937', 
-                  border: '1px solid #374151',
-                  borderRadius: '6px',
-                  color: '#F9FAFB',
-                  fontSize: '11px'
-                }}
-                labelFormatter={(value) => `Time: ${value.toFixed(1)}s`}
-                formatter={(value) => [
-                  typeof value === 'number' ? value.toFixed(6) : value, 
-                  getPropertyDisplayName(property)
-                ]}
-              />
-              <Line
-                type="monotone"
-                dataKey={property}
-                stroke={chartColors[index % chartColors.length]}
-                strokeWidth={2}
-                dot={false}
-                connectNulls={false}
-                isAnimationActive={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          <ChartComponent 
+            property={property} 
+            index={index} 
+            data={processedChartData}
+            chartColors={chartColors}
+            chartConfig={chartConfig}
+            getPropertyDisplayName={getPropertyDisplayName}
+          />
         </Box>
       </VStack>
     </Box>
-  )
+  ), [chartData, chartColors, processedChartData, chartConfig, getPropertyDisplayName, handleRemoveChart])
 
   return (
     <Box h="100%" display="flex" flexDirection="column">
@@ -223,6 +249,8 @@ const LiveCharts = ({ selectedProperties, togglePropertyChart }) => {
       )}
     </Box>
   )
-}
+})
+
+LiveCharts.displayName = 'LiveCharts'
 
 export default LiveCharts
