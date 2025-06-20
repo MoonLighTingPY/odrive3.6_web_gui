@@ -56,7 +56,34 @@ const PropertyItem = ({
   const displayValue = value !== undefined ? value : 'N/A'
   const isWritable = prop.writable || false
   const valueType = typeof value
-  const isError = displayPath.includes('error') && value !== 0 && value !== undefined
+  const isActualError = (path, val) => {
+    // Only flag as error if it's an actual error register (not config) with non-zero value
+    const errorRegisters = [
+      '.error', // axis.error, motor.error, encoder.error, etc.
+      'axis_error',
+      'motor_error', 
+      'encoder_error',
+      'controller_error',
+      'sensorless_error'
+    ]
+    
+    // Exclude configuration properties that contain "error" in their name
+    const configProperties = [
+      'enable_overspeed_error',
+      'enable_current_limit_error', 
+      'last_error_time',
+      'error_rate_ms'
+    ]
+    
+    // Check if it's a config property (should not be flagged as error)
+    if (configProperties.some(config => path.includes(config))) {
+      return false
+    }
+    
+    // Check if it's an actual error register with non-zero value
+    return errorRegisters.some(errorReg => path.includes(errorReg)) && val !== 0 && val !== undefined
+  }
+  const isError = isActualError(displayPath, value)
   const isChartable = true // Make all properties chartable
   const isCharted = selectedProperties.includes(displayPath)
   const propName = prop.name || displayPath.split('.').pop()
