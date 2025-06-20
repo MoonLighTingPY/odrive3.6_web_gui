@@ -88,27 +88,25 @@ const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
   const handleChartData = useCallback((data) => {
     if (!data.data) return
     
-    const timestamp = data.timestamp
-    const sample = { 
-      time: timestamp,
-      relativeTime: chartData.length > 0 ? (timestamp - chartData[0].time) / 1000 : 0
-    }
-    
-    // Add all property values to the sample
-    Object.entries(data.data).forEach(([property, value]) => {
-      if (typeof value === 'number') {
-        sample[property] = value
-      }
-    })
-    
     setChartData(prev => {
+      const timestamp = data.timestamp
+      const sample = { 
+        time: timestamp,
+        relativeTime: prev.length > 0 ? (timestamp - prev[0].time) / 1000 : 0
+      }
+      
+      Object.entries(data.data).forEach(([property, value]) => {
+        if (typeof value === 'number') {
+          sample[property] = value
+        }
+      })
+      
       const newData = [...prev, sample]
-      // Keep only last 1000 points and last 60 seconds
       const cutoffTime = timestamp - 60000
       const filteredData = newData.filter(d => d.time > cutoffTime)
       return filteredData.length > 1000 ? filteredData.slice(-1000) : filteredData
     })
-  }, [chartData])
+  }, []) // Remove chartData dependency
 
   // Use the new charts telemetry hook
   useChartsTelemetry(selectedProperties, handleChartData)
@@ -140,8 +138,6 @@ const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
   const processedChartData = useMemo(() => {
     return chartData.map((sample, index) => ({
       ...sample,
-      // Pre-calculate any derived values here
-      relativeTime: index > 0 ? (sample.time - chartData[0].time) / 1000 : 0
     }))
   }, [chartData])
 
