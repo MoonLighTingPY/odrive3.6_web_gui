@@ -16,6 +16,7 @@ import {
   SliderFilledTrack,
   SliderThumb,
   Button,
+  Input
 } from '@chakra-ui/react'
 import { EditIcon, CheckIcon, CloseIcon, RepeatIcon } from '@chakra-ui/icons'
 
@@ -191,18 +192,27 @@ const PropertyItem = memo(({
                     colorScheme="blue"
                   />
                 ) : (
-                  <NumberInput
+                  <Input
                     size="sm"
                     value={editValue}
-                    onChange={setEditValue}
-                    min={prop.min}
-                    max={prop.max}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    type="number"
                     step={prop.step}
-                    precision={prop.decimals}
                     w="80px"
-                  >
-                    <NumberInputField bg="gray.700" color="white" fontSize="xs" />
-                  </NumberInput>
+                    bg="gray.700"
+                    color="white"
+                    fontSize="xs"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        saveEdit()
+                      } else if (e.key === 'Escape') {
+                        e.preventDefault()
+                        cancelEdit()
+                      }
+                    }}
+                    onFocus={(e) => e.target.select()}
+                  />
                 )}
                 <IconButton
                   size="xs"
@@ -249,7 +259,15 @@ const PropertyItem = memo(({
                     size="xs"
                     variant="ghost"
                     icon={<EditIcon />}
-                    onClick={() => startEditing(displayPath, displayValue)}
+                    onClick={() => {
+                      // round initial editValue without limiting further precision
+                      const initial = valueType === 'number'
+                        ? // use prop.decimals for display rounding, default to 6
+                          parseFloat(displayValue)
+                            .toFixed(prop.decimals != null ? prop.decimals : 6)
+                        : displayValue
+                      startEditing(displayPath, initial)
+                    }}
                   />
                 )}
               </>
@@ -289,14 +307,18 @@ const PropertyItem = memo(({
     </Box>
   )
 }, (prevProps, nextProps) => {
-  // Custom comparison for better performance
+  // only re-compare editValue for the item that’s editing
+  const editValueSame = !nextProps.isEditing 
+    || prevProps.editValue === nextProps.editValue
+
   return (
     prevProps.value === nextProps.value &&
     prevProps.isEditing === nextProps.isEditing &&
+    editValueSame &&
     prevProps.isRefreshing === nextProps.isRefreshing &&
     prevProps.isConnected === nextProps.isConnected &&
     prevProps.selectedProperties.length === nextProps.selectedProperties.length &&
-    prevProps.selectedProperties.every((prop, index) => prop === nextProps.selectedProperties[index])
+    prevProps.selectedProperties.every((p, i) => p === nextProps.selectedProperties[i])
   )
 })
 
