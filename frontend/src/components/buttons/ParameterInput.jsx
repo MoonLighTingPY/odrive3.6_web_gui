@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import {
   HStack,
   Input,
@@ -9,6 +9,7 @@ import {
   Spinner,
 } from '@chakra-ui/react'
 import { RefreshCw } from 'lucide-react'
+import { debounce } from 'lodash'
 
 const ParameterInput = ({ 
   value, 
@@ -37,9 +38,19 @@ const ParameterInput = ({
     }
   }, [value, precision])
 
+  const debouncedOnChange = useMemo(
+    () => debounce((value) => {
+      if (onChange) {
+        onChange(value)
+      }
+    }, 300),
+    [onChange]
+  )
+
   const handleInputChange = (e) => {
     const newValue = e.target.value
     setInputValue(newValue)
+    debouncedOnChange(newValue)
     
     // Allow empty string or valid number strings (including intermediate states)
     if (newValue === '' || newValue === '-' || newValue === '.' || newValue === '-.') {
