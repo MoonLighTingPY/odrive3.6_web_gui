@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, lazy, Suspense } from 'react'
 import { useSelector } from 'react-redux'
 import {
   Box,
@@ -16,14 +16,15 @@ import {
 } from '@chakra-ui/react'
 
 import DeviceList from './components/DeviceList'
-import ConfigurationTab from './components/tabs/ConfigurationTab'
-import DashboardTab from './components/tabs/DashboardTab'
-import InspectorTab from './components/tabs/InspectorTab'
-import PresetsTab from './components/tabs/PresetsTab'
-import CommandConsoleTab from './components/tabs/CommandConsoleTab'
 import UpdateChecker from './components/UpdateChecker'
 import { useDashboardTelemetry } from './hooks/useDashboardTelemetry'
 import './App.css'
+
+const ConfigurationTab = lazy(() => import('./components/tabs/ConfigurationTab'))
+const InspectorTab = lazy(() => import('./components/tabs/InspectorTab'))
+const DashboardTab = lazy(() => import('./components/tabs/DashboardTab'))
+const PresetsTab = lazy(() => import('./components/tabs/PresetsTab'))
+const CommandConsoleTab = lazy(() => import('./components/tabs/CommandConsoleTab'))
 
 function App() {
   const { isConnected, connectedDevice, odriveState } = useSelector(state => state.device)
@@ -189,29 +190,31 @@ function App() {
               </HStack>
             </TabList>
 
-            <TabPanels flex="1" bg="gray.900">
-              <TabPanel p={0} h="100%">
-                <ConfigurationTab isConnected={isConnected} />
-              </TabPanel>
+            <Suspense fallback={<Box>Loading...</Box>}>
+              <TabPanels flex="1" bg="gray.900">
+                <TabPanel p={0} h="100%">
+                  <ConfigurationTab isConnected={isConnected} />
+                </TabPanel>
 
-              <TabPanel p={0} h="100%">
-                <PresetsTab />
-              </TabPanel>
-              
-              <TabPanel p={0} h="100%">
-                <DashboardTab isConnected={isConnected} odriveState={odriveState} isActive={activeTab === 1} />
-              </TabPanel>
-              
-              <TabPanel p={0} h="100%">
-                <InspectorTab isConnected={isConnected} odriveState={odriveState} />
-              </TabPanel>
+                <TabPanel p={0} h="100%">
+                  <PresetsTab />
+                </TabPanel>
+                
+                <TabPanel p={0} h="100%">
+                  <DashboardTab isConnected={isConnected} odriveState={odriveState} isActive={activeTab === 1} />
+                </TabPanel>
+                
+                <TabPanel p={0} h="100%">
+                  <InspectorTab isConnected={isConnected} odriveState={odriveState} />
+                </TabPanel>
 
 
 
-              <TabPanel p={0} h="100%">
-                <CommandConsoleTab />
-              </TabPanel>
-            </TabPanels>
+                <TabPanel p={0} h="100%">
+                  <CommandConsoleTab />
+                </TabPanel>
+              </TabPanels>
+            </Suspense>
 
           </Tabs>
         </Box>
