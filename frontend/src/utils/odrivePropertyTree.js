@@ -15,7 +15,6 @@ export const odrivePropertyTree = {
       user_config_loaded: { name: 'User Config Loaded', description: 'Whether user configuration is loaded', writable: false, type: 'number' },
       vbus_voltage: { name: 'VBus Voltage', description: 'VBus voltage measurement (V)', writable: false, type: 'number', decimals: 2 },
       ibus: { name: 'DC Bus Current', description: 'Current DC bus current (A)', writable: false, type: 'number', decimals: 3 },
-      test_property: { name: 'Test Property', description: 'Test property for debugging', writable: true, type: 'number', decimals: 3, hasSlider: true },
       error: { name: 'System Error', description: 'System error flags', writable: false, type: 'number' },
       brake_resistor_armed: { name: 'Brake Resistor Armed', description: 'Brake resistor armed state', writable: false, type: 'boolean' },
       brake_resistor_saturated: { name: 'Brake Resistor Saturated', description: 'Brake resistor saturated state', writable: false, type: 'boolean' },
