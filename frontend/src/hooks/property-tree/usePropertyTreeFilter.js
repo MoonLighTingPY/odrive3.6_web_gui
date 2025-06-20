@@ -1,12 +1,23 @@
-import { useMemo } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 
 export const usePropertyTreeFilter = (odrivePropertyTree, searchFilter) => {
+  const [debouncedSearch, setDebouncedSearch] = useState(searchFilter)
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchFilter)
+    }, 300) // 300ms delay
+
+    return () => clearTimeout(timer)
+  }, [searchFilter])
+
   const filteredTree = useMemo(() => {
-    if (!searchFilter) {
+    if (!debouncedSearch) {
       return { ...odrivePropertyTree }
     }
 
-    const searchTerm = searchFilter.toLowerCase()
+    const searchTerm = debouncedSearch.toLowerCase()
     const filtered = {}
 
     // Helper function to recursively filter a section
@@ -87,7 +98,7 @@ export const usePropertyTreeFilter = (odrivePropertyTree, searchFilter) => {
     })
 
     return filtered
-  }, [searchFilter, odrivePropertyTree])
+  }, [debouncedSearch, odrivePropertyTree])
 
   return { filteredTree }
 }
