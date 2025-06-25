@@ -1,5 +1,15 @@
-import { useState, useEffect, useCallback, memo } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
+import React, { useState, useEffect, useCallback, memo, useRef } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+import { useToast } from '@chakra-ui/react'
+import {
+  setScanning,
+  setAvailableDevices,
+  setConnectedDevice,
+  setConnectionError,
+  setConnectionStatus,
+  clearDeviceState,
+} from '../store/slices/deviceSlice'
+import { clearErrors } from '../utils/configurationActions'
 import {
   Box,
   VStack,
@@ -13,16 +23,11 @@ import {
   Badge,
   Divider,
   Spinner,
-  useToast,
   Tooltip,
   Icon,
+  Heading,
 } from '@chakra-ui/react'
-import { InfoIcon } from '@chakra-ui/icons'
-import { 
-  setAvailableDevices, 
-  setConnectedDevice, 
-  setConnectionLost
-} from '../store/slices/deviceSlice'
+import { InfoIcon, SearchIcon } from '@chakra-ui/icons'
 import { getAxisStateName } from '../utils/odriveEnums'
 import { getErrorDescription, getErrorColor, isErrorCritical } from '../utils/odriveErrors'
 import '../styles/DeviceList.css'
@@ -286,6 +291,7 @@ const DeviceList = memo(() => {
   const dispatch = useDispatch()
   const toast = useToast()
   const [isScanning, setIsScanning] = useState(false)
+  const isScanningRef = useRef(false) // Add this ref
   
   // Use telemetry slice for real-time data
   const telemetry = useSelector(state => state.telemetry)
@@ -295,91 +301,87 @@ const DeviceList = memo(() => {
     connectedDevice, 
     isConnected, 
     odriveState,
-    connectionLost 
+    connectionLost,
   } = useSelector(state => state.device)
 
   // Helper function to get current error codes from both sources
   const getCurrentErrors = () => {
-    const axis0Data = odriveState.device?.axis0
-    
     return {
-      axis_error: telemetry?.axis_error || axis0Data?.error || 0,
-      motor_error: telemetry?.motor_error || axis0Data?.motor?.error || 0,
-      encoder_error: telemetry?.encoder_error || axis0Data?.encoder?.error || 0,
-      controller_error: telemetry?.controller_error || axis0Data?.controller?.error || 0,
-      sensorless_error: telemetry?.sensorless_error || axis0Data?.sensorless_estimator?.error || 0,
+      axis_error: telemetry?.axis_error || odriveState.device?.axis0?.error || 0,
+      motor_error: telemetry?.motor_error || odriveState.device?.axis0?.motor?.error || 0,
+      encoder_error: telemetry?.encoder_error || odriveState.device?.axis0?.encoder?.error || 0,
+      controller_error: telemetry?.controller_error || odriveState.device?.axis0?.controller?.error || 0,
+      sensorless_error: telemetry?.sensorless_error || odriveState.device?.axis0?.sensorless_estimator?.error || 0,
     }
   }
 
   const scanForDevices = useCallback(async () => {
-    setIsScanning(true)
+    if (isScanningRef.current) return // Use ref instead of state
+    
     try {
+      isScanningRef.current = true // Set ref
+      setIsScanning(true)
+      dispatch(setScanning(true))
+      
       const response = await fetch('/api/odrive/scan')
+      const devices = await response.json()
+      
       if (response.ok) {
-        const devices = await response.json()
         dispatch(setAvailableDevices(devices))
-      } else {
         toast({
-          title: 'Scan failed',
-          description: 'Failed to scan for ODrive devices',
-          status: 'error',
-          duration: 3000,
+          title: 'Scan Complete',
+          description: `Found ${devices.length} ODrive device(s)`,
+          status: 'success',
+          duration: 2000,
         })
+      } else {
+        throw new Error(devices.error || 'Scan failed')
       }
     } catch (error) {
-      console.error('Failed to scan for devices:', error)
+      console.error('Scan error:', error)
       toast({
-        title: 'Scan failed',
-        description: 'Network error while scanning for devices',
+        title: 'Scan Failed',
+        description: error.message,
         status: 'error',
         duration: 3000,
       })
     } finally {
+      isScanningRef.current = false // Reset ref
       setIsScanning(false)
+      dispatch(setScanning(false))
     }
-  }, [dispatch, toast])
+  }, [dispatch, toast]) // Remove isScanning from dependencies
 
   useEffect(() => {
     scanForDevices()
-  }, [scanForDevices])
+  }, []) // Only run once on mount, not when scanForDevices changes
 
-  // Reconnection detection useEffect
+  // Simplified connection status polling - just gets status from backend
   useEffect(() => {
-    if (connectedDevice && !isConnected) {
-      const reconnectInterval = setInterval(async () => {
-        try {
-          const statusResponse = await fetch('/api/odrive/connection_status')
-          if (statusResponse.ok) {
-            const status = await statusResponse.json()
-            if (status.connected && !status.connection_lost && status.device_serial) {
-              dispatch(setConnectionLost(false))
-              dispatch(setConnectedDevice({ 
-                serial: status.device_serial,
-                path: connectedDevice.path || `ODrive ${status.device_serial}`
-              }))
-              
-              setTimeout(() => {
-                window.dispatchEvent(new CustomEvent('deviceReconnected'))
-              }, 500)
-              
-              const isExpectedReconnection = sessionStorage.getItem('expectingReconnection') === 'true'
-              if (!isExpectedReconnection) {
-                console.log('Reconnected to ODrive:', status.device_serial)
-              } else {
-                sessionStorage.removeItem('expectingReconnection')
-              }
-              
-              clearInterval(reconnectInterval)
-            }
-          }
-        } catch (error) {
-          console.log('Reconnection attempt failed:', error)
+    const pollConnectionStatus = async () => {
+      try {
+        const response = await fetch('/api/odrive/connection_status')
+        if (response.ok) {
+          const status = await response.json()
+          dispatch(setConnectionStatus({
+            connected: status.connected,
+            connectionLost: status.connection_lost,
+            isRebooting: status.is_rebooting,
+            deviceSerial: status.device_serial,
+            reconnectionAttempts: status.reconnection_attempts
+          }))
         }
-      }, 1000)
-      
-      return () => clearInterval(reconnectInterval)
+      } catch (error) {
+        console.log('Connection status check failed:', error)
+      }
     }
-  }, [connectedDevice, isConnected, dispatch, toast, isScanning])
+
+    // Poll every 2 seconds if we have a device or are connected
+    if (connectedDevice || isConnected) {
+      const interval = setInterval(pollConnectionStatus, 2000)
+      return () => clearInterval(interval)
+    }
+  }, [dispatch, connectedDevice, isConnected])
 
   const handleConnect = useCallback(async (device) => {
     try {
@@ -388,31 +390,27 @@ const DeviceList = memo(() => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ device })
       })
-      
+
       if (response.ok) {
         dispatch(setConnectedDevice(device))
         toast({
           title: 'Connected',
-          description: `Connected to ODrive ${device.serial}`,
+          description: `Connected to ${device.path}`,
           status: 'success',
-          duration: 3000,
+          duration: 2000,
         })
       } else {
         const error = await response.json()
-        toast({
-          title: 'Connection failed',
-          description: error.error || 'Failed to connect to ODrive',
-          status: 'error',
-          duration: 5000,
-        })
+        throw new Error(error.error || 'Connection failed')
       }
     } catch (error) {
-      console.error('Failed to connect to ODrive:', error)
+      console.error('Connection error:', error)
+      dispatch(setConnectionError(error.message))
       toast({
-        title: 'Connection failed',
-        description: 'Network error while connecting to ODrive',
+        title: 'Connection Failed',
+        description: error.message,
         status: 'error',
-        duration: 5000,
+        duration: 3000,
       })
     }
   }, [dispatch, toast])
@@ -422,65 +420,50 @@ const DeviceList = memo(() => {
       const response = await fetch('/api/odrive/disconnect', {
         method: 'POST'
       })
-      
+
       if (response.ok) {
-        dispatch(setConnectedDevice(null))
+        dispatch(clearDeviceState())
         toast({
           title: 'Disconnected',
           description: 'Disconnected from ODrive',
           status: 'info',
-          duration: 3000,
+          duration: 2000,
         })
       } else {
         const error = await response.json()
-        toast({
-          title: 'Disconnect failed',
-          description: error.error || 'Failed to disconnect from ODrive',
-          status: 'error',
-          duration: 5000,
-        })
+        throw new Error(error.error || 'Disconnect failed')
       }
     } catch (error) {
-      console.error('Failed to disconnect from ODrive:', error)
+      console.error('Disconnect error:', error)
       toast({
-        title: 'Disconnect failed',
-        description: 'Network error while disconnecting from ODrive',
+        title: 'Disconnect Failed',
+        description: error.message,
         status: 'error',
-        duration: 5000,
+        duration: 3000,
       })
     }
   }, [dispatch, toast])
 
   const handleErrorClick = useCallback((errorCode, errorType) => {
-    // For now, just log the error click - you can add modal or troubleshooting logic here
-    console.log('Error clicked:', { errorCode: errorCode.toString(16), errorType })
+    console.log(`Error clicked: ${errorType} error 0x${errorCode.toString(16)}`)
+    // Could open error details modal here
   }, [])
 
   const handleClearErrors = useCallback(async () => {
     try {
-      const response = await fetch('/api/odrive/command', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ command: 'odrv0.clear_errors()' })
+      await clearErrors()
+      toast({
+        title: 'Errors Cleared',
+        description: 'All ODrive errors have been cleared',
+        status: 'success',
+        duration: 2000,
       })
-      
-      if (response.ok) {
-        toast({
-          title: 'Errors cleared',
-          description: 'All error flags have been cleared',
-          status: 'success',
-          duration: 3000,
-        })
-      } else {
-        const error = await response.json()
-        throw new Error(error.error || 'Failed to clear errors')
-      }
     } catch (error) {
       toast({
-        title: 'Error',
-        description: `Failed to clear errors: ${error.message}`,
+        title: 'Clear Errors Failed',
+        description: error.message,
         status: 'error',
-        duration: 5000,
+        duration: 3000,
       })
     }
   }, [toast])

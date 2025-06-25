@@ -181,7 +181,7 @@ const configSlice = createSlice({
         }
       })
     },
-    resetConfig: (state) => {
+    resetConfig: () => {
       return initialState
     },
   },
