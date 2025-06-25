@@ -11,7 +11,8 @@ const initialState = {
   telemetryEnabled: true,
   telemetryRate: 10, // Hz
   connectionLost: false,
-  reconnecting: false,
+  isRebooting: false,
+  reconnectionAttempts: 0,
 }
 
 const deviceSlice = createSlice({
@@ -28,42 +29,61 @@ const deviceSlice = createSlice({
       if (action.payload) {
         state.connectedDevice = action.payload
         state.isConnected = true
-        state.connectionLost = false // Clear connection lost when setting a device
-        state.reconnecting = false
+        state.connectionLost = false
+        state.connectionError = null
+        state.isRebooting = false
+        state.reconnectionAttempts = 0
       } else {
         state.isConnected = false
         state.connectedDevice = null
-        // Don't clear connectionLost here - let reconnection logic handle it
+        state.connectionLost = false
+        state.isRebooting = false
+        state.reconnectionAttempts = 0
       }
     },
     setConnectionError: (state, action) => {
       state.connectionError = action.payload
       state.isConnected = false
       state.connectedDevice = null
+      state.connectionLost = false
+      state.isRebooting = false
     },
-    setConnectionLost: (state, action) => {
-      state.connectionLost = action.payload
-      if (action.payload) {
-        state.isConnected = false
-      } else {
-        // When connection is restored, ensure we're marked as connected
-        if (state.connectedDevice) {
-          state.isConnected = true
+    // New: Single action to update all connection status from backend
+    setConnectionStatus: (state, action) => {
+      const { connected, connectionLost, isRebooting, deviceSerial, reconnectionAttempts } = action.payload
+      
+      state.isConnected = connected
+      state.connectionLost = connectionLost || false
+      state.isRebooting = isRebooting || false
+      state.reconnectionAttempts = reconnectionAttempts || 0
+      
+      // Only update device info if we have a serial and are connected
+      if (connected && deviceSerial) {
+        if (!state.connectedDevice || state.connectedDevice.serial !== deviceSerial) {
+          state.connectedDevice = {
+            serial: deviceSerial,
+            path: `ODrive ${deviceSerial}`
+          }
         }
       }
-    },
-    setReconnecting: (state, action) => {
-      state.reconnecting = action.payload
+      
+      // Clear error if we're connected
+      if (connected) {
+        state.connectionError = null
+      }
     },
     updateOdriveState: (state, action) => {
       // Completely replace the state to prevent partial updates causing flicker
       state.odriveState = action.payload
       state.lastUpdateTime = Date.now()
       
-      // If we successfully got state, connection is restored
-      if (Object.keys(action.payload).length > 0 && state.connectionLost) {
-        state.connectionLost = false
-        state.reconnecting = false
+      // If we successfully got state, we're definitely connected
+      if (Object.keys(action.payload).length > 0) {
+        if (state.connectionLost) {
+          state.connectionLost = false
+          state.isRebooting = false
+          state.reconnectionAttempts = 0
+        }
         state.isConnected = true
       }
     },
@@ -96,7 +116,8 @@ const deviceSlice = createSlice({
       state.isConnected = false
       state.connectionError = null
       state.connectionLost = false
-      state.reconnecting = false
+      state.isRebooting = false
+      state.reconnectionAttempts = 0
     },
   },
 })
@@ -106,8 +127,7 @@ export const {
   setAvailableDevices,
   setConnectedDevice,
   setConnectionError,
-  setConnectionLost,
-  setReconnecting,
+  setConnectionStatus,
   updateOdriveState,
   updateDeviceProperty,
   setTelemetryEnabled,

@@ -3,9 +3,7 @@
  * Handles API calls for ODrive configuration operations
  */
 
-
 import { generateConfigCommands } from './configCommandGenerator'
-
 
 /**
  * Execute configuration action via API
@@ -201,22 +199,13 @@ export const executeCommand = async (command) => {
 
 /**
  * Apply configuration and save to non-volatile memory
- * @param {Object} deviceConfig - Device configuration object
- * @param {Function} toast - Toast notification function
- * @returns {Promise<void>} Resolves when both apply and save are complete
- */
-/**
- * Apply configuration and save to non-volatile memory
+ * Backend now handles all reconnection logic, so frontend just needs to apply and save
  * @param {Object} deviceConfig - Device configuration object
  * @param {Function} toast - Toast notification function
  * @returns {Promise<void>} Resolves when both apply and save are complete
  */
 export const applyAndSaveConfiguration = async (deviceConfig, toast) => {
-
   const commands = generateConfigCommands(deviceConfig)
-  
-  // Mark that we're expecting a reconnection
-  sessionStorage.setItem('expectingReconnection', 'true')
   
   // Step 1: Apply configuration
   toast({
@@ -228,68 +217,32 @@ export const applyAndSaveConfiguration = async (deviceConfig, toast) => {
 
   await applyConfiguration(commands)
 
+  // Step 2: Save configuration (backend handles reboot and reconnection)
+  toast({
+    title: 'Saving configuration...',
+    description: 'Saving to non-volatile memory. Device will reboot and reconnect automatically.',
+    status: 'warning',
+    duration: 3000,
+  })
+
   try {
     await saveConfiguration()
     
-    // Device will reboot after save - wait for reconnection
     toast({
-      title: 'Device rebooting...',
-      description: 'ODrive is rebooting, waiting for reconnection...',
-      status: 'warning',
+      title: 'Configuration Saved',
+      description: 'Configuration saved successfully. Device is rebooting and will reconnect automatically.',
+      status: 'success',
       duration: 5000,
     })
 
-    // Wait for device to reconnect
-    let reconnected = false
-    let attempts = 0
-    const maxAttempts = 15
-
-    while (!reconnected && attempts < maxAttempts) {
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      attempts++
-
-      try {
-        const statusResponse = await fetch('/api/odrive/connection_status')
-        if (statusResponse.ok) {
-          const status = await statusResponse.json()
-          if (status.connected && !status.connection_lost) {
-            reconnected = true
-            break
-          }
-        }
-      } catch (error) {
-        console.log(`Reconnection attempt ${attempts} failed:`, error)
-      }
-    }
-
-    if (reconnected) {
-      // Clear the flag and show final success toast
-      sessionStorage.removeItem('expectingReconnection')
-      toast({
-        title: 'Configuration Applied & Saved',
-        description: 'Configuration successfully applied, saved, and device reconnected',
-        status: 'success',
-        duration: 5000,
-      })
-    } else {
-      sessionStorage.removeItem('expectingReconnection')
-      toast({
-        title: 'Configuration Saved - Manual Reconnection Required',
-        description: 'Configuration was saved but automatic reconnection failed. Please reconnect manually.',
-        status: 'warning',
-        duration: 8000,
-      })
-    }
-
   } catch (error) {
-    sessionStorage.removeItem('expectingReconnection')
     // Handle save errors...
     if (error.message.includes('reboot') || error.message.includes('disconnect')) {
       toast({
-        title: 'Configuration Saved (Device Rebooted)',
-        description: 'Configuration saved successfully. Device has rebooted - it may take a moment to reconnect.',
-        status: 'info',
-        duration: 8000,
+        title: 'Configuration Saved',
+        description: 'Configuration saved successfully. Device has rebooted and will reconnect automatically.',
+        status: 'success',
+        duration: 5000,
       })
     } else {
       throw error

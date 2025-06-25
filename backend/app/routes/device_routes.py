@@ -20,14 +20,31 @@ def init_routes(manager):
     global odrive_manager
     odrive_manager = manager
 
+# Global variable to track scanning state
+_scanning_lock = False
+
 @device_bp.route('/scan', methods=['GET'])
 def scan_devices():
+    global odrive_manager, _scanning_lock
+    
+    # Prevent concurrent scans
+    if _scanning_lock or odrive_manager.is_scanning:
+        logger.warning("Scan request rejected - scan already in progress")
+        return jsonify({
+            "devices": [],
+            "message": "Scan already in progress"
+        }), 429  # Too Many Requests
+    
     try:
+        _scanning_lock = True
         devices = odrive_manager.scan_for_devices()
+        logger.info(f"Scan completed, found {len(devices)} devices")
         return jsonify(devices)
     except Exception as e:
-        logger.error(f"Error in scan_devices: {e}")
+        logger.error(f"Error scanning for devices: {e}")
         return jsonify({'error': str(e)}), 500
+    finally:
+        _scanning_lock = False
 
 @device_bp.route('/connect', methods=['POST'])
 def connect_device():

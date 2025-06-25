@@ -18,10 +18,107 @@ class ODriveManager:
         self.is_rebooting = False
         self.reboot_start_time = None
         self.reconnection_attempts = 0
-        self.max_reconnection_attempts = 10
+        self.max_reconnection_attempts = 15
         self.request_queue = Queue()
         self.request_lock = threading.Lock()
         self.is_processing = False
+        
+        # New: Centralized reconnection control
+        self._reconnection_thread = None
+        self._stop_reconnection = threading.Event()
+        self._reconnection_lock = threading.Lock()
+        self._reconnection_active = False
+
+    def _start_reconnection_thread(self):
+        """Start the background reconnection thread"""
+        with self._reconnection_lock:
+            if not self._reconnection_active:
+                self._stop_reconnection.clear()
+                self._reconnection_thread = threading.Thread(target=self._reconnection_worker, daemon=True)
+                self._reconnection_thread.start()
+                self._reconnection_active = True
+                logger.info("Started reconnection thread")
+
+    def _stop_reconnection_thread(self):
+        """Stop the background reconnection thread"""
+        with self._reconnection_lock:
+            if self._reconnection_active:
+                self._stop_reconnection.set()
+                if self._reconnection_thread and self._reconnection_thread.is_alive():
+                    self._reconnection_thread.join(timeout=3)
+                self._reconnection_active = False
+                logger.info("Stopped reconnection thread")
+
+    def _reconnection_worker(self):
+        """Background thread worker for handling reconnection"""
+        while not self._stop_reconnection.is_set() and self.current_device_serial:
+            try:
+                if self.connection_lost and not self.is_connected():
+                    # Wait appropriate time based on reboot status
+                    if self.is_rebooting:
+                        if self.reboot_start_time and (time.time() - self.reboot_start_time) < 5:
+                            time.sleep(1)
+                            continue
+                    
+                    # Attempt reconnection
+                    if self._attempt_reconnection():
+                        logger.info(f"Successfully reconnected to device {self.current_device_serial}")
+                        self.connection_lost = False
+                        self.is_rebooting = False
+                        self.reboot_start_time = None
+                        self.reconnection_attempts = 0
+                        break
+                    else:
+                        # Wait before next attempt, longer if rebooting
+                        wait_time = 3 if self.is_rebooting else 2
+                        time.sleep(wait_time)
+                else:
+                    # Connection is good, exit thread
+                    break
+                    
+            except Exception as e:
+                logger.error(f"Error in reconnection worker: {e}")
+                time.sleep(2)
+        
+        # Mark thread as inactive when exiting
+        with self._reconnection_lock:
+            self._reconnection_active = False
+        logger.info("Reconnection worker thread exiting")
+
+    def _attempt_reconnection(self) -> bool:
+        """Single reconnection attempt"""
+        if not self.current_device_serial:
+            return False
+            
+        if self.reconnection_attempts >= self.max_reconnection_attempts:
+            logger.warning(f"Max reconnection attempts reached for device {self.current_device_serial}")
+            return False
+        
+        self.reconnection_attempts += 1
+        
+        try:
+            logger.info(f"Attempting to reconnect to device {self.current_device_serial} (attempt {self.reconnection_attempts})")
+            
+            # Use longer timeout for reconnection attempts
+            timeout = 8 if self.is_rebooting else 5
+            odrv = odrive.find_any(timeout=timeout)
+            
+            if odrv:
+                # Check if this is the same device
+                device_serial = hex(odrv.serial_number) if hasattr(odrv, 'serial_number') else None
+                if device_serial == self.current_device_serial:
+                    self.current_device = odrv
+                    return True
+                else:
+                    logger.warning(f"Found different device: {device_serial}, expected: {self.current_device_serial}")
+            else:
+                logger.debug(f"No ODrive found during reconnection attempt {self.reconnection_attempts}")
+                    
+        except Exception as e:
+            if not self.is_rebooting or self.reconnection_attempts % 3 == 0:
+                logger.warning(f"Reconnection attempt {self.reconnection_attempts} failed: {e}")
+            
+        return False
 
     def _normalize_command(self, command: str) -> str:
         """Normalize command to use 'device' reference instead of odrv0, odrv1, etc."""
@@ -96,6 +193,9 @@ class ODriveManager:
     def connect_to_device(self, device_info: Dict[str, Any]) -> bool:
         """Connect to a specific ODrive device"""
         try:
+            # Stop any existing reconnection
+            self._stop_reconnection_thread()
+            
             # Find the specific device
             odrv = odrive.find_any(timeout=10)
             
@@ -120,6 +220,9 @@ class ODriveManager:
     def disconnect_device(self) -> bool:
         """Disconnect from current ODrive device"""
         try:
+            # Stop reconnection thread
+            self._stop_reconnection_thread()
+            
             if self.current_device:
                 self.current_device = None
                 self.current_device_serial = None
@@ -147,17 +250,23 @@ class ODriveManager:
             # Try to read a simple property to check connection
             # Use a lightweight property that's always available
             _ = self.current_device.vbus_voltage
-            self.connection_lost = False
-            if self.is_rebooting:
+            
+            # If we were reconnecting and now we're connected, stop reconnection
+            if self.connection_lost:
+                self.connection_lost = False
                 self.is_rebooting = False
                 self.reboot_start_time = None
                 self.reconnection_attempts = 0
-                logger.info("Device has successfully reconnected after reboot")
+                self._stop_reconnection_thread()
+                logger.info("Device connection restored")
+            
             return True
         except Exception as e:
             if not self.connection_lost:
                 logger.warning(f"Device connection lost: {e}")
                 self.connection_lost = True
+                # Start reconnection thread
+                self._start_reconnection_thread()
             return False
     
     def is_connected(self) -> bool:
@@ -170,36 +279,20 @@ class ODriveManager:
         return self.current_device
 
     def try_reconnect(self) -> bool:
-        """Try to reconnect to the same device"""
+        """Try to reconnect to the same device - simplified for status checks"""
         if not self.current_device_serial:
             return False
         
-        # For physical reconnections, be more aggressive
-        if not self.connection_lost:
-            # This might be a physical reconnection, so force check
-            pass
-        elif self.is_rebooting:
-            if self.reboot_start_time and (time.time() - self.reboot_start_time) < 5:
-                return False  # Don't try to reconnect for first 5 seconds after reboot
-            
-            if self.reconnection_attempts >= self.max_reconnection_attempts:
-                logger.warning(f"Max reconnection attempts reached for rebooting device")
-                return False
-
-        # Prevent multiple simultaneous reconnection attempts
+        # For status checks, just do a quick single attempt
         if hasattr(self, '_reconnecting') and self._reconnecting:
             return False
             
         self._reconnecting = True
-        self.reconnection_attempts += 1
         
         try:
-            logger.info(f"Attempting to reconnect to device {self.current_device_serial} (attempt {self.reconnection_attempts})")
+            logger.info(f"Quick reconnection check for device {self.current_device_serial}")
             
-            # Use longer timeout for reconnection attempts
-            timeout = 5 if not self.is_rebooting else 8
-                
-            odrv = odrive.find_any(timeout=timeout)
+            odrv = odrive.find_any(timeout=3)  # Short timeout for quick checks
             
             if odrv:
                 # Check if this is the same device
@@ -209,7 +302,7 @@ class ODriveManager:
                     self.connection_lost = False
                     self.reconnection_attempts = 0
                     self._reconnecting = False
-                    logger.info(f"Successfully reconnected to ODrive: {self.current_device_serial}")
+                    logger.info(f"Quick reconnection successful: {self.current_device_serial}")
                     
                     if self.is_rebooting:
                         self.is_rebooting = False
@@ -218,14 +311,12 @@ class ODriveManager:
                     
                     return True
                 else:
-                    logger.warning(f"Found different device: {device_serial}, expected: {self.current_device_serial}")
+                    logger.debug(f"Found different device: {device_serial}, expected: {self.current_device_serial}")
             else:
-                logger.debug(f"No ODrive found during reconnection attempt {self.reconnection_attempts}")
+                logger.debug(f"No ODrive found during quick reconnection check")
                     
         except Exception as e:
-            # Reduce log noise during reboot by only logging every few attempts
-            if not self.is_rebooting or self.reconnection_attempts % 3 == 0:
-                logger.warning(f"Reconnection attempt {self.reconnection_attempts} failed: {e}")
+            logger.debug(f"Quick reconnection failed: {e}")
         finally:
             self._reconnecting = False
             
@@ -279,11 +370,9 @@ class ODriveManager:
             
             self._last_api_call[command] = current_time
 
-        # Check connection and try to reconnect if needed (but not during reboot)
-        if not self.is_rebooting:
-            if not self.check_connection():
-                if not self.try_reconnect():
-                    return {'error': 'Device disconnected and could not reconnect'}
+        # Check connection first
+        if not self.check_connection():
+            return {'error': 'Device disconnected'}
         
         try:
             # Normalize the command to use 'device' reference
@@ -312,6 +401,8 @@ class ODriveManager:
                 self.reboot_start_time = time.time()
                 self.connection_lost = True
                 self.reconnection_attempts = 0
+                # Start reconnection thread
+                self._start_reconnection_thread()
             
             # Check if this is an assignment or function call
             if '=' in normalized_command:
@@ -388,6 +479,7 @@ class ODriveManager:
             # Check if this was a connection error
             if "disconnected" in str(e).lower() or "connection" in str(e).lower():
                 self.connection_lost = True
+                self._start_reconnection_thread()
             return {'error': str(e)}
 
     def set_property(self, path: str, value: Any) -> Dict[str, Any]:
@@ -395,10 +487,9 @@ class ODriveManager:
         if not self.current_device:
             return {'error': 'No device connected'}
         
-        # Check connection and try to reconnect if needed
+        # Check connection first
         if not self.check_connection():
-            if not self.try_reconnect():
-                return {'error': 'Device disconnected and could not reconnect'}
+            return {'error': 'Device disconnected'}
         
         try:
             # Normalize the path
@@ -423,6 +514,7 @@ class ODriveManager:
             logger.error(f"Error setting property '{path}' to '{value}': {e}")
             if "disconnected" in str(e).lower() or "connection" in str(e).lower():
                 self.connection_lost = True
+                self._start_reconnection_thread()
             return {'error': str(e)}
 
     def execute_with_lock(self, func, *args, **kwargs):
