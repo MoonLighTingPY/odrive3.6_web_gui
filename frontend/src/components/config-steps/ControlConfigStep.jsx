@@ -1,4 +1,4 @@
-import { useState, useMemo, memo} from 'react'
+import { useState, useMemo } from 'react'
 import {
   Box,
   VStack,
@@ -46,7 +46,7 @@ const ControlConfigStep = ({
   const encoderConfig = deviceConfig.encoder || {}
   const controlMappings = configurationMappings.control
 
-  const [useRpm, setUseRpm] = useState(true)
+  const [useRpm, setUseRpm] = useState(false)
 
   const handleConfigChange = (configKey, value) => {
     onUpdateConfig('control', configKey, value)
