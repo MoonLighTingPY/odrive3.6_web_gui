@@ -1,7 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { debounce } from 'lodash'
-import { updateOdriveState, setConnectionLost } from '../store/slices/deviceSlice'
+import { updateOdriveState, setConnectionStatus } from '../store/slices/deviceSlice'
 import { updateTelemetry, setTelemetryConnectionHealth } from '../store/slices/telemetrySlice'
 
 export const useDashboardTelemetry = () => {
@@ -122,12 +122,26 @@ export const useDashboardTelemetry = () => {
           debouncedDeviceDispatch(dashboardData)
           
         } else if (response.status === 404) {
-          dispatch(setConnectionLost(true))
+          // Device disconnected - use setConnectionStatus instead of setConnectionLost
+          dispatch(setConnectionStatus({
+            connected: false,
+            connectionLost: true,
+            isRebooting: false,
+            deviceSerial: null,
+            reconnectionAttempts: 0
+          }))
           dispatch(setTelemetryConnectionHealth(false))
         }
       } catch (error) {
         console.error('Dashboard telemetry error:', error)
-        dispatch(setConnectionLost(true))
+        // Device disconnected - use setConnectionStatus instead of setConnectionLost
+        dispatch(setConnectionStatus({
+          connected: false,
+          connectionLost: true,
+          isRebooting: false,
+          deviceSerial: null,
+          reconnectionAttempts: 0
+        }))
         dispatch(setTelemetryConnectionHealth(false))
       }
     }
