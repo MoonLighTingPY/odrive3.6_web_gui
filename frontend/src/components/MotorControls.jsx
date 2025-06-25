@@ -8,6 +8,7 @@ import {
   EncoderHallCalibrationButton,
   EncoderOffsetCalibrationButton,
   EncoderIndexSearchButton,
+  SaveAndRebootButton,
 } from '../hooks/useOdriveButtons.jsx'
 import { HStack, VStack } from '@chakra-ui/react'
 
@@ -58,6 +59,7 @@ export {
   EncoderHallCalibrationButton,
   EncoderOffsetCalibrationButton,
   EncoderIndexSearchButton,
+  SaveAndRebootButton,
 }
 
 export default MotorControls

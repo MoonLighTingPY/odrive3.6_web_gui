@@ -1,7 +1,9 @@
 import { HStack, Button, useToast, VStack, useDisclosure } from '@chakra-ui/react'
 import { useSelector } from 'react-redux'
+import { useState } from 'react'
 import CalibrationModal from '../components/modals/CalibrationModal'
 import { useCalibration } from './useCalibration'
+import { saveAndReboot } from '../utils/configurationActions'
 
 // Custom hook for shared command functionality
 const useODriveCommand = () => {
@@ -370,3 +372,38 @@ export const EncoderIndexSearchButton = ({ axisNumber = 0, size = "sm" }) => (
     Index Search
   </CalibrationButtonBase>
 )
+
+export const SaveAndRebootButton = ({ size = "sm", gridColumn, ...props }) => {
+  const { isConnected } = useSelector(state => state.device)
+  const [isLoading, setIsLoading] = useState(false)
+  
+  const handleSaveAndReboot = async () => {
+    if (!isConnected) return
+
+    setIsLoading(true)
+    try {
+      await saveAndReboot()
+    // eslint-disable-next-line no-unused-vars
+    } catch (_) {
+      // saveAndReboot already handles toasts
+    } finally {
+      setIsLoading(false)
+    }
+  }
+  
+  return (
+    <Button
+      size={size}
+      colorScheme="blue"
+      onClick={handleSaveAndReboot}
+      isDisabled={!isConnected}
+      isLoading={isLoading}
+      loadingText="Saving..."
+      title={isConnected ? "Save configuration and reboot ODrive" : "Not connected to ODrive"}
+      gridColumn={gridColumn}
+      {...props}
+    >
+      Save & Reboot
+    </Button>
+  )
+}
