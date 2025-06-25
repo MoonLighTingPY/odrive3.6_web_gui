@@ -21,7 +21,7 @@ import {
 import { RefreshCw } from 'lucide-react'
 import PropertyTree from '../inspector/property-tree/PropertyTree'
 import LiveCharts from '../inspector/LiveCharts'
-import { EnableMotorButton, DisableMotorButton, CalibrationButton, ClearErrorsButton } from '../MotorControls'
+import { EnableMotorButton, DisableMotorButton, CalibrationButton, ClearErrorsButton, SaveAndRebootButton } from '../MotorControls'
 
 const InspectorTab = memo(() => {
   const toast = useToast()
@@ -120,12 +120,15 @@ const InspectorTab = memo(() => {
                 <Heading size="sm" color="white">Motor Controls</Heading>
               </CardHeader>
               <CardBody py={2}>
-                <SimpleGrid columns={2} spacing={2}>
-                  <EnableMotorButton axisNumber={0} size="sm" />
-                  <DisableMotorButton axisNumber={0} size="sm" />
-                  <CalibrationButton axisNumber={0} size="sm" />
-                  <ClearErrorsButton axisNumber={0} size="sm" />
-                </SimpleGrid>
+                <VStack spacing={2}>
+                  <SimpleGrid columns={2} spacing={2} w="100%">
+                    <EnableMotorButton axisNumber={0} size="sm" />
+                    <DisableMotorButton axisNumber={0} size="sm" />
+                    <CalibrationButton axisNumber={0} size="sm" />
+                    <ClearErrorsButton axisNumber={0} size="sm" />
+                  </SimpleGrid>
+                  <SaveAndRebootButton size="sm" />
+                </VStack>
               </CardBody>
             </Card>
           </GridItem>
