@@ -126,8 +126,8 @@ const InspectorTab = memo(() => {
                     <DisableMotorButton axisNumber={0} size="sm" />
                     <CalibrationButton axisNumber={0} size="sm" />
                     <ClearErrorsButton axisNumber={0} size="sm" />
+                    <SaveAndRebootButton size="sm" gridColumn="span 2" />
                   </SimpleGrid>
-                  <SaveAndRebootButton size="sm" />
                 </VStack>
               </CardBody>
             </Card>

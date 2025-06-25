@@ -373,7 +373,7 @@ export const EncoderIndexSearchButton = ({ axisNumber = 0, size = "sm" }) => (
   </CalibrationButtonBase>
 )
 
-export const SaveAndRebootButton = ({ size = "sm" }) => {
+export const SaveAndRebootButton = ({ size = "sm", gridColumn, ...props }) => {
   const { isConnected } = useSelector(state => state.device)
   const [isLoading, setIsLoading] = useState(false)
   
@@ -400,6 +400,8 @@ export const SaveAndRebootButton = ({ size = "sm" }) => {
       isLoading={isLoading}
       loadingText="Saving..."
       title={isConnected ? "Save configuration and reboot ODrive" : "Not connected to ODrive"}
+      gridColumn={gridColumn}
+      {...props}
     >
       Save & Reboot
     </Button>
