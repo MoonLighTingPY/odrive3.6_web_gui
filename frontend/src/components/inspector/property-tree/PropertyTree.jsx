@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, memo, useMemo } from 'react'
+import React, { useState, useCallback, useEffect, memo } from 'react'
 import {
   VStack,
   HStack,
