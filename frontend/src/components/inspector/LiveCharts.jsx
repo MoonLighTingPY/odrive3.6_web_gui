@@ -131,7 +131,7 @@ const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
 
   // Use useMemo for expensive chart data transformations
   const processedChartData = useMemo(() => {
-    return chartData.map((sample, index) => ({
+    return chartData.map((sample) => ({
       ...sample,
     }))
   }, [chartData])
