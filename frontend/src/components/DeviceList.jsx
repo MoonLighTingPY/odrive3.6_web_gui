@@ -354,6 +354,7 @@ const DeviceList = memo(() => {
 
   useEffect(() => {
     scanForDevices()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // Only run once on mount, not when scanForDevices changes
 
   // Simplified connection status polling - just gets status from backend
