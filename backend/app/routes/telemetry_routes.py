@@ -25,14 +25,16 @@ def get_property_value(odrv, path):
 
 @telemetry_bp.route('/get-telemetry', methods=['POST'])
 def get_telemetry():
-    """Get telemetry data for specified paths"""
+    """Get telemetry data for specified paths and include connection heartbeat"""
     try:
         data = request.get_json()
         paths = data.get('paths', [])
-        
-        if not odrive_manager.current_device:
-            return jsonify({'error': 'No device connected'}), 400
-        
+
+        # Heartbeat: check connection before fetching properties
+        connected = odrive_manager.is_connected() and odrive_manager.check_connection()
+        if not connected:
+            return jsonify({'connected': False}), 200
+
         results = {}
         for path in paths:
             try:
@@ -40,11 +42,13 @@ def get_telemetry():
                 results[path] = value
             except Exception as e:
                 logger.debug(f"Failed to get {path}: {e}")
-                # Don't set connection status - just skip failed properties
-                
+                results[path] = None
+
+        # Always include connection status
+        results['connected'] = True
         return jsonify(results)
-        
+
     except Exception as e:
         logger.error(f"Telemetry error: {e}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'connected': False, 'error': str(e)}), 200
 
