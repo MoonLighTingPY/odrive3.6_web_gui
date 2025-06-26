@@ -195,6 +195,7 @@ const reconnectAfterReboot = async (connectedDevice, dispatch, addLog) => {
         addLog && addLog('Device reconnected (manual trigger)', 'success')
         return true
       }
+    // eslint-disable-next-line no-unused-vars
     } catch (e) {
       // ignore
     }
@@ -277,6 +278,7 @@ const reconnectAfterReboot = async (connectedDevice, dispatch, addLog) => {
         try {
           await waitForDeviceReconnect()
           addLog('✅ Device reconnected (event)', 'success')
+        // eslint-disable-next-line no-unused-vars
         } catch (e) {
           addLog('⚠️ Device did not reconnect in time', 'warning')
         }
@@ -321,6 +323,7 @@ const reconnectAfterReboot = async (connectedDevice, dispatch, addLog) => {
         try {
           await waitForDeviceReconnect()
           addLog('✅ Device reconnected (event)', 'success')
+        // eslint-disable-next-line no-unused-vars
         } catch (e) {
           addLog('⚠️ Device did not reconnect in time', 'warning')
         }
