@@ -82,26 +82,35 @@ const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
 
   const handleChartData = useCallback((data) => {
     if (!data.data) return
-    
+
     setChartData(prev => {
       const timestamp = data.timestamp
       const sample = { 
         time: timestamp,
         relativeTime: prev.length > 0 ? (timestamp - prev[0].time) / 1000 : 0
       }
-      
+
       Object.entries(data.data).forEach(([property, value]) => {
-        if (typeof value === 'number') {
-          sample[property] = value
+        // Store booleans as 1/0 for charting
+        sample[property] = typeof value === 'boolean' ? (value ? 1 : 0) : value
+      })
+
+      // Patch: For each selected property, if it's a system property and missing, try root key
+      selectedProperties.forEach((prop) => {
+        if (prop.startsWith('system.') && sample[prop] === undefined) {
+          const rootKey = prop.replace(/^system\./, '')
+          if (sample[rootKey] !== undefined) {
+            sample[prop] = sample[rootKey]
+          }
         }
       })
-      
+
       const newData = [...prev, sample]
       const cutoffTime = timestamp - 60000
       const filteredData = newData.filter(d => d.time > cutoffTime)
       return filteredData.length > 1000 ? filteredData.slice(-1000) : filteredData
     })
-  }, []) // Remove chartData dependency
+  }, [selectedProperties]) // Remove chartData dependency
 
   // Use the new charts telemetry hook
   useChartsTelemetry(selectedProperties, handleChartData)
@@ -163,7 +172,24 @@ const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
           </HStack>
           <HStack spacing={2}>
             <Text fontSize="xs" color="gray.400" fontFamily="mono" minW="80px" textAlign="right">
-              {chartData.length > 0 ? chartData[chartData.length - 1][property]?.toFixed(3) || 'N/A' : 'N/A'}
+              {
+                chartData.length > 0
+                  ? (() => {
+                      const val = chartData[chartData.length - 1][property];
+                      if (typeof val === 'number') return val.toFixed(3);
+                      if (typeof val === 'boolean') return val ? '1' : '0';
+                      if (
+                        property.startsWith('system.') &&
+                        chartData[chartData.length - 1][property.replace(/^system\./, '')] !== undefined
+                      ) {
+                        const sysVal = chartData[chartData.length - 1][property.replace(/^system\./, '')];
+                        if (typeof sysVal === 'number') return sysVal.toFixed(3);
+                        if (typeof sysVal === 'boolean') return sysVal ? '1' : '0';
+                      }
+                      return 'N/A';
+                    })()
+                  : 'N/A'
+              }
             </Text>
             <Tooltip label="Remove from charts" placement="top">
               <IconButton

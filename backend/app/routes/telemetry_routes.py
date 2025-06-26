@@ -17,7 +17,11 @@ def init_routes(manager):
 def get_property_value(odrv, path):
     """Get a single property value - fast and direct"""
     try:
-        # Use the thread-safe method from ODrive manager
+        # Handle system.* properties by mapping to root attributes
+        if path.startswith('system.'):
+            root_attr = path.replace('system.', '')
+            return getattr(odrv, root_attr, None)
+        # Use the thread-safe method from ODrive manager for all others
         return odrive_manager.safe_get_property(path)
     except Exception as e:
         logger.debug(f"Error getting {path}: {e}")
@@ -36,15 +40,15 @@ def get_telemetry():
             return jsonify({'connected': False}), 200
 
         results = {}
+        odrv = odrive_manager.current_device
         for path in paths:
             try:
-                value = odrive_manager.safe_get_property(path)
+                value = get_property_value(odrv, path)
                 results[path] = value
             except Exception as e:
                 logger.debug(f"Failed to get {path}: {e}")
                 results[path] = None
 
-        # Always include connection status
         results['connected'] = True
         return jsonify(results)
 
