@@ -441,30 +441,8 @@ export const generateInterfaceCommands = (interfaceConfig = {}) => {
  * @returns {Array<string>} Array of ODrive commands
  */
 export const generateConfigCommands = (config = {}) => {
-  const allCommands = []
-  
-  // Generate commands for each configuration section
-  if (config.power) {
-    allCommands.push(...generatePowerCommands(config.power))
-  }
-  
-  if (config.motor) {
-    allCommands.push(...generateMotorCommands(config.motor))
-  }
-  
-  if (config.encoder) {
-    allCommands.push(...generateEncoderCommands(config.encoder))
-  }
-  
-  if (config.control) {
-    allCommands.push(...generateControlCommands(config.control))
-  }
-  
-  if (config.interface) {
-    allCommands.push(...generateInterfaceCommands(config.interface))
-  }
-  
-  return allCommands
+  // Use the unified registry to generate all commands, including advanced/hidden ones
+  return odriveRegistry.generateAllCommands(config)
 }
 
 
