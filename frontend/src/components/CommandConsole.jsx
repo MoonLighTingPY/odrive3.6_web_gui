@@ -19,6 +19,7 @@ import {
 } from '@chakra-ui/react'
 import { Send, Clock, AlertCircle, CheckCircle, Copy, Trash2 } from 'lucide-react'
 import { ODriveCommands as odriveCommands } from '../utils/odriveUnifiedRegistry'
+import { SaveAndRebootButton } from './MotorControls'
 
 const CommandConsole = ({ isConnected }) => {
   const toast = useToast()
@@ -103,7 +104,7 @@ const CommandConsole = ({ isConnected }) => {
       
       {/* Quick Commands Section */}
       <Box p={4} bg="gray.700" borderBottom="1px solid" borderColor="gray.600">
-        <Text fontWeight="semibold" color="white" fontSize="sm" mb={3}>Quick Commands</Text>
+        <Text fontWeight="semibold" color="white" fontSize="sm" mb={3}>Quick Commands</Text> 
         <SimpleGrid columns={{ base: 1, md: 3 }} spacing={3}>
           <FormControl size="sm">
             <FormLabel color="gray.300" fontSize="xs" mb={1}>Category</FormLabel>
@@ -198,6 +199,7 @@ const CommandConsole = ({ isConnected }) => {
           >
             Send
           </Button>
+          <SaveAndRebootButton size="sm" />
         </HStack>
       </Box>
 
