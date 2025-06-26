@@ -49,24 +49,34 @@ def scan_devices():
 # Simplify connect route
 @device_bp.route('/connect', methods=['POST'])
 def connect_device():
-    """Connect to a specific ODrive device"""
+    """Connect to a specific ODrive device or return current connection if already connected"""
     try:
         data = request.get_json()
         device = data.get('device')
-        
+
+        # If already connected to this device, just return info
+        if odrive_manager.current_device and device and \
+           odrive_manager.current_device_serial == device.get('serial'):
+            return jsonify({
+                'success': True,
+                'message': f'Already connected to {device.get("path", "device")}',
+                'device': device
+            })
+
         if not device:
             return jsonify({'error': 'No device specified'}), 400
-            
+
         success = odrive_manager.connect_to_device(device)
-        
+
         if success:
             return jsonify({
                 'success': True,
-                'message': f'Connected to {device.get("path", "device")}'
+                'message': f'Connected to {device.get("path", "device")}',
+                'device': device
             })
         else:
             return jsonify({'error': 'Connection failed'}), 500
-            
+
     except Exception as e:
         logger.error(f"Connection error: {e}")
         return jsonify({'error': str(e)}), 500
