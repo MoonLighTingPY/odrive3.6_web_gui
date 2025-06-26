@@ -340,6 +340,16 @@ class ODriveUnifiedRegistry {
   }
 
   _inferCategory(path) {
+
+    if (path.includes('controller.config.vel_limit')) {
+      return 'control'
+    }
+    
+    // Then check for trapezoidal trajectory velocity limit
+    if (path.includes('trap_traj.config.vel_limit')) {
+      return 'control'
+    }
+
     if (path.includes('motor.config') || 
         path.includes('motor_thermistor') ||
         path.includes('calibration_lockin') ||
