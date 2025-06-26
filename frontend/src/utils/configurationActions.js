@@ -4,6 +4,7 @@
  */
 
 import { generateConfigCommands } from './configCommandGenerator'
+import { setConnectedDevice } from '../store/slices/deviceSlice'
 
 /**
  * Execute configuration action via API
@@ -111,14 +112,6 @@ export const saveConfiguration = async () => {
 }
 
 /**
- * Save configuration and reboot ODrive
- * @returns {Promise<Object>} Response from the API
- */
-export const saveAndReboot = async () => {
-  return await executeConfigAction('save_and_reboot')
-}
-
-/**
  * Erase configuration and reboot ODrive
  * @returns {Promise<Object>} Response from the API
  */
@@ -202,9 +195,10 @@ export const executeCommand = async (command) => {
  * Backend now handles all reconnection logic, so frontend just needs to apply and save
  * @param {Object} deviceConfig - Device configuration object
  * @param {Function} toast - Toast notification function
+ * @param {Function} dispatch - Redux dispatch function
  * @returns {Promise<void>} Resolves when both apply and save are complete
  */
-export const applyAndSaveConfiguration = async (deviceConfig, toast) => {
+export const applyAndSaveConfiguration = async (deviceConfig, toast, dispatch, connectedDevice) => {
   const commands = generateConfigCommands(deviceConfig)
   
   // Step 1: Apply configuration
@@ -220,7 +214,7 @@ export const applyAndSaveConfiguration = async (deviceConfig, toast) => {
   // Step 2: Save configuration (backend handles reboot and reconnection)
   toast({
     title: 'Saving configuration...',
-    description: 'Saving to non-volatile memory. Device will reboot and reconnect automatically.',
+    description: 'Saving to non-volatile memory. Device will reboot.',
     status: 'warning',
     duration: 3000,
   })
@@ -230,22 +224,97 @@ export const applyAndSaveConfiguration = async (deviceConfig, toast) => {
     
     toast({
       title: 'Configuration Saved',
-      description: 'Configuration saved successfully. Device is rebooting and will reconnect automatically.',
+      description: 'Configuration saved to non-volatile memory successfully.',
       status: 'success',
       duration: 5000,
     })
+
+    // --- NEW: Reconnect frontend to device ---
+    if (connectedDevice && dispatch) {
+      try {
+        const response = await fetch('/api/odrive/connect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ device: connectedDevice })
+        })
+        if (response.ok) {
+          dispatch(setConnectedDevice(connectedDevice))
+        }
+      } catch (e) {
+        // Optionally show a toast or log error
+        console.warn('Auto-reconnect failed:', e)
+      }
+    }
+    // --- END NEW ---
 
   } catch (error) {
     // Handle save errors...
     if (error.message.includes('reboot') || error.message.includes('disconnect')) {
       toast({
         title: 'Configuration Saved',
-        description: 'Configuration saved successfully. Device has rebooted and will reconnect automatically.',
+        description: 'Configuration saved to non-volatile memory successfully.',
         status: 'success',
         duration: 5000,
       })
+      // --- NEW: Try reconnect here as well ---
+      if (connectedDevice && dispatch) {
+        try {
+          const response = await fetch('/api/odrive/connect', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ device: connectedDevice })
+          })
+          if (response.ok) {
+            dispatch(setConnectedDevice(connectedDevice))
+          }
+        } catch (e) {
+          console.warn('Auto-reconnect failed:', e)
+        }
+      }
+      // --- END NEW ---
     } else {
       throw error
     }
+  }
+}
+
+/**
+ * Save configuration and reboot ODrive, then reconnect frontend
+ * @param {Function} toast - Toast notification function
+ * @param {Function} dispatch - Redux dispatch function
+ * @param {Object} connectedDevice - Device object from Redux
+ */
+export const saveAndRebootWithReconnect = async (toast, dispatch, connectedDevice) => {
+  try {
+    await saveConfiguration()
+    toast({
+      title: 'Configuration Saved',
+      description: 'Configuration saved and device rebooted.',
+      status: 'success',
+      duration: 5000,
+    })
+    // --- Reconnect frontend to device ---
+    if (connectedDevice && dispatch) {
+      try {
+        const response = await fetch('/api/odrive/connect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ device: connectedDevice })
+        })
+        if (response.ok) {
+          dispatch(setConnectedDevice(connectedDevice))
+        }
+      } catch (e) {
+        console.warn('Auto-reconnect failed:', e)
+      }
+    }
+  } catch (error) {
+    toast({
+      title: 'Save & Reboot Failed',
+      description: error.message,
+      status: 'error',
+      duration: 5000,
+    })
+    throw error
   }
 }

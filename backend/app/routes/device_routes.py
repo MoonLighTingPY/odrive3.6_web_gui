@@ -26,18 +26,23 @@ _scanning_lock = False
 @device_bp.route('/scan', methods=['GET'])
 def scan_devices():
     global odrive_manager, _scanning_lock
-    
-    # Prevent concurrent scans
-    if _scanning_lock or odrive_manager.is_scanning:
+
+    if _scanning_lock:
         logger.warning("Scan request rejected - scan already in progress")
         return jsonify({
             "devices": [],
             "message": "Scan already in progress"
-        }), 429  # Too Many Requests
-    
+        }), 429
+
     try:
         _scanning_lock = True
-        devices = odrive_manager.scan_for_devices()
+        try:
+            devices = odrive_manager.scan_for_devices()
+        except Exception as e:
+            if "Failed to open USB device: -5" in str(e):
+                logger.error("[UsbDiscoverer] Failed to open USB device: -5")
+                return jsonify({'error': '[UsbDiscoverer] Failed to open USB device: -5'}), 500
+            raise
         logger.info(f"Scan completed, found {len(devices)} devices")
         return jsonify(devices)
     except Exception as e:
@@ -46,51 +51,58 @@ def scan_devices():
     finally:
         _scanning_lock = False
 
+# Simplify connect route
 @device_bp.route('/connect', methods=['POST'])
 def connect_device():
+    """Connect to a specific ODrive device or return current connection if already connected"""
     try:
-        device_info = request.json.get('device', {})
-        success = odrive_manager.connect_to_device(device_info)
-        
+        data = request.get_json()
+        device = data.get('device')
+
+        # If already connected to this device, just return info
+        if odrive_manager.current_device and device and \
+           odrive_manager.current_device_serial == device.get('serial'):
+            return jsonify({
+                'success': True,
+                'message': f'Already connected to {device.get("path", "device")}',
+                'device': device
+            })
+
+        if not device:
+            return jsonify({'error': 'No device specified'}), 400
+
+        success = odrive_manager.connect_to_device(device)
+
         if success:
-            return jsonify({'message': 'Connected successfully'})
+            return jsonify({
+                'success': True,
+                'message': f'Connected to {device.get("path", "device")}',
+                'device': device
+            })
         else:
-            return jsonify({'error': 'Failed to connect'}), 500
+            return jsonify({'error': 'Connection failed'}), 500
+
     except Exception as e:
-        logger.error(f"Error in connect_device: {e}")
+        logger.error(f"Connection error: {e}")
         return jsonify({'error': str(e)}), 500
 
+# Simplify disconnect route
 @device_bp.route('/disconnect', methods=['POST'])
 def disconnect_device():
+    """Disconnect from current device"""
     try:
         success = odrive_manager.disconnect_device()
-        return jsonify({'message': 'Disconnected successfully'})
-    except Exception as e:
-        logger.error(f"Error in disconnect_device: {e}")
-        return jsonify({'error': str(e)}), 500
-
-@device_bp.route('/connection_status', methods=['GET'])
-def connection_status():
-    try:
-        is_connected = odrive_manager.check_connection()
         
-        # If not connected but we expect to be, try to find device immediately
-        if not is_connected and odrive_manager.current_device_serial:
-            # Try a quick reconnection attempt for physical reconnections
-            reconnect_success = odrive_manager.try_reconnect()
-            if reconnect_success:
-                is_connected = True
-                logger.info("Device reconnected during status check (physical reconnection detected)")
-        
-        return jsonify({
-            'connected': is_connected,
-            'connection_lost': odrive_manager.connection_lost,
-            'device_serial': odrive_manager.current_device_serial,
-            'is_rebooting': odrive_manager.is_rebooting,
-            'reconnection_attempts': odrive_manager.reconnection_attempts
-        })
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Disconnected successfully'
+            })
+        else:
+            return jsonify({'error': 'Disconnect failed'}), 500
+            
     except Exception as e:
-        logger.error(f"Error in connection_status: {e}")
+        logger.error(f"Disconnect error: {e}")
         return jsonify({'error': str(e)}), 500
 
 @device_bp.route('/command', methods=['POST'])

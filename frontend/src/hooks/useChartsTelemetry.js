@@ -24,21 +24,30 @@ export const useChartsTelemetry = (properties, onData) => {
         if (timeSinceLastRequest < minInterval) {
           await new Promise(resolve => setTimeout(resolve, minInterval - timeSinceLastRequest))
         }
-        
+
         lastRequestTime.current = Date.now()
-        
+
         const response = await fetch('/api/telemetry/get-telemetry', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ paths: properties })
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ paths: properties }),
         })
 
         if (response.ok) {
           const data = await response.json()
-          onData(data)
+          // Fix: Check if we have data and pass it correctly
+          if (data && Object.keys(data).length > 0) {
+            onData({
+              data: data,  // Pass data directly, not nested
+              timestamp: Date.now()
+            })
+          }
         }
       } catch (error) {
-        console.error('Charts telemetry error:', error)
+        // Just log errors, don't handle connection state
+        console.warn('Charts telemetry error:', error)
       }
     }
 

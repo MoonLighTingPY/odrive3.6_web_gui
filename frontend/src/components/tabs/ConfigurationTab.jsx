@@ -42,7 +42,7 @@ const ConfigurationTab = memo(() => {
   const dispatch = useDispatch()
   const toast = useToast()
   
-  const { isConnected } = useSelector(state => state.device)
+  const { isConnected, connectedDevice } = useSelector(state => state.device)
   const { activeConfigStep } = useSelector(state => state.ui)
   
   const [deviceConfig, setDeviceConfig] = useState({
@@ -133,13 +133,6 @@ useEffect(() => {
     if (config.control) dispatch({ type: 'config/updateControlConfig', payload: config.control })
     if (config.interface) dispatch({ type: 'config/updateInterfaceConfig', payload: config.interface })
     
-    // Show success toast
-    toast({
-      title: 'Preset Loaded',
-      description: 'Configuration loaded into wizard. You can now review and modify settings in each step.',
-      status: 'success',
-      duration: 4000,
-    })
   }
 
   window.addEventListener('presetLoaded', handlePresetLoaded)
@@ -304,7 +297,7 @@ useEffect(() => {
 
   setIsApplyingSave(true)
   try {
-    await applyAndSaveConfiguration(deviceConfig, toast)
+    await applyAndSaveConfiguration(deviceConfig, toast, dispatch, connectedDevice)
   } catch (error) {
     toast({
       title: 'Apply & Save Failed',

@@ -48,10 +48,10 @@ const VoltageProgress = memo(({ voltage }) => (
   <Box w="100%">
     <HStack justify="space-between" mb={2}>
       <Text color="gray.300">DC Bus Voltage</Text>
-      <Text fontWeight="bold" color="white">{voltage.toFixed(1)} V</Text>
+      <Text fontWeight="bold" color="white">{(voltage ?? 0).toFixed(1)} V</Text>
     </HStack>
     <Progress 
-      value={(voltage / 56) * 100} 
+      value={((voltage ?? 0) / 56) * 100} 
       colorScheme={voltage > 50 ? "red" : voltage > 40 ? "yellow" : "green"}
       size="sm"
     />
@@ -62,13 +62,13 @@ const TemperatureDisplay = memo(({ temp, label, maxTemp = 100 }) => (
   <Box w="100%">
     <HStack justify="space-between" mb={2}>
       <Text color="gray.300">{label}</Text>
-      <Text fontWeight="bold" color={temp > 80 ? "red.300" : "white"}>
-        {temp.toFixed(1)} °C
+      <Text fontWeight="bold" color={(temp ?? 0) > 80 ? "red.300" : "white"}>
+        {(temp ?? 0).toFixed(1)} °C
       </Text>
     </HStack>
     <Progress 
-      value={(temp / maxTemp) * 100} 
-      colorScheme={temp > 80 ? "red" : temp > 60 ? "yellow" : "green"}
+      value={((temp ?? 0) / maxTemp) * 100} 
+      colorScheme={(temp ?? 0) > 80 ? "red" : (temp ?? 0) > 60 ? "yellow" : "green"}
       size="sm"
     />
   </Box>
@@ -212,8 +212,8 @@ const DashboardTab = memo(() => {
               <CardHeader>
                 <HStack justify="space-between">
                   <Heading size="md" color="white">Device Status</Heading>
-                  <Badge colorScheme={getStateColor(axisState)} variant="solid" fontSize="sm" px={3} py={1}>
-                    {getAxisStateName(axisState)}
+                  <Badge colorScheme={getStateColor(axisState ?? 0)} variant="solid" fontSize="sm" px={3} py={1}>
+                    {getAxisStateName(axisState ?? 0)}
                   </Badge>
                 </HStack>
               </CardHeader>
@@ -243,16 +243,16 @@ const DashboardTab = memo(() => {
                       {systemData?.serial_number || connectedDevice?.serial || 'Unknown'}
                     </StatNumber>
                     <StatHelpText color="gray.400">
-                      VBus: {vbusVoltage.toFixed(1)} V
+                      VBus: {(vbusVoltage ?? 0).toFixed(1)} V
                     </StatHelpText>
                   </Stat>
                   <Stat>
                     <StatLabel color="gray.300">Axis State</StatLabel>
                     <StatNumber color="white" fontSize="md">
-                      {axisState}
+                      {axisState ?? 0}
                     </StatNumber>
                     <StatHelpText color="gray.400">
-                      {getAxisStateName(axisState)}
+                      {getAxisStateName(axisState ?? 0)}
                     </StatHelpText>
                   </Stat>
                 </SimpleGrid>
@@ -288,13 +288,13 @@ const DashboardTab = memo(() => {
                 </CardHeader>
                 <CardBody>
                   <VStack spacing={4}>
-                    <VoltageProgress voltage={vbusVoltage} />
+                    <VoltageProgress voltage={vbusVoltage ?? 0} />
                     <Divider />
                     <TelemetryDisplay 
                       label="Motor Current (measured)"
-                      value={motorCurrent}
+                      value={motorCurrent ?? 0}
                       unit="A"
-                      color={Math.abs(motorCurrent) > 5 ? "red.300" : "odrive.300"}
+                      color={Math.abs(motorCurrent ?? 0) > 5 ? "red.300" : "odrive.300"}
                     />
                   </VStack>
                 </CardBody>
@@ -306,8 +306,8 @@ const DashboardTab = memo(() => {
                 </CardHeader>
                 <CardBody>
                   <VStack spacing={4}>
-                    <TemperatureDisplay temp={motorTemp} label="Motor Temperature" />
-                    <TemperatureDisplay temp={fetTemp} label="FET Temperature" />
+                    <TemperatureDisplay temp={motorTemp ?? 0} label="Motor Temperature" />
+                    <TemperatureDisplay temp={fetTemp ?? 0} label="FET Temperature" />
                   </VStack>
                 </CardBody>
               </Card>
@@ -320,19 +320,19 @@ const DashboardTab = memo(() => {
                   <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
                     <TelemetryDisplay 
                       label="Position (counts)"
-                      value={encoderPos}
+                      value={encoderPos ?? 0}
                       unit=""
                       color="odrive.300"
                     />
                     <TelemetryDisplay 
                       label="Velocity (counts/s)"
-                      value={encoderVel}
+                      value={encoderVel ?? 0}
                       unit=""
                       color="odrive.300"
                     />
                     <TelemetryDisplay 
                       label="Position (turns)"
-                      value={(encoderPos / 4000)}
+                      value={((encoderPos ?? 0) / 4000)}
                       unit=""
                       color="odrive.300"
                     />

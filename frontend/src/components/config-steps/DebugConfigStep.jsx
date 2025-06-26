@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 import {
   Box,
   VStack,
@@ -32,10 +32,11 @@ import {
 import { loadAllConfigurationBatch } from '../../utils/configBatchApi'
 import { generateAllCommands, getDebugInfo, getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
 import { executeConfigAction } from '../../utils/configurationActions'
-
+import { saveAndRebootWithReconnect } from '../../utils/configurationActions'
 const DebugConfigStep = () => {
   const toast = useToast()
-  const { isConnected } = useSelector(state => state.device)
+  const dispatch = useDispatch()
+  const { isConnected, connectedDevice } = useSelector(state => state.device)
   
   const [isRunning, setIsRunning] = useState(false)
   const [currentStep, setCurrentStep] = useState('')
@@ -161,6 +162,49 @@ const DebugConfigStep = () => {
     setLogs(prev => [...prev, { timestamp, message, type }])
   }
 
+  // Helper: Wait for deviceReconnected event (with timeout)
+const waitForDeviceReconnect = (timeout = 15000) => {
+  return new Promise((resolve, reject) => {
+    let timer
+    const handler = () => {
+      clearTimeout(timer)
+      window.removeEventListener('deviceReconnected', handler)
+      resolve()
+    }
+    window.addEventListener('deviceReconnected', handler)
+    timer = setTimeout(() => {
+      window.removeEventListener('deviceReconnected', handler)
+      reject(new Error('Timed out waiting for device to reconnect'))
+    }, timeout)
+  })
+}
+
+// Helper: Actively try to reconnect to the device after reboot and fire deviceReconnected event
+const reconnectAfterReboot = async (connectedDevice, dispatch, addLog) => {
+  // Try to reconnect up to 5 times, 2s apart
+  for (let i = 0; i < 5; i++) {
+    try {
+      const response = await fetch('/api/odrive/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ device: connectedDevice })
+      })
+      if (response.ok) {
+        dispatch && dispatch({ type: 'device/setConnectedDevice', payload: connectedDevice })
+        window.dispatchEvent(new Event('deviceReconnected'))
+        addLog && addLog('Device reconnected (manual trigger)', 'success')
+        return true
+      }
+    // eslint-disable-next-line no-unused-vars
+    } catch (e) {
+      // ignore
+    }
+    await new Promise(res => setTimeout(res, 2000))
+  }
+  addLog && addLog('Device did not reconnect after reboot', 'warning')
+  return false
+}
+
   const runFullDebugTest = async () => {
     if (!isConnected) {
       toast({
@@ -214,13 +258,31 @@ const DebugConfigStep = () => {
       await executeConfigAction('apply', { commands: commands1 })
       addLog('Applied test config 1 successfully', 'success')
       
-      await executeConfigAction('save')
-      addLog('Saved configuration to non-volatile memory', 'success')
-      
-      // Wait for reboot
+      // Save and reboot, but don't abort if it fails
+      try {
+        await saveAndRebootWithReconnect(toast, dispatch, connectedDevice)
+        addLog('Saved configuration and triggered reconnect', 'success')
+      } catch (e) {
+        addLog(`Save & Reboot Failed: ${e.message}`, 'warning')
+      }
+
+      // Wait for reboot and reconnection
       addLog('🔄 Waiting for device reboot...', 'warning')
       setProgress(40)
-      await new Promise(resolve => setTimeout(resolve, 8000))
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      addLog('⏳ Attempting to reconnect to device...', 'info')
+      const reconnected = await reconnectAfterReboot(connectedDevice, dispatch, addLog)
+      if (reconnected) {
+        addLog('✅ Device reconnected', 'success')
+      } else {
+        try {
+          await waitForDeviceReconnect()
+          addLog('✅ Device reconnected (event)', 'success')
+        // eslint-disable-next-line no-unused-vars
+        } catch (e) {
+          addLog('⚠️ Device did not reconnect in time', 'warning')
+        }
+      }
 
       // Step 4: Pull config after Test 1
       addLog('📥 Pulling configuration after test 1...', 'info')
@@ -241,13 +303,31 @@ const DebugConfigStep = () => {
       await executeConfigAction('apply', { commands: commands2 })
       addLog('Applied test config 2 successfully', 'success')
       
-      await executeConfigAction('save')
-      addLog('Saved configuration to non-volatile memory', 'success')
+      // Save and reboot, but don't abort if it fails
+      try {
+        await saveAndRebootWithReconnect(toast, dispatch, connectedDevice)
+        addLog('Saved configuration and triggered reconnect', 'success')
+      } catch (e) {
+        addLog(`Save & Reboot Failed: ${e.message}`, 'warning')
+      }
       
-      // Wait for reboot
+      // Wait for reboot and reconnection
       addLog('🔄 Waiting for device reboot...', 'warning')
       setProgress(70)
-      await new Promise(resolve => setTimeout(resolve, 8000))
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      addLog('⏳ Attempting to reconnect to device...', 'info')
+      const reconnected2 = await reconnectAfterReboot(connectedDevice, dispatch, addLog)
+      if (reconnected2) {
+        addLog('✅ Device reconnected', 'success')
+      } else {
+        try {
+          await waitForDeviceReconnect()
+          addLog('✅ Device reconnected (event)', 'success')
+        // eslint-disable-next-line no-unused-vars
+        } catch (e) {
+          addLog('⚠️ Device did not reconnect in time', 'warning')
+        }
+      }
 
       // Step 6: Pull config after Test 2
       addLog('📥 Pulling configuration after test 2...', 'info')
