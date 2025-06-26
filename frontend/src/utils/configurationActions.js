@@ -220,7 +220,7 @@ export const applyAndSaveConfiguration = async (deviceConfig, toast) => {
   // Step 2: Save configuration (backend handles reboot and reconnection)
   toast({
     title: 'Saving configuration...',
-    description: 'Saving to non-volatile memory. Device will reboot and reconnect automatically.',
+    description: 'Saving to non-volatile memory. Device will reboot.',
     status: 'warning',
     duration: 3000,
   })
@@ -230,7 +230,7 @@ export const applyAndSaveConfiguration = async (deviceConfig, toast) => {
     
     toast({
       title: 'Configuration Saved',
-      description: 'Configuration saved successfully. Device is rebooting and will reconnect automatically.',
+      description: 'Configuration saved to non-volatile memory successfully.',
       status: 'success',
       duration: 5000,
     })
@@ -240,7 +240,7 @@ export const applyAndSaveConfiguration = async (deviceConfig, toast) => {
     if (error.message.includes('reboot') || error.message.includes('disconnect')) {
       toast({
         title: 'Configuration Saved',
-        description: 'Configuration saved successfully. Device has rebooted and will reconnect automatically.',
+        description: 'Configuration saved to non-volatile memory successfully.',
         status: 'success',
         duration: 5000,
       })
