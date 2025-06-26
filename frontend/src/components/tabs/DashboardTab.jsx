@@ -191,6 +191,13 @@ const DashboardTab = memo(() => {
     )
   }
 
+  // Helper function to format serial numbers
+  const formatSerial = (serial) => {
+    if (!serial) return 'Unknown'
+    if (typeof serial === 'number') return serial.toString(16).toUpperCase()
+    return serial
+  }
+
   return (
     <Box p={4} h="100%" maxW="1400px" mx="auto" overflow="hidden">
       <VStack spacing={4} align="stretch" h="100%">
@@ -240,7 +247,11 @@ const DashboardTab = memo(() => {
                   <Stat>
                     <StatLabel color="gray.300">Serial Number</StatLabel>
                     <StatNumber color="white" fontSize="md">
-                      {systemData?.serial_number || connectedDevice?.serial || 'Unknown'}
+                      {formatSerial(
+                        systemData?.serial_number && systemData?.serial_number !== 'Unknown'
+                          ? systemData.serial_number
+                          : connectedDevice?.serial
+                      )}
                     </StatNumber>
                     <StatHelpText color="gray.400">
                       VBus: {(vbusVoltage ?? 0).toFixed(1)} V
