@@ -178,7 +178,6 @@ const DeviceCard = memo(({
   onDisconnect 
 }) => (
   <Card
-    key={index}
     w="100%"
     className="device-card"
     bg={isConnected && connectedDevice?.serial === device.serial ? 'odrive.700' : 'gray.700'}
@@ -463,6 +462,7 @@ const DeviceList = memo(() => {
             <VStack spacing={3}>
               {availableDevices.map((device, index) => (
                 <DeviceCard 
+                  key={device.serial || `device-${index}`} // Add this key prop
                   device={device} 
                   index={index}
                   isConnected={isConnected}
