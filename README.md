@@ -1,4 +1,4 @@
-# 🚀 ODrive v3.6(0.5.6) Web GUI
+# 🚀 ODrive 0.5.6(v3.6) Web GUI
 
 A web-based GUI for configuring, monitoring, and controlling ODrive motor controllers running firmware v0.5.6 (aka v3.6).
 
