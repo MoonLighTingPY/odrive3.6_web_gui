@@ -29,8 +29,11 @@ const deviceSlice = createSlice({
         state.isConnected = true
         state.connectionError = null
       } else {
+        // Clear all device state on disconnect
         state.connectedDevice = null
         state.isConnected = false
+        state.odriveState = {}
+        state.connectionError = null
       }
     },
     setConnectionError: (state, action) => {
