@@ -23,7 +23,7 @@ import ConfirmationModal from '../modals/ConfirmationModal'
 
 // Import shared utilities
 import { generateConfigCommands } from '../../utils/configCommandGenerator'
-import { executeConfigAction, applyAndSaveConfiguration } from '../../utils/configurationActions'
+import { executeConfigAction, saveAndRebootWithReconnect } from '../../utils/configurationActions'
 
 const FinalConfigStep = () => {
   const toast = useToast()
@@ -73,16 +73,38 @@ const FinalConfigStep = () => {
     setIsLoading(true)
     try {
       if (action === 'apply_and_save') {
-        const deviceConfig = {
-          power: powerConfig,
-          motor: motorConfig,
-          encoder: encoderConfig,
-          control: controlConfig,
-          interface: interfaceConfig
+        // Use the edited/filtered commands, not just the generated ones
+        // Step 1: Apply configuration
+        toast({
+          title: 'Applying configuration...',
+          description: `Sending ${finalCommands.length} commands to ODrive`,
+          status: 'info',
+          duration: 2000,
+        })
+
+        await executeConfigAction('apply', { commands: finalCommands })
+
+        // Step 2: Save configuration (backend handles reboot and reconnection)
+        toast({
+          title: 'Saving configuration...',
+          description: 'Saving to non-volatile memory. Device will reboot.',
+          status: 'warning',
+          duration: 3000,
+        })
+
+        try {
+          await saveAndRebootWithReconnect(toast, dispatch, connectedDevice)
+        } catch (error) {
+          // Handle save errors...
+          if (
+            error.message &&
+            (error.message.includes('reboot') || error.message.includes('disconnect'))
+          ) {
+            // treat as success
+          } else {
+            throw error
+          }
         }
-        
-        // Use the shared applyAndSaveConfiguration function
-        await applyAndSaveConfiguration(deviceConfig, toast, dispatch, connectedDevice)
       } else {
         // Handle other actions (like erase)
         await executeConfigAction(action, { commands: finalCommands })
