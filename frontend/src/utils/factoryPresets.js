@@ -33,7 +33,8 @@ export const generateFullConfig = (baseConfig = {}) => {
       }
     })
   })
-
+  console.log('[generateFullConfig] baseConfig:', baseConfig)
+  console.log('[generateFullConfig] generated config:', config)
   return config
 }
 
@@ -63,14 +64,14 @@ const getDefaultValue = (metadata) => {
 /**
  * Factory presets for common motor configurations
  */
-export const FACTORY_PRESETS = {
+export const FACTORY_PRESET_BASES = {
   'High Current Motor - D6374 150KV': {
     name: 'High Current Motor - D6374 150KV',
     description: 'High current motor D6374 with 150KV rating',
     timestamp: '2024-01-01T00:00:00.000Z',
     version: '0.5.6',
     isFactory: true,
-    config: generateFullConfig({
+    baseConfig: {
       power: {
         dc_bus_overvoltage_trip_level: 56.0,
         dc_bus_undervoltage_trip_level: 10.0,
@@ -146,7 +147,7 @@ export const FACTORY_PRESETS = {
         step_dir_always_on: false,
         enable_sensorless: false
       }
-    })
+    }
   },
 
   'Gimbal Motor - GBM2804 100KV': {
@@ -155,7 +156,7 @@ export const FACTORY_PRESETS = {
     timestamp: '2024-01-01T00:00:00.000Z',
     version: '0.5.6',
     isFactory: true,
-    config: generateFullConfig({
+    baseConfig: {
       power: {
         dc_bus_overvoltage_trip_level: 56.0,
         dc_bus_undervoltage_trip_level: 10.0,
@@ -231,7 +232,7 @@ export const FACTORY_PRESETS = {
         step_dir_always_on: false,
         enable_sensorless: false
       }
-    })
+    }
   },
 
   'Hoverboard Motor - 6.5" Wheel': {
@@ -240,7 +241,7 @@ export const FACTORY_PRESETS = {
     timestamp: '2024-01-01T00:00:00.000Z',
     version: '0.5.6',
     isFactory: true,
-    config: generateFullConfig({
+    baseConfig: {
       power: {
         dc_bus_overvoltage_trip_level: 56.0,
         dc_bus_undervoltage_trip_level: 8.0,
@@ -317,6 +318,16 @@ export const FACTORY_PRESETS = {
         step_dir_always_on: false,
         enable_sensorless: false
       }
-    })
+    }
+  }
+}
+
+// Helper to get a full factory preset at runtime
+export function getFactoryPreset(name) {
+  const base = FACTORY_PRESET_BASES[name]
+  if (!base) return null
+  return {
+    ...base,
+    config: generateFullConfig(base.baseConfig)
   }
 }

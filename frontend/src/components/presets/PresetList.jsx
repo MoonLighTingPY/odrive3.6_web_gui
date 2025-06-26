@@ -1,4 +1,4 @@
-import React, { useState, useEffect, memo, useMemo } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { useSelector } from 'react-redux'
 import {
   VStack,

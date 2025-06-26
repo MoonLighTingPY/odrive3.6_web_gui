@@ -30,9 +30,9 @@ import { InfoIcon, RepeatIcon, ChevronUpIcon, ChevronDownIcon } from '@chakra-ui
 import ParameterInput from '../buttons/ParameterInput'
 import { ODrivePropertyMappings as configurationMappings } from '../../utils/odriveUnifiedRegistry'
 import { ControlMode, InputMode} from '../../utils/odriveEnums'
-import { 
-  radToRpm, 
-  rpmToRad, 
+import {
+  turnsToRpm, 
+  rpmToTurns, 
 } from '../../utils/unitConversions'
 
 const ControlConfigStep = ({ 
@@ -97,14 +97,14 @@ const ControlConfigStep = ({
 
   const handleVelLimitChange = (value) => {
     const numValue = parseFloat(value) || 0
-    const radValue = useRpm ? rpmToRad(numValue) : numValue
-    handleConfigChange('vel_limit', radValue)
+    const turnsValue = useRpm ? rpmToTurns(numValue) : numValue
+    handleConfigChange('vel_limit', turnsValue)
   }
 
   const handleVelRampRateChange = (value) => {
     const numValue = parseFloat(value) || 0
-    const radValue = useRpm ? rpmToRad(numValue) : numValue
-    handleConfigChange('vel_ramp_rate', radValue)
+    const turnsValue = useRpm ? rpmToTurns(numValue) : numValue
+    handleConfigChange('vel_ramp_rate', turnsValue)
   }
 
   const isPositionControl = (controlConfig.control_mode ?? ControlMode.VELOCITY_CONTROL) === ControlMode.POSITION_CONTROL
@@ -398,7 +398,7 @@ const ControlConfigStep = ({
                       </Tooltip>
                     </HStack>
                     <ParameterInput
-                      value={useRpm ? radToRpm(controlConfig.vel_limit) : (controlConfig.vel_limit)}
+                      value={useRpm ? turnsToRpm(controlConfig.vel_limit) : (controlConfig.vel_limit)}
                       onChange={handleVelLimitChange}
                       onRefresh={() => handleRefresh('vel_limit')}
                       isLoading={isLoading('vel_limit')}
@@ -415,7 +415,7 @@ const ControlConfigStep = ({
                       </Tooltip>
                     </HStack>
                     <ParameterInput
-                      value={useRpm ? radToRpm(controlConfig.vel_ramp_rate) : (controlConfig.vel_ramp_rate)}
+                      value={useRpm ? turnsToRpm(controlConfig.vel_ramp_rate) : (controlConfig.vel_ramp_rate)}
                       onChange={handleVelRampRateChange}
                       onRefresh={() => handleRefresh('vel_ramp_rate')}
                       isLoading={isLoading('vel_ramp_rate')}

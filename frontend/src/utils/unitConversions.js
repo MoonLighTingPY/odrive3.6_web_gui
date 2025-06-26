@@ -12,8 +12,6 @@ export const turnsToRpm = (turnsPerSec) => safeNumber(turnsPerSec) * 60
 export const rpmToTurns = (rpm) => safeNumber(rpm) / 60
 
 // Legacy function names for backward compatibility
-export const radToRpm = (turnsPerSec) => safeNumber(turnsPerSec) * 60  // Actually turns/s to RPM
-export const rpmToRad = (rpm) => safeNumber(rpm) / 60  // Actually RPM to turns/s
 
 // Convert velocity gains between turns/s and RPM units
 // ODrive v0.5.6 stores gains as A/(turns/s) internally
@@ -22,16 +20,7 @@ export const rpmToRad = (rpm) => safeNumber(rpm) / 60  // Actually RPM to turns/
 export const velGainTurnsToRpm = (gainTurns) => safeNumber(gainTurns) * 60
 export const velGainRpmToTurns = (gainRpm) => safeNumber(gainRpm) / 60
 
-// Legacy function names for backward compatibility - FIXED
-export const velGainRadToRpm = (radValue) => {
-  const num = safeNumber(radValue)
-  return num * 60  // Fixed: ODrive v0.5.6 uses turns/s, not rad/s
-}
 
-export const velGainRpmToRad = (rpmValue) => {
-  const num = safeNumber(rpmValue)
-  return num / 60  // Fixed: ODrive v0.5.6 uses turns/s, not rad/s
-}
 
 // Safe formatting functions with error handling
 export const safeToFixed = (value, decimals = 2, fallback = 0) => {

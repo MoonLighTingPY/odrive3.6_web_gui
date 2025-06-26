@@ -3,7 +3,7 @@
  * Handles saving, loading, importing, and exporting ODrive configuration presets
  */
 
-import { FACTORY_PRESETS, generateFullConfig } from './factoryPresets'
+import { FACTORY_PRESET_BASES, getFactoryPreset, generateFullConfig } from './factoryPresets'
 import { odriveRegistry } from './odriveUnifiedRegistry'
 
 /**
@@ -89,10 +89,9 @@ export const getStoredPresets = () => {
  */
 export const getPreset = (presetName) => {
   // First check factory presets
-  if (FACTORY_PRESETS[presetName]) {
-    return FACTORY_PRESETS[presetName]
+  if (FACTORY_PRESET_BASES[presetName]) {
+    return getFactoryPreset(presetName)
   }
-  
   // Then check user presets
   const userPresets = getStoredPresets()
   return userPresets[presetName] || null
@@ -325,8 +324,19 @@ export const importPresetsFromFile = async (file, overwriteExisting = false) => 
  * @returns {Object|null} Preset configuration or null if not found
  */
 export const loadPresetConfig = (presetName) => {
-  const preset = getPreset(presetName) // This now includes factory presets
-  return preset ? preset.config : null
+  const preset = getPreset(presetName)
+  console.log('[loadPresetConfig] presetName:', presetName, 'preset:', preset)
+  if (!preset) return null
+  // Ensure all sections exist
+  const config = preset.config || {}
+  console.log('[loadPresetConfig] config:', config)
+  return {
+    power: config.power || {},
+    motor: config.motor || {},
+    encoder: config.encoder || {},
+    control: config.control || {},
+    interface: config.interface || {},
+  }
 }
 
 /**
@@ -380,7 +390,7 @@ export const validatePresetConfig = (config) => {
  */
 export const getAllAvailablePresets = () => {
   const userPresets = getStoredPresets()
-  return { ...FACTORY_PRESETS, ...userPresets }
+  return { ...FACTORY_PRESET_BASES, ...userPresets }
 }
 
 /**
@@ -389,7 +399,7 @@ export const getAllAvailablePresets = () => {
  * @returns {boolean} Whether it's a factory preset
  */
 export const isFactoryPreset = (presetName) => {
-  return Object.prototype.hasOwnProperty.call(FACTORY_PRESETS, presetName)
+  return Object.prototype.hasOwnProperty.call(FACTORY_PRESET_BASES, presetName)
 }
 
 /**
