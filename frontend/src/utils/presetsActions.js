@@ -97,51 +97,6 @@ export const loadPresetConfigAction = async (presetName, applyToDevice = false, 
 }
 
 /**
- * Apply preset configuration and save to ODrive non-volatile memory
- * @param {string} presetName - Name of preset to apply
- * @param {Function} toast - Toast notification function
- * @returns {Promise<Object>} The applied configuration
- */
-export const applyPresetAndSaveAction = async (presetName, toast) => {
-  try {
-    const config = loadPresetConfig(presetName)
-    
-    if (!config) {
-      throw new Error(`Preset "${presetName}" not found`)
-    }
-
-    // Generate commands and apply to ODrive
-    const commands = generateConfigCommands(config)
-    
-
-
-    // Apply configuration
-    await executeConfigAction('apply', { commands })
-
-
-    // Save to non-volatile memory
-    await executeConfigAction('save')
-
-    toast({
-      title: 'Preset Applied & Saved',
-      description: `Configuration "${presetName}" applied and saved to ODrive`,
-      status: 'success',
-      duration: 5000,
-    })
-
-    return config
-  } catch (error) {
-    toast({
-      title: 'Apply Preset Failed',
-      description: error.message,
-      status: 'error',
-      duration: 5000,
-    })
-    throw error
-  }
-}
-
-/**
  * Export presets to file
  * @param {string|Array<string>|null} presetNames - Preset name(s) to export or null for all
  * @param {Function} toast - Toast notification function

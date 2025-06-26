@@ -54,19 +54,18 @@ import {
   exportPresetsToFile,
   updatePreset // Add this import
 } from '../../utils/presetsManager'
-import {
-  applyPresetAndSaveAction
-} from '../../utils/presetsActions'
+
 import {
   exportPresetsAsZip,
   handleFileImport
 } from '../../utils/presetsOperations'
+import { applyAndSaveConfiguration } from '../../utils/configurationActions'
 
 const PresetsTab = memo(() => {
   const dispatch = useDispatch()
   const toast = useToast()
   const fileInputRef = useRef(null)
-  const { isConnected } = useSelector(state => state.device)
+  const { isConnected, connectedDevice } = useSelector(state => state.device)
   const { powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig } = useSelector(state => state.config)
   
   const deviceConfig = useMemo(() => ({
@@ -157,6 +156,7 @@ const PresetsTab = memo(() => {
     }
   }
 
+  // Unify preset apply logic
   const handleApplyPreset = async (presetName) => {
     if (!isConnected) {
       toast({
@@ -169,9 +169,32 @@ const PresetsTab = memo(() => {
     }
 
     try {
-      await applyPresetAndSaveAction(presetName, toast)
+      const config = loadPresetConfig(presetName)
+      if (!config) throw new Error(`Preset "${presetName}" not found`)
+
+      // Update Redux config state so the wizard and inspector are in sync
+      if (config.power) dispatch({ type: 'config/updatePowerConfig', payload: config.power })
+      if (config.motor) dispatch({ type: 'config/updateMotorConfig', payload: config.motor })
+      if (config.encoder) dispatch({ type: 'config/updateEncoderConfig', payload: config.encoder })
+      if (config.control) dispatch({ type: 'config/updateControlConfig', payload: config.control })
+      if (config.interface) dispatch({ type: 'config/updateInterfaceConfig', payload: config.interface })
+
+      // Apply and save with reconnection logic
+      await applyAndSaveConfiguration(config, toast, dispatch, connectedDevice)
+
+      toast({
+        title: 'Preset Applied & Saved',
+        description: `Configuration "${presetName}" applied and saved to ODrive`,
+        status: 'success',
+        duration: 5000,
+      })
     } catch (error) {
-      console.error('Failed to apply preset:', error)
+      toast({
+        title: 'Apply Preset Failed',
+        description: error.message,
+        status: 'error',
+        duration: 5000,
+      })
     }
   }
 
