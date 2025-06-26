@@ -550,7 +550,40 @@ class ODriveUnifiedRegistry {
       'torque_constant': 'motor_kv',
       'phase_inductance': 'phase_inductance',
       'phase_resistance': 'phase_resistance',
-      'pre_calibrated': path.includes('encoder') ? 'pre_calibrated' : path.includes('motor') ? 'motor_pre_calibrated' : 'pre_calibrated',
+      
+      // Handle vel_limit conflicts
+      'vel_limit': path.includes('controller.config') ? 'vel_limit' : 
+                   path.includes('trap_traj.config') ? 'trap_vel_limit' : 'vel_limit',
+      
+      // Handle pre_calibrated conflicts
+      'pre_calibrated': path.includes('encoder') ? 'pre_calibrated' : 
+                       path.includes('motor') ? 'motor_pre_calibrated' : 
+                       path.includes('anticogging') ? 'anticogging_pre_calibrated' : 'pre_calibrated',
+      
+      // Handle enabled conflicts
+      'enabled': path.includes('fet_thermistor') ? 'fet_thermistor_enabled' :
+                 path.includes('motor_thermistor') ? 'motor_thermistor_enabled' :
+                 path.includes('min_endstop') ? 'min_endstop_enabled' :
+                 path.includes('max_endstop') ? 'max_endstop_enabled' : 'enabled',
+      
+      // Handle gpio_num conflicts
+      'gpio_num': path.includes('motor_thermistor') ? 'motor_thermistor_gpio_num' :
+                  path.includes('min_endstop') ? 'min_endstop_gpio_num' :
+                  path.includes('max_endstop') ? 'max_endstop_gpio_num' :
+                  path.includes('mechanical_brake') ? 'mechanical_brake_gpio_num' : 'gpio_num',
+      
+      // Handle temperature limit conflicts
+      'temp_limit_lower': path.includes('fet_thermistor') ? 'fet_temp_limit_lower' : 
+                         path.includes('motor_thermistor') ? 'motor_temp_limit_lower' : 'temp_limit_lower',
+      'temp_limit_upper': path.includes('fet_thermistor') ? 'fet_temp_limit_upper' : 
+                         path.includes('motor_thermistor') ? 'motor_temp_limit_upper' : 'temp_limit_upper',
+      
+      // Handle offset conflicts
+      'offset': path.includes('encoder') ? 'index_offset' :
+                path.includes('min_endstop') ? 'min_endstop_offset' :
+                path.includes('max_endstop') ? 'max_endstop_offset' : 'offset',
+      
+      // Keep existing mappings
       'mode': path.includes('encoder') ? 'encoder_type' : 'mode',
       'enable_phase_interpolation': 'enable_phase_interpolation',
       'ignore_illegal_hall_state': 'ignore_illegal_hall_state',
@@ -569,8 +602,6 @@ class ODriveUnifiedRegistry {
       'is_extended': 'can_node_id_extended',
       'baud_rate': 'can_baudrate',
       'enable_brake_resistor': 'brake_resistor_enabled',
-      'temp_limit_lower': path.includes('fet_thermistor') ? 'fet_temp_limit_lower' : path.includes('motor_thermistor') ? 'motor_temp_limit_lower' : 'temp_limit_lower',
-      'temp_limit_upper': path.includes('fet_thermistor') ? 'fet_temp_limit_upper' : path.includes('motor_thermistor') ? 'motor_temp_limit_upper' : 'temp_limit_upper',
       'current': path.includes('calibration_lockin') ? 'lock_in_spin_current' : 'current',
     }
     return specialMappings[lastPart] || lastPart
