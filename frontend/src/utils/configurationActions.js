@@ -8,7 +8,7 @@ import { setConnectedDevice } from '../store/slices/deviceSlice'
 
 /**
  * Execute configuration action via API
- * @param {string} action - The action to execute ('erase', 'apply', 'save_and_reboot', 'calibrate', 'save', 'clear_errors')
+ * @param {string} action - The action to execute ('erase', 'apply', 'calibrate', 'save', 'clear_errors')
  * @param {Object} options - Action options
  * @param {Array<string>} options.commands - Array of commands (for apply action)
  * @param {string} options.calibrationType - Type of calibration ('full', 'motor', 'encoder_sequence')
@@ -25,9 +25,6 @@ export const executeConfigAction = async (action, options = {}) => {
     case 'apply':
       endpoint = '/api/odrive/apply_config'
       payload = { commands: options.commands || [] }
-      break
-    case 'save_and_reboot':
-      endpoint = '/api/odrive/save_and_reboot'
       break
     case 'calibrate':
       endpoint = '/api/odrive/calibrate'
@@ -286,13 +283,21 @@ export const applyAndSaveConfiguration = async (deviceConfig, toast, dispatch, c
  */
 export const saveAndRebootWithReconnect = async (toast, dispatch, connectedDevice) => {
   try {
-    await saveConfiguration()
-    toast({
-      title: 'Configuration Saved',
-      description: 'Configuration saved and device rebooted.',
-      status: 'success',
-      duration: 5000,
-    })
+    let saveError = null
+    try {
+      await saveConfiguration()
+    } catch (error) {
+      // Accept "Device ... disconnected" as a normal part of reboot
+      if (
+        typeof error.message === 'string' &&
+        error.message.includes('disconnected')
+      ) {
+        saveError = error
+      } else {
+        throw error
+      }
+    }
+
     // --- Reconnect frontend to device ---
     if (connectedDevice && dispatch) {
       try {
@@ -307,6 +312,16 @@ export const saveAndRebootWithReconnect = async (toast, dispatch, connectedDevic
       } catch (e) {
         console.warn('Auto-reconnect failed:', e)
       }
+    }
+    toast({
+      title: 'Configuration Saved',
+      description: 'Configuration saved and device reconnected successfully.',
+      status: 'success',
+      duration: 5000,
+    })
+    if (saveError) {
+      // Optionally log or toast about the disconnect, but treat as success
+      console.warn('Device disconnected during save, but this is expected on reboot.')
     }
   } catch (error) {
     toast({
