@@ -72,25 +72,6 @@ export const useDashboardTelemetry = () => {
             return
           }
 
-          // If we were previously disconnected and now see connected: true, try to reconnect
-          if (data.connected === true && !isConnected && lastSerialRef.current) {
-            // Scan for devices and auto-connect if serial matches
-            const scanResponse = await fetch('/api/odrive/scan')
-            if (scanResponse.ok) {
-              const devices = await scanResponse.json()
-              const match = devices.find(d => d.serial === lastSerialRef.current)
-              if (match) {
-                // Auto-connect to the device
-                await fetch('/api/odrive/connect', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ device: match })
-                })
-                dispatch(setConnectedDevice(match))
-              }
-            }
-          }
-
           // Fix: The telemetry API returns data directly, not nested in data.data
           // Check if we have the expected structure
           if (data && typeof data === 'object') {
