@@ -35,12 +35,19 @@ class ODriveManager:
             return True
         except Exception as e:
             logger.debug(f"Connection check failed: {e}")
+            # Clear stale device reference if disconnected
+            self.current_device = None
+            self.current_device_serial = None
             return False
 
     def connect_to_device(self, device_info: Dict[str, Any]) -> bool:
         """Connect to a specific ODrive device"""
         try:
             self.expecting_reconnection = False  # Clear on manual connect
+
+            # Always clear any stale device before connecting
+            self.current_device = None
+            self.current_device_serial = None
             
             # Find the specific device
             odrv = odrive.find_any(timeout=10)
