@@ -227,15 +227,19 @@ const DashboardTab = memo(() => {
               <CardBody>
                 <SimpleGrid columns={{ base: 2, md: 4 }} spacing={4}>
                   <Stat>
-                    <StatLabel color="gray.300">Device</StatLabel>
+                    <StatLabel color="gray.300">Serial</StatLabel>
                     <StatNumber color="white" fontSize="md">
-                      {connectedDevice?.path || 'ODrive'}
+                      {formatSerial(
+                        systemData?.serial_number && systemData?.serial_number !== 'Unknown'
+                          ? systemData.serial_number
+                          : connectedDevice?.serial
+                      )}
                     </StatNumber>
                     <StatHelpText color="gray.400">
-                      Serial: {connectedDevice?.serial || 'Unknown'}
+                      {connectedDevice?.path || 'ODrive'}
                     </StatHelpText>
                   </Stat>
-                  <Stat>
+                    <Stat>
                     <StatLabel color="gray.300">Firmware</StatLabel>
                     <StatNumber color="white" fontSize="md">
                       v{systemData?.fw_version_major || 0}.{systemData?.fw_version_minor}.{systemData?.fw_version_revision}
@@ -245,16 +249,29 @@ const DashboardTab = memo(() => {
                     </StatHelpText>
                   </Stat>
                   <Stat>
-                    <StatLabel color="gray.300">Serial Number</StatLabel>
+                    <StatLabel color="gray.300">Error States</StatLabel>
                     <StatNumber color="white" fontSize="md">
-                      {formatSerial(
-                        systemData?.serial_number && systemData?.serial_number !== 'Unknown'
-                          ? systemData.serial_number
-                          : connectedDevice?.serial
-                      )}
+                      <HStack spacing={1}>
+                        <Badge colorScheme={currentErrors.axis_error ? "red" : "green"} fontSize="xs">
+                          Axis: {currentErrors.axis_error ? `0x${currentErrors.axis_error.toString(16).toUpperCase()}` : "OK"}
+                        </Badge>
+                        <Badge colorScheme={currentErrors.motor_error ? "orange" : "green"} fontSize="xs">
+                          Motor: {currentErrors.motor_error ? `0x${currentErrors.motor_error.toString(16).toUpperCase()}` : "OK"}
+                        </Badge>
+                        <Badge colorScheme={currentErrors.encoder_error ? "yellow" : "green"} fontSize="xs">
+                          Enc: {currentErrors.encoder_error ? `0x${currentErrors.encoder_error.toString(16).toUpperCase()}` : "OK"}
+                        </Badge>
+                      </HStack>
                     </StatNumber>
                     <StatHelpText color="gray.400">
-                      VBus: {(vbusVoltage ?? 0).toFixed(1)} V
+                      <HStack spacing={1} mt={1}>
+                        <Badge colorScheme={currentErrors.controller_error ? "purple" : "green"} fontSize="xs">
+                          Ctrl: {currentErrors.controller_error ? `0x${currentErrors.controller_error.toString(16).toUpperCase()}` : "OK"}
+                        </Badge>
+                        <Badge colorScheme={currentErrors.sensorless_error ? "blue" : "green"} fontSize="xs">
+                          S-less: {currentErrors.sensorless_error ? `0x${currentErrors.sensorless_error.toString(16).toUpperCase()}` : "OK"}
+                        </Badge>
+                      </HStack>
                     </StatHelpText>
                   </Stat>
                   <Stat>
@@ -276,7 +293,7 @@ const DashboardTab = memo(() => {
                 <CardHeader>
                   <HStack>
                     <Icon as={WarningIcon} color="red.300" />
-                    <Heading size="md" color="red.300">System Errors - Click for Help</Heading>
+                    <Heading size="md" color="red.300">Errors!</Heading>
                   </HStack>
                 </CardHeader>
                 <CardBody>
