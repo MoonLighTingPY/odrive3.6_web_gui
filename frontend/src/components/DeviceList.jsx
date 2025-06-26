@@ -303,26 +303,39 @@ const DeviceList = memo(() => {
   }
 
   const scanForDevices = useCallback(async () => {
-    if (isScanningRef.current) return // Use ref instead of state
-    
+    if (isScanningRef.current) return
+
     try {
-      isScanningRef.current = true // Set ref
+      isScanningRef.current = true
       setIsScanning(true)
       dispatch(setScanning(true))
-      
+
       const response = await fetch('/api/odrive/scan')
       const devices = await response.json()
-      
+
       if (response.ok) {
         dispatch(setAvailableDevices(devices))
-        toast({
-          title: 'Scan Complete',
-          description: `Found ${devices.length} ODrive device(s)`,
-          status: 'success',
-          duration: 2000,
-        })
       } else {
-        throw new Error(devices.error || 'Scan failed')
+        // Check for USB error
+        if (
+          devices.error &&
+          devices.error.includes('[UsbDiscoverer] Failed to open USB device: -5')
+        ) {
+          toast({
+            title: 'USB Error',
+            description: 'Failed to open USB device (-5): It may be disconnected or busy. Replugging the USB cable usually helps.',
+            status: 'error',
+            duration: 10000,
+          })
+        } else {
+          toast({
+            title: 'Scan Failed',
+            description: devices.error || 'Scan failed',
+            status: 'error',
+            duration: 3000,
+          })
+        }
+        dispatch(setAvailableDevices([]))
       }
     } catch (error) {
       console.error('Scan error:', error)
@@ -332,12 +345,13 @@ const DeviceList = memo(() => {
         status: 'error',
         duration: 3000,
       })
+      dispatch(setAvailableDevices([]))
     } finally {
-      isScanningRef.current = false // Reset ref
+      isScanningRef.current = false
       setIsScanning(false)
       dispatch(setScanning(false))
     }
-  }, [dispatch, toast]) // Remove isScanning from dependencies
+  }, [dispatch, toast])
 
   useEffect(() => {
     scanForDevices()
@@ -361,6 +375,7 @@ const DeviceList = memo(() => {
           status: 'success',
           duration: 2000,
         })
+
       } else {
         const error = await response.json()
         throw new Error(error.error || 'Connection failed')
@@ -391,6 +406,8 @@ const DeviceList = memo(() => {
           status: 'info',
           duration: 2000,
         })
+        // Refresh device list after disconnect
+        scanForDevices()
       } else {
         const error = await response.json()
         throw new Error(error.error || 'Disconnect failed')
@@ -404,7 +421,7 @@ const DeviceList = memo(() => {
         duration: 3000,
       })
     }
-  }, [dispatch, toast])
+  }, [dispatch, toast, scanForDevices])
 
   const handleErrorClick = useCallback((errorCode, errorType) => {
     console.log(`Error clicked: ${errorType} error 0x${errorCode.toString(16)}`)
@@ -433,6 +450,15 @@ const DeviceList = memo(() => {
   // Get current errors
   const currentErrors = getCurrentErrors()
   const hasAnyErrors = Object.values(currentErrors).some(error => error !== 0)
+
+  useEffect(() => {
+    if (!isConnected) {
+      // Optimistically clear device list
+      dispatch(setAvailableDevices([]))
+      scanForDevices()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnected])
 
   return (
     <Box className="device-list" p={4} h="100%">

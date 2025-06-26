@@ -26,18 +26,23 @@ _scanning_lock = False
 @device_bp.route('/scan', methods=['GET'])
 def scan_devices():
     global odrive_manager, _scanning_lock
-    
-    # Prevent concurrent scans
+
     if _scanning_lock:
         logger.warning("Scan request rejected - scan already in progress")
         return jsonify({
             "devices": [],
             "message": "Scan already in progress"
-        }), 429  # Too Many Requests
-    
+        }), 429
+
     try:
         _scanning_lock = True
-        devices = odrive_manager.scan_for_devices()
+        try:
+            devices = odrive_manager.scan_for_devices()
+        except Exception as e:
+            if "Failed to open USB device: -5" in str(e):
+                logger.error("[UsbDiscoverer] Failed to open USB device: -5")
+                return jsonify({'error': '[UsbDiscoverer] Failed to open USB device: -5'}), 500
+            raise
         logger.info(f"Scan completed, found {len(devices)} devices")
         return jsonify(devices)
     except Exception as e:
