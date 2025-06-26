@@ -1,13 +1,21 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { debounce } from 'lodash'
-import { updateOdriveState } from '../store/slices/deviceSlice'
+import { updateOdriveState, setConnectedDevice } from '../store/slices/deviceSlice'
 import { updateTelemetry, setTelemetryConnectionHealth } from '../store/slices/telemetrySlice'
 
 export const useDashboardTelemetry = () => {
-  const { isConnected } = useSelector(state => state.device)
+  const { isConnected, connectedDevice } = useSelector(state => state.device)
   const dispatch = useDispatch()
-  const updateRate = 50 // Update rate in milliseconds
+  const updateRate = 50
+  const lastSerialRef = useRef(null)
+
+  // Track last connected serial
+  useEffect(() => {
+    if (connectedDevice?.serial) {
+      lastSerialRef.current = connectedDevice.serial
+    }
+  }, [connectedDevice])
 
   // Debounced dispatcher for device state (updates every 500ms max)
   const debouncedDeviceDispatch = useMemo(
@@ -53,9 +61,35 @@ export const useDashboardTelemetry = () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ paths: telemetryPaths })
         })
-        
+
         if (response.ok) {
           const data = await response.json()
+
+          // Heartbeat: check connection status from backend
+          if (data.connected === false) {
+            dispatch(setConnectedDevice(null))
+            dispatch(setTelemetryConnectionHealth(false))
+            return
+          }
+
+          // If we were previously disconnected and now see connected: true, try to reconnect
+          if (data.connected === true && !isConnected && lastSerialRef.current) {
+            // Scan for devices and auto-connect if serial matches
+            const scanResponse = await fetch('/api/odrive/scan')
+            if (scanResponse.ok) {
+              const devices = await scanResponse.json()
+              const match = devices.find(d => d.serial === lastSerialRef.current)
+              if (match) {
+                // Auto-connect to the device
+                await fetch('/api/odrive/connect', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ device: match })
+                })
+                dispatch(setConnectedDevice(match))
+              }
+            }
+          }
 
           // Fix: The telemetry API returns data directly, not nested in data.data
           // Check if we have the expected structure
