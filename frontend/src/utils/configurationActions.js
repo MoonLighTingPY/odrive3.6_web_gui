@@ -112,14 +112,6 @@ export const saveConfiguration = async () => {
 }
 
 /**
- * Save configuration and reboot ODrive
- * @returns {Promise<Object>} Response from the API
- */
-export const saveAndReboot = async () => {
-  return await executeConfigAction('save_and_reboot')
-}
-
-/**
  * Erase configuration and reboot ODrive
  * @returns {Promise<Object>} Response from the API
  */
@@ -283,5 +275,46 @@ export const applyAndSaveConfiguration = async (deviceConfig, toast, dispatch, c
     } else {
       throw error
     }
+  }
+}
+
+/**
+ * Save configuration and reboot ODrive, then reconnect frontend
+ * @param {Function} toast - Toast notification function
+ * @param {Function} dispatch - Redux dispatch function
+ * @param {Object} connectedDevice - Device object from Redux
+ */
+export const saveAndRebootWithReconnect = async (toast, dispatch, connectedDevice) => {
+  try {
+    await saveConfiguration()
+    toast({
+      title: 'Configuration Saved',
+      description: 'Configuration saved and device rebooted.',
+      status: 'success',
+      duration: 5000,
+    })
+    // --- Reconnect frontend to device ---
+    if (connectedDevice && dispatch) {
+      try {
+        const response = await fetch('/api/odrive/connect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ device: connectedDevice })
+        })
+        if (response.ok) {
+          dispatch(setConnectedDevice(connectedDevice))
+        }
+      } catch (e) {
+        console.warn('Auto-reconnect failed:', e)
+      }
+    }
+  } catch (error) {
+    toast({
+      title: 'Save & Reboot Failed',
+      description: error.message,
+      status: 'error',
+      duration: 5000,
+    })
+    throw error
   }
 }
