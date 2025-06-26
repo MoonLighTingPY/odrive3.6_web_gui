@@ -91,6 +91,8 @@ class ODriveManager:
 
     def scan_for_devices(self) -> List[Dict[str, Any]]:
         """Scan for ODrive devices"""
+        self.current_device = None
+        self.current_device_serial = None
         devices = []
         try:
             logger.info("Scanning for ODrive devices...")
@@ -150,7 +152,7 @@ class ODriveManager:
             
         try:
             # Wait a moment for device to reboot
-            time.sleep(3)
+            time.sleep(2)
             
             # Try to reconnect to the same device
             devices = self.scan_for_devices()
