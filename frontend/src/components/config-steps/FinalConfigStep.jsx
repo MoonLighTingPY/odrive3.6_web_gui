@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react'
-import { useSelector } from 'react-redux'
+import { useSelector, useDispatch } from 'react-redux'
 import {
   Box,
   VStack,
@@ -27,6 +27,7 @@ import { executeConfigAction, applyAndSaveConfiguration } from '../../utils/conf
 
 const FinalConfigStep = () => {
   const toast = useToast()
+  const dispatch = useDispatch()
   const { isOpen: isConfirmOpen, onOpen: onConfirmOpen, onClose: onConfirmClose } = useDisclosure()
   
   const [isLoading, setIsLoading] = useState(false)
@@ -36,7 +37,7 @@ const FinalConfigStep = () => {
   const [enableCommandEditing, setEnableCommandEditing] = useState(false)
   
   const { powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig } = useSelector(state => state.config)
-  const { isConnected } = useSelector(state => state.device)
+  const { isConnected, connectedDevice } = useSelector(state => state.device)
 
   // Generate base commands using shared utility
   const baseGeneratedCommands = useMemo(() => {
@@ -81,7 +82,7 @@ const FinalConfigStep = () => {
         }
         
         // Use the shared applyAndSaveConfiguration function
-        await applyAndSaveConfiguration(deviceConfig, toast)
+        await applyAndSaveConfiguration(deviceConfig, toast, dispatch, connectedDevice)
       } else {
         // Handle other actions (like erase)
         await executeConfigAction(action, { commands: finalCommands })
