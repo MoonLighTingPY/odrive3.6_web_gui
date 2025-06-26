@@ -340,6 +340,16 @@ class ODriveUnifiedRegistry {
   }
 
   _inferCategory(path) {
+
+    if (path.includes('controller.config.vel_limit')) {
+      return 'control'
+    }
+    
+    // Then check for trapezoidal trajectory velocity limit
+    if (path.includes('trap_traj.config.vel_limit')) {
+      return 'control'
+    }
+
     if (path.includes('motor.config') || 
         path.includes('motor_thermistor') ||
         path.includes('calibration_lockin') ||
@@ -550,6 +560,7 @@ class ODriveUnifiedRegistry {
       'torque_constant': 'motor_kv',
       'phase_inductance': 'phase_inductance',
       'phase_resistance': 'phase_resistance',
+      'vel_limit': path.includes('controller.config') ? 'vel_limit' : path.includes('trap_traj.config') ? 'trap_vel_limit' : 'vel_limit',
       'pre_calibrated': path.includes('encoder') ? 'pre_calibrated' : path.includes('motor') ? 'motor_pre_calibrated' : 'pre_calibrated',
       'mode': path.includes('encoder') ? 'encoder_type' : 'mode',
       'enable_phase_interpolation': 'enable_phase_interpolation',
