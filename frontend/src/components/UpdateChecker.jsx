@@ -38,12 +38,9 @@ const UpdateChecker = () => {
       console.log('Checking for updates...')
       const response = await fetch('/api/system/check_updates')
       
-      console.log('Response status:', response.status)
-      console.log('Response headers:', response.headers.get('content-type'))
       
       // Get the raw response text first
       const responseText = await response.text()
-      console.log('Raw response:', responseText)
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${responseText}`)
@@ -58,7 +55,6 @@ const UpdateChecker = () => {
         throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`)
       }
       
-      console.log('Parsed update data:', data)
       
       if (data.error) {
         throw new Error(data.error)
