@@ -12,113 +12,153 @@ class ODriveManager:
         self.odrives = {}
         self.current_device = None
         self.current_device_serial = None
-        self.telemetry_data = {}
-        self.is_scanning = False
-        self.connection_lost = False
-        self.is_rebooting = False
-        self.reboot_start_time = None
-        self.reconnection_attempts = 0
-        self.max_reconnection_attempts = 15
-        self.request_queue = Queue()
+        self.expecting_reconnection = False  # Only set by save operations
         self.request_lock = threading.Lock()
-        self.is_processing = False
+
+    @property
+    def odrv(self):
+        """Compatibility property for safe_get_property method"""
+        return self.current_device
+
+    def is_connected(self) -> bool:
+        """Check if there's a connected device"""
+        return self.current_device is not None
+
+    def check_connection(self) -> bool:
+        """Check if the current connection is still valid"""
+        if not self.current_device:
+            return False
         
-        # New: Centralized reconnection control
-        self._reconnection_thread = None
-        self._stop_reconnection = threading.Event()
-        self._reconnection_lock = threading.Lock()
-        self._reconnection_active = False
+        try:
+            # Try to access a basic property to test connection
+            _ = self.current_device.vbus_voltage
+            return True
+        except Exception as e:
+            logger.debug(f"Connection check failed: {e}")
+            return False
 
-    def _start_reconnection_thread(self):
-        """Start the background reconnection thread"""
-        with self._reconnection_lock:
-            if not self._reconnection_active:
-                self._stop_reconnection.clear()
-                self._reconnection_thread = threading.Thread(target=self._reconnection_worker, daemon=True)
-                self._reconnection_thread.start()
-                self._reconnection_active = True
-                logger.info("Started reconnection thread")
+    def connect_to_device(self, device_info: Dict[str, Any]) -> bool:
+        """Connect to a specific ODrive device"""
+        try:
+            self.expecting_reconnection = False  # Clear on manual connect
+            
+            # Find the specific device
+            odrv = odrive.find_any(timeout=10)
+            
+            if odrv:
+                # Verify it's the right device if we have a serial
+                expected_serial = device_info.get('serial', '')
+                if expected_serial and expected_serial != 'unknown_0':
+                    try:
+                        actual_serial = hex(odrv.serial_number)
+                        if actual_serial != expected_serial:
+                            logger.warning(f"Serial mismatch: expected {expected_serial}, got {actual_serial}")
+                            # Still connect, but log the mismatch
+                    except:
+                        pass  # Continue anyway if we can't get serial
+                
+                self.current_device = odrv
+                self.current_device_serial = device_info.get('serial', 'unknown')
+                logger.info(f"Connected to ODrive: {self.current_device_serial}")
+                return True
+            else:
+                logger.error("No ODrive found during connection attempt")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Failed to connect to device: {e}")
+            return False
+    
+    def disconnect_device(self) -> bool:
+        """Disconnect from current device"""
+        self.expecting_reconnection = False  # Clear on manual disconnect
+        try:
+            if self.current_device:
+                self.current_device = None
+                self.current_device_serial = None
+                logger.info("Disconnected from ODrive")
+            return True
+        except Exception as e:
+            logger.error(f"Error disconnecting: {e}")
+            return False
 
-    def _stop_reconnection_thread(self):
-        """Stop the background reconnection thread"""
-        with self._reconnection_lock:
-            if self._reconnection_active:
-                self._stop_reconnection.set()
-                if self._reconnection_thread and self._reconnection_thread.is_alive():
-                    self._reconnection_thread.join(timeout=3)
-                self._reconnection_active = False
-                logger.info("Stopped reconnection thread")
-
-    def _reconnection_worker(self):
-        """Background thread worker for handling reconnection"""
-        while not self._stop_reconnection.is_set() and self.current_device_serial:
-            try:
-                if self.connection_lost and not self.is_connected():
-                    # Wait appropriate time based on reboot status
-                    if self.is_rebooting:
-                        if self.reboot_start_time and (time.time() - self.reboot_start_time) < 5:
-                            time.sleep(1)
-                            continue
-                    
-                    # Attempt reconnection
-                    if self._attempt_reconnection():
-                        logger.info(f"Successfully reconnected to device {self.current_device_serial}")
-                        self.connection_lost = False
-                        self.is_rebooting = False
-                        self.reboot_start_time = None
-                        self.reconnection_attempts = 0
-                        break
-                    else:
-                        # Wait before next attempt, longer if rebooting
-                        wait_time = 3 if self.is_rebooting else 2
-                        time.sleep(wait_time)
-                else:
-                    # Connection is good, exit thread
-                    break
-                    
-            except Exception as e:
-                logger.error(f"Error in reconnection worker: {e}")
-                time.sleep(2)
+    def scan_for_devices(self) -> List[Dict[str, Any]]:
+        """Scan for ODrive devices"""
+        devices = []
+        try:
+            logger.info("Scanning for ODrive devices...")
+            
+            # Find all connected ODrives
+            odrv = odrive.find_any(timeout=5)
+            if odrv:
+                try:
+                    device_info = {
+                        'path': 'USB:0',
+                        'serial': hex(odrv.serial_number) if hasattr(odrv, 'serial_number') else 'unknown_0',
+                        'fw_version': f"v{odrv.fw_version_major}.{odrv.fw_version_minor}.{odrv.fw_version_revision}" if hasattr(odrv, 'fw_version_major') else 'v0.5.6',
+                        'hw_version': f"v{odrv.hw_version_major}.{odrv.hw_version_minor}" if hasattr(odrv, 'hw_version_major') else 'v3.6-56V',
+                        'index': 0
+                    }
+                    devices.append(device_info)
+                    logger.info(f"Found ODrive: {device_info}")
+                except Exception as e:
+                    logger.error(f"Error getting device info: {e}")
+                    # Add a basic entry even if we can't get details
+                    devices.append({
+                        'path': 'USB:0',
+                        'serial': 'unknown_0',
+                        'fw_version': 'v0.5.6',
+                        'hw_version': 'v3.6-56V',
+                        'index': 0
+                    })
+            else:
+                logger.info("No ODrive devices found")
+                
+        except Exception as e:
+            logger.error(f"Error during device scan: {e}")
         
-        # Mark thread as inactive when exiting
-        with self._reconnection_lock:
-            self._reconnection_active = False
-        logger.info("Reconnection worker thread exiting")
+        return devices
 
-    def _attempt_reconnection(self) -> bool:
-        """Single reconnection attempt"""
+    def save_configuration(self) -> Dict[str, Any]:
+        """Save configuration to non-volatile memory"""
+        if not self.current_device:
+            raise Exception("No device connected")
+            
+        try:
+            self.expecting_reconnection = True  # Expect device to disconnect/reconnect
+            result = self.current_device.save_configuration()
+            return {"success": True, "message": "Configuration saved"}
+        except Exception as e:
+            # Only attempt reconnection if we were expecting it
+            if self.expecting_reconnection:
+                logger.info("Device disconnected after save - attempting single reconnection...")
+                if self._attempt_single_reconnection():
+                    return {"success": True, "message": "Configuration saved, device reconnected"}
+            raise e
+    
+    def _attempt_single_reconnection(self) -> bool:
+        """Attempt a single reconnection after save operation"""
         if not self.current_device_serial:
             return False
             
-        if self.reconnection_attempts >= self.max_reconnection_attempts:
-            logger.warning(f"Max reconnection attempts reached for device {self.current_device_serial}")
-            return False
-        
-        self.reconnection_attempts += 1
-        
         try:
-            logger.info(f"Attempting to reconnect to device {self.current_device_serial} (attempt {self.reconnection_attempts})")
+            # Wait a moment for device to reboot
+            time.sleep(3)
             
-            # Use longer timeout for reconnection attempts
-            timeout = 8 if self.is_rebooting else 5
-            odrv = odrive.find_any(timeout=timeout)
+            # Try to reconnect to the same device
+            devices = self.scan_for_devices()
+            for device in devices:
+                if device.get('serial') == self.current_device_serial:
+                    if self.connect_to_device(device):
+                        self.expecting_reconnection = False
+                        logger.info("Successfully reconnected after save operation")
+                        return True
             
-            if odrv:
-                # Check if this is the same device
-                device_serial = hex(odrv.serial_number) if hasattr(odrv, 'serial_number') else None
-                if device_serial == self.current_device_serial:
-                    self.current_device = odrv
-                    return True
-                else:
-                    logger.warning(f"Found different device: {device_serial}, expected: {self.current_device_serial}")
-            else:
-                logger.debug(f"No ODrive found during reconnection attempt {self.reconnection_attempts}")
-                    
+            logger.warning("Could not reconnect to device after save operation")
+            return False
         except Exception as e:
-            if not self.is_rebooting or self.reconnection_attempts % 3 == 0:
-                logger.warning(f"Reconnection attempt {self.reconnection_attempts} failed: {e}")
-            
-        return False
+            logger.error(f"Reconnection attempt failed: {e}")
+            return False
 
     def _normalize_command(self, command: str) -> str:
         """Normalize command to use 'device' reference instead of odrv0, odrv1, etc."""
@@ -127,7 +167,7 @@ class ODriveManager:
             normalized = command
             
             # List of common ODrive variable names to replace
-            odrive_vars = ['odrv0', 'odrv1', 'dev0', 'dev1', 'my_drive', 'odrive']
+            odrive_vars = ['odrv', 'odrv0', 'odrv1', 'dev0', 'dev1', 'my_drive', 'odrive']
             
             for var in odrive_vars:
                 # Replace at the beginning of the command
@@ -145,234 +185,10 @@ class ODriveManager:
             logger.warning(f"Error normalizing command '{command}': {e}")
             return command
 
-    def scan_for_devices(self) -> List[Dict[str, Any]]:
-        """Scan for ODrive devices"""
-        devices = []
-        try:
-            self.is_scanning = True
-            logger.info("Scanning for ODrive devices...")
-            
-            # Find all connected ODrives
-            odrives = odrive.find_any(timeout=5)
-            if odrives:
-                # Handle single device or list of devices
-                if not isinstance(odrives, list):
-                    odrives = [odrives]
-                
-                for i, odrv in enumerate(odrives):
-                    try:
-                        device_info = {
-                            'path': f'USB:{i}',
-                            'serial': hex(odrv.serial_number) if hasattr(odrv, 'serial_number') else f'unknown_{i}',
-                            'fw_version': getattr(odrv, 'fw_version_string', 'v0.5.6'),
-                            'hw_version': getattr(odrv, 'hw_version_string', 'v3.6-56V'),
-                            'index': i
-                        }
-                        devices.append(device_info)
-                        logger.info(f"Found ODrive: {device_info}")
-                    except Exception as e:
-                        logger.error(f"Error getting device info for ODrive {i}: {e}")
-                        # Add a basic entry even if we can't get details
-                        devices.append({
-                            'path': f'USB:{i}',
-                            'serial': f'unknown_{i}',
-                            'fw_version': 'v0.5.6',
-                            'hw_version': 'v3.6-56V',
-                            'index': i
-                        })
-            else:
-                logger.info("No ODrive devices found")
-                
-        except Exception as e:
-            logger.error(f"Error during device scan: {e}")
-        finally:
-            self.is_scanning = False
-            
-        return devices
-
-    def connect_to_device(self, device_info: Dict[str, Any]) -> bool:
-        """Connect to a specific ODrive device"""
-        try:
-            # Stop any existing reconnection
-            self._stop_reconnection_thread()
-            
-            # Find the specific device
-            odrv = odrive.find_any(timeout=10)
-            
-            if odrv:
-                self.current_device = odrv
-                self.current_device_serial = device_info['serial']
-                self.odrives[device_info['serial']] = odrv
-                self.connection_lost = False
-                self.is_rebooting = False
-                self.reboot_start_time = None
-                self.reconnection_attempts = 0
-                logger.info(f"Connected to ODrive: {device_info['serial']}")
-                return True
-            else:
-                logger.error("No ODrive found during connection attempt")
-                return False
-                
-        except Exception as e:
-            logger.error(f"Error connecting to device: {e}")
-            return False
-    
-    def disconnect_device(self) -> bool:
-        """Disconnect from current ODrive device"""
-        try:
-            # Stop reconnection thread
-            self._stop_reconnection_thread()
-            
-            if self.current_device:
-                self.current_device = None
-                self.current_device_serial = None
-                self.connection_lost = False
-                self.is_rebooting = False
-                self.reboot_start_time = None
-                self.reconnection_attempts = 0
-                logger.info("Disconnected from ODrive")
-            return True
-        except Exception as e:
-            logger.error(f"Error disconnecting: {e}")
-            return False
-
-    def check_connection(self) -> bool:
-        """Check if device is still connected"""
-        if not self.current_device:
-            return False
-        
-        # If we're in a reboot state, don't try to check connection yet
-        if self.is_rebooting:
-            if self.reboot_start_time and (time.time() - self.reboot_start_time) < 8:
-                return False  # Reduced from 10 to 8 seconds
-            
-        try:
-            # Try to read a simple property to check connection
-            # Use a lightweight property that's always available
-            _ = self.current_device.vbus_voltage
-            
-            # If we were reconnecting and now we're connected, stop reconnection
-            if self.connection_lost:
-                self.connection_lost = False
-                self.is_rebooting = False
-                self.reboot_start_time = None
-                self.reconnection_attempts = 0
-                self._stop_reconnection_thread()
-                logger.info("Device connection restored")
-            
-            return True
-        except Exception as e:
-            if not self.connection_lost:
-                logger.warning(f"Device connection lost: {e}")
-                self.connection_lost = True
-                # Start reconnection thread
-                self._start_reconnection_thread()
-            return False
-    
-    def is_connected(self) -> bool:
-        """Check if a device is currently connected"""
-        return self.current_device is not None and not self.connection_lost
-
-    @property  
-    def odrv(self):
-        """Get the current ODrive device for telemetry functions"""
-        return self.current_device
-
-    def try_reconnect(self) -> bool:
-        """Try to reconnect to the same device - simplified for status checks"""
-        if not self.current_device_serial:
-            return False
-        
-        # For status checks, just do a quick single attempt
-        if hasattr(self, '_reconnecting') and self._reconnecting:
-            return False
-            
-        self._reconnecting = True
-        
-        try:
-            logger.info(f"Quick reconnection check for device {self.current_device_serial}")
-            
-            odrv = odrive.find_any(timeout=3)  # Short timeout for quick checks
-            
-            if odrv:
-                # Check if this is the same device
-                device_serial = hex(odrv.serial_number) if hasattr(odrv, 'serial_number') else None
-                if device_serial == self.current_device_serial:
-                    self.current_device = odrv
-                    self.connection_lost = False
-                    self.reconnection_attempts = 0
-                    self._reconnecting = False
-                    logger.info(f"Quick reconnection successful: {self.current_device_serial}")
-                    
-                    if self.is_rebooting:
-                        self.is_rebooting = False
-                        self.reboot_start_time = None
-                        logger.info("Device reconnected successfully after reboot")
-                    
-                    return True
-                else:
-                    logger.debug(f"Found different device: {device_serial}, expected: {self.current_device_serial}")
-            else:
-                logger.debug(f"No ODrive found during quick reconnection check")
-                    
-        except Exception as e:
-            logger.debug(f"Quick reconnection failed: {e}")
-        finally:
-            self._reconnecting = False
-            
-        return False
-    
-    def _sanitize_value(self, value_str: str) -> Any:
-        """Sanitize and convert string value to appropriate Python type"""
-        try:
-            # Remove whitespace
-            value_str = value_str.strip()
-            
-            # Handle boolean values
-            if value_str.lower() in ['true', 'false']:
-                return value_str.lower() == 'true'
-            
-            # Handle None/null values
-            if value_str.lower() in ['none', 'null', 'undefined']:
-                return None
-            
-            # Try to convert to number
-            try:
-                # Try integer first
-                if '.' not in value_str and 'e' not in value_str.lower():
-                    return int(value_str)
-                else:
-                    return float(value_str)
-            except ValueError:
-                # Return as string if not a number
-                return value_str
-                
-        except Exception as e:
-            logger.warning(f"Error sanitizing value '{value_str}': {e}")
-            return value_str
-
     def execute_command(self, command: str) -> Dict[str, Any]:
         """Execute a command on the ODrive"""
-        from collections import defaultdict
-        
         if not self.current_device:
             return {'error': 'No device connected'}
-        
-        # For batch operations, reduce rate limiting
-        if not hasattr(self, '_batch_mode'):
-            # Rate limiting - prevent spamming the same command
-            current_time = time.time()
-            if not hasattr(self, '_last_api_call'):
-                self._last_api_call = defaultdict(float)
-            if current_time - self._last_api_call[command] < 0.1:  # API_RATE_LIMIT
-                # Return cached result if available, otherwise skip
-                return {'error': 'Rate limited - too many requests'}
-            
-            self._last_api_call[command] = current_time
-
-        # Check connection first
-        if not self.check_connection():
-            return {'error': 'Device disconnected'}
         
         try:
             # Normalize the command to use 'device' reference
@@ -383,26 +199,9 @@ class ODriveManager:
                 'device': self.current_device,
                 'True': True,
                 'False': False,
-                # Also add common ODrive variable names pointing to the same device
-                'odrv0': self.current_device,
-                'odrv1': self.current_device,
-                'dev0': self.current_device,
-                'dev1': self.current_device,
-                'my_drive': self.current_device,
-                'odrive': self.current_device,
             }
             
             logger.debug(f"Executing command: {command} -> {normalized_command}")
-            
-            # Special handling for reboot-related commands
-            if 'erase_configuration' in normalized_command or 'reboot' in normalized_command:
-                # Mark as rebooting before executing
-                self.is_rebooting = True
-                self.reboot_start_time = time.time()
-                self.connection_lost = True
-                self.reconnection_attempts = 0
-                # Start reconnection thread
-                self._start_reconnection_thread()
             
             # Check if this is an assignment or function call
             if '=' in normalized_command:
@@ -412,18 +211,13 @@ class ODriveManager:
                     path = parts[0].strip()
                     value_str = parts[1].strip()
                     
-                    # Sanitize and convert the value
-                    value = self._sanitize_value(value_str)
-                    
-                    # Skip commands with undefined values - check the original string, not sanitized value
+                    # Skip commands with undefined values
                     if value_str.lower() in ['undefined', 'null', 'none']:
                         logger.warning(f"Skipping command with undefined value: {command}")
                         return {'result': f'Skipped {path} (undefined value)'}
                     
-                    # Skip if sanitized value is None and original was a null-like string
-                    if value is None and value_str.lower() in ['undefined', 'null', 'none']:
-                        logger.warning(f"Skipping command with null value: {command}")
-                        return {'result': f'Skipped {path} (null value)'}
+                    # Sanitize and convert the value
+                    value = self._sanitize_value(value_str)
                     
                     try:
                         # Execute the assignment
@@ -437,49 +231,25 @@ class ODriveManager:
                 try:
                     result = eval(normalized_command, {}, local_context)
                     
-                    # If this was a reboot command and it succeeded, expect disconnection
-                    if 'erase_configuration' in normalized_command or 'reboot' in normalized_command:
-                        return {'result': 'Command executed successfully - device will reboot'}
-                    
                     # Convert result to a JSON-serializable format
                     if result is None:
                         return {'result': None}
                     elif isinstance(result, (int, float, str, bool)):
                         return {'result': result}
                     else:
-                        # For complex objects, convert to string
                         return {'result': str(result)}
                         
                 except Exception as e:
                     # If eval fails, try exec for commands that don't return values
                     try:
                         exec(normalized_command, {}, local_context)
-                        
-                        # If this was a reboot command and it succeeded, expect disconnection
-                        if 'erase_configuration' in normalized_command or 'reboot' in normalized_command:
-                            return {'result': 'Command executed successfully - device will reboot'}
-                        
                         return {'result': 'Command executed successfully'}
                     except Exception as e2:
-                        # For reboot commands, disconnection errors are expected
-                        if ('erase_configuration' in normalized_command or 'reboot' in normalized_command) and 'disconnected' in str(e2).lower():
-                            logger.info(f"Reboot command executed, device disconnected as expected: {e2}")
-                            return {'result': 'Command executed successfully - device rebooted'}
-                        
                         logger.error(f"Error in command execution: {e2}")
                         return {'error': str(e2)}
-            
+        
         except Exception as e:
-            # For reboot commands, disconnection errors are expected
-            if ('erase_configuration' in command or 'reboot' in command) and 'disconnected' in str(e).lower():
-                logger.info(f"Reboot command executed, device disconnected as expected: {e}")
-                return {'result': 'Command executed successfully - device rebooted'}
-            
             logger.error(f"Error executing command '{command}': {e}")
-            # Check if this was a connection error
-            if "disconnected" in str(e).lower() or "connection" in str(e).lower():
-                self.connection_lost = True
-                self._start_reconnection_thread()
             return {'error': str(e)}
 
     def set_property(self, path: str, value: Any) -> Dict[str, Any]:
@@ -512,9 +282,6 @@ class ODriveManager:
             return {'result': f'Set {normalized_path} = {value}'}
         except Exception as e:
             logger.error(f"Error setting property '{path}' to '{value}': {e}")
-            if "disconnected" in str(e).lower() or "connection" in str(e).lower():
-                self.connection_lost = True
-                self._start_reconnection_thread()
             return {'error': str(e)}
 
     def execute_with_lock(self, func, *args, **kwargs):
@@ -529,8 +296,11 @@ class ODriveManager:
     def safe_get_property(self, path):
         """Thread-safe property access"""
         def _get_property():
+            if not self.current_device:
+                return None
+                
             parts = path.split('.')
-            current = self.odrv
+            current = self.current_device
             for part in parts:
                 current = getattr(current, part, None)
                 if current is None:
@@ -542,10 +312,34 @@ class ODriveManager:
     def safe_set_property(self, path, value):
         """Thread-safe property setting"""
         def _set_property():
+            if not self.current_device:
+                raise Exception("No device connected")
+            
             parts = path.split('.')
-            obj = self.odrv
+            obj = self.current_device
             for part in parts[:-1]:
                 obj = getattr(obj, part)
             setattr(obj, parts[-1], value)
         
         return self.execute_with_lock(_set_property)
+
+    def _sanitize_value(self, value_str: str):
+        """Sanitize and convert a string value to appropriate type"""
+        try:
+            # Handle boolean values
+            if value_str.lower() in ['true', 'false']:
+                return value_str.lower() == 'true'
+            
+            # Handle None/null
+            if value_str.lower() in ['none', 'null']:
+                return None
+            
+            # Try to convert to number
+            if '.' in value_str:
+                return float(value_str)
+            else:
+                return int(value_str)
+                
+        except ValueError:
+            # Return as string if conversion fails
+            return value_str

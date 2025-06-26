@@ -1,5 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit'
 
+// Update initialState - remove complex reconnection states
 const initialState = {
   availableDevices: [],
   connectedDevice: null,
@@ -10,9 +11,6 @@ const initialState = {
   lastUpdateTime: 0,
   telemetryEnabled: true,
   telemetryRate: 10, // Hz
-  connectionLost: false,
-  isRebooting: false,
-  reconnectionAttempts: 0,
 }
 
 const deviceSlice = createSlice({
@@ -29,63 +27,34 @@ const deviceSlice = createSlice({
       if (action.payload) {
         state.connectedDevice = action.payload
         state.isConnected = true
-        state.connectionLost = false
         state.connectionError = null
-        state.isRebooting = false
-        state.reconnectionAttempts = 0
       } else {
-        state.isConnected = false
         state.connectedDevice = null
-        state.connectionLost = false
-        state.isRebooting = false
-        state.reconnectionAttempts = 0
+        state.isConnected = false
       }
     },
     setConnectionError: (state, action) => {
       state.connectionError = action.payload
       state.isConnected = false
       state.connectedDevice = null
-      state.connectionLost = false
-      state.isRebooting = false
     },
     // New: Single action to update all connection status from backend
     setConnectionStatus: (state, action) => {
-      const { connected, connectionLost, isRebooting, deviceSerial, reconnectionAttempts } = action.payload
+      const { connected } = action.payload
       
       state.isConnected = connected
-      state.connectionLost = connectionLost || false
-      state.isRebooting = isRebooting || false
-      state.reconnectionAttempts = reconnectionAttempts || 0
-      
-      // Only update device info if we have a serial and are connected
-      if (connected && deviceSerial) {
-        if (!state.connectedDevice || state.connectedDevice.serial !== deviceSerial) {
-          state.connectedDevice = {
-            serial: deviceSerial,
-            path: `ODrive ${deviceSerial}`
-          }
-        }
-      }
       
       // Clear error if we're connected
       if (connected) {
         state.connectionError = null
+      } else {
+        state.connectedDevice = null
       }
     },
     updateOdriveState: (state, action) => {
       // Completely replace the state to prevent partial updates causing flicker
       state.odriveState = action.payload
       state.lastUpdateTime = Date.now()
-      
-      // If we successfully got state, we're definitely connected
-      if (Object.keys(action.payload).length > 0) {
-        if (state.connectionLost) {
-          state.connectionLost = false
-          state.isRebooting = false
-          state.reconnectionAttempts = 0
-        }
-        state.isConnected = true
-      }
     },
     updateDeviceProperty: (state, action) => {
       const { path, value } = action.payload
@@ -115,9 +84,6 @@ const deviceSlice = createSlice({
       state.connectedDevice = null
       state.isConnected = false
       state.connectionError = null
-      state.connectionLost = false
-      state.isRebooting = false
-      state.reconnectionAttempts = 0
     },
   },
 })

@@ -6,7 +6,6 @@ import {
   setAvailableDevices,
   setConnectedDevice,
   setConnectionError,
-  setConnectionStatus,
   clearDeviceState,
 } from '../store/slices/deviceSlice'
 import { clearErrors } from '../utils/configurationActions'
@@ -33,27 +32,20 @@ import { getErrorDescription, getErrorColor, isErrorCritical } from '../utils/od
 import '../styles/DeviceList.css'
 
 // Memoized Status Badge Component
-const StatusBadge = memo(({ isConnected, connectionLost, connectedDevice, device }) => {
-  const getStatusColor = () => {
-    if (isConnected && connectedDevice?.serial === device.serial) {
-      return connectionLost ? 'yellow' : 'green'
-    }
-    return 'gray'
-  }
-
-  const getStatusText = () => {
-    if (isConnected && connectedDevice?.serial === device.serial) {
-      return connectionLost ? 'Reconnecting' : 'Connected'
-    }
-    return 'Disconnected'
-  }
+const StatusBadge = memo(({ isConnected, connectedDevice, device }) => {
+  const isThisDeviceConnected = isConnected && 
+    connectedDevice && 
+    connectedDevice.serial === device.serial
 
   return (
     <Badge
-      colorScheme={getStatusColor()}
+      colorScheme={isThisDeviceConnected ? "green" : "gray"}
       variant="solid"
+      fontSize="xs"
+      px={2}
+      py={1}
     >
-      {getStatusText()}
+      {isThisDeviceConnected ? "Connected" : "Available"}
     </Badge>
   )
 })
@@ -182,7 +174,6 @@ const DeviceCard = memo(({
   index, 
   isConnected, 
   connectedDevice, 
-  connectionLost, 
   onConnect, 
   onDisconnect 
 }) => (
@@ -200,7 +191,6 @@ const DeviceCard = memo(({
           <VStack>
             <StatusBadge 
               isConnected={isConnected}
-              connectionLost={connectionLost}
               connectedDevice={connectedDevice}
               device={device}
             />
@@ -209,9 +199,8 @@ const DeviceCard = memo(({
                 size="sm"
                 colorScheme="red"
                 onClick={onDisconnect}
-                isDisabled={connectionLost}
               >
-                {connectionLost ? <Spinner size="xs" /> : 'Disconnect'}
+                Disconnect
               </Button>
             ) : (
               <Button
@@ -301,7 +290,6 @@ const DeviceList = memo(() => {
     connectedDevice, 
     isConnected, 
     odriveState,
-    connectionLost,
   } = useSelector(state => state.device)
 
   // Helper function to get current error codes from both sources
@@ -357,32 +345,6 @@ const DeviceList = memo(() => {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // Only run once on mount, not when scanForDevices changes
 
-  // Simplified connection status polling - just gets status from backend
-  useEffect(() => {
-    const pollConnectionStatus = async () => {
-      try {
-        const response = await fetch('/api/odrive/connection_status')
-        if (response.ok) {
-          const status = await response.json()
-          dispatch(setConnectionStatus({
-            connected: status.connected,
-            connectionLost: status.connection_lost,
-            isRebooting: status.is_rebooting,
-            deviceSerial: status.device_serial,
-            reconnectionAttempts: status.reconnection_attempts
-          }))
-        }
-      } catch (error) {
-        console.log('Connection status check failed:', error)
-      }
-    }
-
-    // Poll every 2 seconds if we have a device or are connected
-    if (connectedDevice || isConnected) {
-      const interval = setInterval(pollConnectionStatus, 2000)
-      return () => clearInterval(interval)
-    }
-  }, [dispatch, connectedDevice, isConnected])
 
   const handleConnect = useCallback(async (device) => {
     try {
@@ -491,13 +453,6 @@ const DeviceList = memo(() => {
           </Button>
         </HStack>
 
-        {connectionLost && (
-          <Alert status="warning" size="sm">
-            <AlertIcon />
-            <Text fontSize="sm">Device disconnected. Reconnecting...</Text>
-          </Alert>
-        )}
-
         <Box flex="1" overflowY="auto">
           {availableDevices.length === 0 ? (
             <Alert status="info" variant="subtle">
@@ -507,13 +462,11 @@ const DeviceList = memo(() => {
           ) : (
             <VStack spacing={3}>
               {availableDevices.map((device, index) => (
-                <DeviceCard
-                  key={device.serial || index}
-                  device={device}
+                <DeviceCard 
+                  device={device} 
                   index={index}
                   isConnected={isConnected}
                   connectedDevice={connectedDevice}
-                  connectionLost={connectionLost}
                   onConnect={handleConnect}
                   onDisconnect={handleDisconnect}
                 />
