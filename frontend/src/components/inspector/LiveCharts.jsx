@@ -93,6 +93,8 @@ const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
       Object.entries(data.data).forEach(([property, value]) => {
         if (typeof value === 'number') {
           sample[property] = value
+        } else if (typeof value === 'boolean') {
+          sample[property] = value ? 1 : 0
         }
       })
       
