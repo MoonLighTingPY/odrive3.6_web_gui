@@ -185,29 +185,3 @@ def save_config():
     except Exception as e:
         logger.error(f"Save configuration failed: {e}")
         return jsonify({'error': str(e)}), 500
-
-@config_bp.route('/save_and_reboot', methods=['POST'])
-def save_and_reboot():
-    """Save configuration and reboot ODrive"""
-    if not odrive_manager.current_device:
-        return jsonify({'error': 'No device connected'}), 400
-    
-    try:
-        odrive_manager.expecting_reconnection = True  # Expect disconnection/reconnection
-        odrive_manager.current_device.save_configuration()
-        odrive_manager.current_device.reboot()
-        
-        # Attempt reconnection after reboot
-        if odrive_manager._attempt_single_reconnection():
-            return jsonify({
-                'success': True, 
-                'message': 'Configuration saved and device rebooted successfully'
-            })
-        else:
-            return jsonify({
-                'success': True, 
-                'message': 'Configuration saved and device rebooted (manual reconnection may be required)'
-            })
-    except Exception as e:
-        logger.error(f"Save and reboot failed: {e}")
-        return jsonify({'error': str(e)}), 500
