@@ -142,8 +142,6 @@ npm run dev
 
 
 ## 🚀 Future Enhancements
-
-- [ ] **Multi-Language Support:** GUI localization
 - [ ] **Remote Access:** Network-based device control
 - [ ] **PID Tweaking:** Automated and manual PID tweaker
 
