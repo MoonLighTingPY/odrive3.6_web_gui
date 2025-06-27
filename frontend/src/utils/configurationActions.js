@@ -64,27 +64,27 @@ export const executeConfigAction = async (action, options = {}) => {
 
     if (!response.ok) {
       let errorMessage = `${action} action failed`
-      
+
       try {
         const errorData = JSON.parse(responseText)
         errorMessage = errorData.error || errorData.message || errorMessage
-      // eslint-disable-next-line no-unused-vars
+        // eslint-disable-next-line no-unused-vars
       } catch (parseError) {
         // If JSON parsing fails, use the raw response text
         errorMessage = responseText || errorMessage
       }
-      
+
       throw new Error(errorMessage)
     }
 
     // Try to parse as JSON, fallback to text if it fails
     try {
       return JSON.parse(responseText)
-    // eslint-disable-next-line no-unused-vars
+      // eslint-disable-next-line no-unused-vars
     } catch (parseError) {
       return { message: responseText }
     }
-    
+
   } catch (fetchError) {
     console.error(`Fetch error for ${action}:`, fetchError)
     throw fetchError
@@ -139,11 +139,11 @@ export const startCalibration = async (type = 'full') => {
  */
 export const getCalibrationStatus = async () => {
   const response = await fetch('/api/odrive/calibration_status')
-  
+
   if (!response.ok) {
     throw new Error('Failed to get calibration status')
   }
-  
+
   return await response.json()
 }
 
@@ -197,7 +197,7 @@ export const executeCommand = async (command) => {
  */
 export const applyAndSaveConfiguration = async (deviceConfig, toast, dispatch, connectedDevice) => {
   const commands = generateConfigCommands(deviceConfig)
-  
+
   // Step 1: Apply configuration
   toast({
     title: 'Applying configuration...',
@@ -218,7 +218,7 @@ export const applyAndSaveConfiguration = async (deviceConfig, toast, dispatch, c
 
   try {
     await saveConfiguration()
-    
+
     toast({
       title: 'Configuration Saved',
       description: 'Configuration saved to non-volatile memory successfully.',

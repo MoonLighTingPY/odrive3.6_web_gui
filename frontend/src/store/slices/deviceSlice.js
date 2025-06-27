@@ -44,9 +44,9 @@ const deviceSlice = createSlice({
     // New: Single action to update all connection status from backend
     setConnectionStatus: (state, action) => {
       const { connected } = action.payload
-      
+
       state.isConnected = connected
-      
+
       // Clear error if we're connected
       if (connected) {
         state.connectionError = null
@@ -63,7 +63,7 @@ const deviceSlice = createSlice({
       const { path, value } = action.payload
       const pathParts = path.split('.')
       let current = state.odriveState
-      
+
       // Navigate to the parent object
       for (let i = 0; i < pathParts.length - 1; i++) {
         if (!current[pathParts[i]]) {
@@ -71,7 +71,7 @@ const deviceSlice = createSlice({
         }
         current = current[pathParts[i]]
       }
-      
+
       // Set the final property
       current[pathParts[pathParts.length - 1]] = value
       state.lastUpdateTime = Date.now()

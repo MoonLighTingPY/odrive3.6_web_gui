@@ -37,15 +37,15 @@ const UpdateChecker = () => {
     try {
       console.log('Checking for updates...')
       const response = await fetch('/api/system/check_updates')
-      
-      
+
+
       // Get the raw response text first
       const responseText = await response.text()
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${responseText}`)
       }
-      
+
       // Try to parse as JSON
       let data
       try {
@@ -54,12 +54,12 @@ const UpdateChecker = () => {
         console.error('JSON parse error:', parseError)
         throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`)
       }
-      
-      
+
+
       if (data.error) {
         throw new Error(data.error)
       }
-      
+
       setUpdateInfo(data)
       setHasChecked(true)
       if (data.update_available) {
@@ -101,16 +101,16 @@ const UpdateChecker = () => {
 
   const performUpdate = async () => {
     if (!updateInfo) return
-    
+
     setIsUpdating(true)
     setUpdateProgress(0)
-    
+
     try {
       // Simulate progress for user feedback
       const progressInterval = setInterval(() => {
         setUpdateProgress(prev => Math.min(prev + 10, 90))
       }, 500)
-      
+
       const response = await fetch('/api/system/update', {
         method: 'POST',
         headers: {
@@ -121,12 +121,12 @@ const UpdateChecker = () => {
           file_name: updateInfo.file_name
         })
       })
-      
+
       clearInterval(progressInterval)
       setUpdateProgress(100)
-      
+
       const responseText = await response.text()
-      
+
       if (!response.ok) {
         let errorMessage = `Update failed (HTTP ${response.status})`
         try {
@@ -137,7 +137,7 @@ const UpdateChecker = () => {
         }
         throw new Error(errorMessage)
       }
-      
+
       toast({
         title: 'Update Started',
         description: 'The application will restart with the new version in a few seconds...',
@@ -145,7 +145,7 @@ const UpdateChecker = () => {
         duration: 10000,
       })
       onClose()
-      
+
       // Show countdown message
       setTimeout(() => {
         toast({
@@ -155,7 +155,7 @@ const UpdateChecker = () => {
           duration: 5000,
         })
       }, 2000)
-      
+
     } catch (error) {
       console.error('Update failed:', error)
       toast({
@@ -207,7 +207,7 @@ const UpdateChecker = () => {
       >
         {getButtonText()}
       </Button>
-      
+
       <Modal isOpen={isOpen} onClose={onClose} size="lg">
         <ModalOverlay />
         <ModalContent>
@@ -220,7 +220,7 @@ const UpdateChecker = () => {
             </HStack>
           </ModalHeader>
           <ModalCloseButton />
-          
+
           <ModalBody>
             <VStack align="stretch" spacing={4}>
               <Alert status="info">
@@ -240,7 +240,7 @@ const UpdateChecker = () => {
 
               {updateInfo?.release_notes && (
                 <Box>
-                  <Text fontWeight="bold" mb={2}>Release Notes:</Text>                  
+                  <Text fontWeight="bold" mb={2}>Release Notes:</Text>
                   <Box
                     maxH="200px"
                     overflowY="auto"
@@ -253,7 +253,7 @@ const UpdateChecker = () => {
                           // Skip if it's a "release notes" header
                           const text = children?.toString?.()?.toLowerCase() || ''
                           if (text.includes('release notes')) return null
-                          
+
                           return (
                             <Text fontSize="xl" fontWeight="bold" mb={2} color="blue.600" _dark={{ color: "blue.300" }}>
                               {children}
@@ -264,7 +264,7 @@ const UpdateChecker = () => {
                           // Skip if it's a "release notes" header
                           const text = children?.toString?.()?.toLowerCase() || ''
                           if (text.includes('release notes')) return null
-                          
+
                           return (
                             <Text fontSize="lg" fontWeight="bold" mb={2} mt={3} color="blue.600" _dark={{ color: "blue.400" }}>
                               {children}
@@ -275,7 +275,7 @@ const UpdateChecker = () => {
                           // Skip if it's a "release notes" header
                           const text = children?.toString?.()?.toLowerCase() || ''
                           if (text.includes('release notes')) return null
-                          
+
                           return (
                             <Text fontSize="md" fontWeight="bold" mb={1} mt={2} color="blue.600" _dark={{ color: "blue.300" }}>
                               {children}
@@ -301,22 +301,22 @@ const UpdateChecker = () => {
                         ),
                         // Style code
                         code: ({ children, inline }) => (
-                        <Text
-                          as={inline ? 'span' : 'div'}
-                          fontFamily="mono"
-                          fontSize="sm"
-                          bg="blue.50"
-                          px={1}
-                          borderRadius="sm"
-                          color="blue.800"
-                          _dark={{ 
-                            bg: "blue.900",
-                            color: "blue.200"
-                          }}
-                        >
-                          {children}
-                        </Text>
-                      ),
+                          <Text
+                            as={inline ? 'span' : 'div'}
+                            fontFamily="mono"
+                            fontSize="sm"
+                            bg="blue.50"
+                            px={1}
+                            borderRadius="sm"
+                            color="blue.800"
+                            _dark={{
+                              bg: "blue.900",
+                              color: "blue.200"
+                            }}
+                          >
+                            {children}
+                          </Text>
+                        ),
                         // Style strong/bold text
                         strong: ({ children }) => (
                           <Text as="span" fontWeight="bold" color="blue.800" _dark={{ color: "blue.100" }}>

@@ -20,7 +20,7 @@ export const useChartsTelemetry = (properties, onData) => {
         const now = Date.now()
         const minInterval = 1
         const timeSinceLastRequest = now - lastRequestTime.current
-        
+
         if (timeSinceLastRequest < minInterval) {
           await new Promise(resolve => setTimeout(resolve, minInterval - timeSinceLastRequest))
         }

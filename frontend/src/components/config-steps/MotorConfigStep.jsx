@@ -21,11 +21,11 @@ import { InfoIcon } from '@chakra-ui/icons'
 import ParameterInput from '../buttons/ParameterInput'
 import { ODrivePropertyMappings as configurationMappings } from '../../utils/odriveUnifiedRegistry'
 
-const MotorConfigStep = ({ 
-  deviceConfig, 
-  onReadParameter, 
+const MotorConfigStep = ({
+  deviceConfig,
+  onReadParameter,
   onUpdateConfig,
-  loadingParams, 
+  loadingParams,
 }) => {
   const motorConfig = deviceConfig.motor || {}
   const motorMappings = configurationMappings.motor
@@ -153,7 +153,7 @@ const MotorConfigStep = ({
                   />
                 </FormControl>
 
-                
+
                 <FormControl flex="1">
                   <FormLabel color="white" mb={1} fontSize="sm">Phase Resistance</FormLabel>
                   <ParameterInput
@@ -259,12 +259,12 @@ const MotorConfigStep = ({
               </HStack>
             </VStack>
           </CardBody>
-          
+
         </Card>
 
         {/* Motor Thermistor Configuration */}
         <Card bg="gray.800" variant="elevated">
-          
+
         </Card>
       </VStack>
     </Box>

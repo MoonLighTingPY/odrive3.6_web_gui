@@ -45,7 +45,7 @@ const CommandList = ({
     onCustomCommandChange(index, null) // null means delete
   }
 
-return (
+  return (
     <VStack spacing={2} align="stretch">
       {enableEditing && (
         <Button
@@ -74,18 +74,18 @@ return (
                   size="xs"
                   variant="ghost"
                   icon={
-                    <input 
-                      type="checkbox" 
-                      checked={!isDisabled} 
-                      onChange={() => onCommandToggle(index)} 
-                      style={{ accentColor: '#00d4aa' }} 
+                    <input
+                      type="checkbox"
+                      checked={!isDisabled}
+                      onChange={() => onCommandToggle(index)}
+                      style={{ accentColor: '#00d4aa' }}
                     />
                   }
                   aria-label="Toggle command"
                 />
               </Tooltip>
             )}
-            
+
             {isEditing ? (
               <HStack flex={1} spacing={1}>
                 <Input
@@ -128,7 +128,7 @@ return (
                 {displayCommand}
               </Code>
             )}
-            
+
             {enableEditing && !isEditing && (
               <HStack spacing={1}>
                 <Tooltip label="Edit command">
@@ -158,7 +158,7 @@ return (
           </HStack>
         )
       })}
-      
+
       {/* Custom commands beyond base commands */}
       {Object.keys(customCommands)
         .filter(key => parseInt(key) >= commands.length)
@@ -175,18 +175,18 @@ return (
                     size="xs"
                     variant="ghost"
                     icon={
-                      <input 
-                        type="checkbox" 
-                        checked={!isDisabled} 
-                        onChange={() => onCommandToggle(index)} 
-                        style={{ accentColor: '#00d4aa' }} 
+                      <input
+                        type="checkbox"
+                        checked={!isDisabled}
+                        onChange={() => onCommandToggle(index)}
+                        style={{ accentColor: '#00d4aa' }}
                       />
                     }
                     aria-label="Toggle command"
                   />
                 </Tooltip>
               )}
-              
+
               {isEditing ? (
                 <HStack flex={1} spacing={1}>
                   <Input
@@ -229,7 +229,7 @@ return (
                   {customCommands[index]}
                 </Code>
               )}
-              
+
               {enableEditing && !isEditing && (
                 <HStack spacing={1}>
                   <Tooltip label="Edit command">

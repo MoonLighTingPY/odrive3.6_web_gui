@@ -44,7 +44,7 @@ const ErrorTroubleshooting = ({ isOpen, onClose, errorCode, errorType = 'encoder
       <ModalContent bg="gray.800" color="white">
         <ModalHeader color="red.300">{guide.title}</ModalHeader>
         <ModalCloseButton />
-        
+
         <ModalBody>
           <VStack spacing={6} align="stretch">
             {/* Description */}
@@ -60,7 +60,7 @@ const ErrorTroubleshooting = ({ isOpen, onClose, errorCode, errorType = 'encoder
                 <Box>
                   <Text fontWeight="bold" mb={2}>Quick Fix for CPR Mismatch:</Text>
                   <Text fontSize="sm" mb={2}>
-                    For Hall encoders: This error should not occur since Hall sensors don't use CPR. 
+                    For Hall encoders: This error should not occur since Hall sensors don't use CPR.
                     Check that encoder mode is set to 1 (Hall) not 0 (Incremental).
                   </Text>
                   <Text fontSize="sm">

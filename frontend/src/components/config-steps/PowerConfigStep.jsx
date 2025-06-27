@@ -20,11 +20,11 @@ import { InfoIcon } from '@chakra-ui/icons'
 import ParameterInput from '../buttons/ParameterInput'
 import { ODrivePropertyMappings as configurationMappings } from '../../utils/odriveUnifiedRegistry'
 
-const PowerConfigStep = ({ 
-  deviceConfig, 
-  onReadParameter, 
+const PowerConfigStep = ({
+  deviceConfig,
+  onReadParameter,
   onUpdateConfig,
-  loadingParams, 
+  loadingParams,
 }) => {
   const powerConfig = deviceConfig.power || {}
   const powerMappings = configurationMappings.power
@@ -47,7 +47,7 @@ const PowerConfigStep = ({
   return (
     <Box h="100%" p={3} overflow="auto">
       <VStack spacing={3} align="stretch" maxW="1400px" mx="auto">
-        
+
         {/* DC Bus Voltage Protection */}
         <Card bg="gray.800" variant="elevated">
           <CardHeader py={1}>
@@ -102,7 +102,7 @@ const PowerConfigStep = ({
           </CardHeader>
           <CardBody py={2}>
             <SimpleGrid columns={{ base: 1, lg: 1 }} spacing={4} gap={4}>
-              
+
               {/* Left Column - Current Limits */}
               <Box>
                 <Text fontWeight="bold" color="blue.300" mb={2} fontSize="sm">Current Limits</Text>

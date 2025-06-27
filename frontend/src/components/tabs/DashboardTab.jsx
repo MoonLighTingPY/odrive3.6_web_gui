@@ -50,8 +50,8 @@ const VoltageProgress = memo(({ voltage }) => (
       <Text color="gray.300">DC Bus Voltage</Text>
       <Text fontWeight="bold" color="white">{(voltage ?? 0).toFixed(1)} V</Text>
     </HStack>
-    <Progress 
-      value={((voltage ?? 0) / 56) * 100} 
+    <Progress
+      value={((voltage ?? 0) / 56) * 100}
       colorScheme={voltage > 50 ? "red" : voltage > 40 ? "yellow" : "green"}
       size="sm"
     />
@@ -66,8 +66,8 @@ const TemperatureDisplay = memo(({ temp, label, maxTemp = 100 }) => (
         {(temp ?? 0).toFixed(1)} °C
       </Text>
     </HStack>
-    <Progress 
-      value={((temp ?? 0) / maxTemp) * 100} 
+    <Progress
+      value={((temp ?? 0) / maxTemp) * 100}
       colorScheme={(temp ?? 0) > 80 ? "red" : (temp ?? 0) > 60 ? "yellow" : "green"}
       size="sm"
     />
@@ -78,7 +78,7 @@ const DashboardTab = memo(() => {
   // Use telemetry slice for high-frequency data
   const telemetry = useSelector(state => state.telemetry)
   const { connectedDevice, odriveState } = useSelector(state => state.device)
-  
+
   const [selectedError, setSelectedError] = useState({ code: null, type: null })
   const { isOpen: isTroubleshootingOpen, onOpen: onTroubleshootingOpen, onClose: onTroubleshootingClose } = useDisclosure()
 
@@ -125,7 +125,7 @@ const DashboardTab = memo(() => {
         serial_number: 'Unknown'
       }
     }
-    
+
     return {
       fw_version_major: device.fw_version_major || 0,
       fw_version_minor: device.fw_version_minor || 5,
@@ -164,11 +164,11 @@ const DashboardTab = memo(() => {
         <Box flex="1">
           <HStack justify="space-between" mb={1}>
             <Text fontWeight="bold" fontSize="sm">
-              {title} 
+              {title}
             </Text>
             <HStack>
-              <Badge 
-                colorScheme={color} 
+              <Badge
+                colorScheme={color}
                 fontSize="xs"
                 cursor="pointer"
                 _hover={{ opacity: 0.8 }}
@@ -201,7 +201,7 @@ const DashboardTab = memo(() => {
   return (
     <Box p={4} h="100%" maxW="1400px" mx="auto" overflow="hidden">
       <VStack spacing={4} align="stretch" h="100%">
-        
+
         {/* Connection Health Indicator */}
         {!connectionHealth && (
           <Alert status="warning" flexShrink={0}>
@@ -213,7 +213,7 @@ const DashboardTab = memo(() => {
         {/* Scrollable Content Area */}
         <Box flex="1" overflow="auto">
           <VStack spacing={6} align="stretch">
-            
+
             {/* Device Info */}
             <Card bg="gray.800" variant="elevated">
               <CardHeader>
@@ -239,7 +239,7 @@ const DashboardTab = memo(() => {
                       {connectedDevice?.path || 'ODrive'}
                     </StatHelpText>
                   </Stat>
-                    <Stat>
+                  <Stat>
                     <StatLabel color="gray.300">Firmware</StatLabel>
                     <StatNumber color="white" fontSize="md">
                       v{systemData?.fw_version_major || 0}.{systemData?.fw_version_minor}.{systemData?.fw_version_revision}
@@ -318,7 +318,7 @@ const DashboardTab = memo(() => {
                   <VStack spacing={4}>
                     <VoltageProgress voltage={vbusVoltage ?? 0} />
                     <Divider />
-                    <TelemetryDisplay 
+                    <TelemetryDisplay
                       label="Motor Current (measured)"
                       value={motorCurrent ?? 0}
                       unit="A"
@@ -346,19 +346,19 @@ const DashboardTab = memo(() => {
                 </CardHeader>
                 <CardBody>
                   <SimpleGrid columns={{ base: 1, md: 3 }} spacing={6}>
-                    <TelemetryDisplay 
+                    <TelemetryDisplay
                       label="Position (counts)"
                       value={encoderPos ?? 0}
                       unit=""
                       color="odrive.300"
                     />
-                    <TelemetryDisplay 
+                    <TelemetryDisplay
                       label="Velocity (counts/s)"
                       value={encoderVel ?? 0}
                       unit=""
                       color="odrive.300"
                     />
-                    <TelemetryDisplay 
+                    <TelemetryDisplay
                       label="Position (turns)"
                       value={((encoderPos ?? 0) / 4000)}
                       unit=""
@@ -375,10 +375,10 @@ const DashboardTab = memo(() => {
                 <Heading size="md" color="white">Quick Actions</Heading>
               </CardHeader>
               <CardBody>
-                <MotorControls 
-                  axisNumber={0} 
-                  size="md" 
-                  orientation="horizontal" 
+                <MotorControls
+                  axisNumber={0}
+                  size="md"
+                  orientation="horizontal"
                   variant="full"
                 />
               </CardBody>

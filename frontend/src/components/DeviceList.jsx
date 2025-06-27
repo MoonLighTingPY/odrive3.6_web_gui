@@ -33,8 +33,8 @@ import '../styles/DeviceList.css'
 
 // Memoized Status Badge Component
 const StatusBadge = memo(({ isConnected, connectedDevice, device }) => {
-  const isThisDeviceConnected = isConnected && 
-    connectedDevice && 
+  const isThisDeviceConnected = isConnected &&
+    connectedDevice &&
     connectedDevice.serial === device.serial
 
   return (
@@ -87,9 +87,9 @@ const ErrorDisplay = memo(({ errorCode, errorType = 'axis', handleErrorClick }) 
       <HStack justify="space-between">
         <Text fontSize="sm" color="gray.300">Error:</Text>
         <HStack>
-          <Badge 
-            colorScheme={colorScheme} 
-            variant="solid" 
+          <Badge
+            colorScheme={colorScheme}
+            variant="solid"
             fontSize="xs"
             cursor="pointer"
             _hover={{ opacity: 0.8 }}
@@ -169,13 +169,13 @@ const DeviceStatusDisplay = memo(({ telemetry, odriveState }) => {
 DeviceStatusDisplay.displayName = 'DeviceStatusDisplay'
 
 // Memoized Device Card Component
-const DeviceCard = memo(({ 
-  device, 
-  index, 
-  isConnected, 
-  connectedDevice, 
-  onConnect, 
-  onDisconnect 
+const DeviceCard = memo(({
+  device,
+  index,
+  isConnected,
+  connectedDevice,
+  onConnect,
+  onDisconnect
 }) => (
   <Card
     w="100%"
@@ -188,7 +188,7 @@ const DeviceCard = memo(({
         <HStack justify="space-between">
           <DeviceInfo device={device} index={index} />
           <VStack>
-            <StatusBadge 
+            <StatusBadge
               isConnected={isConnected}
               connectedDevice={connectedDevice}
               device={device}
@@ -222,7 +222,7 @@ DeviceCard.displayName = 'DeviceCard'
 // Memoized Error Section Component
 const ErrorSection = memo(({ currentErrors, handleErrorClick }) => {
   const renderErrorInfo = useCallback((errorCode, errorType = 'axis') => (
-    <ErrorDisplay 
+    <ErrorDisplay
       errorCode={errorCode}
       errorType={errorType}
       handleErrorClick={handleErrorClick}
@@ -280,14 +280,14 @@ const DeviceList = memo(() => {
   const toast = useToast()
   const [isScanning, setIsScanning] = useState(false)
   const isScanningRef = useRef(false) // Add this ref
-  
+
   // Use telemetry slice for real-time data
   const telemetry = useSelector(state => state.telemetry)
-  
-  const { 
-    availableDevices, 
-    connectedDevice, 
-    isConnected, 
+
+  const {
+    availableDevices,
+    connectedDevice,
+    isConnected,
     odriveState,
   } = useSelector(state => state.device)
 
@@ -355,7 +355,7 @@ const DeviceList = memo(() => {
 
   useEffect(() => {
     scanForDevices()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // Only run once on mount, not when scanForDevices changes
 
 
@@ -487,9 +487,9 @@ const DeviceList = memo(() => {
           ) : (
             <VStack spacing={3}>
               {availableDevices.map((device, index) => (
-                <DeviceCard 
+                <DeviceCard
                   key={device.serial || `device-${index}`} // Add this key prop
-                  device={device} 
+                  device={device}
                   index={index}
                   isConnected={isConnected}
                   connectedDevice={connectedDevice}
@@ -525,7 +525,7 @@ const DeviceList = memo(() => {
               )}
 
               {/* Pass current errors to ErrorSection */}
-              <ErrorSection 
+              <ErrorSection
                 currentErrors={currentErrors}
                 handleErrorClick={handleErrorClick}
               />

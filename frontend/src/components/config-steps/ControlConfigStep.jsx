@@ -29,17 +29,17 @@ import {
 import { InfoIcon, RepeatIcon, ChevronUpIcon, ChevronDownIcon } from '@chakra-ui/icons'
 import ParameterInput from '../buttons/ParameterInput'
 import { ODrivePropertyMappings as configurationMappings } from '../../utils/odriveUnifiedRegistry'
-import { ControlMode, InputMode} from '../../utils/odriveEnums'
+import { ControlMode, InputMode } from '../../utils/odriveEnums'
 import {
-  turnsToRpm, 
-  rpmToTurns, 
+  turnsToRpm,
+  rpmToTurns,
 } from '../../utils/unitConversions'
 
-const ControlConfigStep = ({ 
-  deviceConfig, 
-  onReadParameter, 
+const ControlConfigStep = ({
+  deviceConfig,
+  onReadParameter,
   onUpdateConfig,
-  loadingParams, 
+  loadingParams,
 }) => {
   const controlConfig = deviceConfig.control || {}
   const motorConfig = deviceConfig.motor || {}
@@ -67,12 +67,12 @@ const ControlConfigStep = ({
   const calculatedGains = useMemo(() => {
     const motor_kv = motorConfig.motor_kv || 0
     const cpr = encoderConfig.cpr || 0
-    
+
     const torque_constant = 8.27 / motor_kv
     const pos_gain = motor_kv / 10.0 / cpr * 60
     const vel_gain = torque_constant * cpr / 10.0
     const vel_integrator_gain = 0.1 * vel_gain
-    
+
     return {
       torque_constant,
       pos_gain,
@@ -113,7 +113,7 @@ const ControlConfigStep = ({
   return (
     <Box h="100%" p={3} overflow="auto">
       <VStack spacing={3} align="stretch" maxW="1400px" mx="auto">
-        
+
         {/* Control Mode Selection */}
         <Card bg="gray.800" variant="elevated">
           <CardHeader py={1}>
@@ -174,10 +174,10 @@ const ControlConfigStep = ({
 
         {/* Main Configuration Grid */}
         <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={4} gap={4}>
-          
+
           {/* Left Column - PID Gains */}
           <VStack spacing={3} align="stretch">
-            
+
             {/* Manual PID Gains */}
             <Card bg="gray.800" variant="elevated">
               <CardHeader py={1}>
@@ -192,7 +192,7 @@ const ControlConfigStep = ({
                     <Text fontSize="xs">Velocity: <code>current_setpoint = vel_gain × vel_error + vel_integrator_gain × ∫vel_error</code></Text>
                   </VStack>
                 </Alert>
-                
+
                 <VStack spacing={2}>
                   {isPositionControl && (
                     <FormControl>
@@ -364,7 +364,7 @@ const ControlConfigStep = ({
 
           {/* Right Column - Limits, Ramps & Advanced */}
           <VStack spacing={3} align="stretch">
-            
+
             {/* Velocity & Acceleration Limits */}
             <Card bg="gray.800" variant="elevated">
               <CardHeader py={1}>

@@ -23,13 +23,13 @@ import {
 import { InfoIcon, RepeatIcon } from '@chakra-ui/icons'
 import ParameterInput from '../buttons/ParameterInput'
 import { ODrivePropertyMappings as configurationMappings } from '../../utils/odriveUnifiedRegistry'
-import { EncoderMode} from '../../utils/odriveEnums'
+import { EncoderMode } from '../../utils/odriveEnums'
 
-const EncoderConfigStep = ({ 
-  deviceConfig, 
-  onReadParameter, 
+const EncoderConfigStep = ({
+  deviceConfig,
+  onReadParameter,
   onUpdateConfig,
-  loadingParams, 
+  loadingParams,
 }) => {
   const encoderConfig = deviceConfig.encoder || {}
   const encoderMappings = configurationMappings.encoder
@@ -52,7 +52,7 @@ const EncoderConfigStep = ({
   return (
     <Box h="100%" p={3} overflow="auto">
       <VStack spacing={3} align="stretch" maxW="1400px" mx="auto">
-        
+
         {/* Basic Settings */}
         <Card bg="gray.800" variant="elevated">
           <CardHeader py={1}>
@@ -146,7 +146,7 @@ const EncoderConfigStep = ({
           </CardHeader>
           <CardBody py={2}>
             <SimpleGrid columns={{ base: 1, lg: 3 }} spacing={4} gap={4}>
-              
+
               {/* Left Column - General Settings */}
               <Box>
                 <Text fontWeight="bold" color="blue.300" mb={2} fontSize="sm">General Settings</Text>

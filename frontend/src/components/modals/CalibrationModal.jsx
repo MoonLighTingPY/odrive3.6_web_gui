@@ -28,43 +28,43 @@ const CalibrationModal = ({
   calibrationStatus,
   getCalibrationPhaseDescription
 }) => {
-  
+
   // Helper function to determine step status
   const getStepStatus = (step, currentPhase, calibrationStatus) => {
     // Normalize step names for comparison
     const normalizeStep = (stepName) => {
       return stepName.toLowerCase().replace(/[_\s]/g, '').replace('calibration', '')
     }
-    
+
     const normalizedStep = normalizeStep(step)
     const normalizedPhase = normalizeStep(currentPhase)
-    
+
     // Check if this step has been completed successfully
     const isMotorStep = normalizedStep.includes('motor')
     const isEncoderPolarityStep = normalizedStep.includes('encoderpolarity') || normalizedStep.includes('polarity') || normalizedStep.includes('dirfind')
     const isEncoderOffsetStep = normalizedStep.includes('encoderoffset') || normalizedStep.includes('offset')
-    
+
     // During calibration, show current active step
     if (isCalibrating) {
       // Check if this is the currently active step
-      if (normalizedStep === normalizedPhase || 
-          (isMotorStep && normalizedPhase.includes('motor')) ||
-          (isEncoderPolarityStep && (normalizedPhase.includes('polarity') || normalizedPhase.includes('dirfind'))) ||
-          (isEncoderOffsetStep && normalizedPhase.includes('offset'))) {
+      if (normalizedStep === normalizedPhase ||
+        (isMotorStep && normalizedPhase.includes('motor')) ||
+        (isEncoderPolarityStep && (normalizedPhase.includes('polarity') || normalizedPhase.includes('dirfind'))) ||
+        (isEncoderOffsetStep && normalizedPhase.includes('offset'))) {
         return 'active'
       }
-      
+
       // FIXED: Only show success for steps that have actually completed during this calibration
       // We need to track progress through the sequence, not just check final flags
-      const currentStepIndex = calibrationSequence.findIndex(seqStep => 
+      const currentStepIndex = calibrationSequence.findIndex(seqStep =>
         normalizeStep(seqStep) === normalizedPhase ||
         (isMotorStep && normalizeStep(seqStep).includes('motor') && normalizedPhase.includes('motor')) ||
         (isEncoderPolarityStep && (normalizeStep(seqStep).includes('polarity') || normalizeStep(seqStep).includes('dirfind')) && (normalizedPhase.includes('polarity') || normalizedPhase.includes('dirfind'))) ||
         (isEncoderOffsetStep && normalizeStep(seqStep).includes('offset') && normalizedPhase.includes('offset'))
       )
-      
+
       const thisStepIndex = calibrationSequence.findIndex(seqStep => normalizeStep(seqStep) === normalizedStep)
-      
+
       // If this step comes before the current step in the sequence, it's completed
       if (thisStepIndex < currentStepIndex && thisStepIndex !== -1) {
         // Double-check with calibration status to ensure it actually completed successfully
@@ -74,17 +74,17 @@ const CalibrationModal = ({
           if (isEncoderOffsetStep && calibrationStatus.encoder_ready) return 'success'
         }
       }
-      
+
       // All other steps during calibration are pending
       return 'pending'
     }
-    
+
     // If calibration is complete, check final status
     if (!isCalibrating && calibrationStatus) {
-      const hasErrors = calibrationStatus.axis_error !== 0 || 
-                       calibrationStatus.motor_error !== 0 || 
-                       calibrationStatus.encoder_error !== 0
-      
+      const hasErrors = calibrationStatus.axis_error !== 0 ||
+        calibrationStatus.motor_error !== 0 ||
+        calibrationStatus.encoder_error !== 0
+
       if (isMotorStep) {
         return calibrationStatus.motor_calibrated ? 'success' : (hasErrors ? 'error' : 'pending')
       }
@@ -95,10 +95,10 @@ const CalibrationModal = ({
         return calibrationStatus.encoder_ready ? 'success' : (hasErrors ? 'error' : 'pending')
       }
     }
-    
+
     return 'pending'
   }
-  
+
   // Helper function to get step icon
   const getStepIcon = (status) => {
     switch (status) {
@@ -108,7 +108,7 @@ const CalibrationModal = ({
       default: return '⏳'
     }
   }
-  
+
   // Helper function to get step color
   const getStepColor = (status) => {
     switch (status) {
@@ -118,7 +118,7 @@ const CalibrationModal = ({
       default: return 'gray'
     }
   }
-  
+
   // Check if calibration is finished (either successful or failed)
   const isCalibrationFinished = !isCalibrating && calibrationStatus && (
     calibrationStatus.calibration_phase === 'complete' ||
@@ -127,11 +127,11 @@ const CalibrationModal = ({
     calibrationStatus.calibration_phase === 'motor_complete' ||
     (calibrationStatus.axis_error !== 0 || calibrationStatus.motor_error !== 0 || calibrationStatus.encoder_error !== 0)
   )
-  
+
   // Determine if calibration was successful
-  const isCalibrationSuccessful = isCalibrationFinished && 
-    calibrationStatus.axis_error === 0 && 
-    calibrationStatus.motor_error === 0 && 
+  const isCalibrationSuccessful = isCalibrationFinished &&
+    calibrationStatus.axis_error === 0 &&
+    calibrationStatus.motor_error === 0 &&
     calibrationStatus.encoder_error === 0
 
   return (
@@ -139,50 +139,50 @@ const CalibrationModal = ({
       <ModalOverlay />
       <ModalContent bg="gray.800" borderColor="gray.600">
         <ModalHeader color="white">
-          {isCalibrationFinished ? 
+          {isCalibrationFinished ?
             (isCalibrationSuccessful ? 'Calibration Complete!' : 'Calibration Finished') :
             'Calibration in Progress'
           }
         </ModalHeader>
         {!isCalibrating && <ModalCloseButton color="white" />}
-        
+
         <ModalBody>
           <VStack spacing={4} align="stretch">
             <HStack justify="center">
               <CircularProgress
                 value={calibrationProgress}
-                color={isCalibrationFinished ? 
-                  (isCalibrationSuccessful ? "green.400" : "red.400") : 
+                color={isCalibrationFinished ?
+                  (isCalibrationSuccessful ? "green.400" : "red.400") :
                   "orange.400"
                 }
                 size="120px"
                 thickness="4px"
               >
                 <CircularProgressLabel color="white" fontSize="lg">
-                  {isCalibrationFinished ? 
+                  {isCalibrationFinished ?
                     (isCalibrationSuccessful ? '✅' : '❌') :
                     `${Math.round(calibrationProgress)}%`
                   }
                 </CircularProgressLabel>
               </CircularProgress>
             </HStack>
-            
+
             <Text color="white" textAlign="center" fontWeight="bold">
-              {isCalibrationFinished ? 
+              {isCalibrationFinished ?
                 (isCalibrationSuccessful ? 'Success!' : 'Finished with issues') :
                 `Current Phase: ${calibrationPhase.replace(/_/g, ' ').toUpperCase()}`
               }
             </Text>
-            
+
             <Text color="gray.300" textAlign="center" fontSize="sm">
-              {isCalibrationFinished ? 
-                (isCalibrationSuccessful ? 
-                  'All calibration steps completed successfully!' : 
+              {isCalibrationFinished ?
+                (isCalibrationSuccessful ?
+                  'All calibration steps completed successfully!' :
                   'Calibration completed but there may be errors to address.') :
                 getCalibrationPhaseDescription(calibrationPhase)
               }
             </Text>
-            
+
             {calibrationSequence.length > 0 && (
               <Box>
                 <VStack spacing={2} align="stretch">
@@ -190,9 +190,9 @@ const CalibrationModal = ({
                     const stepStatus = getStepStatus(step, calibrationPhase, calibrationStatus)
                     const stepColor = getStepColor(stepStatus)
                     const stepIcon = getStepIcon(stepStatus)
-                    
+
                     return (
-                      <HStack key={index} spacing={3} justify="space-between" 
+                      <HStack key={index} spacing={3} justify="space-between"
                         bg={stepStatus === 'active' ? 'orange.900' : 'transparent'}
                         p={2} borderRadius="md"
                         border={stepStatus === 'active' ? '1px solid' : 'none'}
@@ -211,8 +211,8 @@ const CalibrationModal = ({
                           >
                             {index + 1}
                           </Badge>
-                          <Text 
-                            color={stepStatus === 'active' ? 'orange.300' : 'gray.300'} 
+                          <Text
+                            color={stepStatus === 'active' ? 'orange.300' : 'gray.300'}
                             fontSize="sm"
                             fontWeight={stepStatus === 'active' ? 'bold' : 'normal'}
                           >
@@ -228,7 +228,7 @@ const CalibrationModal = ({
                 </VStack>
               </Box>
             )}
-            
+
             {calibrationStatus && (calibrationStatus.axis_error !== 0 || calibrationStatus.motor_error !== 0 || calibrationStatus.encoder_error !== 0) && (
               <Alert status="error" variant="left-accent">
                 <AlertIcon />
@@ -240,7 +240,7 @@ const CalibrationModal = ({
                 </Box>
               </Alert>
             )}
-            
+
             {isCalibrationFinished && isCalibrationSuccessful && (
               <Alert status="success" variant="left-accent">
                 <AlertIcon />
@@ -254,7 +254,7 @@ const CalibrationModal = ({
             )}
           </VStack>
         </ModalBody>
-        
+
         <ModalFooter>
           {isCalibrationFinished ? (
             <Button colorScheme="blue" onClick={onClose}>

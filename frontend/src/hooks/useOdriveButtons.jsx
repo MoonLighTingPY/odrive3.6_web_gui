@@ -8,7 +8,7 @@ import { saveAndRebootWithReconnect } from '../utils/configurationActions'
 // Custom hook for shared command functionality
 const useODriveCommand = () => {
   const toast = useToast()
-  
+
   const sendCommand = async (command) => {
     try {
       const response = await fetch('/api/odrive/command', {
@@ -16,15 +16,15 @@ const useODriveCommand = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ command })
       })
-      
+
       if (!response.ok) {
         const error = await response.json()
         throw new Error(error.error || 'Command failed')
       }
-      
+
       const result = await response.json()
       let description = 'Command executed successfully'
-      
+
       if (command.includes('requested_state = 8')) {
         description = 'Motor enabled (closed loop control)'
       } else if (command.includes('requested_state = 1')) {
@@ -34,14 +34,14 @@ const useODriveCommand = () => {
       } else if (command.includes('reboot')) {
         description = 'ODrive rebooting...'
       }
-      
+
       toast({
         title: 'Command sent',
         description: description,
         status: 'success',
         duration: 2000,
       })
-      
+
       return result
     } catch (error) {
       toast({
@@ -53,7 +53,7 @@ const useODriveCommand = () => {
       throw error
     }
   }
-  
+
   return { sendCommand }
 }
 
@@ -61,9 +61,9 @@ const useODriveCommand = () => {
 const useAxisErrors = (axisNumber = 0) => {
   const telemetry = useSelector(state => state.telemetry)
   const { odriveState } = useSelector(state => state.device)
-  
+
   const axisData = odriveState.device?.[`axis${axisNumber}`]
-  
+
   return {
     axis_error: telemetry?.axis_error || axisData?.error || 0,
     motor_error: telemetry?.motor_error || axisData?.motor?.error || 0,
@@ -74,48 +74,48 @@ const useAxisErrors = (axisNumber = 0) => {
 }
 
 // Base button component for calibration buttons - UPDATED WITH ERROR DETECTION
-const CalibrationButtonBase = ({ 
-  axisNumber = 0, 
-  size = "sm", 
-  colorScheme, 
-  calibrationType, 
-  children, 
-  title 
+const CalibrationButtonBase = ({
+  axisNumber = 0,
+  size = "sm",
+  colorScheme,
+  calibrationType,
+  children,
+  title
 }) => {
   const { isConnected, odriveState } = useSelector(state => state.device)
   const { sendCommand } = useODriveCommand()
-  
+
   // Use telemetry slice for real-time axis state updates
   const telemetry = useSelector(state => state.telemetry)
-  
+
   // Get current errors from both sources
   const currentErrors = useAxisErrors(axisNumber)
-  
+
   // Get axis state from telemetry first (real-time), fallback to odriveState
   const axisState = telemetry?.axis_state ?? odriveState.device?.[`axis${axisNumber}`]?.current_state ?? 0
-  
+
   const handleCalibration = () => {
     // Direct command execution without modal
     const commands = {
       'motor': `odrv0.axis${axisNumber}.requested_state = 4`,
-      'encoder_polarity': `odrv0.axis${axisNumber}.requested_state = 10`, 
+      'encoder_polarity': `odrv0.axis${axisNumber}.requested_state = 10`,
       'encoder_offset': `odrv0.axis${axisNumber}.requested_state = 7`,
       'encoder_index_search': `odrv0.axis${axisNumber}.requested_state = 6`
     }
-    
+
     const command = commands[calibrationType]
     if (command) {
       sendCommand(command)
     }
   }
-  
+
   const isMotorIdle = axisState === 1
   const hasAnyErrors = Object.values(currentErrors).some(error => error !== 0)
   const isAxisCalibrating = axisState >= 2 && axisState <= 7 // Calibration states (2-7)
-  
+
   // FIXED: Don't disable for UNDEFINED state if connected
   const isButtonDisabled = !isConnected || hasAnyErrors || isAxisCalibrating || (!isMotorIdle && axisState !== 0)
-  
+
   const getButtonTitle = () => {
     if (!isConnected) return "Not connected to ODrive"
     if (hasAnyErrors) return "Clear errors before calibration"
@@ -124,7 +124,7 @@ const CalibrationButtonBase = ({
     if (!isMotorIdle) return "Motor must be in idle state for calibration"
     return title
   }
-  
+
   return (
     <Button
       size={size}
@@ -141,16 +141,16 @@ const CalibrationButtonBase = ({
 export const CalibrationButton = ({ axisNumber = 0, size = "sm" }) => {
   const { isConnected, odriveState } = useSelector(state => state.device)
   const { isOpen, onOpen, onClose } = useDisclosure()
-  
+
   // Use telemetry slice for real-time axis state updates
   const telemetry = useSelector(state => state.telemetry)
-  
+
   // Get current errors from both sources
   const currentErrors = useAxisErrors(axisNumber)
-  
+
   // Get axis state from telemetry first (real-time), fallback to odriveState
   const axisState = telemetry?.axis_state ?? odriveState.device?.[`axis${axisNumber}`]?.current_state ?? 0
-  
+
   const {
     calibrationStatus,
     calibrationProgress,
@@ -160,19 +160,19 @@ export const CalibrationButton = ({ axisNumber = 0, size = "sm" }) => {
     startCalibration,
     getCalibrationPhaseDescription
   } = useCalibration()
-  
+
   const handleCalibration = () => {
     startCalibration('full')
     onOpen()
   }
-  
+
   const isMotorIdle = axisState === 1
   const hasAnyErrors = Object.values(currentErrors).some(error => error !== 0)
   const isAxisCalibrating = axisState >= 2 && axisState <= 7 // Calibration states (2-7)
-  
+
   // FIXED: More lenient status checking
   const isButtonDisabled = !isConnected || hasAnyErrors || isAxisCalibrating || (!isMotorIdle && axisState !== 0)
-  
+
   const getButtonTitle = () => {
     if (!isConnected) return "Not connected to ODrive"
     if (hasAnyErrors) return "Clear errors before calibration"
@@ -181,7 +181,7 @@ export const CalibrationButton = ({ axisNumber = 0, size = "sm" }) => {
     if (!isMotorIdle) return "Motor must be in idle state for calibration"
     return "Start full calibration sequence (motor + encoder)"
   }
-  
+
   return (
     <>
       <Button
@@ -193,7 +193,7 @@ export const CalibrationButton = ({ axisNumber = 0, size = "sm" }) => {
       >
         Full Calibration
       </Button>
-      
+
       <CalibrationModal
         isOpen={isOpen}
         onClose={onClose}
@@ -211,28 +211,28 @@ export const CalibrationButton = ({ axisNumber = 0, size = "sm" }) => {
 export const EnableMotorButton = ({ axisNumber = 0, size = "sm" }) => {
   const { isConnected, odriveState } = useSelector(state => state.device)
   const { sendCommand } = useODriveCommand()
-  
+
   // Use telemetry slice for real-time axis state updates
   const telemetry = useSelector(state => state.telemetry)
-  
+
   // Get current errors from both sources
   const currentErrors = useAxisErrors(axisNumber)
-  
+
   // Get axis state from telemetry first (real-time), fallback to odriveState
   const axisState = telemetry?.axis_state ?? odriveState.device?.[`axis${axisNumber}`]?.current_state ?? 0
-  
+
   const handleEnableMotor = () => {
     sendCommand(`odrv0.axis${axisNumber}.requested_state = 8`) // AXIS_STATE_CLOSED_LOOP_CONTROL
   }
-  
+
   // State checking logic
   const isMotorEnabled = axisState === 8 // CLOSED_LOOP_CONTROL
   const hasAnyErrors = Object.values(currentErrors).some(error => error !== 0)
   const isAxisCalibrating = axisState >= 2 && axisState <= 7 // Calibration states (2-7)
-  
+
   // FIXED: Allow UNDEFINED state if connected - don't treat as unknown
   const isButtonDisabled = !isConnected || isMotorEnabled || hasAnyErrors || isAxisCalibrating
-  
+
   const getButtonTitle = () => {
     if (!isConnected) return "Not connected to ODrive"
     if (hasAnyErrors) return "Clear errors before enabling motor"
@@ -241,7 +241,7 @@ export const EnableMotorButton = ({ axisNumber = 0, size = "sm" }) => {
     if (axisState === 0) return "Waiting for axis to initialize - button will enable when ready"
     return "Enable motor (closed loop control)"
   }
-  
+
   return (
     <Button
       size={size}
@@ -258,24 +258,24 @@ export const EnableMotorButton = ({ axisNumber = 0, size = "sm" }) => {
 export const DisableMotorButton = ({ axisNumber = 0, size = "sm" }) => {
   const { isConnected, odriveState } = useSelector(state => state.device)
   const { sendCommand } = useODriveCommand()
-  
+
   // Use telemetry slice for real-time axis state updates
   const telemetry = useSelector(state => state.telemetry)
-  
+
   // Get axis state from telemetry first (real-time), fallback to odriveState
   const axisState = telemetry?.axis_state ?? odriveState.device?.[`axis${axisNumber}`]?.current_state ?? 0
-  
+
   const handleDisableMotor = () => {
     sendCommand(`odrv0.axis${axisNumber}.requested_state = 1`) // AXIS_STATE_IDLE
   }
-  
+
   // State checking logic
   const isMotorIdle = axisState === 1 // IDLE
   const isAxisCalibrating = axisState >= 2 && axisState <= 7 // Calibration states (2-7)
-  
+
   // FIXED: Allow UNDEFINED state if connected
   const isButtonDisabled = !isConnected || isMotorIdle || isAxisCalibrating
-  
+
   const getButtonTitle = () => {
     if (!isConnected) return "Not connected to ODrive"
     if (isAxisCalibrating) return "Wait for calibration to complete"
@@ -283,7 +283,7 @@ export const DisableMotorButton = ({ axisNumber = 0, size = "sm" }) => {
     if (axisState === 0) return "Waiting for axis to initialize - button will enable when ready"
     return "Disable motor (idle state)"
   }
-  
+
   return (
     <Button
       size={size}
@@ -300,16 +300,16 @@ export const DisableMotorButton = ({ axisNumber = 0, size = "sm" }) => {
 export const ClearErrorsButton = ({ axisNumber = 0, size = "sm" }) => {
   const { isConnected } = useSelector(state => state.device)
   const { sendCommand } = useODriveCommand()
-  
+
   // Get current errors from both sources
   const currentErrors = useAxisErrors(axisNumber)
-  
+
   const handleClearErrors = () => {
     sendCommand('odrv0.clear_errors()')
   }
-  
+
   const hasAnyErrors = Object.values(currentErrors).some(error => error !== 0)
-  
+
   return (
     <Button
       size={size}
@@ -378,21 +378,21 @@ export const SaveAndRebootButton = ({ size = "sm", gridColumn, ...props }) => {
   const dispatch = useDispatch()
   const toast = useToast()
   const [isLoading, setIsLoading] = useState(false)
-  
+
   const handleSaveAndReboot = async () => {
     if (!isConnected) return
 
     setIsLoading(true)
     try {
       await saveAndRebootWithReconnect(toast, dispatch, connectedDevice)
-    // eslint-disable-next-line no-unused-vars
+      // eslint-disable-next-line no-unused-vars
     } catch (_) {
       // saveAndRebootWithReconnect already handles toasts
     } finally {
       setIsLoading(false)
     }
   }
-  
+
   return (
     <Button
       size={size}

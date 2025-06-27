@@ -552,6 +552,7 @@ export const getErrorTroubleshootingGuide = (errorCode, errorType = 'encoder') =
   if (!errorCode || errorCode === 0) return null
 
   // Find the specific error flag that matches
+  // eslint-disable-next-line no-unused-vars
   let errorEnum, guides
   switch (errorType) {
     case 'encoder':
@@ -564,6 +565,7 @@ export const getErrorTroubleshootingGuide = (errorCode, errorType = 'encoder') =
       errorEnum = ControllerError
       break
     case 'axis':
+      // eslint-disable-next-line no-unused-vars
       errorEnum = AxisError
       break
     default:

@@ -22,11 +22,11 @@ import { InfoIcon } from '@chakra-ui/icons'
 import ParameterInput from '../buttons/ParameterInput'
 import { ODrivePropertyMappings as configurationMappings } from '../../utils/odriveUnifiedRegistry'
 
-const InterfaceConfigStep = ({ 
-  deviceConfig, 
-  onReadParameter, 
+const InterfaceConfigStep = ({
+  deviceConfig,
+  onReadParameter,
   onUpdateConfig,
-  loadingParams, 
+  loadingParams,
 }) => {
   const interfaceConfig = deviceConfig.interface || {}
   const interfaceMappings = configurationMappings.interface

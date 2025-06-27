@@ -30,9 +30,9 @@ import {
   MenuItem
 } from '@chakra-ui/react'
 import { DeleteIcon, DownloadIcon, EditIcon, ChevronDownIcon } from '@chakra-ui/icons'
-import { 
-  getAllAvailablePresets, 
-  isFactoryPreset, 
+import {
+  getAllAvailablePresets,
+  isFactoryPreset,
   deletePreset,
   exportPresetsToFile,
   loadPresetConfig,
@@ -49,7 +49,7 @@ const PresetList = ({ onPresetLoad, onRefreshNeeded }) => {
   const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure()
   const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure()
   const toast = useToast()
-  
+
   // Get connection status from Redux
   const { isConnected } = useSelector(state => state.device)
 
@@ -117,100 +117,100 @@ const PresetList = ({ onPresetLoad, onRefreshNeeded }) => {
   }
 
   const confirmDelete = () => {
-  if (!deleteTarget) return
+    if (!deleteTarget) return
 
-  try {
-    deletePreset(deleteTarget)
-    loadPresets()
-    if (onRefreshNeeded) onRefreshNeeded()
-    
-    // Broadcast preset update to other components
-    window.dispatchEvent(new CustomEvent('presetUpdated', { 
-      detail: { action: 'delete', presetName: deleteTarget } 
-    }))
-    
-    toast({
-      title: 'Preset Deleted',
-      description: `"${deleteTarget}" has been deleted`,
-      status: 'success',
-      duration: 3000,
-    })
-  } catch (error) {
-    toast({
-      title: 'Delete Failed',
-      description: error.message,
-      status: 'error',
-      duration: 3000,
-    })
+    try {
+      deletePreset(deleteTarget)
+      loadPresets()
+      if (onRefreshNeeded) onRefreshNeeded()
+
+      // Broadcast preset update to other components
+      window.dispatchEvent(new CustomEvent('presetUpdated', {
+        detail: { action: 'delete', presetName: deleteTarget }
+      }))
+
+      toast({
+        title: 'Preset Deleted',
+        description: `"${deleteTarget}" has been deleted`,
+        status: 'success',
+        duration: 3000,
+      })
+    } catch (error) {
+      toast({
+        title: 'Delete Failed',
+        description: error.message,
+        status: 'error',
+        duration: 3000,
+      })
+    }
+
+    setDeleteTarget(null)
+    onDeleteClose()
   }
 
-  setDeleteTarget(null)
-  onDeleteClose()
-}
+  // Update the confirmEdit function around line 175:
 
-// Update the confirmEdit function around line 175:
+  const confirmEdit = () => {
+    if (!editTarget || !editName.trim()) return
 
-const confirmEdit = () => {
-  if (!editTarget || !editName.trim()) return
+    try {
+      // Get the original preset
+      const originalPreset = presets[editTarget]
+      if (!originalPreset) {
+        throw new Error('Preset not found')
+      }
 
-  try {
-    // Get the original preset
-    const originalPreset = presets[editTarget]
-    if (!originalPreset) {
-      throw new Error('Preset not found')
+      // Create updated preset with new name/description
+      const updatedPreset = {
+        ...originalPreset,
+        name: editName.trim(),
+        description: editDescription.trim(),
+        timestamp: new Date().toISOString()
+      }
+
+      // Get existing presets
+      const storedPresets = getStoredPresets()
+
+      // If name changed, remove old and add new
+      if (editTarget !== editName.trim()) {
+        delete storedPresets[editTarget]
+      }
+      storedPresets[editName.trim()] = updatedPreset
+
+      // Save to localStorage
+      localStorage.setItem('odrive_config_presets', JSON.stringify(storedPresets))
+
+      loadPresets()
+      if (onRefreshNeeded) onRefreshNeeded()
+
+      // Broadcast preset update to other components
+      window.dispatchEvent(new CustomEvent('presetUpdated', {
+        detail: { action: 'edit', oldName: editTarget, newName: editName.trim() }
+      }))
+
+      toast({
+        title: 'Preset Updated',
+        description: `"${editName}" has been updated`,
+        status: 'success',
+        duration: 3000,
+      })
+    } catch (error) {
+      toast({
+        title: 'Update Failed',
+        description: error.message,
+        status: 'error',
+        duration: 3000,
+      })
     }
 
-    // Create updated preset with new name/description
-    const updatedPreset = {
-      ...originalPreset,
-      name: editName.trim(),
-      description: editDescription.trim(),
-      timestamp: new Date().toISOString()
-    }
-
-    // Get existing presets
-    const storedPresets = getStoredPresets()
-
-    // If name changed, remove old and add new
-    if (editTarget !== editName.trim()) {
-      delete storedPresets[editTarget]
-    }
-    storedPresets[editName.trim()] = updatedPreset
-
-    // Save to localStorage
-    localStorage.setItem('odrive_config_presets', JSON.stringify(storedPresets))
-    
-    loadPresets()
-    if (onRefreshNeeded) onRefreshNeeded()
-    
-    // Broadcast preset update to other components
-    window.dispatchEvent(new CustomEvent('presetUpdated', { 
-      detail: { action: 'edit', oldName: editTarget, newName: editName.trim() } 
-    }))
-    
-    toast({
-      title: 'Preset Updated',
-      description: `"${editName}" has been updated`,
-      status: 'success',
-      duration: 3000,
-    })
-  } catch (error) {
-    toast({
-      title: 'Update Failed',
-      description: error.message,
-      status: 'error',
-      duration: 3000,
-    })
+    setEditTarget(null)
+    setEditName('')
+    setEditDescription('')
+    onEditClose()
   }
 
-  setEditTarget(null)
-  setEditName('')
-  setEditDescription('')
-  onEditClose()
-}
 
-
-  const presetEntries = useMemo(() => 
+  const presetEntries = useMemo(() =>
     Object.entries(presets).sort(([a], [b]) => {
       const aFactory = isFactoryPreset(a)
       const bFactory = isFactoryPreset(b)
@@ -221,17 +221,19 @@ const confirmEdit = () => {
   )
 
   // Show connection warning if not in dev mode and not connected
-  {!isConnected && (import.meta.env.DEV || import.meta.env.MODE === 'development') && (
-  <Alert status="info" size="sm" mb={4}>
-    <AlertIcon />
-    <VStack align="start" spacing={1}>
-      <Text fontSize="sm" fontWeight="medium">Development Mode</Text>
-      <Text fontSize="xs">
-        Preset functionality is fully available in development mode. You can load, save, edit, and delete presets for testing.
-      </Text>
-    </VStack>
-  </Alert>
-)}
+  {
+    !isConnected && (import.meta.env.DEV || import.meta.env.MODE === 'development') && (
+      <Alert status="info" size="sm" mb={4}>
+        <AlertIcon />
+        <VStack align="start" spacing={1}>
+          <Text fontSize="sm" fontWeight="medium">Development Mode</Text>
+          <Text fontSize="xs">
+            Preset functionality is fully available in development mode. You can load, save, edit, and delete presets for testing.
+          </Text>
+        </VStack>
+      </Alert>
+    )
+  }
 
   return (
     <>
@@ -239,7 +241,7 @@ const confirmEdit = () => {
       <VStack spacing={3} align="stretch">
         {presetEntries.map(([name, preset]) => {
           const isFactory = isFactoryPreset(name)
-          
+
           return (
             <Box
               key={name}
@@ -247,8 +249,8 @@ const confirmEdit = () => {
               borderWidth="1px"
               borderRadius="md"
               bg={isFactory ? 'blue.50' : 'gray.50'}
-              _dark={{ 
-                bg: isFactory ? 'blue.900' : 'gray.700' 
+              _dark={{
+                bg: isFactory ? 'blue.900' : 'gray.700'
               }}
             >
               <Flex align="start">
@@ -264,13 +266,13 @@ const confirmEdit = () => {
                       </Badge>
                     )}
                   </HStack>
-                  
+
                   {preset.description && (
                     <Text fontSize="sm" color="gray.600" _dark={{ color: 'gray.400' }}>
                       {preset.description}
                     </Text>
                   )}
-                  
+
                   <HStack spacing={4} fontSize="xs" color="gray.500">
                     {preset.timestamp && (
                       <Text>Created: {new Date(preset.timestamp).toLocaleDateString()}</Text>
@@ -308,7 +310,7 @@ const confirmEdit = () => {
                     >
                       Load
                     </Button>
-                    
+
                     <IconButton
                       size="sm"
                       icon={<DownloadIcon />}
@@ -327,14 +329,14 @@ const confirmEdit = () => {
                           aria-label="More actions"
                         />
                         <MenuList>
-                          <MenuItem 
-                            icon={<EditIcon />} 
+                          <MenuItem
+                            icon={<EditIcon />}
                             onClick={() => handleEdit(name)}
                           >
                             Edit Preset
                           </MenuItem>
-                          <MenuItem 
-                            icon={<DeleteIcon />} 
+                          <MenuItem
+                            icon={<DeleteIcon />}
                             onClick={() => handleDelete(name)}
                             color="red.400"
                           >
@@ -370,7 +372,7 @@ const confirmEdit = () => {
           <ModalCloseButton />
           <ModalBody>
             <Text>
-              Are you sure you want to delete the preset "{deleteTarget}"? 
+              Are you sure you want to delete the preset "{deleteTarget}"?
               This action cannot be undone.
             </Text>
           </ModalBody>
@@ -426,8 +428,8 @@ const confirmEdit = () => {
             <Button variant="ghost" mr={3} onClick={onEditClose}>
               Cancel
             </Button>
-            <Button 
-              colorScheme="blue" 
+            <Button
+              colorScheme="blue"
               onClick={confirmEdit}
               isDisabled={!editName.trim() || isFactoryPreset(editTarget)}
             >

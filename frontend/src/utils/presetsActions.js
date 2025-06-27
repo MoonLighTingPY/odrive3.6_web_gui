@@ -3,11 +3,11 @@
  * API actions for applying presets and managing preset operations with ODrive
  */
 
-import { 
-  saveCurrentConfigAsPreset, 
-  loadPresetConfig, 
+import {
+  saveCurrentConfigAsPreset,
+  loadPresetConfig,
   exportPresetsToFile,
-  importPresetsFromFile 
+  importPresetsFromFile
 } from './presetsManager'
 import { executeConfigAction } from './configurationActions'
 import { generateConfigCommands } from './configCommandGenerator'
@@ -26,8 +26,8 @@ export const saveCurrentConfigAsPresetAction = async (deviceConfig, presetName, 
       throw new Error('Preset name is required')
     }
 
-    if (Object.keys(deviceConfig).length === 0 || 
-        !deviceConfig.power || !deviceConfig.motor || !deviceConfig.encoder) {
+    if (Object.keys(deviceConfig).length === 0 ||
+      !deviceConfig.power || !deviceConfig.motor || !deviceConfig.encoder) {
       throw new Error('Device configuration is incomplete. Please ensure ODrive is connected and configuration is loaded.')
     }
 
@@ -62,7 +62,7 @@ export const saveCurrentConfigAsPresetAction = async (deviceConfig, presetName, 
 export const loadPresetConfigAction = async (presetName, applyToDevice = false, toast) => {
   try {
     const config = loadPresetConfig(presetName)
-    
+
     if (!config) {
       throw new Error(`Preset "${presetName}" not found`)
     }
@@ -106,11 +106,11 @@ export const exportPresetsAction = async (presetNames, toast) => {
   try {
     exportPresetsToFile(presetNames)
 
-    const exportDescription = presetNames === null 
+    const exportDescription = presetNames === null
       ? 'All presets exported'
       : typeof presetNames === 'string'
-      ? `Preset "${presetNames}" exported`
-      : `${presetNames.length} presets exported`
+        ? `Preset "${presetNames}" exported`
+        : `${presetNames.length} presets exported`
 
     toast({
       title: 'Export Successful',
@@ -185,7 +185,7 @@ export const importPresetsAction = async (file, overwriteExisting = false, toast
  */
 export const compareConfigWithPreset = (deviceConfig, presetName) => {
   const presetConfig = loadPresetConfig(presetName)
-  
+
   if (!presetConfig) {
     throw new Error(`Preset "${presetName}" not found`)
   }
@@ -196,9 +196,9 @@ export const compareConfigWithPreset = (deviceConfig, presetName) => {
   sections.forEach(section => {
     const deviceSection = deviceConfig[section] || {}
     const presetSection = presetConfig[section] || {}
-    
+
     const sectionDiffs = {}
-    
+
     // Check all keys from both configs
     const allKeys = new Set([
       ...Object.keys(deviceSection),
@@ -208,7 +208,7 @@ export const compareConfigWithPreset = (deviceConfig, presetName) => {
     allKeys.forEach(key => {
       const deviceValue = deviceSection[key]
       const presetValue = presetSection[key]
-      
+
       if (deviceValue !== presetValue) {
         sectionDiffs[key] = {
           current: deviceValue,
@@ -229,7 +229,7 @@ export const compareConfigWithPreset = (deviceConfig, presetName) => {
     presetName,
     hasDifferences: Object.keys(differences).length > 0,
     differences,
-    totalChanges: Object.values(differences).reduce((total, section) => 
+    totalChanges: Object.values(differences).reduce((total, section) =>
       total + Object.keys(section).length, 0)
   }
 }

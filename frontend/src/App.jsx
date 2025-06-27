@@ -26,9 +26,9 @@ function App() {
                 ODrive GUI v0.5.6
               </Heading>
             </HStack>
-            
+
             <DeviceList />
-            
+
             {isConnected && connectedDevice && (
               <Box mt={4} p={3} bg="gray.700" borderRadius="md">
                 <VStack spacing={2} align="stretch">

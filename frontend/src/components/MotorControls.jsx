@@ -1,5 +1,5 @@
 import React from 'react'
-import { 
+import {
   EnableMotorButton,
   DisableMotorButton,
   ClearErrorsButton,
@@ -14,7 +14,7 @@ import { HStack, VStack } from '@chakra-ui/react'
 
 const MotorControls = ({ axisNumber = 0, size = "sm", orientation = "horizontal", variant = "basic" }) => {
   const ContainerComponent = orientation === "horizontal" ? HStack : VStack
-  
+
   if (variant === "full") {
     return (
       <VStack spacing={3}>
@@ -24,11 +24,11 @@ const MotorControls = ({ axisNumber = 0, size = "sm", orientation = "horizontal"
           <DisableMotorButton axisNumber={axisNumber} size={size} />
           <ClearErrorsButton axisNumber={axisNumber} size={size} />
 
-        {/* Calibration Controls */}
+          {/* Calibration Controls */}
           <CalibrationButton axisNumber={axisNumber} size={size} />
           <MotorCalibrationButton axisNumber={axisNumber} size={size} />
 
-        {/* Encoder Calibration Controls */}
+          {/* Encoder Calibration Controls */}
           <EncoderHallCalibrationButton axisNumber={axisNumber} size={size} />
           <EncoderOffsetCalibrationButton axisNumber={axisNumber} size={size} />
           <EncoderIndexSearchButton axisNumber={axisNumber} size={size} />
@@ -37,7 +37,7 @@ const MotorControls = ({ axisNumber = 0, size = "sm", orientation = "horizontal"
       </VStack>
     )
   }
-  
+
   // Basic variant (default)
   return (
     <ContainerComponent spacing={2}>

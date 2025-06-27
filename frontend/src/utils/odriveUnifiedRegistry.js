@@ -16,7 +16,7 @@ class ODriveUnifiedRegistry {
     this.propertyMappings = this._generatePropertyMappings()
     this.commandGenerators = this._generateCommandGenerators()
     this.commands = this._generateCommands() // Add this line
-    
+
     console.log('ODrive Unified Registry initialized:', {
       categories: Object.keys(this.configCategories),
       totalParams: Object.values(this.configCategories).reduce((sum, params) => sum + params.length, 0),
@@ -27,7 +27,7 @@ class ODriveUnifiedRegistry {
 
   _generateConfigCategories() {
     const categories = { power: [], motor: [], encoder: [], control: [], interface: [] }
-    
+
     this._traversePropertyTree((path, property) => {
       if (property.writable) {
         const category = this._inferCategory(path)
@@ -51,13 +51,13 @@ class ODriveUnifiedRegistry {
         }
       }
     })
-    
+
     return categories
   }
 
   _generateBatchPaths() {
     const paths = []
-    
+
     this._traversePropertyTree((path, property) => {
       if (property.writable && this._isConfigParameter(path)) {
         const odriveCommand = this._pathToODriveCommand(path)
@@ -65,13 +65,13 @@ class ODriveUnifiedRegistry {
         paths.push(fullPath)
       }
     })
-    
+
     return paths
   }
 
   _traversePropertyTree(callback, node = this.propertyTree, basePath = '') {
     if (!node) return
-    
+
     if (basePath === '' && !node.properties && !node.children) {
       Object.entries(node).forEach(([sectionName, sectionNode]) => {
         if (typeof sectionNode === 'object' && sectionNode !== null) {
@@ -80,14 +80,14 @@ class ODriveUnifiedRegistry {
       })
       return
     }
-    
+
     if (node.properties) {
       Object.entries(node.properties).forEach(([propName, prop]) => {
         const fullPath = basePath ? `${basePath}.${propName}` : propName
         callback(fullPath, prop)
       })
     }
-    
+
     if (node.children) {
       Object.entries(node.children).forEach(([childName, childNode]) => {
         const childPath = basePath ? `${basePath}.${childName}` : childName
@@ -98,26 +98,26 @@ class ODriveUnifiedRegistry {
 
   _generatePropertyMappings() {
     const mappings = { power: {}, motor: {}, encoder: {}, control: {}, interface: {} }
-    
+
     Object.entries(this.configCategories).forEach(([category, params]) => {
       params.forEach(param => {
         mappings[category][param.configKey] = param.odriveCommand
       })
     })
-    
+
     return mappings
   }
 
   _generateCommandGenerators() {
     const generators = {}
-    
+
     Object.entries(this.configCategories).forEach(([category, params]) => {
       generators[category] = (config) => {
         const commands = []
         params.forEach(param => {
           const value = config[param.configKey]
           if (value !== undefined && value !== null) {
-            const skip = ['calib_anticogging','anticogging_valid','autotuning_phase','endstop_state','temperature']
+            const skip = ['calib_anticogging', 'anticogging_valid', 'autotuning_phase', 'endstop_state', 'temperature']
             if (skip.includes(param.path.split('.').pop())) return
 
             let commandValue = value
@@ -135,7 +135,7 @@ class ODriveUnifiedRegistry {
         return commands
       }
     })
-    
+
     return generators
   }
 
@@ -156,14 +156,14 @@ class ODriveUnifiedRegistry {
       const category = this._inferCommandCategory(path, property)
       if (category && commands[category]) {  // Add safety check here
         const odriveCommand = this._pathToODriveCommand(path)
-        
+
         // Read command
         commands[category].push({
           name: `Get ${property.name}`,
           command: `odrv0.${odriveCommand}`,
           description: `Read ${property.description}`
         })
-        
+
         // Write command for writable properties
         if (property.writable) {
           let exampleValue = this._getExampleValue(property)
@@ -181,36 +181,36 @@ class ODriveUnifiedRegistry {
 
     // Add special commands that don't directly map to properties
     this._addSpecialCommands(commands)
-    
+
     return commands
   }
 
   // eslint-disable-next-line no-unused-vars
   _inferCommandCategory(path, property) {
     // System-level properties (should not be prefixed with axis0)
-    if (path.startsWith('system.') || 
-        path.includes('hw_version') || 
-        path.includes('fw_version') || 
-        path.includes('serial_number') ||
-        path.includes('vbus_voltage') ||
-        path.includes('ibus') ||
-        path.includes('test_property') ||
-        path.includes('brake_resistor_') ||
-        path.includes('misconfigured') ||
-        path.includes('otp_valid')) {
+    if (path.startsWith('system.') ||
+      path.includes('hw_version') ||
+      path.includes('fw_version') ||
+      path.includes('serial_number') ||
+      path.includes('vbus_voltage') ||
+      path.includes('ibus') ||
+      path.includes('test_property') ||
+      path.includes('brake_resistor_') ||
+      path.includes('misconfigured') ||
+      path.includes('otp_valid')) {
       return 'system'
     }
-    
+
     // System stats
     if (path.startsWith('system_stats.')) {
       return 'system'
     }
-    
+
     // CAN properties (device level)
     if (path.startsWith('can.')) {
       return 'can_config'
     }
-    
+
     // Config properties (device level)
     if (path.startsWith('config.')) {
       const configCategory = this._inferCategory(path)
@@ -222,52 +222,52 @@ class ODriveUnifiedRegistry {
       }
       return 'system'
     }
-    
+
     // Use existing category inference but map to command categories
     const configCategory = this._inferCategory(path)
     if (configCategory) {
       // Map config categories to command categories
       const categoryMapping = {
         'power': 'power',
-        'motor': 'motor', 
+        'motor': 'motor',
         'encoder': 'encoder',
         'control': 'controller',
         'interface': 'gpio_interface'
       }
       return categoryMapping[configCategory] || configCategory
     }
-    
+
     // Motor status and control
     if (path.includes('motor.') && !path.includes('config')) {
       return 'motor'
     }
-    
+
     // Encoder status
     if (path.includes('encoder.') && !path.includes('config')) {
       return 'encoder'
     }
-    
+
     // Controller status and inputs
     if (path.includes('controller.') && !path.includes('config')) {
       return 'controller'
     }
-    
+
     // Calibration-related
-    if (path.includes('calibration') || 
-        path.includes('requested_state') ||
-        path.includes('is_calibrated')) {
+    if (path.includes('calibration') ||
+      path.includes('requested_state') ||
+      path.includes('is_calibrated')) {
       return 'calibration'
     }
-    
+
     // GPIO and interface
-    if (path.includes('gpio') || 
-        path.includes('uart') || 
-        path.includes('step_dir') ||
-        path.includes('endstop') ||
-        path.includes('mechanical_brake')) {
+    if (path.includes('gpio') ||
+      path.includes('uart') ||
+      path.includes('step_dir') ||
+      path.includes('endstop') ||
+      path.includes('mechanical_brake')) {
       return 'gpio_interface'
     }
-    
+
     return null
   }
 
@@ -296,7 +296,7 @@ class ODriveUnifiedRegistry {
       { name: "Erase Configuration", command: "odrv0.erase_configuration()", description: "Erase configuration and restore factory defaults" },
       { name: "Clear Errors", command: "odrv0.clear_errors()", description: "Clear all error flags on the device" }
     )
-    
+
     // Add calibration state commands
     commands.calibration.push(
       { name: "Set Axis State - Idle", command: "odrv0.axis0.requested_state = 1", description: "Set axis to idle state" },
@@ -311,7 +311,7 @@ class ODriveUnifiedRegistry {
 
   _generatePropertyCategories() {
     const categories = { power: [], motor: [], encoder: [], control: [], interface: [] }
-    
+
     this._traversePropertyTree((path, property) => {
       if (property.writable) {
         const category = this._inferCategory(path)
@@ -335,7 +335,7 @@ class ODriveUnifiedRegistry {
         }
       }
     })
-    
+
     return categories
   }
 
@@ -344,78 +344,78 @@ class ODriveUnifiedRegistry {
     if (path.includes('controller.config.vel_limit')) {
       return 'control'
     }
-    
+
     // Then check for trapezoidal trajectory velocity limit
     if (path.includes('trap_traj.config.vel_limit')) {
       return 'control'
     }
 
-    if (path.includes('motor.config') || 
-        path.includes('motor_thermistor') ||
-        path.includes('calibration_lockin') ||
-        path.includes('general_lockin') ||
-        path.includes('sensorless_ramp') ||
-        path.includes('phase_inductance') ||
-        path.includes('phase_resistance') ||
-        path.includes('torque_lim') ||
-        path.includes('torque_constant')) {
+    if (path.includes('motor.config') ||
+      path.includes('motor_thermistor') ||
+      path.includes('calibration_lockin') ||
+      path.includes('general_lockin') ||
+      path.includes('sensorless_ramp') ||
+      path.includes('phase_inductance') ||
+      path.includes('phase_resistance') ||
+      path.includes('torque_lim') ||
+      path.includes('torque_constant')) {
       return 'motor'
     }
-    
+
     if (path.includes('encoder.config') ||
-        path.includes('enable_phase_interpolation') ||
-        path.includes('ignore_illegal_hall_state') ||
-        path.includes('hall_polarity')) {
+      path.includes('enable_phase_interpolation') ||
+      path.includes('ignore_illegal_hall_state') ||
+      path.includes('hall_polarity')) {
       return 'encoder'
     }
-    
-    if (path.includes('controller.config') || 
-        path.includes('trap_traj.config') ||
-        path.includes('autotuning.') ||
-        path.includes('enable_overspeed_error') ||
-        path.includes('spinout_') ||
-        path.includes('anticogging.calib_pos_threshold') ||
-        path.includes('anticogging.calib_vel_threshold')) {
+
+    if (path.includes('controller.config') ||
+      path.includes('trap_traj.config') ||
+      path.includes('autotuning.') ||
+      path.includes('enable_overspeed_error') ||
+      path.includes('spinout_') ||
+      path.includes('anticogging.calib_pos_threshold') ||
+      path.includes('anticogging.calib_vel_threshold')) {
       return 'control'
     }
-    
-    if (path.includes('can.') || 
-        path.includes('uart') || 
-        path.includes('gpio') ||
-        path.includes('enable_watchdog') ||
-        path.includes('watchdog_timeout') ||
-        path.includes('enable_step_dir') ||
-        path.includes('step_dir_') ||
-        path.includes('enable_sensorless_mode') ||
-        path.includes('startup_') ||
-        path.includes('endstop.config') ||
-        path.includes('mechanical_brake.config') ||
-        path.includes('sensorless_estimator.config') ||
-        path.includes('enable_can_') ||
-        path.includes('enable_i2c_') ||
-        path.includes('error_gpio_pin') ||
-        path.includes('encoder_error_rate_ms') ||
-        path.includes('controller_error_rate_ms') ||
-        path.includes('motor_error_rate_ms') ||
-        path.includes('sensorless_error_rate_ms')) {
+
+    if (path.includes('can.') ||
+      path.includes('uart') ||
+      path.includes('gpio') ||
+      path.includes('enable_watchdog') ||
+      path.includes('watchdog_timeout') ||
+      path.includes('enable_step_dir') ||
+      path.includes('step_dir_') ||
+      path.includes('enable_sensorless_mode') ||
+      path.includes('startup_') ||
+      path.includes('endstop.config') ||
+      path.includes('mechanical_brake.config') ||
+      path.includes('sensorless_estimator.config') ||
+      path.includes('enable_can_') ||
+      path.includes('enable_i2c_') ||
+      path.includes('error_gpio_pin') ||
+      path.includes('encoder_error_rate_ms') ||
+      path.includes('controller_error_rate_ms') ||
+      path.includes('motor_error_rate_ms') ||
+      path.includes('sensorless_error_rate_ms')) {
       return 'interface'
     }
-    
-    if (path.includes('config.dc_') || 
-        path.includes('config.brake_') || 
-        path.includes('config.enable_brake_') ||
-        path.includes('config.max_regen_current') ||
-        path.includes('config.enable_dc_bus_') ||
-        path.includes('config.test_') ||
-        path.includes('config.usb_') ||
-        path.includes('fet_thermistor')) {
+
+    if (path.includes('config.dc_') ||
+      path.includes('config.brake_') ||
+      path.includes('config.enable_brake_') ||
+      path.includes('config.max_regen_current') ||
+      path.includes('config.enable_dc_bus_') ||
+      path.includes('config.test_') ||
+      path.includes('config.usb_') ||
+      path.includes('fet_thermistor')) {
       return 'power'
     }
-    
+
     if (path.includes('requested_state')) {
       return 'control'
     }
-    
+
     return null
   }
 
@@ -440,7 +440,7 @@ class ODriveUnifiedRegistry {
       'system.brake_resistor_current': 'brake_resistor_current',
       'system.misconfigured': 'misconfigured',
       'system.otp_valid': 'otp_valid',
-      
+
       // Config properties that should be at device root
       'config.error_gpio_pin': 'config.error_gpio_pin',
       'config.dc_bus_overvoltage_trip_level': 'config.dc_bus_overvoltage_trip_level',
@@ -465,12 +465,12 @@ class ODriveUnifiedRegistry {
       'config.enable_dc_bus_overvoltage_ramp': 'config.enable_dc_bus_overvoltage_ramp',
       'config.dc_bus_overvoltage_ramp_start': 'config.dc_bus_overvoltage_ramp_start',
       'config.dc_bus_overvoltage_ramp_end': 'config.dc_bus_overvoltage_ramp_end',
-      
+
       // CAN properties
       'can.config.baud_rate': 'can.config.baud_rate',
       'can.config.protocol': 'can.config.protocol',
       'can.error': 'can.error',
-      
+
       // System stats properties - map to system_stats
       'system_stats.uptime': 'system_stats.uptime',
       'system_stats.min_heap_space': 'system_stats.min_heap_space',
@@ -480,7 +480,7 @@ class ODriveUnifiedRegistry {
       'system_stats.max_stack_usage_can': 'system_stats.max_stack_usage_can',
       'system_stats.max_stack_usage_startup': 'system_stats.max_stack_usage_startup',
       'system_stats.max_stack_usage_analog': 'system_stats.max_stack_usage_analog',
-      
+
       // Axis properties
       'axis0.requested_state': 'axis0.requested_state',
       'axis0.motor.config.phase_inductance': 'axis0.motor.config.phase_inductance',
@@ -522,33 +522,33 @@ class ODriveUnifiedRegistry {
     if (specialMappings[path]) {
       return specialMappings[path]
     }
-    
+
     // Handle system properties that start with 'system.'
     if (path.startsWith('system.')) {
       const systemProp = path.replace('system.', '')
       return systemProp // Map directly to device root (no axis0 prefix)
     }
-    
+
     // Handle config properties
     if (path.startsWith('config.')) {
       return path // Keep as-is for device root config
     }
-    
+
     // Handle CAN properties
     if (path.startsWith('can.')) {
       return path // Keep as-is for device root CAN
     }
-    
+
     // Handle system_stats properties
     if (path.startsWith('system_stats.')) {
       return path // Keep as-is for device root system_stats
     }
-    
+
     // Handle axis properties (already prefixed)
     if (path.startsWith('axis0.') || path.startsWith('axis1.')) {
       return path
     }
-    
+
     // Default case - prefix with axis0 for motor/encoder/controller properties
     return `axis0.${path}`
   }
@@ -560,39 +560,39 @@ class ODriveUnifiedRegistry {
       'torque_constant': 'motor_kv',
       'phase_inductance': 'phase_inductance',
       'phase_resistance': 'phase_resistance',
-      
+
       // Handle vel_limit conflicts
-      'vel_limit': path.includes('controller.config') ? 'vel_limit' : 
-                   path.includes('trap_traj.config') ? 'trap_vel_limit' : 'vel_limit',
-      
+      'vel_limit': path.includes('controller.config') ? 'vel_limit' :
+        path.includes('trap_traj.config') ? 'trap_vel_limit' : 'vel_limit',
+
       // Handle pre_calibrated conflicts
-      'pre_calibrated': path.includes('encoder') ? 'pre_calibrated' : 
-                       path.includes('motor') ? 'motor_pre_calibrated' : 
-                       path.includes('anticogging') ? 'anticogging_pre_calibrated' : 'pre_calibrated',
-      
+      'pre_calibrated': path.includes('encoder') ? 'pre_calibrated' :
+        path.includes('motor') ? 'motor_pre_calibrated' :
+          path.includes('anticogging') ? 'anticogging_pre_calibrated' : 'pre_calibrated',
+
       // Handle enabled conflicts
       'enabled': path.includes('fet_thermistor') ? 'fet_thermistor_enabled' :
-                 path.includes('motor_thermistor') ? 'motor_thermistor_enabled' :
-                 path.includes('min_endstop') ? 'min_endstop_enabled' :
-                 path.includes('max_endstop') ? 'max_endstop_enabled' : 'enabled',
-      
+        path.includes('motor_thermistor') ? 'motor_thermistor_enabled' :
+          path.includes('min_endstop') ? 'min_endstop_enabled' :
+            path.includes('max_endstop') ? 'max_endstop_enabled' : 'enabled',
+
       // Handle gpio_num conflicts
       'gpio_num': path.includes('motor_thermistor') ? 'motor_thermistor_gpio_num' :
-                  path.includes('min_endstop') ? 'min_endstop_gpio_num' :
-                  path.includes('max_endstop') ? 'max_endstop_gpio_num' :
-                  path.includes('mechanical_brake') ? 'mechanical_brake_gpio_num' : 'gpio_num',
-      
+        path.includes('min_endstop') ? 'min_endstop_gpio_num' :
+          path.includes('max_endstop') ? 'max_endstop_gpio_num' :
+            path.includes('mechanical_brake') ? 'mechanical_brake_gpio_num' : 'gpio_num',
+
       // Handle temperature limit conflicts
-      'temp_limit_lower': path.includes('fet_thermistor') ? 'fet_temp_limit_lower' : 
-                         path.includes('motor_thermistor') ? 'motor_temp_limit_lower' : 'temp_limit_lower',
-      'temp_limit_upper': path.includes('fet_thermistor') ? 'fet_temp_limit_upper' : 
-                         path.includes('motor_thermistor') ? 'motor_temp_limit_upper' : 'temp_limit_upper',
-      
+      'temp_limit_lower': path.includes('fet_thermistor') ? 'fet_temp_limit_lower' :
+        path.includes('motor_thermistor') ? 'motor_temp_limit_lower' : 'temp_limit_lower',
+      'temp_limit_upper': path.includes('fet_thermistor') ? 'fet_temp_limit_upper' :
+        path.includes('motor_thermistor') ? 'motor_temp_limit_upper' : 'temp_limit_upper',
+
       // Handle offset conflicts
       'offset': path.includes('encoder') ? 'index_offset' :
-                path.includes('min_endstop') ? 'min_endstop_offset' :
-                path.includes('max_endstop') ? 'max_endstop_offset' : 'offset',
-      
+        path.includes('min_endstop') ? 'min_endstop_offset' :
+          path.includes('max_endstop') ? 'max_endstop_offset' : 'offset',
+
       // Keep existing mappings
       'mode': path.includes('encoder') ? 'encoder_type' : 'mode',
       'enable_phase_interpolation': 'enable_phase_interpolation',
@@ -627,13 +627,13 @@ class ODriveUnifiedRegistry {
       'pos_estimate_counts', 'pos_circular', 'pos_cpr_counts',
       'delta_pos_cpr_counts', 'hall_state', 'vel_estimate_counts',
       'calib_scan_response', 'pos_abs', 'spi_error_rate',
-      'is_armed', 'is_calibrated', 'current_meas_','DC_calib_',
-      'I_bus','phase_current_rev_gain','effective_current_lim',
-      'max_allowed_current','max_dc_calib','n_evt_','last_error_time',
-      'input_pos','input_vel','input_torque','pos_setpoint',
-      'vel_setpoint','torque_setpoint','trajectory_done',
-      'vel_integrator_torque','anticogging_valid','autotuning_phase',
-      'mechanical_power','electrical_power','endstop_state'
+      'is_armed', 'is_calibrated', 'current_meas_', 'DC_calib_',
+      'I_bus', 'phase_current_rev_gain', 'effective_current_lim',
+      'max_allowed_current', 'max_dc_calib', 'n_evt_', 'last_error_time',
+      'input_pos', 'input_vel', 'input_torque', 'pos_setpoint',
+      'vel_setpoint', 'torque_setpoint', 'trajectory_done',
+      'vel_integrator_torque', 'anticogging_valid', 'autotuning_phase',
+      'mechanical_power', 'electrical_power', 'endstop_state'
     ]
     const lastPart = path.split('.').pop()
     return !nonConfigNames.includes(lastPart)
@@ -667,9 +667,9 @@ class ODriveUnifiedRegistry {
 
   findParameter(identifier) {
     for (const [category, params] of Object.entries(this.configCategories)) {
-      const found = params.find(p => 
-        p.path === identifier || 
-        p.configKey === identifier || 
+      const found = params.find(p =>
+        p.path === identifier ||
+        p.configKey === identifier ||
         p.odriveCommand.includes(identifier)
       )
       if (found) return { ...found, category }
@@ -689,7 +689,7 @@ class ODriveUnifiedRegistry {
   validateConfig(category, config) {
     const params = this.configCategories[category] || []
     const errors = []
-    
+
     Object.entries(config).forEach(([key, value]) => {
       const param = params.find(p => p.configKey === key)
       if (param && value !== undefined && value !== null) {
@@ -709,7 +709,7 @@ class ODriveUnifiedRegistry {
         }
       }
     })
-    
+
     return errors
   }
 
@@ -722,7 +722,7 @@ class ODriveUnifiedRegistry {
       batchPathsCount: this.batchPaths.length,
       sampleParams: Object.fromEntries(
         Object.entries(this.configCategories).map(([cat, params]) => [
-          cat, 
+          cat,
           params.slice(0, 3).map(p => ({ key: p.configKey, path: p.path, command: p.odriveCommand }))
         ])
       ),

@@ -23,7 +23,7 @@ import FinalConfigStep from '../config-steps/FinalConfigStep'
 import DebugConfigStep from '../config-steps/DebugConfigStep'
 import { convertTorqueConstantToKv } from '../../utils/valueHelpers'
 import { applyAndSaveConfiguration } from '../../utils/configurationActions'
-import { 
+import {
   loadAllConfigurationBatch
 } from '../../utils/configBatchApi'
 import EraseConfigModal from '../modals/EraseConfigModal'
@@ -41,10 +41,10 @@ const CONFIGURATION_STEPS = [
 const ConfigurationTab = memo(() => {
   const dispatch = useDispatch()
   const toast = useToast()
-  
+
   const { isConnected, connectedDevice } = useSelector(state => state.device)
   const { activeConfigStep } = useSelector(state => state.ui)
-  
+
   const [deviceConfig, setDeviceConfig] = useState({
     power: {},
     motor: {},
@@ -57,7 +57,7 @@ const ConfigurationTab = memo(() => {
   const [pullProgress, setPullProgress] = useState(0)
   const [isApplyingSave, setIsApplyingSave] = useState(false)
   const [hasAutoLoaded, setHasAutoLoaded] = useState(false)
- 
+
 
   const { isOpen: isEraseOpen, onOpen: onEraseOpen, onClose: onEraseClose } = useDisclosure()
 
@@ -77,12 +77,12 @@ const ConfigurationTab = memo(() => {
 
     try {
       setPullProgress(50) // Show progress
-      
+
       // Load ALL configuration in ONE batch request
       const allConfig = await loadAllConfigurationBatch()
-      
+
       setPullProgress(90)
-      
+
       // Update device config with pulled values
       setDeviceConfig(allConfig)
 
@@ -91,11 +91,11 @@ const ConfigurationTab = memo(() => {
         const actionMap = {
           power: 'config/updatePowerConfig',
           motor: 'config/updateMotorConfig',
-          encoder: 'config/updateEncoderConfig', 
+          encoder: 'config/updateEncoderConfig',
           control: 'config/updateControlConfig',
           interface: 'config/updateInterfaceConfig'
         }
-        
+
         if (actionMap[category] && Object.keys(config).length > 0) {
           dispatch({ type: actionMap[category], payload: config })
         }
@@ -103,7 +103,7 @@ const ConfigurationTab = memo(() => {
 
       setHasAutoLoaded(true)
       setPullProgress(100)
-      
+
 
     } catch (error) {
       console.error('Failed to pull configuration:', error)
@@ -119,75 +119,75 @@ const ConfigurationTab = memo(() => {
     }
   }, [isConnected, isPullingConfig, toast, dispatch])
 
-useEffect(() => {
-  const handlePresetLoaded = (event) => {
-    const { config } = event.detail
-    
-    // Update LOCAL deviceConfig state (this is what was missing!)
-    setDeviceConfig(config)
-    
-    // Update Redux store with the loaded preset configuration
-    if (config.power) dispatch({ type: 'config/updatePowerConfig', payload: config.power })
-    if (config.motor) dispatch({ type: 'config/updateMotorConfig', payload: config.motor })
-    if (config.encoder) dispatch({ type: 'config/updateEncoderConfig', payload: config.encoder })
-    if (config.control) dispatch({ type: 'config/updateControlConfig', payload: config.control })
-    if (config.interface) dispatch({ type: 'config/updateInterfaceConfig', payload: config.interface })
-    
-  }
+  useEffect(() => {
+    const handlePresetLoaded = (event) => {
+      const { config } = event.detail
 
-  window.addEventListener('presetLoaded', handlePresetLoaded)
-  
-  return () => {
-    window.removeEventListener('presetLoaded', handlePresetLoaded)
-  }
-}, [dispatch, toast])
+      // Update LOCAL deviceConfig state (this is what was missing!)
+      setDeviceConfig(config)
+
+      // Update Redux store with the loaded preset configuration
+      if (config.power) dispatch({ type: 'config/updatePowerConfig', payload: config.power })
+      if (config.motor) dispatch({ type: 'config/updateMotorConfig', payload: config.motor })
+      if (config.encoder) dispatch({ type: 'config/updateEncoderConfig', payload: config.encoder })
+      if (config.control) dispatch({ type: 'config/updateControlConfig', payload: config.control })
+      if (config.interface) dispatch({ type: 'config/updateInterfaceConfig', payload: config.interface })
+
+    }
+
+    window.addEventListener('presetLoaded', handlePresetLoaded)
+
+    return () => {
+      window.removeEventListener('presetLoaded', handlePresetLoaded)
+    }
+  }, [dispatch, toast])
 
   // Auto-pull configuration when connected - only once per connection
   useEffect(() => {
-  if (isConnected && !hasAutoLoaded && !isPullingConfig) {
-    pullBatchParams() // Changed from pullAllConfigInBackground
-  } else if (!isConnected) {
-    // Clear config and reset auto-load flag when disconnected
-    setDeviceConfig({
-      power: {},
-      motor: {},
-      encoder: {},
-      control: {},
-      interface: {}
-    })
-    setHasAutoLoaded(false)
-  }
-}, [isConnected, hasAutoLoaded, isPullingConfig, pullBatchParams])
+    if (isConnected && !hasAutoLoaded && !isPullingConfig) {
+      pullBatchParams() // Changed from pullAllConfigInBackground
+    } else if (!isConnected) {
+      // Clear config and reset auto-load flag when disconnected
+      setDeviceConfig({
+        power: {},
+        motor: {},
+        encoder: {},
+        control: {},
+        interface: {}
+      })
+      setHasAutoLoaded(false)
+    }
+  }, [isConnected, hasAutoLoaded, isPullingConfig, pullBatchParams])
 
-useEffect(() => {
-  const handleDeviceReconnected = async () => {
-    if (isConnected && !isPullingConfig) {
-      console.log('Device reconnected, pulling configuration...')
-      try {
-        await pullBatchParams()
-        
-        // Only show toast if this was an unexpected reconnection
-        const isExpectedReconnection = sessionStorage.getItem('expectingReconnection') === 'true'
-        if (!isExpectedReconnection) {
-          toast({
-            title: 'Configuration Updated',
-            description: 'Configuration has been pulled from the reconnected device',
-            status: 'info',
-            duration: 3000,
-          })
+  useEffect(() => {
+    const handleDeviceReconnected = async () => {
+      if (isConnected && !isPullingConfig) {
+        console.log('Device reconnected, pulling configuration...')
+        try {
+          await pullBatchParams()
+
+          // Only show toast if this was an unexpected reconnection
+          const isExpectedReconnection = sessionStorage.getItem('expectingReconnection') === 'true'
+          if (!isExpectedReconnection) {
+            toast({
+              title: 'Configuration Updated',
+              description: 'Configuration has been pulled from the reconnected device',
+              status: 'info',
+              duration: 3000,
+            })
+          }
+        } catch (error) {
+          console.error('Failed to pull config after reconnection:', error)
         }
-      } catch (error) {
-        console.error('Failed to pull config after reconnection:', error)
       }
     }
-  }
 
-  window.addEventListener('deviceReconnected', handleDeviceReconnected)
-  
-  return () => {
-    window.removeEventListener('deviceReconnected', handleDeviceReconnected)
-  }
-}, [isConnected, isPullingConfig, pullBatchParams, toast])
+    window.addEventListener('deviceReconnected', handleDeviceReconnected)
+
+    return () => {
+      window.removeEventListener('deviceReconnected', handleDeviceReconnected)
+    }
+  }, [isConnected, isPullingConfig, pullBatchParams, toast])
 
   const onUpdateConfig = (category, key, value) => {
     // Update local device config
@@ -198,20 +198,20 @@ useEffect(() => {
         [key]: value
       }
     }))
-    
+
     // Also update Redux store so presets can see the changes
     const actionMap = {
       power: 'config/updatePowerConfig',
-      motor: 'config/updateMotorConfig', 
+      motor: 'config/updateMotorConfig',
       encoder: 'config/updateEncoderConfig',
       control: 'config/updateControlConfig',
       interface: 'config/updateInterfaceConfig'
     }
-    
+
     if (actionMap[category]) {
-      dispatch({ 
-        type: actionMap[category], 
-        payload: { [key]: value } 
+      dispatch({
+        type: actionMap[category],
+        payload: { [key]: value }
       })
     }
   }
@@ -229,7 +229,7 @@ useEffect(() => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ command: `odrv0.${odriveParam}` })
       })
-      
+
       if (response.ok) {
         const result = await response.json()
         let value = result.result
@@ -269,46 +269,46 @@ useEffect(() => {
 
   // Apply and Save function using shared utility
   const handleApplyAndSave = async () => {
-  if (!isConnected) {
-    toast({
-      title: 'Error',
-      description: 'No ODrive connected',
-      status: 'error',
-      duration: 3000,
-    })
-    return
-  }
+    if (!isConnected) {
+      toast({
+        title: 'Error',
+        description: 'No ODrive connected',
+        status: 'error',
+        duration: 3000,
+      })
+      return
+    }
 
-  // Check if we have any actual configuration values
-  const hasValidConfig = Object.values(deviceConfig).some(category => 
-    Object.keys(category).length > 0 && 
-    Object.values(category).some(value => value !== undefined && value !== null && value !== '')
-  )
+    // Check if we have any actual configuration values
+    const hasValidConfig = Object.values(deviceConfig).some(category =>
+      Object.keys(category).length > 0 &&
+      Object.values(category).some(value => value !== undefined && value !== null && value !== '')
+    )
 
-  if (!hasValidConfig) {
-    toast({
-      title: 'No Configuration to Apply',
-      description: 'Please configure some parameters before applying. Use the configuration steps or load current values first.',
-      status: 'warning',
-      duration: 5000,
-    })
-    return
-  }
+    if (!hasValidConfig) {
+      toast({
+        title: 'No Configuration to Apply',
+        description: 'Please configure some parameters before applying. Use the configuration steps or load current values first.',
+        status: 'warning',
+        duration: 5000,
+      })
+      return
+    }
 
-  setIsApplyingSave(true)
-  try {
-    await applyAndSaveConfiguration(deviceConfig, toast, dispatch, connectedDevice)
-  } catch (error) {
-    toast({
-      title: 'Apply & Save Failed',
-      description: error.message,
-      status: 'error',
-      duration: 5000,
-    })
-  } finally {
-    setIsApplyingSave(false)
+    setIsApplyingSave(true)
+    try {
+      await applyAndSaveConfiguration(deviceConfig, toast, dispatch, connectedDevice)
+    } catch (error) {
+      toast({
+        title: 'Apply & Save Failed',
+        description: error.message,
+        status: 'error',
+        duration: 5000,
+      })
+    } finally {
+      setIsApplyingSave(false)
+    }
   }
-}
 
   const nextConfigStep = () => {
     if (activeConfigStep < steps.length) {
@@ -378,10 +378,10 @@ useEffect(() => {
                   Loading configuration from ODrive...
                 </Text>
               </HStack>
-              <Progress 
-                value={pullProgress} 
-                colorScheme="blue" 
-                size="sm" 
+              <Progress
+                value={pullProgress}
+                colorScheme="blue"
+                size="sm"
                 borderRadius="md"
                 w="100%"
               />
@@ -403,18 +403,18 @@ useEffect(() => {
                       h="100%"
                       bg={
                         step.id < activeConfigStep ? "green.400" :
-                        step.id === activeConfigStep ? "odrive.400" :
-                        "gray.600"
+                          step.id === activeConfigStep ? "odrive.400" :
+                            "gray.600"
                       }
                       transition="all 0.3s ease"
                     />
                   </Box>
-                  <Text 
-                    fontSize="2xs" 
+                  <Text
+                    fontSize="2xs"
                     color={
                       step.id < activeConfigStep ? "green.300" :
-                      step.id === activeConfigStep ? "odrive.300" :
-                      "gray.500"
+                        step.id === activeConfigStep ? "odrive.300" :
+                          "gray.500"
                     }
                     fontWeight={step.id === activeConfigStep ? "bold" : "normal"}
                     textAlign="center"
@@ -437,13 +437,13 @@ useEffect(() => {
               >
                 Previous
               </Button>
-              
+
               <VStack spacing={0}>
                 <Text fontSize="lg" color="white" fontWeight="bold">
                   Step {activeConfigStep}: {currentStep?.name}
                 </Text>
               </VStack>
-              
+
               <Button
                 onClick={nextConfigStep}
                 isDisabled={activeConfigStep === steps.length}
@@ -482,9 +482,9 @@ useEffect(() => {
                 >
                   Pull Current Config
                 </Button>
-                
 
-                
+
+
                 <Button
                   colorScheme="blue"
                   size="md"
@@ -515,9 +515,9 @@ useEffect(() => {
       </Box>
 
       {/* Erase Configuration Modal */}
-      <EraseConfigModal 
-        isOpen={isEraseOpen} 
-        onClose={onEraseClose} 
+      <EraseConfigModal
+        isOpen={isEraseOpen}
+        onClose={onEraseClose}
       />
     </Flex>
   )
