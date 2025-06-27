@@ -126,7 +126,7 @@ const PowerConfigStep = ({
                       <ParameterInput
                         value={powerConfig[key]}
                         onChange={value => handleConfigChange(key, value)}
-                        onRefresh={() => handleRefresh(key, param.odrivePath || `config.${key}`)}
+                        onRefresh={() => handleRefresh(key, param.odriveCommand)}
                         isLoading={isLoading(key)}
                         unit={param.unit}
                         step={param.step || 0.1}
