@@ -1,7 +1,8 @@
 import { odriveRegistry } from './odriveUnifiedRegistry'
 
 /**
- * Generate a complete preset configuration using all available parameters
+ * Generate a complete preset configuration using all available parameters.
+ * This version is robust to missing metadata and always fills in baseConfig values.
  * @param {Object} baseConfig - Base configuration values to override defaults
  * @returns {Object} Complete configuration object with all writable parameters
  */
@@ -16,25 +17,34 @@ export const generateFullConfig = (baseConfig = {}) => {
 
   // Get all categories and their parameters from the unified registry
   const categories = odriveRegistry.getConfigCategories()
-  
+
   Object.entries(categories).forEach(([category, parameters]) => {
     parameters.forEach(param => {
-      const metadata = odriveRegistry.getParameterMetadata(category, param.configKey)
-      
-      // Only include writable parameters
-      if (metadata && metadata.writable) {
-        // Get default value or use base config override
-        const categoryConfig = baseConfig[category] || {}
-        const value = categoryConfig[param.configKey] !== undefined 
-          ? categoryConfig[param.configKey]
-          : getDefaultValue(metadata)
-        
-        config[category][param.configKey] = value
+      // Always use the configKey from the registry
+      const configKey = param.configKey
+      const metadata = odriveRegistry.getParameterMetadata(category, configKey)
+      const categoryConfig = baseConfig[category] || {}
+
+      // Prefer baseConfig value if present, otherwise use default
+      if (categoryConfig[configKey] !== undefined) {
+        config[category][configKey] = categoryConfig[configKey]
+      } else if (metadata && metadata.writable) {
+        config[category][configKey] = getDefaultValue(metadata)
+      }
+      // If not writable or no metadata, skip
+    })
+  })
+
+  // Also copy any extra keys from baseConfig that are not in the registry (for forward compatibility)
+  Object.entries(baseConfig).forEach(([category, values]) => {
+    if (!config[category]) config[category] = {}
+    Object.entries(values).forEach(([key, value]) => {
+      if (config[category][key] === undefined) {
+        config[category][key] = value
       }
     })
   })
-  console.log('[generateFullConfig] baseConfig:', baseConfig)
-  console.log('[generateFullConfig] generated config:', config)
+
   return config
 }
 
@@ -47,12 +57,10 @@ const getDefaultValue = (metadata) => {
   if (metadata.defaultValue !== undefined) {
     return metadata.defaultValue
   }
-  
   switch (metadata.type) {
     case 'boolean':
       return false
     case 'number':
-      // Use min value if available, otherwise 0
       return metadata.min !== undefined ? metadata.min : 0
     case 'string':
       return ''
@@ -82,7 +90,7 @@ export const FACTORY_PRESET_BASES = {
         max_regen_current: 10.0
       },
       motor: {
-        motor_type: 0, // HIGH_CURRENT
+        motor_type: 0,
         pole_pairs: 7,
         motor_kv: 150,
         current_lim: 40.0,
@@ -97,7 +105,7 @@ export const FACTORY_PRESET_BASES = {
         torque_constant: 8.27 / 150
       },
       encoder: {
-        mode: 1, // INCREMENTAL
+        mode: 1,
         cpr: 4000,
         bandwidth: 1000,
         use_index: false,
@@ -111,8 +119,8 @@ export const FACTORY_PRESET_BASES = {
         ignore_illegal_hall_state: false
       },
       control: {
-        control_mode: 3, // POSITION_CONTROL
-        input_mode: 1, // PASSTHROUGH
+        control_mode: 3,
+        input_mode: 1,
         vel_limit: 10.0,
         pos_gain: 20.0,
         vel_gain: 0.16,
@@ -167,7 +175,7 @@ export const FACTORY_PRESET_BASES = {
         max_regen_current: 5.0
       },
       motor: {
-        motor_type: 2, // GIMBAL
+        motor_type: 2,
         pole_pairs: 7,
         motor_kv: 100,
         current_lim: 5.0,
@@ -182,7 +190,7 @@ export const FACTORY_PRESET_BASES = {
         torque_constant: 8.27 / 100
       },
       encoder: {
-        mode: 1, // INCREMENTAL
+        mode: 1,
         cpr: 4000,
         bandwidth: 1000,
         use_index: false,
@@ -196,8 +204,8 @@ export const FACTORY_PRESET_BASES = {
         ignore_illegal_hall_state: false
       },
       control: {
-        control_mode: 3, // POSITION_CONTROL
-        input_mode: 1, // PASSTHROUGH
+        control_mode: 3,
+        input_mode: 1,
         vel_limit: 20.0,
         pos_gain: 20.0,
         vel_gain: 0.04,
@@ -252,7 +260,7 @@ export const FACTORY_PRESET_BASES = {
         max_regen_current: 20.0
       },
       motor: {
-        motor_type: 0, // HIGH_CURRENT
+        motor_type: 0,
         pole_pairs: 15,
         motor_kv: 16,
         current_lim: 60.0,
@@ -267,8 +275,8 @@ export const FACTORY_PRESET_BASES = {
         torque_constant: 8.27 / 16
       },
       encoder: {
-        mode: 0, // HALL
-        cpr: 90, // 15 pole pairs * 6 hall states
+        mode: 0,
+        cpr: 90,
         bandwidth: 1000,
         use_index: false,
         pre_calibrated: false,
@@ -282,8 +290,8 @@ export const FACTORY_PRESET_BASES = {
         hall_polarity: 0
       },
       control: {
-        control_mode: 2, // VELOCITY_CONTROL
-        input_mode: 1, // PASSTHROUGH
+        control_mode: 2,
+        input_mode: 1,
         vel_limit: 2.0,
         pos_gain: 1.0,
         vel_gain: 0.02,
@@ -329,5 +337,5 @@ export function getFactoryPreset(name) {
   return {
     ...base,
     config: generateFullConfig(base.baseConfig)
-  }
+      }
 }
