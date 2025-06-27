@@ -4,7 +4,6 @@ import {
   HStack,
   Box,
   Heading,
-  Text,
   Card,
   CardHeader,
   CardBody,
@@ -14,11 +13,41 @@ import {
   Icon,
   Tooltip,
   SimpleGrid,
-  Select
+  Text,
 } from '@chakra-ui/react'
 import { InfoIcon } from '@chakra-ui/icons'
 import ParameterInput from '../buttons/ParameterInput'
-import { ODrivePropertyMappings as configurationMappings } from '../../utils/odriveUnifiedRegistry'
+import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
+
+const DEFAULT_GROUPS = [
+  'DC Bus Voltage Protection',
+  'Current Limits',
+  'Brake Resistor',
+  'FET Thermistor Limits',
+  'DC Bus Overvoltage Ramp',
+  'Miscellaneous',
+]
+
+const groupOrder = {
+  'DC Bus Voltage Protection': 0,
+  'Current Limits': 1,
+  'Brake Resistor': 2,
+  'FET Thermistor Limits': 3,
+  'DC Bus Overvoltage Ramp': 4,
+  'Miscellaneous': 5,
+}
+
+function getGroup(param) {
+  // Prefer explicit uiGroup, fallback to group by key
+  if (param.uiGroup) return param.uiGroup
+  // Fallback grouping by configKey
+  if (param.configKey?.includes('voltage')) return 'DC Bus Voltage Protection'
+  if (param.configKey?.includes('current')) return 'Current Limits'
+  if (param.configKey?.includes('brake')) return 'Brake Resistor'
+  if (param.configKey?.includes('fet_temp')) return 'FET Thermistor Limits'
+  if (param.configKey?.includes('ramp')) return 'DC Bus Overvoltage Ramp'
+  return 'Miscellaneous'
+}
 
 const PowerConfigStep = ({
   deviceConfig,
@@ -27,198 +56,91 @@ const PowerConfigStep = ({
   loadingParams,
 }) => {
   const powerConfig = deviceConfig.power || {}
-  const powerMappings = configurationMappings.power
+  const powerParams = getCategoryParameters('power')
 
   const handleConfigChange = (configKey, value) => {
     onUpdateConfig('power', configKey, value)
   }
 
-  const handleRefresh = (configKey) => {
-    const odriveParam = powerMappings[configKey]
-    if (odriveParam) {
-      onReadParameter(odriveParam, 'power', configKey)
-    }
+  const handleRefresh = (configKey, odrivePath) => {
+    // Pass the correct ODrive property path
+    onReadParameter(odrivePath, 'power', configKey)
   }
 
   const isLoading = (configKey) => {
     return loadingParams.has(`power.${configKey}`)
   }
 
+  // Group parameters by logical UI section
+  const groupedParams = {}
+  powerParams.forEach(param => {
+    const group = getGroup(param)
+    if (!groupedParams[group]) groupedParams[group] = []
+    groupedParams[group].push(param)
+  })
+
+  // Sort groups and params within each group
+  const sortedGroups = Object.keys(groupedParams)
+    .sort((a, b) => (groupOrder[a] ?? 99) - (groupOrder[b] ?? 99))
+
   return (
     <Box h="100%" p={3} overflow="auto">
       <VStack spacing={3} align="stretch" maxW="1400px" mx="auto">
-
-        {/* DC Bus Voltage Protection */}
-        <Card bg="gray.800" variant="elevated">
-          <CardHeader py={1}>
-            <Heading size="sm" color="white">DC Bus Voltage Protection</Heading>
-          </CardHeader>
-          <CardBody py={2}>
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-              <FormControl>
-                <HStack spacing={2} mb={1}>
-                  <FormLabel color="white" mb={0} fontSize="sm">Overvoltage Trip</FormLabel>
-                  <Tooltip label="Maximum DC bus voltage before protection triggers.">
-                    <Icon as={InfoIcon} color="gray.400" />
-                  </Tooltip>
-                </HStack>
-                <ParameterInput
-                  value={powerConfig.dc_bus_overvoltage_trip_level}
-                  onChange={(value) => handleConfigChange('dc_bus_overvoltage_trip_level', parseFloat(value) || 0)}
-                  onRefresh={() => handleRefresh('dc_bus_overvoltage_trip_level')}
-                  isLoading={isLoading('dc_bus_overvoltage_trip_level')}
-                  unit="V"
-                  step={1}
-                  precision={1}
-                  min={10}
-                  max={60}
-                />
-              </FormControl>
-
-              <FormControl>
-                <HStack spacing={2} mb={1}>
-                  <FormLabel color="white" mb={0} fontSize="sm">Undervoltage Trip</FormLabel>
-                  <Tooltip label="Minimum DC bus voltage before protection triggers.">
-                    <Icon as={InfoIcon} color="gray.400" />
-                  </Tooltip>
-                </HStack>
-                <ParameterInput
-                  value={powerConfig.dc_bus_undervoltage_trip_level}
-                  onChange={(value) => handleConfigChange('dc_bus_undervoltage_trip_level', parseFloat(value) || 0)}
-                  onRefresh={() => handleRefresh('dc_bus_undervoltage_trip_level')}
-                  isLoading={isLoading('dc_bus_undervoltage_trip_level')}
-                  unit="V"
-                  precision={1}
-                />
-              </FormControl>
-            </SimpleGrid>
-          </CardBody>
-        </Card>
-
-        {/* Current Limits & Brake Resistor */}
-        <Card bg="gray.800" variant="elevated">
-          <CardHeader py={1}>
-            <Heading size="sm" color="white">Current Limits & Brake Resistor</Heading>
-          </CardHeader>
-          <CardBody py={2}>
-            <SimpleGrid columns={{ base: 1, lg: 1 }} spacing={4} gap={4}>
-
-              {/* Left Column - Current Limits */}
-              <Box>
-                <Text fontWeight="bold" color="blue.300" mb={2} fontSize="sm">Current Limits</Text>
-                <HStack spacing={3} align="stretch">
-                  <FormControl>
-                    <FormLabel color="white" mb={1} fontSize="sm">Max Positive Current</FormLabel>
-                    <ParameterInput
-                      value={powerConfig.dc_max_positive_current}
-                      onChange={(value) => handleConfigChange('dc_max_positive_current', parseFloat(value) || 0)}
-                      onRefresh={() => handleRefresh('dc_max_positive_current')}
-                      isLoading={isLoading('dc_max_positive_current')}
-                      unit="A"
-                      precision={1}
-                    />
-                  </FormControl>
-
-                  <FormControl>
-                    <FormLabel color="white" mb={1} fontSize="sm">Max Negative Current</FormLabel>
-                    <ParameterInput
-                      value={powerConfig.dc_max_negative_current}
-                      onChange={(value) => handleConfigChange('dc_max_negative_current', parseFloat(value) || 0)}
-                      onRefresh={() => handleRefresh('dc_max_negative_current')}
-                      isLoading={isLoading('dc_max_negative_current')}
-                      unit="A"
-                      precision={1}
-                    />
-                  </FormControl>
-                </HStack>
-              </Box>
-
-              {/* Center Column - Brake Resistor */}
-              <Box>
-                <Text fontWeight="bold" color="green.300" mb={2} fontSize="sm">Brake Resistor</Text>
-                <VStack spacing={1} align="stretch">
-                  <FormControl>
-                    <HStack spacing={2} mb={1}>
-                      <Switch
-                        isChecked={powerConfig.brake_resistor_enabled}
-                        onChange={(e) => handleConfigChange('brake_resistor_enabled', e.target.checked)}
-                        colorScheme="odrive"
-                        size="sm"
-                      />
-                      <FormLabel color="white" mb={0} fontSize="sm">Enable Brake Resistor</FormLabel>
-                      <Tooltip label="Enable brake resistor for regenerative braking.">
-                        <Icon as={InfoIcon} color="gray.400" />
-                      </Tooltip>
-                    </HStack>
-                  </FormControl>
-
-                  {powerConfig.brake_resistor_enabled && (
-                    <FormControl>
-                      <FormLabel color="white" mb={1} fontSize="sm">Brake Resistance</FormLabel>
+        {sortedGroups.map(group => (
+          <Card key={group} bg="gray.800" variant="elevated">
+            <CardHeader py={1}>
+              <Heading size="sm" color="white">{group}</Heading>
+            </CardHeader>
+            <CardBody py={2}>
+              <SimpleGrid columns={{ base: 1, md: 2, lg: 3 }} spacing={4}>
+                {groupedParams[group]
+                  .sort((a, b) => (a.order ?? 99) - (b.order ?? 99) || a.name.localeCompare(b.name))
+                  .map(param => {
+                  const key = param.configKey
+                  if (param.type === 'boolean') {
+                    return (
+                      <FormControl key={key}>
+                        <HStack spacing={2} mb={1}>
+                          <Switch
+                            isChecked={!!powerConfig[key]}
+                            onChange={e => handleConfigChange(key, e.target.checked)}
+                            colorScheme="odrive"
+                            size="sm"
+                          />
+                          <FormLabel color="white" mb={0} fontSize="sm">{param.name}</FormLabel>
+                          <Tooltip label={param.description}>
+                            <Icon as={InfoIcon} color="gray.400" />
+                          </Tooltip>
+                        </HStack>
+                      </FormControl>
+                    )
+                  }
+                  return (
+                    <FormControl key={key}>
+                      <HStack spacing={2} mb={1}>
+                        <FormLabel color="white" mb={0} fontSize="sm">{param.name}</FormLabel>
+                        <Tooltip label={param.description}>
+                          <Icon as={InfoIcon} color="gray.400" />
+                        </Tooltip>
+                      </HStack>
                       <ParameterInput
-                        value={powerConfig.brake_resistance}
-                        onChange={(value) => handleConfigChange('brake_resistance', parseFloat(value) || 0)}
-                        onRefresh={() => handleRefresh('brake_resistance')}
-                        isLoading={isLoading('brake_resistance')}
-                        unit="Ω"
-                        precision={2}
+                        value={powerConfig[key]}
+                        onChange={value => handleConfigChange(key, value)}
+                        onRefresh={() => handleRefresh(key, param.odrivePath || `config.${key}`)}
+                        isLoading={isLoading(key)}
+                        unit={param.unit}
+                        step={param.step || 0.1}
+                        precision={param.decimals ?? 2}
+                        min={param.min}
+                        max={param.max}
                       />
                     </FormControl>
-                  )}
-                </VStack>
-              </Box>
-
-            </SimpleGrid>
-          </CardBody>
-        </Card>
-
-        {/* FET Thermistor Configuration */}
-        <Card bg="gray.800" variant="elevated">
-          <CardHeader py={1}>
-            <Heading size="sm" color="white">FET Thermistor Limits</Heading>
-          </CardHeader>
-          <CardBody py={2}>
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-              <FormControl>
-                <HStack spacing={2} mb={1}>
-                  <FormLabel color="white" mb={0} fontSize="sm">Lower Temperature Limit</FormLabel>
-                  <Tooltip label="Temperature at which current limiting begins.">
-                    <Icon as={InfoIcon} color="gray.400" />
-                  </Tooltip>
-                </HStack>
-                <ParameterInput
-                  value={powerConfig.fet_temp_limit_lower}
-                  onChange={(value) => handleConfigChange('fet_temp_limit_lower', parseFloat(value) || 0)}
-                  onRefresh={() => handleRefresh('fet_temp_limit_lower')}
-                  isLoading={isLoading('fet_temp_limit_lower')}
-                  unit="°C"
-                  precision={1}
-                  min={0}
-                  max={150}
-                />
-              </FormControl>
-
-              <FormControl>
-                <HStack spacing={2} mb={1}>
-                  <FormLabel color="white" mb={0} fontSize="sm">Upper Temperature Limit</FormLabel>
-                  <Tooltip label="Temperature at which motor control stops and error is set.">
-                    <Icon as={InfoIcon} color="gray.400" />
-                  </Tooltip>
-                </HStack>
-                <ParameterInput
-                  value={powerConfig.fet_temp_limit_upper}
-                  onChange={(value) => handleConfigChange('fet_temp_limit_upper', parseFloat(value) || 0)}
-                  onRefresh={() => handleRefresh('fet_temp_limit_upper')}
-                  isLoading={isLoading('fet_temp_limit_upper')}
-                  unit="°C"
-                  precision={1}
-                  min={0}
-                  max={150}
-                />
-              </FormControl>
-            </SimpleGrid>
-          </CardBody>
-        </Card>
+                  )
+                })}
+              </SimpleGrid>
+            </CardBody>
+          </Card>
+        ))}
       </VStack>
     </Box>
   )
