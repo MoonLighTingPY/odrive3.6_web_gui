@@ -43,6 +43,7 @@ The official ODrive GUI only supports newer firmware versions, leaving v0.5.6 us
 | Dashboard         | ✅     | Quick control and telemetry manager                   |
 | Command Console            | ✅     | Categorized native protocol commands                |
 | Calibration            | ✅     | Full calibration (motor/encoder)                 |
+| Multi-Device Support            | 🛠️     | Finished, but not tested enough yet                |
 
 
 ### Configuration
