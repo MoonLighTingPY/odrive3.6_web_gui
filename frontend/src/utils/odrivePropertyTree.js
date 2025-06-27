@@ -255,7 +255,7 @@ export const odrivePropertyTree = {
                 name: 'FET Thermistor Configuration',
                 description: 'FET thermistor configuration parameters',
                 properties: {
-                  enabled: { name: 'Enabled', description: 'Enable FET thermistor monitoring', writable: true, type: 'boolean' },
+                  enabled: { name: 'Enable FET thermistor', description: 'Enable FET thermistor monitoring', writable: true, type: 'boolean' },
                   temp_limit_lower: { name: 'Lower Temperature Limit', description: 'Lower temperature limit for current limiting (°C)', writable: true, type: 'number', decimals: 1, hasSlider: true },
                   temp_limit_upper: { name: 'Upper Temperature Limit', description: 'Upper temperature limit for shutdown (°C)', writable: true, type: 'number', decimals: 1, hasSlider: true },
                 }
