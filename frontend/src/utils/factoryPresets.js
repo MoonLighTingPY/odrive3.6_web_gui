@@ -330,12 +330,39 @@ export const FACTORY_PRESET_BASES = {
   }
 }
 
+// Map legacy baseConfig keys to unified registry config keys
+function mapBaseConfigKeys(baseConfig) {
+  const categories = odriveRegistry.getConfigCategories();
+  const mappedConfig = {};
+
+  Object.entries(baseConfig).forEach(([category, values]) => {
+    mappedConfig[category] = {};
+    const params = categories[category] || [];
+    // Build a mapping from legacy keys to registry keys
+    const keyMap = {};
+    params.forEach(param => {
+      keyMap[param.path.split('.').pop()] = param.configKey;
+      keyMap[param.configKey] = param.configKey;
+    });
+
+    Object.entries(values).forEach(([key, value]) => {
+      // Try to map legacy key to registry configKey
+      const mappedKey = keyMap[key] || key;
+      mappedConfig[category][mappedKey] = value;
+    });
+  });
+
+  return mappedConfig;
+}
+
 // Helper to get a full factory preset at runtime
 export function getFactoryPreset(name) {
-  const base = FACTORY_PRESET_BASES[name]
-  if (!base) return null
+  const base = FACTORY_PRESET_BASES[name];
+  if (!base) return null;
+  // Map baseConfig keys before generating full config
+  const mappedBaseConfig = mapBaseConfigKeys(base.baseConfig);
   return {
     ...base,
-    config: generateFullConfig(base.baseConfig)
-      }
+    config: generateFullConfig(mappedBaseConfig)
+  };
 }
