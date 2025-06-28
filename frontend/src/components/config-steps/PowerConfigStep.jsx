@@ -7,34 +7,15 @@ import {
   Card,
   CardHeader,
   CardBody,
-  FormControl,
-  FormLabel,
-  Icon,
-  Tooltip,
   SimpleGrid,
 } from '@chakra-ui/react'
 import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
 import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
-
-
-
+import { POWER_PARAM_GROUPS, getParameterGroup } from '../../utils/configParameterGrouping'
 
 function getGroup(param) {
-  if (param.uiGroup) return param.uiGroup
-  if (
-    param.configKey === 'enable_dc_bus_overvoltage_ramp' ||
-    param.configKey?.includes('voltage') ||
-    param.configKey?.includes('ramp')
-  ) {
-    return 'DC Bus Voltage Protection'
-  }
-  if (param.configKey?.includes('current')) return 'Current Limits'
-  if (param.configKey?.includes('brake')) return 'Brake Resistor'
-  if (param.path?.includes('fet_thermistor')) return 'FET Thermistor Limits'
-  if (param.configKey?.includes('fet_temp')) return 'FET Thermistor Limits'
-  return 'Miscellaneous'
+  return getParameterGroup(param, POWER_PARAM_GROUPS)
 }
-
 
 const PowerConfigStep = ({
   deviceConfig,
@@ -50,7 +31,6 @@ const PowerConfigStep = ({
   }
 
   const handleRefresh = (configKey, odrivePath) => {
-    // Pass the correct ODrive property path
     onReadParameter(odrivePath, 'power', configKey)
   }
 
@@ -66,11 +46,9 @@ const PowerConfigStep = ({
     groupedParams[group].push(param)
   })
 
-
   return (
     <Box h="100%" p={3} overflow="auto">
       <VStack spacing={3} align="stretch" maxW="1400px" mx="auto">
-
         <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
           {/* DC Bus Voltage Protection */}
           <Card bg="gray.800" variant="elevated">
@@ -95,10 +73,7 @@ const PowerConfigStep = ({
             </CardHeader>
             <CardBody py={2}>
               <ParameterFormGrid
-                params={[
-                  ...(groupedParams['Current Limits'] || []),
-                  ...(groupedParams['Brake Resistor'] || [])
-                ]}
+                params={groupedParams['Current Limits & Brake Resistor']}
                 config={powerConfig}
                 onChange={handleConfigChange}
                 onRefresh={handleRefresh}
@@ -115,7 +90,7 @@ const PowerConfigStep = ({
           </CardHeader>
           <CardBody py={2}>
             <ParameterFormGrid
-              params={groupedParams['FET Thermistor Limits']}
+              params={groupedParams['FET Thermistor']}
               config={powerConfig}
               onChange={handleConfigChange}
               onRefresh={handleRefresh}
@@ -123,24 +98,6 @@ const PowerConfigStep = ({
             />
           </CardBody>
         </Card>
-
-        {/* DC Bus Overvoltage Ramp */}
-        {groupedParams['DC Bus Overvoltage Ramp'] && (
-          <Card bg="gray.800" variant="elevated">
-            <CardHeader py={1}>
-              <Heading size="sm" color="white">DC Bus Overvoltage Ramp</Heading>
-            </CardHeader>
-            <CardBody py={2}>
-              <ParameterFormGrid
-                params={groupedParams['DC Bus Overvoltage Ramp']}
-                config={powerConfig}
-                onChange={handleConfigChange}
-                onRefresh={handleRefresh}
-                isLoading={isLoading}
-              />
-            </CardBody>
-          </Card>
-        )}
 
         {/* Miscellaneous */}
         {groupedParams['Miscellaneous'] && (
@@ -159,7 +116,6 @@ const PowerConfigStep = ({
             </CardBody>
           </Card>
         )}
-
       </VStack>
     </Box>
   )
