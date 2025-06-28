@@ -13,7 +13,7 @@ import {
   Tooltip,
   SimpleGrid,
 } from '@chakra-ui/react'
-import ParameterFormGrid from '../buttons/ParameterFormGrid'
+import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
 import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
 
 

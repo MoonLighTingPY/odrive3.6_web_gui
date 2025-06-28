@@ -27,7 +27,7 @@ import {
   Badge,
 } from '@chakra-ui/react'
 import { InfoIcon, RepeatIcon, ChevronUpIcon, ChevronDownIcon } from '@chakra-ui/icons'
-import ParameterInput from '../buttons/ParameterInput'
+import ParameterInput from '../config-parameter-fields/ParameterInput'
 import { ODrivePropertyMappings as configurationMappings } from '../../utils/odriveUnifiedRegistry'
 import { ControlMode, InputMode } from '../../utils/odriveEnums'
 import {

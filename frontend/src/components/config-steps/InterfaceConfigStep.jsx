@@ -19,7 +19,7 @@ import {
   AlertIcon
 } from '@chakra-ui/react'
 import { InfoIcon } from '@chakra-ui/icons'
-import ParameterInput from '../buttons/ParameterInput'
+import ParameterInput from '../config-parameter-fields/ParameterInput'
 import { ODrivePropertyMappings as configurationMappings } from '../../utils/odriveUnifiedRegistry'
 
 const InterfaceConfigStep = ({
