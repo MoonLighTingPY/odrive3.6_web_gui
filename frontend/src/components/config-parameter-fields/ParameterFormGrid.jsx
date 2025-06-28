@@ -21,8 +21,8 @@ function ParameterFormGrid({ params, config, onChange, onRefresh, isLoading, sub
     <VStack spacing={6} align="stretch">
       {Object.entries(grouped).map(([sub, subParams]) => {
         // Compute the max label width for this subgroup
-        const maxLabelLength = Math.max(...subParams.map(p => (p.name || '').length), 0)
-        const inputWidth = `${maxLabelLength + 4}ch`
+        // const maxLabelLength = Math.max(...subParams.map(p => (p.name || '').length), 0)
+        // const inputWidth = `${maxLabelLength + 4}ch`
         return (
           <VStack key={sub} spacing={4} align="stretch">
             {sub && <Text fontWeight="bold" color="blue.300" fontSize="sm" mb={1}>{sub}</Text>}
@@ -34,7 +34,7 @@ function ParameterFormGrid({ params, config, onChange, onRefresh, isLoading, sub
                 onChange={onChange}
                 onRefresh={onRefresh}
                 isLoading={isLoading}
-                inputWidth={inputWidth}
+                inputWidth={"100%"}
               />
             ))}
           </VStack>
