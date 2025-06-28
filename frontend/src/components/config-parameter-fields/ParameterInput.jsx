@@ -126,7 +126,7 @@ const ParameterInput = ({
         borderColor="gray.600"
         color="white"
         size="sm"
-        flex="1"
+        width={props.width}
         placeholder="0"
         step={step}
         {...props}

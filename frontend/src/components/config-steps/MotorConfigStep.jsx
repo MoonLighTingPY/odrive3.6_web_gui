@@ -11,11 +11,8 @@ import {
 } from '@chakra-ui/react'
 import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
 import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
-import { MOTOR_PARAM_GROUPS, getParameterGroup } from '../../utils/configParameterGrouping'
+import { MOTOR_PARAM_GROUPS, getParameterGroup, getParameterSubgroup } from '../../utils/configParameterGrouping'
 
-function getGroup(param) {
-  return getParameterGroup(param, MOTOR_PARAM_GROUPS)
-}
 
 const NUM_COLUMNS = 3
 
@@ -40,18 +37,32 @@ const MotorConfigStep = ({
     return loadingParams.has(`motor.${configKey}`)
   }
 
-  // Group parameters by logical UI section
-  const groupedParams = {}
-  motorParams.forEach(param => {
-    const group = getGroup(param)
-    if (!groupedParams[group]) groupedParams[group] = []
-    groupedParams[group].push(param)
+  // Build ordered group/subgroup structure from MOTOR_PARAM_GROUPS
+  const groupOrder = []
+  const subgroupOrder = {}
+  Object.values(MOTOR_PARAM_GROUPS).forEach(({ group, subgroup }) => {
+    if (!groupOrder.includes(group)) groupOrder.push(group)
+    if (!subgroupOrder[group]) subgroupOrder[group] = []
+    if (!subgroupOrder[group].includes(subgroup)) subgroupOrder[group].push(subgroup)
   })
 
-  // Prepare cards for masonry layout
-  const cards = Object.entries(groupedParams)
-    .filter(([group]) => group !== 'Miscellaneous' && group !== 'Other')
-    .map(([group, params]) => (
+  // Map of group -> subgroup -> params (preserves order)
+  const grouped = {}
+  groupOrder.forEach(group => {
+    grouped[group] = {}
+    subgroupOrder[group].forEach(subgroup => {
+      grouped[group][subgroup] = motorParams.filter(
+        param =>
+          getParameterGroup(param, MOTOR_PARAM_GROUPS) === group &&
+          getParameterSubgroup(param, MOTOR_PARAM_GROUPS) === subgroup
+      )
+    })
+  })
+
+  // Render groups and subgroups in order
+  const cards = groupOrder
+    .filter(group => group !== 'Miscellaneous' && group !== 'Other')
+    .map(group => (
       <Card
         key={group}
         bg="gray.800"
@@ -67,13 +78,26 @@ const MotorConfigStep = ({
           <Heading size="sm" color="white">{group}</Heading>
         </CardHeader>
         <CardBody py={2}>
-          <ParameterFormGrid
-            params={params}
-            config={motorConfig}
-            onChange={handleConfigChange}
-            onRefresh={handleRefresh}
-            isLoading={isLoading}
-          />
+          {subgroupOrder[group].map(subgroup => {
+            const params = grouped[group][subgroup]
+            if (!params.length) return null
+            return (
+              <Box key={subgroup} mb={subgroup ? 4 : 0}>
+                {subgroup && (
+                  <Text fontWeight="bold" color="blue.300" fontSize="sm" mb={1}>
+                    {subgroup}
+                  </Text>
+                )}
+                <ParameterFormGrid
+                  params={params}
+                  config={motorConfig}
+                  onChange={handleConfigChange}
+                  onRefresh={handleRefresh}
+                  isLoading={isLoading}
+                />
+              </Box>
+            )
+          })}
         </CardBody>
       </Card>
     ))
@@ -121,7 +145,10 @@ const MotorConfigStep = ({
   )
 
   // Miscellaneous card
-  const miscCard = groupedParams['Miscellaneous'] && (
+  const miscParams = motorParams.filter(
+    param => getParameterGroup(param, MOTOR_PARAM_GROUPS) === 'Miscellaneous'
+  )
+  const miscCard = miscParams.length > 0 && (
     <Card
       bg="gray.800"
       variant="elevated"
@@ -137,7 +164,7 @@ const MotorConfigStep = ({
       </CardHeader>
       <CardBody py={2}>
         <ParameterFormGrid
-          params={groupedParams['Miscellaneous']}
+          params={miscParams}
           config={motorConfig}
           onChange={handleConfigChange}
           onRefresh={handleRefresh}

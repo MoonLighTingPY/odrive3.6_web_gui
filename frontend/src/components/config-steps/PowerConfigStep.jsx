@@ -11,7 +11,7 @@ import {
 } from '@chakra-ui/react'
 import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
 import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
-import { POWER_PARAM_GROUPS, getParameterGroup } from '../../utils/configParameterGrouping'
+import { POWER_PARAM_GROUPS, getParameterGroup, getParameterSubgroup } from '../../utils/configParameterGrouping'
 
 function getGroup(param) {
   return getParameterGroup(param, POWER_PARAM_GROUPS)
@@ -62,6 +62,7 @@ const PowerConfigStep = ({
                 onChange={handleConfigChange}
                 onRefresh={handleRefresh}
                 isLoading={isLoading}
+                subgroup={param => getParameterSubgroup(param, POWER_PARAM_GROUPS)}
               />
             </CardBody>
           </Card>
@@ -78,6 +79,7 @@ const PowerConfigStep = ({
                 onChange={handleConfigChange}
                 onRefresh={handleRefresh}
                 isLoading={isLoading}
+                subgroup={param => getParameterSubgroup(param, POWER_PARAM_GROUPS)}
               />
             </CardBody>
           </Card>
@@ -95,6 +97,7 @@ const PowerConfigStep = ({
               onChange={handleConfigChange}
               onRefresh={handleRefresh}
               isLoading={isLoading}
+              subgroup={param => getParameterSubgroup(param, POWER_PARAM_GROUPS)}
             />
           </CardBody>
         </Card>
@@ -112,6 +115,7 @@ const PowerConfigStep = ({
                 onChange={handleConfigChange}
                 onRefresh={handleRefresh}
                 isLoading={isLoading}
+                subgroup={param => getParameterSubgroup(param, POWER_PARAM_GROUPS)}
               />
             </CardBody>
           </Card>
