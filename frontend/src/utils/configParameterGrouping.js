@@ -86,3 +86,29 @@ export function getParameterSubgroup(param, groupMap) {
   if (param.path && param.path.includes('voltage')) return 'Trip Levels';
   return 'Miscellaneous';
 }
+
+export function getOrderedGroupedParameters(params, groupMap) {
+  // Build ordered group/subgroup structure from groupMap
+  const groupOrder = []
+  const subgroupOrder = {}
+  Object.values(groupMap).forEach(({ group, subgroup }) => {
+    if (!groupOrder.includes(group)) groupOrder.push(group)
+    if (!subgroupOrder[group]) subgroupOrder[group] = []
+    if (!subgroupOrder[group].includes(subgroup)) subgroupOrder[group].push(subgroup)
+  })
+
+  // Map of group -> subgroup -> params (preserves order)
+  const grouped = {}
+  groupOrder.forEach(group => {
+    grouped[group] = {}
+    subgroupOrder[group].forEach(subgroup => {
+      grouped[group][subgroup] = params.filter(
+        param =>
+          getParameterGroup(param, groupMap) === group &&
+          getParameterSubgroup(param, groupMap) === subgroup
+      )
+    })
+  })
+
+  return { groupOrder, subgroupOrder, grouped }
+}

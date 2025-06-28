@@ -11,7 +11,11 @@ import {
 } from '@chakra-ui/react'
 import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
 import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
-import { MOTOR_PARAM_GROUPS, getParameterGroup, getParameterSubgroup } from '../../utils/configParameterGrouping'
+import {
+  MOTOR_PARAM_GROUPS,
+  getParameterGroup,
+  getOrderedGroupedParameters,
+} from '../../utils/configParameterGrouping'
 
 
 const NUM_COLUMNS = 3
@@ -37,27 +41,11 @@ const MotorConfigStep = ({
     return loadingParams.has(`motor.${configKey}`)
   }
 
-  // Build ordered group/subgroup structure from MOTOR_PARAM_GROUPS
-  const groupOrder = []
-  const subgroupOrder = {}
-  Object.values(MOTOR_PARAM_GROUPS).forEach(({ group, subgroup }) => {
-    if (!groupOrder.includes(group)) groupOrder.push(group)
-    if (!subgroupOrder[group]) subgroupOrder[group] = []
-    if (!subgroupOrder[group].includes(subgroup)) subgroupOrder[group].push(subgroup)
-  })
-
-  // Map of group -> subgroup -> params (preserves order)
-  const grouped = {}
-  groupOrder.forEach(group => {
-    grouped[group] = {}
-    subgroupOrder[group].forEach(subgroup => {
-      grouped[group][subgroup] = motorParams.filter(
-        param =>
-          getParameterGroup(param, MOTOR_PARAM_GROUPS) === group &&
-          getParameterSubgroup(param, MOTOR_PARAM_GROUPS) === subgroup
-      )
-    })
-  })
+  // Use the new utility for grouping
+  const { groupOrder, subgroupOrder, grouped } = getOrderedGroupedParameters(
+    motorParams,
+    MOTOR_PARAM_GROUPS
+  )
 
   // Render groups and subgroups in order
   const cards = groupOrder
