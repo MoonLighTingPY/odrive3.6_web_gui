@@ -1,0 +1,34 @@
+import React from 'react'
+import { HStack, Switch, IconButton, Tooltip, Spinner } from '@chakra-ui/react'
+import { RefreshCw } from 'lucide-react'
+
+const BooleanParameterInput = ({
+  value,
+  onChange,
+  onRefresh,
+  isLoading,
+  ...props
+}) => (
+  <HStack spacing={1}>
+    <Switch
+      isChecked={!!value}
+      onChange={e => onChange(e.target.checked)}
+      colorScheme="odrive"
+      size="sm"
+      {...props}
+    />
+    <Tooltip label="Refresh from ODrive">
+      <IconButton
+        icon={isLoading ? <Spinner size="xs" /> : <RefreshCw size={12} />}
+        onClick={onRefresh}
+        isDisabled={isLoading}
+        size="xs"
+        variant="ghost"
+        colorScheme="blue"
+        aria-label="Refresh parameter"
+      />
+    </Tooltip>
+  </HStack>
+)
+
+export default BooleanParameterInput

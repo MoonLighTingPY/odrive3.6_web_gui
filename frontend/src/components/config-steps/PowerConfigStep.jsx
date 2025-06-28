@@ -17,6 +17,7 @@ import {
 } from '@chakra-ui/react'
 import { InfoIcon } from '@chakra-ui/icons'
 import ParameterInput from '../buttons/ParameterInput'
+import BooleanParameterInput from '../buttons/BooleanParameterInput'
 import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
 
 const DEFAULT_GROUPS = [
@@ -153,11 +154,11 @@ const PowerConfigStep = ({
                       return (
                         <FormControl key={key}>
                           <HStack spacing={2} mb={1}>
-                            <Switch
-                              isChecked={!!powerConfig[key]}
-                              onChange={e => handleConfigChange(key, e.target.checked)}
-                              colorScheme="odrive"
-                              size="sm"
+                            <BooleanParameterInput
+                              value={powerConfig[key]}
+                              onChange={value => handleConfigChange(key, value)}
+                              onRefresh={() => handleRefresh(key, param.odriveCommand)}
+                              isLoading={isLoading(key)}
                             />
                             <FormLabel color="white" mb={0} fontSize="sm">{param.name}</FormLabel>
                             <Tooltip label={param.description}>
@@ -198,17 +199,16 @@ const PowerConfigStep = ({
           <CardBody py={2}>
             <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
               {groupedParams['FET Thermistor Limits']?.map(param => {
-                console.log('FET Thermistor param:', param); // <-- Add this line
                 const key = param.configKey
                 if (param.type === 'boolean') {
                   return (
                     <FormControl key={key}>
                       <HStack spacing={2} mb={1}>
-                        <Switch
-                          isChecked={!!powerConfig[key]}
-                          onChange={e => handleConfigChange(key, e.target.checked)}
-                          colorScheme="odrive"
-                          size="sm"
+                        <BooleanParameterInput
+                          value={powerConfig[key]}
+                          onChange={value => handleConfigChange(key, value)}
+                          onRefresh={() => handleRefresh(key, param.odriveCommand)}
+                          isLoading={isLoading(key)}
                         />
                         <FormLabel color="white" mb={0} fontSize="sm">{param.name}</FormLabel>
                         <Tooltip label={param.description}>
