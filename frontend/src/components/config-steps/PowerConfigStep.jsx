@@ -77,124 +77,125 @@ const PowerConfigStep = ({
     <Box h="100%" p={3} overflow="auto">
       <VStack spacing={3} align="stretch" maxW="1400px" mx="auto">
 
-        {/* DC Bus Voltage Protection */}
-        <Card bg="gray.800" variant="elevated">
-          <CardHeader py={1}>
-            <Heading size="sm" color="white">DC Bus Voltage Protection</Heading>
-          </CardHeader>
-          <CardBody py={2}>
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-              {groupedParams['DC Bus Voltage Protection']?.map(param => {
-                const key = param.configKey
-                return (
-                  <FormControl key={key}>
-                    <HStack spacing={2} mb={1}>
-                      <FormLabel color="white" mb={0} fontSize="sm">{param.name}</FormLabel>
-                      <Tooltip label={param.description}>
-                        <Icon as={InfoIcon} color="gray.400" />
-                      </Tooltip>
-                    </HStack>
-                    <ParameterInput
-                      value={powerConfig[key]}
-                      onChange={value => handleConfigChange(key, value)}
-                      onRefresh={() => handleRefresh(key, param.odriveCommand)}
-                      isLoading={isLoading(key)}
-                      unit={param.unit}
-                      step={param.step || 0.1}
-                      precision={param.decimals ?? 2}
-                      min={param.min}
-                      max={param.max}
-                    />
-                  </FormControl>
-                )
-              })}
-            </SimpleGrid>
-          </CardBody>
-        </Card>
+        {/* DC Bus Voltage Protection & Current Limits/Brake Resistor side by side */}
+        <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+          {/* DC Bus Voltage Protection */}
+          <Card bg="gray.800" variant="elevated">
+            <CardHeader py={1}>
+              <Heading size="sm" color="white">DC Bus Voltage Protection</Heading>
+            </CardHeader>
+            <CardBody py={2}>
+              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                {groupedParams['DC Bus Voltage Protection']?.map(param => {
+                  const key = param.configKey
+                  return (
+                    <FormControl key={key}>
+                      <HStack spacing={2} mb={1}>
+                        <FormLabel color="white" mb={0} fontSize="sm">{param.name}</FormLabel>
+                        <Tooltip label={param.description}>
+                          <Icon as={InfoIcon} color="gray.400" />
+                        </Tooltip>
+                      </HStack>
+                      <ParameterInput
+                        value={powerConfig[key]}
+                        onChange={value => handleConfigChange(key, value)}
+                        onRefresh={() => handleRefresh(key, param.odriveCommand)}
+                        isLoading={isLoading(key)}
+                        unit={param.unit}
+                        step={param.step || 0.1}
+                        precision={param.decimals ?? 2}
+                        min={param.min}
+                        max={param.max}
+                      />
+                    </FormControl>
+                  )
+                })}
+              </SimpleGrid>
+            </CardBody>
+          </Card>
 
-        {/* Current Limits & Brake Resistor */}
-        <Card bg="gray.800" variant="elevated">
-          <CardHeader py={1}>
-            <Heading size="sm" color="white">Current Limits & Brake Resistor</Heading>
-          </CardHeader>
-          <CardBody py={2}>
-            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
-              {/* Current Limits */}
-              <Box>
-                <Text fontWeight="bold" color="blue.300" mb={2} fontSize="sm">Current Limits</Text>
-                <VStack spacing={2} align="stretch">
-                  {groupedParams['Current Limits']?.map(param => {
-                    const key = param.configKey
-                    return (
-                      <FormControl key={key}>
-                        <FormLabel color="white" mb={1} fontSize="sm">{param.name}</FormLabel>
-                        <ParameterInput
-                          value={powerConfig[key]}
-                          onChange={value => handleConfigChange(key, value)}
-                          onRefresh={() => handleRefresh(key, param.odriveCommand)}
-                          isLoading={isLoading(key)}
-                          unit={param.unit}
-                          step={param.step || 0.1}
-                          precision={param.decimals ?? 2}
-                          min={param.min}
-                          max={param.max}
-                        />
-                      </FormControl>
-                    )
-                  })}
-                </VStack>
-              </Box>
-              {/* Brake Resistor */}
-              <Box>
-                <Text fontWeight="bold" color="green.300" mb={2} fontSize="sm">Brake Resistor</Text>
-                <VStack spacing={2} align="stretch">
-                  {groupedParams['Brake Resistor']?.map(param => {
-                    const key = param.configKey
-                    if (param.type === 'boolean') {
+          {/* Current Limits & Brake Resistor */}
+          <Card bg="gray.800" variant="elevated">
+            <CardHeader py={1}>
+              <Heading size="sm" color="white">Current Limits & Brake Resistor</Heading>
+            </CardHeader>
+            <CardBody py={2}>
+              <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
+                {/* Current Limits */}
+                <Box>
+                  <VStack spacing={2} align="stretch">
+                    {groupedParams['Current Limits']?.map(param => {
+                      const key = param.configKey
                       return (
                         <FormControl key={key}>
-                          <HStack spacing={2} mb={1}>
-                            <BooleanParameterInput
-                              value={powerConfig[key]}
-                              onChange={value => handleConfigChange(key, value)}
-                              onRefresh={() => handleRefresh(key, param.odriveCommand)}
-                              isLoading={isLoading(key)}
-                            />
-                            <FormLabel color="white" mb={0} fontSize="sm">{param.name}</FormLabel>
-                            <Tooltip label={param.description}>
-                              <Icon as={InfoIcon} color="gray.400" />
-                            </Tooltip>
-                          </HStack>
+                          <FormLabel color="white" mb={1} fontSize="sm">{param.name}</FormLabel>
+                          <ParameterInput
+                            value={powerConfig[key]}
+                            onChange={value => handleConfigChange(key, value)}
+                            onRefresh={() => handleRefresh(key, param.odriveCommand)}
+                            isLoading={isLoading(key)}
+                            unit={param.unit}
+                            step={param.step || 0.1}
+                            precision={param.decimals ?? 2}
+                            min={param.min}
+                            max={param.max}
+                          />
                         </FormControl>
                       )
-                    }
-                    return (
-                      <FormControl key={key}>
-                        <FormLabel color="white" mb={1} fontSize="sm">{param.name}</FormLabel>
-                        <ParameterInput
-                          value={powerConfig[key]}
-                          onChange={value => handleConfigChange(key, value)}
-                          onRefresh={() => handleRefresh(key, param.odriveCommand)}
-                          isLoading={isLoading(key)}
-                          unit={param.unit}
-                          step={param.step || 0.1}
-                          precision={param.decimals ?? 2}
-                          min={param.min}
-                          max={param.max}
-                        />
-                      </FormControl>
-                    )
-                  })}
-                </VStack>
-              </Box>
-            </SimpleGrid>
-          </CardBody>
-        </Card>
+                    })}
+                  </VStack>
+                </Box>
+                {/* Brake Resistor */}
+                <Box>
+                  <VStack spacing={2} align="stretch">
+                    {groupedParams['Brake Resistor']?.map(param => {
+                      const key = param.configKey
+                      if (param.type === 'boolean') {
+                        return (
+                          <FormControl key={key}>
+                            <HStack spacing={2} mb={1}>
+                              <BooleanParameterInput
+                                value={powerConfig[key]}
+                                onChange={value => handleConfigChange(key, value)}
+                                onRefresh={() => handleRefresh(key, param.odriveCommand)}
+                                isLoading={isLoading(key)}
+                              />
+                              <FormLabel color="white" mb={0} fontSize="sm">{param.name}</FormLabel>
+                              <Tooltip label={param.description}>
+                                <Icon as={InfoIcon} color="gray.400" />
+                              </Tooltip>
+                            </HStack>
+                          </FormControl>
+                        )
+                      }
+                      return (
+                        <FormControl key={key}>
+                          <FormLabel color="white" mb={1} fontSize="sm">{param.name}</FormLabel>
+                          <ParameterInput
+                            value={powerConfig[key]}
+                            onChange={value => handleConfigChange(key, value)}
+                            onRefresh={() => handleRefresh(key, param.odriveCommand)}
+                            isLoading={isLoading(key)}
+                            unit={param.unit}
+                            step={param.step || 0.1}
+                            precision={param.decimals ?? 2}
+                            min={param.min}
+                            max={param.max}
+                          />
+                        </FormControl>
+                      )
+                    })}
+                  </VStack>
+                </Box>
+              </SimpleGrid>
+            </CardBody>
+          </Card>
+        </SimpleGrid>
 
-        {/* FET Thermistor Limits */}
+        {/* FET Thermistor */}
         <Card bg="gray.800" variant="elevated">
           <CardHeader py={1}>
-            <Heading size="sm" color="white">FET Thermistor Limits</Heading>
+            <Heading size="sm" color="white">FET Thermistor</Heading>
           </CardHeader>
           <CardBody py={2}>
             <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
