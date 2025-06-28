@@ -19,6 +19,7 @@ import {
 } from '@chakra-ui/react'
 import { InfoIcon } from '@chakra-ui/icons'
 import ParameterInput from '../config-parameter-fields/ParameterInput'
+import ParameterSelect from '../config-parameter-fields/ParameterSelect'
 import { ODrivePropertyMappings as configurationMappings } from '../../utils/odriveUnifiedRegistry'
 
 const MotorConfigStep = ({
@@ -61,19 +62,16 @@ const MotorConfigStep = ({
               <HStack spacing={4} w="100%">
                 <FormControl flex="1">
                   <FormLabel color="white" mb={1} fontSize="sm">Motor Type</FormLabel>
-                  <Select
+                  <ParameterSelect
                     value={motorConfig.motor_type ?? ""}
-                    onChange={(e) => handleConfigChange('motor_type', parseInt(e.target.value))}
-                    bg="gray.700"
-                    border="1px solid"
-                    borderColor="gray.600"
-                    color="white"
-                    size="sm"
+                    onChange={e => handleConfigChange('motor_type', parseInt(e.target.value))}
+                    onRefresh={() => handleRefresh('motor_type')}
+                    isLoading={isLoading('motor_type')}
                     placeholder="Select Motor Type"
                   >
                     <option value={0}>High Current</option>
                     <option value={1}>Gimbal</option>
-                  </Select>
+                  </ParameterSelect>
                 </FormControl>
 
                 <FormControl flex="1">
