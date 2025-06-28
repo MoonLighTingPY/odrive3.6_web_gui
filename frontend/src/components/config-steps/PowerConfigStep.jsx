@@ -13,9 +13,7 @@ import {
   Tooltip,
   SimpleGrid,
 } from '@chakra-ui/react'
-import { InfoIcon } from '@chakra-ui/icons'
-import ParameterInput from '../buttons/ParameterInput'
-import BooleanParameterInput from '../buttons/BooleanParameterInput'
+import ParameterFormGrid from '../buttons/ParameterFormGrid'
 import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
 
 
@@ -37,47 +35,6 @@ function getGroup(param) {
   return 'Miscellaneous'
 }
 
-function ParameterFormGrid({ params, config, onChange, onRefresh, isLoading }) {
-  return (
-    <VStack spacing={4} align="stretch">
-      {params?.map(param => {
-        const key = param.configKey
-        return (
-          <FormControl key={key}>
-            <FormLabel color="white" mb={1} fontSize="sm">
-              {param.name}
-              <Tooltip label={param.description} ml={2}>
-                <span>
-                  <Icon as={InfoIcon} color="gray.400" ml={1} />
-                </span>
-              </Tooltip>
-            </FormLabel>
-            {param.type === 'boolean' ? (
-              <BooleanParameterInput
-                value={config[key]}
-                onChange={value => onChange(key, value)}
-                onRefresh={() => onRefresh(key, param.odriveCommand)}
-                isLoading={isLoading(key)}
-              />
-            ) : (
-              <ParameterInput
-                value={config[key]}
-                onChange={value => onChange(key, value)}
-                onRefresh={() => onRefresh(key, param.odriveCommand)}
-                isLoading={isLoading(key)}
-                unit={param.unit}
-                step={param.step || 0.1}
-                precision={param.decimals ?? 2}
-                min={param.min}
-                max={param.max}
-              />
-            )}
-          </FormControl>
-        )
-      })}
-    </VStack>
-  )
-}
 
 const PowerConfigStep = ({
   deviceConfig,

@@ -2,7 +2,7 @@ import React from 'react'
 import { HStack, Switch, IconButton, Tooltip, Spinner } from '@chakra-ui/react'
 import { RefreshCw } from 'lucide-react'
 
-const BooleanParameterInput = ({
+const ParameterSwitch = ({
   value,
   onChange,
   onRefresh,
@@ -31,4 +31,4 @@ const BooleanParameterInput = ({
   </HStack>
 )
 
-export default BooleanParameterInput
+export default ParameterSwitch
