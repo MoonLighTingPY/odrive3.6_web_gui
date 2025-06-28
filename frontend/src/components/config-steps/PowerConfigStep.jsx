@@ -28,22 +28,14 @@ const DEFAULT_GROUPS = [
   'Miscellaneous',
 ]
 
-const groupOrder = {
-  'DC Bus Voltage Protection': 0,
-  'Current Limits': 1,
-  'Brake Resistor': 2,
-  'FET Thermistor Limits': 3,
-  'DC Bus Overvoltage Ramp': 4,
-  'Miscellaneous': 5,
-}
 
 function getGroup(param) {
-  // Prefer explicit uiGroup, fallback to group by key
   if (param.uiGroup) return param.uiGroup
-  // Fallback grouping by configKey
   if (param.configKey?.includes('voltage')) return 'DC Bus Voltage Protection'
   if (param.configKey?.includes('current')) return 'Current Limits'
   if (param.configKey?.includes('brake')) return 'Brake Resistor'
+  // Add this line to catch the enable parameter for FET thermistor
+  if (param.path?.includes('fet_thermistor')) return 'FET Thermistor Limits'
   if (param.configKey?.includes('fet_temp')) return 'FET Thermistor Limits'
   if (param.configKey?.includes('ramp')) return 'DC Bus Overvoltage Ramp'
   return 'Miscellaneous'
@@ -79,9 +71,6 @@ const PowerConfigStep = ({
     groupedParams[group].push(param)
   })
 
-  // Sort groups and params within each group
-  const sortedGroups = Object.keys(groupedParams)
-    .sort((a, b) => (groupOrder[a] ?? 99) - (groupOrder[b] ?? 99))
 
   return (
     <Box h="100%" p={3} overflow="auto">
@@ -209,7 +198,26 @@ const PowerConfigStep = ({
           <CardBody py={2}>
             <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
               {groupedParams['FET Thermistor Limits']?.map(param => {
+                console.log('FET Thermistor param:', param); // <-- Add this line
                 const key = param.configKey
+                if (param.type === 'boolean') {
+                  return (
+                    <FormControl key={key}>
+                      <HStack spacing={2} mb={1}>
+                        <Switch
+                          isChecked={!!powerConfig[key]}
+                          onChange={e => handleConfigChange(key, e.target.checked)}
+                          colorScheme="odrive"
+                          size="sm"
+                        />
+                        <FormLabel color="white" mb={0} fontSize="sm">{param.name}</FormLabel>
+                        <Tooltip label={param.description}>
+                          <Icon as={InfoIcon} color="gray.400" />
+                        </Tooltip>
+                      </HStack>
+                    </FormControl>
+                  )
+                }
                 return (
                   <FormControl key={key}>
                     <HStack spacing={2} mb={1}>
