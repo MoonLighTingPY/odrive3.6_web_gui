@@ -23,20 +23,21 @@ export const POWER_PARAM_GROUPS = {
   usb_cdc_protocol: { group: 'Miscellaneous', subgroup: 'Miscellaneous' },
 }
 
+// Motor parameter groups with unique Lock-in subgroups
 export const MOTOR_PARAM_GROUPS = {
   // Motor Basics & Electrical
-  motor_type: { group: 'Motor Basics & Electrical', subgroup: 'Basics' },
-  pole_pairs: { group: 'Motor Basics & Electrical', subgroup: 'Basics' },
-  motor_kv: { group: 'Motor Basics & Electrical', subgroup: 'Basics' },
-  phase_resistance: { group: 'Motor Basics & Electrical', subgroup: 'Electrical' },
-  phase_inductance: { group: 'Motor Basics & Electrical', subgroup: 'Electrical' },
-  resistance_calib_max_voltage: { group: 'Motor Basics & Electrical', subgroup: 'Electrical' },
+  motor_type: { group: 'Motor', subgroup: 'Basics' },
+  pole_pairs: { group: 'Motor', subgroup: 'Basics' },
+  motor_kv: { group: 'Motor', subgroup: 'Basics' },
+  phase_resistance: { group: 'Motor', subgroup: 'Electrical' },
+  phase_inductance: { group: 'Motor', subgroup: 'Electrical' },
+  resistance_calib_max_voltage: { group: 'Motor', subgroup: 'Electrical' },
 
-    // Motor Thermistor & Temperature Limits
-  motor_thermistor_enabled: { group: 'Motor Thermistor', subgroup: 'Thermistor' },
-  gpio_pin: { group: 'Motor Thermistor', subgroup: 'Thermistor' },
-  motor_temp_limit_lower: { group: 'Motor Thermistor', subgroup: 'Thermistor' },
-  motor_temp_limit_upper: { group: 'Motor Thermistor', subgroup: 'Thermistor' },
+  // Motor Thermistor & Temperature Limits
+  motor_thermistor_enabled: { group: 'Motor', subgroup: 'Thermistor' },
+  gpio_pin: { group: 'Motor', subgroup: 'Thermistor' },
+  motor_temp_limit_lower: { group: 'Motor', subgroup: 'Thermistor' },
+  motor_temp_limit_upper: { group: 'Motor', subgroup: 'Thermistor' },
 
   // Limits & Calibration
   current_lim: { group: 'Limits & Calibration', subgroup: 'Limits' },
@@ -46,7 +47,7 @@ export const MOTOR_PARAM_GROUPS = {
   pre_calibrated: { group: 'Limits & Calibration', subgroup: 'Calibration' },
   calibration_current: { group: 'Limits & Calibration', subgroup: 'Calibration' },
 
-  // Lock-in Parameters
+// Lock-in Parameters
   lock_in_spin_current: { group: 'Lock-in', subgroup: 'Lock-in' },
   ramp_time: { group: 'Lock-in', subgroup: 'Lock-in' },
   ramp_distance: { group: 'Lock-in', subgroup: 'Lock-in' },
@@ -59,14 +60,11 @@ export const MOTOR_PARAM_GROUPS = {
   acim_autoflux_min_Id: { group: 'ACIM', subgroup: 'ACIM' },
   acim_autoflux_attack_gain: { group: 'ACIM', subgroup: 'ACIM' },
   acim_autoflux_decay_gain: { group: 'ACIM', subgroup: 'ACIM' },
-
-
-};
-
-
+}
 
 export function getParameterGroup(param, groupMap) {
   if (param.uiGroup) return param.uiGroup;
+  // Use contextual configKey for Lock-in parameters
   if (groupMap[param.configKey]) return groupMap[param.configKey].group;
   // Fallbacks for special cases
   if (param.path && param.path.includes('fet_thermistor')) return 'FET Thermistor';
@@ -78,6 +76,7 @@ export function getParameterGroup(param, groupMap) {
 
 export function getParameterSubgroup(param, groupMap) {
   if (param.uiSubgroup) return param.uiSubgroup;
+  // Use contextual configKey for Lock-in parameters
   if (groupMap[param.configKey]) return groupMap[param.configKey].subgroup;
   // Fallbacks for special cases
   if (param.path && param.path.includes('fet_thermistor')) return 'Thermistor';
