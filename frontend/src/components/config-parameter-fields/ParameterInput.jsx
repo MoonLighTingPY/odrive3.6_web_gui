@@ -129,7 +129,7 @@ const ParameterInput = ({
         width={props.width}
         placeholder="0"
         step={step}
-        {...props}
+        {...Object.fromEntries(Object.entries(props).filter(([k]) => k !== 'selectOptions'))}
       />
 
       {unit && (
