@@ -32,13 +32,17 @@ const DEFAULT_GROUPS = [
 
 function getGroup(param) {
   if (param.uiGroup) return param.uiGroup
-  if (param.configKey?.includes('voltage')) return 'DC Bus Voltage Protection'
+  if (
+    param.configKey === 'enable_dc_bus_overvoltage_ramp' ||
+    param.configKey?.includes('voltage') ||
+    param.configKey?.includes('ramp')
+  ) {
+    return 'DC Bus Voltage Protection'
+  }
   if (param.configKey?.includes('current')) return 'Current Limits'
   if (param.configKey?.includes('brake')) return 'Brake Resistor'
-  // Add this line to catch the enable parameter for FET thermistor
   if (param.path?.includes('fet_thermistor')) return 'FET Thermistor Limits'
   if (param.configKey?.includes('fet_temp')) return 'FET Thermistor Limits'
-  if (param.configKey?.includes('ramp')) return 'DC Bus Overvoltage Ramp'
   return 'Miscellaneous'
 }
 
@@ -88,6 +92,24 @@ const PowerConfigStep = ({
               <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
                 {groupedParams['DC Bus Voltage Protection']?.map(param => {
                   const key = param.configKey
+                  if (param.type === 'boolean') {
+                    return (
+                      <FormControl key={key}>
+                        <HStack spacing={2} mb={1}>
+                          <BooleanParameterInput
+                            value={powerConfig[key]}
+                            onChange={value => handleConfigChange(key, value)}
+                            onRefresh={() => handleRefresh(key, param.odriveCommand)}
+                            isLoading={isLoading(key)}
+                          />
+                          <FormLabel color="white" mb={0} fontSize="sm">{param.name}</FormLabel>
+                          <Tooltip label={param.description}>
+                            <Icon as={InfoIcon} color="gray.400" />
+                          </Tooltip>
+                        </HStack>
+                      </FormControl>
+                    )
+                  }
                   return (
                     <FormControl key={key}>
                       <HStack spacing={2} mb={1}>
@@ -255,6 +277,24 @@ const PowerConfigStep = ({
               <SimpleGrid columns={{ base: 1, md: 2 }} spacing={4}>
                 {groupedParams['DC Bus Overvoltage Ramp'].map(param => {
                   const key = param.configKey
+                  if (param.type === 'boolean') {
+                    return (
+                      <FormControl key={key}>
+                        <HStack spacing={2} mb={1}>
+                          <BooleanParameterInput
+                            value={powerConfig[key]}
+                            onChange={value => handleConfigChange(key, value)}
+                            onRefresh={() => handleRefresh(key, param.odriveCommand)}
+                            isLoading={isLoading(key)}
+                          />
+                          <FormLabel color="white" mb={0} fontSize="sm">{param.name}</FormLabel>
+                          <Tooltip label={param.description}>
+                            <Icon as={InfoIcon} color="gray.400" />
+                          </Tooltip>
+                        </HStack>
+                      </FormControl>
+                    )
+                  }
                   return (
                     <FormControl key={key}>
                       <HStack spacing={2} mb={1}>
