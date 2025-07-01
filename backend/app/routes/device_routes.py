@@ -36,31 +36,33 @@ def scan_devices():
 
     try:
         _scanning_lock = True
-        try:
-            devices = odrive_manager.scan_for_devices()
-        except Exception as e:
-            error_str = str(e)
-            if "Failed to open USB device: -5" in error_str:
-                logger.error("[UsbDiscoverer] Failed to open USB device: -5 (device not found)")
-                return jsonify({
-                    'error': '[UsbDiscoverer] Failed to open USB device: -5 (LIBUSB_ERROR_NOT_FOUND). The ODrive may be disconnected or the USB connection is unstable. Try unplugging and reconnecting the USB cable.'
-                }), 500
-            elif "Failed to open USB device: -12" in error_str:
-                logger.error("[UsbDiscoverer] Failed to open USB device: -12 (insufficient memory)")
-                return jsonify({
-                    'error': '[UsbDiscoverer] Failed to open USB device: -12 (LIBUSB_ERROR_NO_MEM). USB subsystem error - try unplugging the ODrive, waiting 5 seconds, then reconnecting.'
-                }), 500
-            elif "LIBUSB_ERROR" in error_str:
-                logger.error(f"LibUSB error: {error_str}")
-                return jsonify({
-                    'error': f'USB communication error: {error_str}. Try disconnecting and reconnecting the ODrive.'
-                }), 500
-            raise
+        devices = odrive_manager.scan_for_devices()
         logger.info(f"Scan completed, found {len(devices)} devices")
         return jsonify(devices)
+        
     except Exception as e:
-        logger.error(f"Error scanning for devices: {e}")
-        return jsonify({'error': str(e)}), 500
+        error_str = str(e)
+        logger.error(f"Error scanning for devices: {error_str}")
+        
+        # Provide specific error messages for USB issues
+        if "Failed to open USB device: -5" in error_str:
+            return jsonify({
+                'error': '[UsbDiscoverer] Failed to open USB device: -5 (LIBUSB_ERROR_NOT_FOUND). The ODrive may be disconnected or the USB connection is unstable. Try scanning again or unplug/reconnect the USB cable.',
+                'recovery_attempted': True
+            }), 500
+        elif "Failed to open USB device: -12" in error_str:
+            return jsonify({
+                'error': '[UsbDiscoverer] Failed to open USB device: -12 (LIBUSB_ERROR_NO_MEM). USB subsystem error. Try scanning again or unplug/reconnect the ODrive.',
+                'recovery_attempted': True
+            }), 500
+        elif "LIBUSB_ERROR" in error_str:
+            return jsonify({
+                'error': f'USB communication error: {error_str}. Try scanning again or disconnect/reconnect the ODrive.',
+                'recovery_attempted': True
+            }), 500
+        else:
+            return jsonify({'error': str(e)}), 500
+            
     finally:
         _scanning_lock = False
 
