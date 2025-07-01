@@ -234,7 +234,7 @@ export const odrivePropertyTree = {
               resistance_calib_max_voltage: { name: 'Resistance Calibration Max Voltage', description: 'Maximum voltage for resistance calibration (V)', writable: true, type: 'number', step: 0.1, decimals: 1, hasSlider: true },
               phase_inductance: { name: 'Phase Inductance', description: 'Motor phase inductance (H)', writable: true, type: 'number', min: 0, max: 0.01, step: 0.000001, decimals: 6, hasSlider: true },
               phase_resistance: { name: 'Phase Resistance', description: 'Motor phase resistance (Ω)', writable: true, type: 'number', min: 0, max: 10, step: 0.001, decimals: 3, hasSlider: true },
-              torque_constant: { name: 'Torque Constant', description: 'Motor torque constant (Nm/A)', writable: false, type: 'number', min: 0, max: 1, step: 0.001, decimals: 6, hasSlider: true },
+              torque_constant: { name: 'Torque Constant', description: 'Motor torque constant (Nm/A)', writable: true, type: 'number', min: 0, max: 1, step: 0.001, decimals: 6, hasSlider: true },
               current_lim: { name: 'Current Limit', description: 'Motor current limit (A)', writable: true, type: 'number', step: 0.1, decimals: 1, hasSlider: true },
               current_lim_margin: { name: 'Current Limit Margin', description: 'Current limit safety margin (A)', writable: true, type: 'number', step: 0.1, decimals: 1, hasSlider: true },
               torque_lim: { name: 'Torque Limit', description: 'Motor torque limit (Nm)', writable: true, type: 'number', step: 0.1, decimals: 3, hasSlider: true },
