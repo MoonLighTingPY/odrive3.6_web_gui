@@ -16,7 +16,8 @@ import {
   SliderFilledTrack,
   SliderThumb,
   Button,
-  Input
+  Input,
+  Select
 } from '@chakra-ui/react'
 import { EditIcon, CheckIcon, CloseIcon, RepeatIcon } from '@chakra-ui/icons'
 
@@ -82,6 +83,10 @@ const PropertyItem = memo(({
   const propName = prop.name || displayPath.split('.').pop()
   const isSetpoint = prop.isSetpoint === true
   const shouldShowSlider = prop.hasSlider === true || isSetpoint
+  
+  // Check if this property should be a select
+  const hasSelectOptions = prop.selectOptions && Array.isArray(prop.selectOptions) && prop.selectOptions.length > 0
+  const shouldShowSelect = hasSelectOptions && isWritable
 
   const getSliderProps = () => {
     const min = prop.min !== undefined ? prop.min : -100
@@ -132,6 +137,42 @@ const PropertyItem = memo(({
     await handleSliderChangeEnd(0)
   }
 
+  const handleSelectChange = async (e) => {
+    const newValue = parseInt(e.target.value)
+    
+    if (prop.writable && isConnected && updateProperty) {
+      let devicePath
+      if (displayPath.startsWith('system.')) {
+        const systemProp = displayPath.replace('system.', '')
+        if (['dc_bus_overvoltage_trip_level', 'dc_bus_undervoltage_trip_level', 'dc_max_positive_current', 
+             'dc_max_negative_current', 'enable_brake_resistor', 'brake_resistance'].includes(systemProp)) {
+          devicePath = `device.config.${systemProp}`
+        } else {
+          devicePath = `device.${systemProp}`
+        }
+      } else if (displayPath.startsWith('axis0.') || displayPath.startsWith('axis1.')) {
+        devicePath = `device.${displayPath}`
+      } else {
+        devicePath = `device.${displayPath}`
+      }
+      
+      try {
+        await updateProperty(devicePath, newValue)
+        await refreshProperty(displayPath)
+      } catch (error) {
+        console.error('Failed to update property via select:', error)
+      }
+    }
+  }
+
+  const getSelectDisplayValue = () => {
+    if (hasSelectOptions && value !== undefined) {
+      const option = prop.selectOptions.find(opt => opt.value === value)
+      return option ? option.label : String(value)
+    }
+    return String(displayValue)
+  }
+
   return (
     <Box
       bg={isError ? "red.900" : "gray.750"}
@@ -173,6 +214,7 @@ const PropertyItem = memo(({
                     ERR
                   </Badge>
                 )}
+
               </HStack>
               
               <Text fontSize="xs" color="gray.500" fontFamily="mono" isTruncated w="100%">
@@ -191,6 +233,31 @@ const PropertyItem = memo(({
                     onChange={(e) => setEditValue(e.target.checked ? 'true' : 'false')}
                     colorScheme="blue"
                   />
+                ) : shouldShowSelect ? (
+                  <Select
+                    size="sm"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    w="120px"
+                    bg="gray.700"
+                    color="white"
+                    fontSize="xs"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault()
+                        saveEdit()
+                      } else if (e.key === 'Escape') {
+                        e.preventDefault()
+                        cancelEdit()
+                      }
+                    }}
+                  >
+                    {prop.selectOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </Select>
                 ) : (
                   <Input
                     size="sm"
@@ -230,6 +297,7 @@ const PropertyItem = memo(({
               </>
             ) : (
               <>
+                {/* Display value - show select label if applicable */}
                 <Text 
                   fontSize="sm" 
                   fontFamily="mono" 
@@ -239,12 +307,34 @@ const PropertyItem = memo(({
                   textAlign="right"
                 >
                   {value !== undefined 
-                    ? (typeof displayValue === 'number' 
-                        ? displayValue.toFixed(Math.min(prop.decimals || 2, 3))
-                        : String(displayValue))
+                    ? (shouldShowSelect 
+                        ? getSelectDisplayValue()
+                        : (typeof displayValue === 'number' 
+                            ? displayValue.toFixed(Math.min(prop.decimals || 2, 3))
+                            : String(displayValue)))
                     : 'N/A'
                   }
                 </Text>
+                
+                {/* Quick Select Dropdown for select properties */}
+                {shouldShowSelect && isConnected && !isRefreshing && (
+                  <Select
+                    size="xs"
+                    value={value ?? ''}
+                    onChange={handleSelectChange}
+                    w="100px"
+                    bg="gray.700"
+                    color="white"
+                    fontSize="xs"
+                    variant="filled"
+                  >
+                    {prop.selectOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </Select>
+                )}
                 
                 <IconButton
                   size="xs"
@@ -254,7 +344,7 @@ const PropertyItem = memo(({
                   isDisabled={!isConnected || isRefreshing}
                 />
                 
-                {isWritable && isConnected && (
+                {isWritable && isConnected && !shouldShowSelect && (
                   <IconButton
                     size="xs"
                     variant="ghost"
@@ -275,7 +365,7 @@ const PropertyItem = memo(({
           </HStack>
         </HStack>
 
-        {shouldShowSlider && isWritable && prop.type === 'number' && isConnected && !isEditing && (
+        {shouldShowSlider && isWritable && prop.type === 'number' && isConnected && !isEditing && !shouldShowSelect && (
           <HStack spacing={2} w="100%">
             <Slider
               value={sliderValue}
@@ -307,7 +397,7 @@ const PropertyItem = memo(({
     </Box>
   )
 }, (prevProps, nextProps) => {
-  // only re-compare editValue for the item that’s editing
+  // only re-compare editValue for the item that's editing
   const editValueSame = !nextProps.isEditing 
     || prevProps.editValue === nextProps.editValue
 
