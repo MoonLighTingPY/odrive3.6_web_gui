@@ -241,10 +241,10 @@ const ControlConfigStep = ({
                 <AlertIcon boxSize={3} />
                 <VStack align="start" spacing={0}>
                   <Text fontWeight="bold" fontSize="xs">Auto-calculated based on motor config:</Text>
-                  <Text fontSize="xs">Motor Kv: {motorConfig.motor_kv.toFixed(0) || 0} RPM/V, Encoder CPR: {encoderConfig.cpr || 0}</Text>
-                  <Text fontSize="xs">Torque Constant: {calculatedGains.torque_constant.toFixed(4)} Nm/A</Text>
-                  <Text fontSize="xs">Position Gain: {calculatedGains.pos_gain.toFixed(3)} (turns/s)/turn</Text>
-                  <Text fontSize="xs">Velocity Gain: {calculatedGains.vel_gain.toFixed(4)} Nm/(turn/s)</Text>
+                  <Text fontSize="xs">Motor Kv: {(motorConfig.motor_kv ?? 0).toFixed(0)} RPM/V, Encoder CPR: {encoderConfig.cpr || 0}</Text>
+                  <Text fontSize="xs">Torque Constant: {(calculatedGains.torque_constant ?? 0).toFixed(4)} Nm/A</Text>
+                  <Text fontSize="xs">Position Gain: {(calculatedGains.pos_gain ?? 0).toFixed(3)} (turns/s)/turn</Text>
+                  <Text fontSize="xs">Velocity Gain: {(calculatedGains.vel_gain?? 0).toFixed(4)} Nm/(turn/s)</Text>
                 </VStack>
               </Alert>
 
