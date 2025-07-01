@@ -341,11 +341,13 @@ const ConfigurationTab = memo(() => {
   }
 
   return (
-    <Flex direction="column" h="100%" bg="gray.900">
-
-
-
-
+    <Flex
+      direction="column"
+      flex="1"            // fill its parent (the TabPanel)
+      minH="0"            // allow shrinking
+      overflow="hidden"   // clamp all scroll to inner Box
+      bg="gray.900"
+    >
       {/* Combined Header with Navigation and Progress */}
       <Box bg="gray.800" borderBottom="1px solid" borderColor="gray.600" p={4}>
         <VStack spacing={4}>
@@ -483,8 +485,6 @@ const ConfigurationTab = memo(() => {
                   Pull Current Config
                 </Button>
 
-
-
                 <Button
                   colorScheme="blue"
                   size="md"
@@ -502,8 +502,8 @@ const ConfigurationTab = memo(() => {
         </VStack>
       </Box>
 
-      {/* Configuration Step Content */}
-      <Box flex="1" overflow="hidden">
+      {/* Configuration Step Content - Fixed height container */}
+      <Box flex="1" minH="0" overflowY="auto" overflowX="hidden">
         {CurrentStepComponent && (
           <CurrentStepComponent
             deviceConfig={deviceConfig}

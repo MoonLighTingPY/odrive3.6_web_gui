@@ -124,7 +124,7 @@ const MainTabs = () => {
   }
 
   return (
-    <Box flex="1" bg="gray.900">
+    <Box flex="1" bg="gray.900" overflow="hidden">
       <Tabs
         index={activeTab}
         onChange={setActiveTab}
@@ -133,6 +133,7 @@ const MainTabs = () => {
         h="100%"
         display="flex"
         flexDirection="column"
+        overflow="hidden" // make sure Tabs itself never scrolls
       >
         <TabList bg="gray.800" borderBottom="1px solid" borderColor="gray.600" px={6}>
           {TAB_CONFIG.map((tabConfig) => (
@@ -162,8 +163,20 @@ const MainTabs = () => {
         </TabList>
 
         <Suspense fallback={<TabLoadingFallback />}>
-          <TabPanels flex="1" bg="gray.900">
-            {TAB_CONFIG.map((tabConfig, index) => renderTabContent(tabConfig, index))}
+          <TabPanels flex="1" minH="0" bg="gray.900">
+            {TAB_CONFIG.map((tabConfig, index) => (
+              <TabPanel
+                key={tabConfig.id}
+                p={0}
+                height="100vh"                   // fill the TabPanels area
+                display="flex"
+                flexDir="column"
+                overflowY="auto"            // allow TabPanel scrolling
+                overflowX="hidden"
+              >
+                {renderTabContent(tabConfig, index)}
+              </TabPanel>
+            ))}
           </TabPanels>
         </Suspense>
       </Tabs>
