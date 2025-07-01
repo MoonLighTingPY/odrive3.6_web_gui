@@ -11,11 +11,10 @@ export const odrivePropertyTree = {
       fw_version_minor: { name: 'Firmware Version Minor', description: 'Minor firmware version', writable: false, type: 'number' },
       fw_version_revision: { name: 'Firmware Revision', description: 'Firmware revision number', writable: false, type: 'number' },
       fw_version_unreleased: { name: 'Firmware Unreleased', description: 'Unreleased firmware flag', writable: false, type: 'number' },
+      vbus_voltage: { name: 'VBus Voltage', description: 'DC bus voltage (V)', writable: false, type: 'number', decimals: 1 },
+      ibus: { name: 'IBus Current', description: 'DC bus current (A)', writable: false, type: 'number', decimals: 3 },
+      ibus_report_filter_k: { name: 'IBus Report Filter', description: 'IBus current report filter coefficient', writable: false, type: 'number', decimals: 6 },
       serial_number: { name: 'Serial Number', description: 'Device serial number', writable: false, type: 'number' },
-      user_config_loaded: { name: 'User Config Loaded', description: 'Whether user configuration is loaded', writable: false, type: 'number' },
-      vbus_voltage: { name: 'VBus Voltage', description: 'VBus voltage measurement (V)', writable: false, type: 'number', decimals: 2 },
-      ibus: { name: 'DC Bus Current', description: 'Current DC bus current (A)', writable: false, type: 'number', decimals: 3 },
-      error: { name: 'System Error', description: 'System error flags', writable: false, type: 'number' },
       brake_resistor_armed: { name: 'Brake Resistor Armed', description: 'Brake resistor armed state', writable: false, type: 'boolean' },
       brake_resistor_saturated: { name: 'Brake Resistor Saturated', description: 'Brake resistor saturated state', writable: false, type: 'boolean' },
       brake_resistor_current: { name: 'Brake Resistor Current', description: 'Current through brake resistor (A)', writable: false, type: 'number', decimals: 3 },
@@ -37,15 +36,104 @@ export const odrivePropertyTree = {
       brake_resistance: { name: 'Brake Resistance', description: 'Brake resistor resistance (Ω)', writable: true, type: 'number', min: 0.1, max: 100, step: 0.1, decimals: 2, hasSlider: true },
       max_regen_current: { name: 'Max Regen Current', description: 'Maximum regenerative braking current (A)', writable: true, type: 'number', min: 0, max: 60, step: 0.1, decimals: 1, hasSlider: true },
       enable_uart_a: { name: 'Enable UART A', description: 'Enable UART A interface', writable: true, type: 'boolean' },
-      uart_a_baudrate: { name: 'UART A Baudrate', description: 'UART A communication baudrate', writable: true, type: 'number' },
+      uart_a_baudrate: { 
+        name: 'UART A Baudrate', 
+        description: 'UART A communication baudrate', 
+        writable: true, 
+        type: 'number',
+        selectOptions: [
+          { value: 9600, label: '9600 bps' },
+          { value: 19200, label: '19200 bps' },
+          { value: 38400, label: '38400 bps' },
+          { value: 57600, label: '57600 bps' },
+          { value: 115200, label: '115200 bps' },
+          { value: 230400, label: '230400 bps' },
+          { value: 460800, label: '460800 bps' },
+          { value: 921600, label: '921600 bps' }
+        ]
+      },
       enable_uart_b: { name: 'Enable UART B', description: 'Enable UART B interface', writable: true, type: 'boolean' },
-      uart_b_baudrate: { name: 'UART B Baudrate', description: 'UART B communication baudrate', writable: true, type: 'number' },
+      uart_b_baudrate: { 
+        name: 'UART B Baudrate', 
+        description: 'UART B communication baudrate', 
+        writable: true, 
+        type: 'number',
+        selectOptions: [
+          { value: 9600, label: '9600 bps' },
+          { value: 19200, label: '19200 bps' },
+          { value: 38400, label: '38400 bps' },
+          { value: 57600, label: '57600 bps' },
+          { value: 115200, label: '115200 bps' },
+          { value: 230400, label: '230400 bps' },
+          { value: 460800, label: '460800 bps' },
+          { value: 921600, label: '921600 bps' }
+        ]
+      },
       enable_uart_c: { name: 'Enable UART C', description: 'Enable UART C interface', writable: true, type: 'boolean' },
-      uart_c_baudrate: { name: 'UART C Baudrate', description: 'UART C communication baudrate', writable: true, type: 'number' },
-      uart0_protocol: { name: 'UART0 Protocol', description: 'UART0 protocol selection', writable: true, type: 'number' },
-      uart1_protocol: { name: 'UART1 Protocol', description: 'UART1 protocol selection', writable: true, type: 'number' },
-      uart2_protocol: { name: 'UART2 Protocol', description: 'UART2 protocol selection', writable: true, type: 'number' },
-      usb_cdc_protocol: { name: 'USB CDC Protocol', description: 'USB CDC protocol selection', writable: true, type: 'number' },
+      uart_c_baudrate: { 
+        name: 'UART C Baudrate', 
+        description: 'UART C communication baudrate', 
+        writable: true, 
+        type: 'number',
+        selectOptions: [
+          { value: 9600, label: '9600 bps' },
+          { value: 19200, label: '19200 bps' },
+          { value: 38400, label: '38400 bps' },
+          { value: 57600, label: '57600 bps' },
+          { value: 115200, label: '115200 bps' },
+          { value: 230400, label: '230400 bps' },
+          { value: 460800, label: '460800 bps' },
+          { value: 921600, label: '921600 bps' }
+        ]
+      },
+      uart0_protocol: { 
+        name: 'UART0 Protocol', 
+        description: 'UART0 protocol selection', 
+        writable: true, 
+        type: 'number',
+        selectOptions: [
+          { value: 0, label: 'Fibre' },
+          { value: 1, label: 'ASCII' },
+          { value: 2, label: 'Stdout' },
+          { value: 3, label: 'ASCII + Stdout' }
+        ]
+      },
+      uart1_protocol: { 
+        name: 'UART1 Protocol', 
+        description: 'UART1 protocol selection', 
+        writable: true, 
+        type: 'number',
+        selectOptions: [
+          { value: 0, label: 'Fibre' },
+          { value: 1, label: 'ASCII' },
+          { value: 2, label: 'Stdout' },
+          { value: 3, label: 'ASCII + Stdout' }
+        ]
+      },
+      uart2_protocol: { 
+        name: 'UART2 Protocol', 
+        description: 'UART2 protocol selection', 
+        writable: true, 
+        type: 'number',
+        selectOptions: [
+          { value: 0, label: 'Fibre' },
+          { value: 1, label: 'ASCII' },
+          { value: 2, label: 'Stdout' },
+          { value: 3, label: 'ASCII + Stdout' }
+        ]
+      },
+      usb_cdc_protocol: { 
+        name: 'USB CDC Protocol', 
+        description: 'USB CDC protocol selection', 
+        writable: true, 
+        type: 'number',
+        selectOptions: [
+          { value: 0, label: 'Fibre' },
+          { value: 1, label: 'ASCII' },
+          { value: 2, label: 'Stdout' },
+          { value: 3, label: 'ASCII + Stdout' }
+        ]
+      },
       enable_can_a: { name: 'Enable CAN A', description: 'Enable CAN A interface', writable: true, type: 'boolean' },
       enable_i2c_a: { name: 'Enable I2C A', description: 'Enable I2C A interface', writable: true, type: 'boolean' },
       error_gpio_pin: { name: 'Error GPIO Pin', description: 'GPIO pin for error output', writable: true, type: 'number' },
@@ -67,8 +155,27 @@ export const odrivePropertyTree = {
         name: 'CAN Configuration',
         description: 'CAN bus configuration parameters',
         properties: {
-          baud_rate: { name: 'Baud Rate', description: 'CAN bus communication speed', writable: true, type: 'number' },
-          protocol: { name: 'Protocol', description: 'CAN protocol selection', writable: true, type: 'number' },
+          baud_rate: { 
+            name: 'Baud Rate', 
+            description: 'CAN bus communication speed', 
+            writable: true, 
+            type: 'number',
+            selectOptions: [
+              { value: 125000, label: '125 kbps' },
+              { value: 250000, label: '250 kbps' },
+              { value: 500000, label: '500 kbps' },
+              { value: 1000000, label: '1 Mbps' }
+            ]
+          },
+          protocol: { 
+            name: 'Protocol', 
+            description: 'CAN protocol selection', 
+            writable: true, 
+            type: 'number',
+            selectOptions: [
+              { value: 1, label: 'Simple' }
+            ]
+          },
         }
       }
     }
@@ -97,7 +204,27 @@ export const odrivePropertyTree = {
     properties: {
       error: { name: 'Axis Error', description: 'Current axis error flags', writable: false, type: 'number' },
       current_state: { name: 'Current State', description: 'Current axis state', writable: false, type: 'number' },
-      requested_state: { name: 'Requested State', description: 'Requested axis state', writable: true, type: 'number' },
+      requested_state: { 
+        name: 'Requested State', 
+        description: 'Requested axis state', 
+        writable: true, 
+        type: 'number',
+        selectOptions: [
+          { value: 0, label: 'Undefined' },
+          { value: 1, label: 'Idle' },
+          { value: 2, label: 'Startup Sequence' },
+          { value: 3, label: 'Full Calibration' },
+          { value: 4, label: 'Motor Calibration' },
+          { value: 6, label: 'Encoder Index Search' },
+          { value: 7, label: 'Encoder Offset Calibration' },
+          { value: 8, label: 'Closed Loop Control' },
+          { value: 9, label: 'Lockin Spin' },
+          { value: 10, label: 'Encoder Direction Find' },
+          { value: 11, label: 'Homing' },
+          { value: 12, label: 'Encoder Hall Polarity Cal' },
+          { value: 13, label: 'Encoder Hall Phase Cal' }
+        ]
+      },
       step_dir_active: { name: 'Step/Dir Active', description: 'Whether step/direction interface is active', writable: false, type: 'boolean' },
       last_drv_fault: { name: 'Last DRV Fault', description: 'Last gate driver fault', writable: false, type: 'number' },
       steps: { name: 'Steps', description: 'Step count', writable: false, type: 'number' },
@@ -222,8 +349,14 @@ export const odrivePropertyTree = {
             description: 'Motor configuration and calibration parameters',
             properties: {
               pre_calibrated: { name: 'Pre-calibrated', description: 'Motor marked as pre-calibrated', writable: true, type: 'boolean' },
-              motor_type: { name: 'Motor Type', description: 'Motor type (0=HIGH_CURRENT, 2=GIMBAL, 3=ACIM)', writable: true, type: 'number' },
-              pole_pairs: { name: 'Pole Pairs', description: 'Number of motor pole pairs', writable: true, type: 'number', step: 1 },
+              motor_type: { name: 'Motor Type', description: 'Motor type (0=HIGH_CURRENT, 2=GIMBAL, 3=ACIM)', writable: true, type: 'number',
+                selectOptions: [
+                  { value: 0, label: 'High Current' },
+                  { value: 2, label: 'Gimbal' },
+                  { value: 3, label: 'ACIM' }
+                ]
+              },
+              pole_pairs: { name: 'Pole Pairs', description: 'Number of motor pole pairs', writable: true, type: 'number' },
               calibration_current: { name: 'Calibration Current', description: 'Current used for motor calibration (A)', writable: true, type: 'number', step: 0.1, decimals: 1, hasSlider: true },
               resistance_calib_max_voltage: { name: 'Resistance Calibration Max Voltage', description: 'Maximum voltage for resistance calibration (V)', writable: true, type: 'number', step: 0.1, decimals: 1, hasSlider: true },
               phase_inductance: { name: 'Phase Inductance', description: 'Motor phase inductance (H)', writable: true, type: 'number', min: 0, max: 0.01, step: 0.000001, decimals: 6, hasSlider: true },
@@ -255,7 +388,7 @@ export const odrivePropertyTree = {
                 name: 'FET Thermistor Configuration',
                 description: 'FET thermistor configuration parameters',
                 properties: {
-                  enabled: { name: 'Enabled', description: 'Enable FET thermistor monitoring', writable: true, type: 'boolean' },
+                  enabled: { name: 'Enable FET thermistor', description: 'Enable FET thermistor monitoring', writable: true, type: 'boolean' },
                   temp_limit_lower: { name: 'Lower Temperature Limit', description: 'Lower temperature limit for current limiting (°C)', writable: true, type: 'number', decimals: 1, hasSlider: true },
                   temp_limit_upper: { name: 'Upper Temperature Limit', description: 'Upper temperature limit for shutdown (°C)', writable: true, type: 'number', decimals: 1, hasSlider: true },
                 }
@@ -311,7 +444,22 @@ export const odrivePropertyTree = {
             name: 'Encoder Configuration',
             description: 'Encoder configuration and calibration parameters',
             properties: {
-              mode: { name: 'Encoder Mode', description: 'Encoder mode (0=INCREMENTAL, 1=HALL, 2=SINCOS, 256=SPI_ABS_CUI, 257=SPI_ABS_AMS, 258=SPI_ABS_AEAT, 259=SPI_ABS_RLS, 260=SPI_ABS_MA732)', writable: true, type: 'number' },
+              mode: { 
+                name: 'Encoder Mode', 
+                description: 'Encoder mode selection', 
+                writable: true, 
+                type: 'number',
+                selectOptions: [
+                  { value: 0, label: 'Incremental' },
+                  { value: 1, label: 'Hall' },
+                  { value: 2, label: 'SinCos' },
+                  { value: 256, label: 'SPI Absolute CUI' },
+                  { value: 257, label: 'SPI Absolute AMS' },
+                  { value: 258, label: 'SPI Absolute AEAT' },
+                  { value: 259, label: 'SPI Absolute RLS' },
+                  { value: 260, label: 'SPI Absolute MA732' }
+                ]
+              },
               use_index: { name: 'Use Index', description: 'Use encoder index signal', writable: true, type: 'boolean' },
               find_idx_on_lockin_only: { name: 'Find Index on Lock-in Only', description: 'Only find index during lock-in phase', writable: true, type: 'boolean' },
               abs_spi_cs_gpio_pin: { name: 'Absolute SPI CS GPIO Pin', description: 'GPIO pin for absolute SPI chip select', writable: true, type: 'number' },
@@ -333,7 +481,16 @@ export const odrivePropertyTree = {
               },
               hall_polarity_calibrated: { name: 'Hall Polarity Calibrated', description: 'Hall sensor polarity calibration status', writable: true, type: 'number' },
 
-              direction: { name: 'Direction', description: 'Encoder direction (1 or -1)', writable: true, type: 'number', min: -1, max: 1, step: 2 },
+              direction: { 
+                name: 'Direction', 
+                description: 'Encoder direction (1 or -1)', 
+                writable: true, 
+                type: 'number',
+                selectOptions: [
+                  { value: 1, label: 'Forward (1)' },
+                  { value: -1, label: 'Reverse (-1)' }
+                ]
+              },
               use_index_offset: { name: 'Use Index Offset', description: 'Use encoder index offset', writable: true, type: 'boolean' },
               index_offset: { name: 'Index Offset', description: 'Encoder index offset', writable: true, type: 'number', decimals: 6 },
             }
@@ -386,8 +543,39 @@ export const odrivePropertyTree = {
             name: 'Controller Configuration',
             description: 'Controller configuration parameters',
             properties: {
-              control_mode: { name: 'Control Mode', description: 'Control mode (0=VOLTAGE, 1=TORQUE, 2=VELOCITY, 3=POSITION)', writable: true, type: 'number', min: 0, max: 3 },
-              input_mode: { name: 'Input Mode', description: 'Input mode (0=INACTIVE, 1=PASSTHROUGH, 2=VEL_RAMP, 3=POS_FILTER, 4=MIX_CHANNELS, 5=TRAP_TRAJ, 6=TORQUE_RAMP, 7=MIRROR, 8=TUNING)', writable: true, type: 'number', min: 0, max: 8 },
+              control_mode: { 
+                name: 'Control Mode', 
+                description: 'Control mode (0=VOLTAGE, 1=TORQUE, 2=VELOCITY, 3=POSITION)', 
+                writable: true, 
+                type: 'number', 
+                min: 0, 
+                max: 3,
+                selectOptions: [
+                  { value: 0, label: 'Voltage Control' },
+                  { value: 1, label: 'Torque Control' },
+                  { value: 2, label: 'Velocity Control' },
+                  { value: 3, label: 'Position Control' }
+                ]
+              },
+              input_mode: { 
+                name: 'Input Mode', 
+                description: 'Input mode (0=INACTIVE, 1=PASSTHROUGH, 2=VEL_RAMP, 3=POS_FILTER, 4=MIX_CHANNELS, 5=TRAP_TRAJ, 6=TORQUE_RAMP, 7=MIRROR, 8=TUNING)', 
+                writable: true, 
+                type: 'number', 
+                min: 0, 
+                max: 8,
+                selectOptions: [
+                  { value: 0, label: 'Inactive' },
+                  { value: 1, label: 'Passthrough' },
+                  { value: 2, label: 'Velocity Ramp' },
+                  { value: 3, label: 'Position Filter' },
+                  { value: 4, label: 'Mix Channels' },
+                  { value: 5, label: 'Trapezoidal Trajectory' },
+                  { value: 6, label: 'Torque Ramp' },
+                  { value: 7, label: 'Mirror' },
+                  { value: 8, label: 'Tuning' }
+                ]
+              },
               pos_gain: { name: 'Position Gain', description: 'Position controller proportional gain', writable: true, type: 'number', step: 0.1, decimals: 3, hasSlider: true },
               vel_gain: { name: 'Velocity Gain', description: 'Velocity controller proportional gain', writable: true, type: 'number', step: 0.001, decimals: 6, hasSlider: true },
               vel_integrator_gain: { name: 'Velocity Integrator Gain', description: 'Velocity controller integral gain', writable: true, type: 'number', step: 0.001, decimals: 6, hasSlider: true },

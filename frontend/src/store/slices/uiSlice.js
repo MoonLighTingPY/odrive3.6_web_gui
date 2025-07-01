@@ -19,7 +19,7 @@ const uiSlice = createSlice({
         ...action.payload,
       }
       state.notifications.push(notification)
-      
+
       // Keep only last 50 notifications
       if (state.notifications.length > 50) {
         state.notifications = state.notifications.slice(-50)
@@ -69,7 +69,7 @@ const uiSlice = createSlice({
         ...action.payload,
       }
       state.commandHistory.push(command)
-      
+
       // Keep only last 100 commands
       if (state.commandHistory.length > 100) {
         state.commandHistory = state.commandHistory.slice(-100)

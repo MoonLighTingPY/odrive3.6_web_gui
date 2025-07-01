@@ -8,15 +8,15 @@ import {
 } from '@chakra-ui/react'
 import { getAllAvailablePresets, isFactoryPreset } from '../../utils/presetsManager'
 
-const PresetSelector = ({ 
-  value = '', 
-  onChange, 
-  placeholder = "Select a preset...", 
+const PresetSelector = ({
+  value = '',
+  onChange,
+  placeholder = "Select a preset...",
   size = "md",
-  isDisabled = false 
+  isDisabled = false
 }) => {
   const presets = getAllAvailablePresets()
-  
+
   const formatPresetOption = (name) => {
     const isFactory = isFactoryPreset(name)
     const prefix = isFactory ? '[Factory] ' : '[User] '
@@ -27,7 +27,7 @@ const PresetSelector = ({
     // Factory presets first, then user presets alphabetically
     const aFactory = isFactoryPreset(a)
     const bFactory = isFactoryPreset(b)
-    
+
     if (aFactory && !bFactory) return -1
     if (!aFactory && bFactory) return 1
     return a.localeCompare(b)
@@ -50,7 +50,7 @@ const PresetSelector = ({
           </option>
         ))}
       </Select>
-      
+
       {value && selectedPreset && (
         <VStack spacing={1} align="start">
           <HStack>
@@ -63,7 +63,7 @@ const PresetSelector = ({
               </Text>
             )}
           </HStack>
-          
+
           {selectedPreset.description && (
             <Text fontSize="xs" color="gray.600" _dark={{ color: 'gray.400' }} fontStyle="italic">
               {selectedPreset.description}

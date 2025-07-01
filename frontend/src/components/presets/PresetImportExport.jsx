@@ -79,7 +79,7 @@ const PresetImportExport = ({ onImportComplete, compact = false }) => {
       const results = await importPresetsFromFile(file, overwriteExisting)
       setImportResults(results)
       setShowResults(true)
-      
+
       let resultMessage = `Imported: ${results.imported}`
       if (results.overwritten > 0) {
         resultMessage += `, Overwritten: ${results.overwritten}`
@@ -97,7 +97,7 @@ const PresetImportExport = ({ onImportComplete, compact = false }) => {
         status: results.errors.length > 0 ? 'warning' : 'success',
         duration: 5000,
       })
-      
+
       if (onImportComplete) {
         onImportComplete()
       }
@@ -133,7 +133,7 @@ const PresetImportExport = ({ onImportComplete, compact = false }) => {
         >
           Import
         </Button>
-        
+
         <Button
           size="xs"
           leftIcon={<DownloadIcon />}
@@ -164,7 +164,7 @@ const PresetImportExport = ({ onImportComplete, compact = false }) => {
     <>
       <VStack spacing={3} align="stretch">
         <Text fontSize="sm" fontWeight="medium">Import / Export</Text>
-        
+
         <VStack spacing={2} align="stretch">
           <Checkbox
             isChecked={overwriteExisting}
@@ -185,7 +185,7 @@ const PresetImportExport = ({ onImportComplete, compact = false }) => {
             >
               Import Presets
             </Button>
-            
+
             <Button
               size="sm"
               leftIcon={<DownloadIcon />}
@@ -214,7 +214,7 @@ const PresetImportExport = ({ onImportComplete, compact = false }) => {
         <ModalContent>
           <ModalHeader>Import Results</ModalHeader>
           <ModalCloseButton />
-          
+
           <ModalBody>
             {importResults && (
               <VStack spacing={4} align="stretch">
@@ -257,13 +257,13 @@ const PresetImportExport = ({ onImportComplete, compact = false }) => {
                 )}
 
                 {/* Success message */}
-                {importResults.errors.length === 0 && 
-                 (importResults.imported > 0 || importResults.overwritten > 0) && (
-                  <Alert status="success">
-                    <AlertIcon />
-                    Import completed successfully!
-                  </Alert>
-                )}
+                {importResults.errors.length === 0 &&
+                  (importResults.imported > 0 || importResults.overwritten > 0) && (
+                    <Alert status="success">
+                      <AlertIcon />
+                      Import completed successfully!
+                    </Alert>
+                  )}
               </VStack>
             )}
           </ModalBody>

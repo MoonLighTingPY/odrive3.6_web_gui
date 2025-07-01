@@ -18,7 +18,7 @@ const CommandConsoleTab = memo(() => {
   return (
     <Box p={4} h="100%" maxW="1400px" mx="auto">
       <VStack spacing={4} align="stretch" h="100%">
-        
+
         {/* Compact Header Bar */}
         <HStack justify="space-between" align="center" p={3} bg="gray.800" borderRadius="md">
           <HStack spacing={3}>
@@ -27,12 +27,12 @@ const CommandConsoleTab = memo(() => {
               Command Console
             </Text>
           </HStack>
-          
+
           <HStack spacing={3}>
             {connectedDevice && (
-              <Badge 
-                colorScheme="gray" 
-                variant="subtle" 
+              <Badge
+                colorScheme="gray"
+                variant="subtle"
                 fontSize="xs"
                 display={{ base: 'none', md: 'flex' }}
               >
@@ -69,11 +69,11 @@ const CommandConsoleTab = memo(() => {
         )}
 
         {/* Console Content - Centered Card */}
-        <Box 
-          flex="1" 
-          bg="gray.800" 
-          borderRadius="md" 
-          borderWidth="1px" 
+        <Box
+          flex="1"
+          bg="gray.800"
+          borderRadius="md"
+          borderWidth="1px"
           borderColor="gray.600"
           overflow="hidden"
         >

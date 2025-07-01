@@ -3,7 +3,7 @@ import { useToast } from '@chakra-ui/react'
 
 export const useCalibration = () => {
   const toast = useToast()
-  
+
   // Calibration state
   const [calibrationStatus, setCalibrationStatus] = useState(null)
   const [calibrationProgress, setCalibrationProgress] = useState(0)
@@ -24,19 +24,19 @@ export const useCalibration = () => {
             setCalibrationStatus(status)
             setCalibrationProgress(status.progress_percentage || 0)
             setCalibrationPhase(status.calibration_phase || 'idle')
-            
+
             // Check for errors FIRST before auto-continue
             const hasErrors = status.axis_error !== 0 || status.motor_error !== 0 || status.encoder_error !== 0
-            
+
             if (hasErrors) {
               console.log('Calibration errors detected, stopping calibration:', {
                 axis_error: status.axis_error,
-                motor_error: status.motor_error, 
+                motor_error: status.motor_error,
                 encoder_error: status.encoder_error
               })
-              
+
               setIsCalibrating(false)
-              
+
               // Determine error messages based on error codes
               const errorMessages = []
               if (status.axis_error === 0x100) {
@@ -48,11 +48,11 @@ export const useCalibration = () => {
               if (status.encoder_error & 0x200) {
                 errorMessages.push("Hall sensors not calibrated")
               }
-              
-              const errorDescription = errorMessages.length > 0 
+
+              const errorDescription = errorMessages.length > 0
                 ? errorMessages.join('; ')
                 : `Axis: 0x${status.axis_error.toString(16)}, Motor: 0x${status.motor_error.toString(16)}, Encoder: 0x${status.encoder_error.toString(16)}`
-              
+
               toast({
                 title: 'Calibration Failed',
                 description: errorDescription,
@@ -60,25 +60,25 @@ export const useCalibration = () => {
                 duration: 8000,
                 isClosable: true
               })
-              
+
               return // Exit early, don't process auto-continue
             }
-            
+
             // Auto-continue calibration sequence if needed (ONLY if no errors)
             if (status.auto_continue_action && status.calibration_phase === 'ready_for_offset') {
               console.log('Auto-continuing to encoder offset calibration...')
-              
+
               // Add a state to prevent multiple auto-continue attempts
               if (!calibrationStatus?.auto_continue_in_progress) {
                 setCalibrationStatus(prev => ({ ...prev, auto_continue_in_progress: true }))
-                
+
                 toast({
                   title: 'Auto-continuing calibration',
                   description: 'Encoder polarity complete, starting offset calibration...',
                   status: 'info',
                   duration: 3000,
                 })
-                
+
                 // Wait a moment, then continue to offset calibration
                 setTimeout(async () => {
                   try {
@@ -87,7 +87,7 @@ export const useCalibration = () => {
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ step: 'encoder_offset' })
                     })
-                    
+
                     if (continueResponse.ok) {
                       const result = await continueResponse.json()
                       console.log('Auto-continue result:', result)
@@ -113,7 +113,7 @@ export const useCalibration = () => {
                 }, 1000)
               }
             }
-            
+
             // Check if calibration is complete
             if (status.calibration_phase === 'complete' || status.calibration_phase === 'full_calibration_complete') {
               console.log('Calibration completed successfully!')
@@ -133,7 +133,7 @@ export const useCalibration = () => {
           console.error('Failed to fetch calibration status:', error)
         }
       }, 500)
-      
+
       return () => clearInterval(interval)
     }
   }, [isCalibrating, toast, calibrationStatus?.auto_continue_in_progress])
@@ -152,14 +152,14 @@ export const useCalibration = () => {
         setCalibrationProgress(0)
         setCalibrationPhase('starting')
         setCalibrationSequence(result.sequence || [])
-        
+
         toast({
           title: 'Calibration Started',
           description: result.message,
           status: 'info',
           duration: 3000,
         })
-        
+
         return { success: true, sequence: result.sequence }
       } else {
         const error = await response.json()
@@ -206,7 +206,7 @@ export const useCalibration = () => {
     isCalibrating,
     calibrationPhase,
     calibrationSequence,
-    
+
     // Actions
     startCalibration,
     stopCalibration,

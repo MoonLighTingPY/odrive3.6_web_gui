@@ -15,7 +15,7 @@ const initialState = {
     brake_resistance: 2.0,
     brake_resistor_enabled: false,
   },
-  
+
   // Motor Configuration
   motorConfig: {
     motor_type: 0, // HIGH_CURRENT
@@ -28,7 +28,7 @@ const initialState = {
     phase_resistance: 0.0,
     phase_inductance: 0.0,
   },
-  
+
   // Encoder Configuration
   encoderConfig: {
     encoder_type: 1, // INCREMENTAL
@@ -40,7 +40,7 @@ const initialState = {
     calib_scan_omega: 12.566,
     use_separate_encoder: false,
   },
-  
+
   // Control Configuration
   controlConfig: {
     control_mode: 3, // POSITION_CONTROL
@@ -59,7 +59,7 @@ const initialState = {
     load_encoder_axis: 0,
     input_filter_bandwidth: 2.0,
   },
-  
+
   // Interface Configuration
   interfaceConfig: {
     // CAN

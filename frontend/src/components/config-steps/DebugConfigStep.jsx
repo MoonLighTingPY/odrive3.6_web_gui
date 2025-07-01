@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import {
   Box,
@@ -37,7 +37,7 @@ const DebugConfigStep = () => {
   const toast = useToast()
   const dispatch = useDispatch()
   const { isConnected, connectedDevice } = useSelector(state => state.device)
-  
+
   const [isRunning, setIsRunning] = useState(false)
   const [currentStep, setCurrentStep] = useState('')
   const [progress, setProgress] = useState(0)
@@ -163,47 +163,47 @@ const DebugConfigStep = () => {
   }
 
   // Helper: Wait for deviceReconnected event (with timeout)
-const waitForDeviceReconnect = (timeout = 15000) => {
-  return new Promise((resolve, reject) => {
-    let timer
-    const handler = () => {
-      clearTimeout(timer)
-      window.removeEventListener('deviceReconnected', handler)
-      resolve()
-    }
-    window.addEventListener('deviceReconnected', handler)
-    timer = setTimeout(() => {
-      window.removeEventListener('deviceReconnected', handler)
-      reject(new Error('Timed out waiting for device to reconnect'))
-    }, timeout)
-  })
-}
-
-// Helper: Actively try to reconnect to the device after reboot and fire deviceReconnected event
-const reconnectAfterReboot = async (connectedDevice, dispatch, addLog) => {
-  // Try to reconnect up to 5 times, 2s apart
-  for (let i = 0; i < 5; i++) {
-    try {
-      const response = await fetch('/api/odrive/connect', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ device: connectedDevice })
-      })
-      if (response.ok) {
-        dispatch && dispatch({ type: 'device/setConnectedDevice', payload: connectedDevice })
-        window.dispatchEvent(new Event('deviceReconnected'))
-        addLog && addLog('Device reconnected (manual trigger)', 'success')
-        return true
+  const waitForDeviceReconnect = (timeout = 15000) => {
+    return new Promise((resolve, reject) => {
+      let timer
+      const handler = () => {
+        clearTimeout(timer)
+        window.removeEventListener('deviceReconnected', handler)
+        resolve()
       }
-    // eslint-disable-next-line no-unused-vars
-    } catch (e) {
-      // ignore
-    }
-    await new Promise(res => setTimeout(res, 2000))
+      window.addEventListener('deviceReconnected', handler)
+      timer = setTimeout(() => {
+        window.removeEventListener('deviceReconnected', handler)
+        reject(new Error('Timed out waiting for device to reconnect'))
+      }, timeout)
+    })
   }
-  addLog && addLog('Device did not reconnect after reboot', 'warning')
-  return false
-}
+
+  // Helper: Actively try to reconnect to the device after reboot and fire deviceReconnected event
+  const reconnectAfterReboot = async (connectedDevice, dispatch, addLog) => {
+    // Try to reconnect up to 5 times, 2s apart
+    for (let i = 0; i < 5; i++) {
+      try {
+        const response = await fetch('/api/odrive/connect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ device: connectedDevice })
+        })
+        if (response.ok) {
+          dispatch && dispatch({ type: 'device/setConnectedDevice', payload: connectedDevice })
+          window.dispatchEvent(new Event('deviceReconnected'))
+          addLog && addLog('Device reconnected (manual trigger)', 'success')
+          return true
+        }
+        // eslint-disable-next-line no-unused-vars
+      } catch (e) {
+        // ignore
+      }
+      await new Promise(res => setTimeout(res, 2000))
+    }
+    addLog && addLog('Device did not reconnect after reboot', 'warning')
+    return false
+  }
 
   const runFullDebugTest = async () => {
     if (!isConnected) {
@@ -226,11 +226,11 @@ const reconnectAfterReboot = async (connectedDevice, dispatch, addLog) => {
       addLog('🔍 Getting unified registry debug info...', 'info')
       setCurrentStep('Analyzing unified registry')
       setProgress(5)
-      
+
       const registryInfo = getDebugInfo()
       addLog(`Found ${registryInfo.batchPathsCount} batch paths`, 'success')
       addLog(`Categories: ${registryInfo.categories.join(', ')}`, 'info')
-      
+
       Object.entries(registryInfo.parameterCounts).forEach(([cat, count]) => {
         addLog(`${cat}: ${count} parameters`, 'info')
       })
@@ -242,7 +242,7 @@ const reconnectAfterReboot = async (connectedDevice, dispatch, addLog) => {
 
       const initialConfig = await loadAllConfigurationBatch()
       addLog(`Pulled configuration with ${Object.keys(initialConfig).length} categories`, 'success')
-      
+
       Object.entries(initialConfig).forEach(([cat, config]) => {
         addLog(`${cat}: ${Object.keys(config).length} parameters pulled`, 'info')
       })
@@ -254,10 +254,10 @@ const reconnectAfterReboot = async (connectedDevice, dispatch, addLog) => {
 
       const commands1 = generateAllCommands(testConfig1)
       addLog(`Generated ${commands1.length} commands for test config 1`, 'info')
-      
+
       await executeConfigAction('apply', { commands: commands1 })
       addLog('Applied test config 1 successfully', 'success')
-      
+
       // Save and reboot, but don't abort if it fails
       try {
         await saveAndRebootWithReconnect(toast, dispatch, connectedDevice)
@@ -278,7 +278,7 @@ const reconnectAfterReboot = async (connectedDevice, dispatch, addLog) => {
         try {
           await waitForDeviceReconnect()
           addLog('✅ Device reconnected (event)', 'success')
-        // eslint-disable-next-line no-unused-vars
+          // eslint-disable-next-line no-unused-vars
         } catch (e) {
           addLog('⚠️ Device did not reconnect in time', 'warning')
         }
@@ -299,10 +299,10 @@ const reconnectAfterReboot = async (connectedDevice, dispatch, addLog) => {
 
       const commands2 = generateAllCommands(testConfig2)
       addLog(`Generated ${commands2.length} commands for test config 2`, 'info')
-      
+
       await executeConfigAction('apply', { commands: commands2 })
       addLog('Applied test config 2 successfully', 'success')
-      
+
       // Save and reboot, but don't abort if it fails
       try {
         await saveAndRebootWithReconnect(toast, dispatch, connectedDevice)
@@ -310,7 +310,7 @@ const reconnectAfterReboot = async (connectedDevice, dispatch, addLog) => {
       } catch (e) {
         addLog(`Save & Reboot Failed: ${e.message}`, 'warning')
       }
-      
+
       // Wait for reboot and reconnection
       addLog('🔄 Waiting for device reboot...', 'warning')
       setProgress(70)
@@ -323,7 +323,7 @@ const reconnectAfterReboot = async (connectedDevice, dispatch, addLog) => {
         try {
           await waitForDeviceReconnect()
           addLog('✅ Device reconnected (event)', 'success')
-        // eslint-disable-next-line no-unused-vars
+          // eslint-disable-next-line no-unused-vars
         } catch (e) {
           addLog('⚠️ Device did not reconnect in time', 'warning')
         }
@@ -388,117 +388,117 @@ const reconnectAfterReboot = async (connectedDevice, dispatch, addLog) => {
       categoryAnalysis: {}
     }
 
-    // Analyze each category
-    ;['power', 'motor', 'encoder', 'control', 'interface'].forEach(category => {
-      const categoryParams = getCategoryParameters(category)
-      const categoryAnalysis = {
-        totalParams: categoryParams.length,
-        pulledParams: 0,
-        workingParams: 0,
-        failedParams: []
-      }
+      // Analyze each category
+      ;['power', 'motor', 'encoder', 'control', 'interface'].forEach(category => {
+        const categoryParams = getCategoryParameters(category)
+        const categoryAnalysis = {
+          totalParams: categoryParams.length,
+          pulledParams: 0,
+          workingParams: 0,
+          failedParams: []
+        }
 
-      categoryParams.forEach(param => {
-        const key = param.configKey
-        
-        // Check if parameter was pulled
-        const wasPulled = (
-          initial[category] && initial[category][key] !== undefined &&
-          test1Actual[category] && test1Actual[category][key] !== undefined &&
-          test2Actual[category] && test2Actual[category][key] !== undefined
-        )
+        categoryParams.forEach(param => {
+          const key = param.configKey
 
-        if (wasPulled) {
-          categoryAnalysis.pulledParams++
-          
-          // Check if parameter changes as expected
-          const test1ExpectedVal = test1Expected[category] ? test1Expected[category][key] : undefined
-          const test1ActualVal = test1Actual[category] ? test1Actual[category][key] : undefined
-          const test2ExpectedVal = test2Expected[category] ? test2Expected[category][key] : undefined
-          const test2ActualVal = test2Actual[category] ? test2Actual[category][key] : undefined
+          // Check if parameter was pulled
+          const wasPulled = (
+            initial[category] && initial[category][key] !== undefined &&
+            test1Actual[category] && test1Actual[category][key] !== undefined &&
+            test2Actual[category] && test2Actual[category][key] !== undefined
+          )
 
-          // Special comparison logic
-          const test1Works = compareValues(test1ExpectedVal, test1ActualVal, param)
-          const test2Works = compareValues(test2ExpectedVal, test2ActualVal, param)
+          if (wasPulled) {
+            categoryAnalysis.pulledParams++
 
-          if (test1Works && test2Works) {
-            categoryAnalysis.workingParams++
-            analysis.workingParameters.push({
-              category,
-              parameter: key,
-              path: param.path,
-              test1: { expected: test1ExpectedVal, actual: test1ActualVal },
-              test2: { expected: test2ExpectedVal, actual: test2ActualVal }
-            })
+            // Check if parameter changes as expected
+            const test1ExpectedVal = test1Expected[category] ? test1Expected[category][key] : undefined
+            const test1ActualVal = test1Actual[category] ? test1Actual[category][key] : undefined
+            const test2ExpectedVal = test2Expected[category] ? test2Expected[category][key] : undefined
+            const test2ActualVal = test2Actual[category] ? test2Actual[category][key] : undefined
+
+            // Special comparison logic
+            const test1Works = compareValues(test1ExpectedVal, test1ActualVal, param)
+            const test2Works = compareValues(test2ExpectedVal, test2ActualVal, param)
+
+            if (test1Works && test2Works) {
+              categoryAnalysis.workingParams++
+              analysis.workingParameters.push({
+                category,
+                parameter: key,
+                path: param.path,
+                test1: { expected: test1ExpectedVal, actual: test1ActualVal },
+                test2: { expected: test2ExpectedVal, actual: test2ActualVal }
+              })
+            } else {
+              categoryAnalysis.failedParams.push({
+                parameter: key,
+                path: param.path,
+                test1Works,
+                test2Works,
+                test1: { expected: test1ExpectedVal, actual: test1ActualVal },
+                test2: { expected: test2ExpectedVal, actual: test2ActualVal }
+              })
+              analysis.parametersNotSet.push({
+                category,
+                parameter: key,
+                path: param.path,
+                issue: !test1Works ? 'Test 1 failed' : 'Test 2 failed'
+              })
+            }
           } else {
-            categoryAnalysis.failedParams.push({
-              parameter: key,
-              path: param.path,
-              test1Works,
-              test2Works,
-              test1: { expected: test1ExpectedVal, actual: test1ActualVal },
-              test2: { expected: test2ExpectedVal, actual: test2ActualVal }
-            })
-            analysis.parametersNotSet.push({
+            analysis.parametersNotPulled.push({
               category,
               parameter: key,
-              path: param.path,
-              issue: !test1Works ? 'Test 1 failed' : 'Test 2 failed'
+              path: param.path
             })
           }
-        } else {
-          analysis.parametersNotPulled.push({
-            category,
-            parameter: key,
-            path: param.path
-          })
-        }
-      })
+        })
 
-      analysis.categoryAnalysis[category] = categoryAnalysis
-    })
+        analysis.categoryAnalysis[category] = categoryAnalysis
+      })
 
     return analysis
   }
 
   // Helper function for value comparison
-const compareValues = (expected, actual, param) => {
-  if (expected === undefined) return true
+  const compareValues = (expected, actual, param) => {
+    if (expected === undefined) return true
 
-  let actualVal = actual
-  if (typeof actual === 'string') {
-    const n = parseFloat(actual)
-    if (!isNaN(n) && param.property.type === 'number') {
-      actualVal = n
-    } else if (actual === 'True' || actual === 'False') {
-      actualVal = actual === 'True'
+    let actualVal = actual
+    if (typeof actual === 'string') {
+      const n = parseFloat(actual)
+      if (!isNaN(n) && param.property.type === 'number') {
+        actualVal = n
+      } else if (actual === 'True' || actual === 'False') {
+        actualVal = actual === 'True'
+      }
     }
-  }
 
-  if (param.type === 'boolean' || typeof expected === 'boolean') {
-    const expectedBool = Boolean(expected)
-    const actualBool = Boolean(actual)
-    return expectedBool === actualBool
-  }
+    if (param.type === 'boolean' || typeof expected === 'boolean') {
+      const expectedBool = Boolean(expected)
+      const actualBool = Boolean(actual)
+      return expectedBool === actualBool
+    }
 
-  // infinite torque_lim special case
-  if (param.configKey === 'torque_lim') {
-    if (expected >= 1e6 && actualVal >= 1e6) return true
-    if ((expected === 'inf' || expected === Infinity) && actualVal >= 1e6) return true
-  }
+    // infinite torque_lim special case
+    if (param.configKey === 'torque_lim') {
+      if (expected >= 1e6 && actualVal >= 1e6) return true
+      if ((expected === 'inf' || expected === Infinity) && actualVal >= 1e6) return true
+    }
 
-  // motor_kv is stored and pulled as KV directly, so compare KV→KV
-  if (param.configKey === 'motor_kv') {
-    return Math.abs(expected - actualVal) < 1e-3
-  }
+    // motor_kv is stored and pulled as KV directly, so compare KV→KV
+    if (param.configKey === 'motor_kv') {
+      return Math.abs(expected - actualVal) < 1e-3
+    }
 
-  // numeric tolerance fallback
-  if (typeof expected === 'number' && typeof actualVal === 'number') {
-    return Math.abs(expected - actualVal) < 1e-3
-  }
+    // numeric tolerance fallback
+    if (typeof expected === 'number' && typeof actualVal === 'number') {
+      return Math.abs(expected - actualVal) < 1e-3
+    }
 
-  return expected === actualVal
-}
+    return expected === actualVal
+  }
 
   const renderAnalysis = () => {
     if (!debugResults?.analysis) return null
@@ -517,7 +517,7 @@ const compareValues = (expected, actual, param) => {
               <Text color="green.100">Working Parameters</Text>
             </CardBody>
           </Card>
-          
+
           <Card bg="red.900" minW="200px">
             <CardBody>
               <Text fontSize="2xl" fontWeight="bold" color="red.300">
@@ -526,7 +526,7 @@ const compareValues = (expected, actual, param) => {
               <Text color="red.100">Not Pulled</Text>
             </CardBody>
           </Card>
-          
+
           <Card bg="orange.900" minW="200px">
             <CardBody>
               <Text fontSize="2xl" fontWeight="bold" color="orange.300">
@@ -661,7 +661,7 @@ const compareValues = (expected, actual, param) => {
   return (
     <Box h="100%" p={4} overflow="auto">
       <VStack spacing={6} align="stretch" maxW="1200px" mx="auto">
-        
+
         <Card bg="gray.800" variant="elevated">
           <CardHeader>
             <Heading size="lg" color="white" textAlign="center">🐛 Debug Configuration Test</Heading>
@@ -670,17 +670,17 @@ const compareValues = (expected, actual, param) => {
             </Text>
           </CardHeader>
           <CardBody>
-            
+
             <Alert status="info" bg="blue.900" mb={4}>
               <AlertIcon />
               <Text color="blue.100">
-                This debug test will pull all parameters, apply two different test configurations, 
+                This debug test will pull all parameters, apply two different test configurations,
                 save and reboot between each, then analyze what worked and what didn't.
               </Text>
             </Alert>
 
             <VStack spacing={4} align="stretch">
-              
+
               <Button
                 colorScheme="blue"
                 size="lg"
@@ -713,12 +713,12 @@ const compareValues = (expected, actual, param) => {
                             <Text color="gray.500" fontSize="xs" minW="80px">
                               {log.timestamp}
                             </Text>
-                            <Text 
+                            <Text
                               color={
                                 log.type === 'error' ? 'red.300' :
-                                log.type === 'success' ? 'green.300' :
-                                log.type === 'warning' ? 'orange.300' :
-                                'gray.300'
+                                  log.type === 'success' ? 'green.300' :
+                                    log.type === 'warning' ? 'orange.300' :
+                                      'gray.300'
                               }
                               fontSize="sm"
                             >

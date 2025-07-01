@@ -5,6 +5,7 @@
   color: #ffffff;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
+
 .help-button {
   margin-left: auto;
   padding: 0.5rem 1rem;
@@ -15,9 +16,11 @@
   font-size: 0.9rem;
   cursor: pointer;
 }
+
 .help-button:hover {
   background-color: #009499;
 }
+
 .theme-switcher {
   padding: 0.5rem;
   background: #404040;
@@ -27,6 +30,7 @@
   cursor: pointer;
   font-size: 1.1rem;
 }
+
 .theme-switcher:hover {
   background: #505050;
 }

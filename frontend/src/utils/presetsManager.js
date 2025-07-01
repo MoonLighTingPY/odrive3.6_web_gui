@@ -22,16 +22,16 @@ export const saveCurrentConfigAsPreset = (deviceConfig, presetName, description 
     control: deviceConfig.control || {},
     interface: deviceConfig.interface || {}
   }
-  
+
   // Only add missing parameters with defaults if we have some real data
-  const hasRealData = Object.values(fullConfig).some(category => 
+  const hasRealData = Object.values(fullConfig).some(category =>
     Object.keys(category).length > 0
   )
-  
+
   if (hasRealData) {
     // Merge with full parameter set but keep existing values
     const completeConfig = generateFullConfig(deviceConfig)
-    
+
     // Preserve actual values over defaults
     Object.keys(fullConfig).forEach(category => {
       if (fullConfig[category] && Object.keys(fullConfig[category]).length > 0) {
@@ -44,7 +44,7 @@ export const saveCurrentConfigAsPreset = (deviceConfig, presetName, description 
       }
     })
   }
-  
+
   const preset = {
     name: presetName,
     description,
@@ -55,7 +55,7 @@ export const saveCurrentConfigAsPreset = (deviceConfig, presetName, description 
 
   // Get existing presets from localStorage
   const existingPresets = getStoredPresets()
-  
+
   // Add new preset (or overwrite existing one with same name)
   const updatedPresets = {
     ...existingPresets,
@@ -64,7 +64,7 @@ export const saveCurrentConfigAsPreset = (deviceConfig, presetName, description 
 
   // Save to localStorage
   localStorage.setItem('odrive_config_presets', JSON.stringify(updatedPresets))
-  
+
   return preset
 }
 
@@ -135,7 +135,7 @@ export const updatePreset = (oldName, newName, description = '') => {
   try {
     const presets = getStoredPresets()
     const originalPreset = presets[oldName]
-    
+
     if (!originalPreset) {
       throw new Error(`Preset "${oldName}" not found`)
     }
@@ -158,7 +158,7 @@ export const updatePreset = (oldName, newName, description = '') => {
 
     // Save to localStorage
     localStorage.setItem('odrive_config_presets', JSON.stringify(presets))
-    
+
     return updatedPreset
   } catch (error) {
     console.error('Error updating preset:', error)
@@ -207,20 +207,20 @@ export const exportPresetsToFile = (presetNames = null) => {
   }
 
   // Create and download file
-  const blob = new Blob([JSON.stringify(exportData, null, 2)], { 
-    type: 'application/json' 
+  const blob = new Blob([JSON.stringify(exportData, null, 2)], {
+    type: 'application/json'
   })
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = url
-  
+
   const timestamp = new Date().toISOString().split('T')[0]
-  const filename = presetNames === null 
+  const filename = presetNames === null
     ? `odrive_presets_all_${timestamp}.json`
     : typeof presetNames === 'string'
-    ? `odrive_preset_${presetNames}_${timestamp}.json`
-    : `odrive_presets_selected_${timestamp}.json`
-  
+      ? `odrive_preset_${presetNames}_${timestamp}.json`
+      : `odrive_presets_selected_${timestamp}.json`
+
   link.download = filename
   document.body.appendChild(link)
   link.click()
@@ -247,11 +247,11 @@ export const importPresetsFromFile = async (file, overwriteExisting = false) => 
     }
 
     const reader = new FileReader()
-    
+
     reader.onload = (event) => {
       try {
         const importData = JSON.parse(event.target.result)
-        
+
         // Validate import data structure
         if (!importData.presets || typeof importData.presets !== 'object') {
           reject(new Error('Invalid preset file format'))
@@ -276,7 +276,7 @@ export const importPresetsFromFile = async (file, overwriteExisting = false) => 
             }
 
             const presetExists = existingPresets[presetName]
-            
+
             if (presetExists && !overwriteExisting) {
               importResults.skipped++
               return
@@ -302,7 +302,7 @@ export const importPresetsFromFile = async (file, overwriteExisting = false) => 
 
         // Save updated presets to localStorage
         localStorage.setItem('odrive_config_presets', JSON.stringify(existingPresets))
-        
+
         resolve(importResults)
 
       } catch (error) {
@@ -379,7 +379,7 @@ export const validatePresetConfig = (config) => {
   if (!config || typeof config !== 'object') return false
 
   const requiredSections = ['power', 'motor', 'encoder', 'control', 'interface']
-  return requiredSections.every(section => 
+  return requiredSections.every(section =>
     config[section] && typeof config[section] === 'object'
   )
 }
@@ -429,10 +429,10 @@ export const getPresetCoverage = (presetName) => {
 
   Object.entries(categories).forEach(([category, parameters]) => {
     const presetCategory = preset.config[category] || {}
-    
+
     parameters.forEach(param => {
       const metadata = odriveRegistry.getParameterMetadata(category, param.configKey)
-      
+
       if (metadata && metadata.writable) {
         totalParams++
         if (presetCategory[param.configKey] !== undefined) {
@@ -465,7 +465,7 @@ export const upgradePreset = (presetName) => {
 
   // Generate full config using existing values as base
   const upgradedConfig = generateFullConfig(preset.config)
-  
+
   const upgradedPreset = {
     ...preset,
     config: upgradedConfig,

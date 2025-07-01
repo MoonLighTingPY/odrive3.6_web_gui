@@ -18,11 +18,11 @@ import {
   Text
 } from '@chakra-ui/react'
 
-const PresetSaveDialog = ({ 
-  isOpen, 
-  onClose, 
-  onSave, 
-  existingPresets = [] 
+const PresetSaveDialog = ({
+  isOpen,
+  onClose,
+  onSave,
+  existingPresets = []
 }) => {
   const [presetName, setPresetName] = useState('')
   const [description, setDescription] = useState('')
@@ -51,14 +51,14 @@ const PresetSaveDialog = ({
 
   const isNameTaken = existingPresets.includes(presetName.trim())
   const isValidName = presetName.trim().length > 0
-  
+
   return (
     <Modal isOpen={isOpen} onClose={handleClose} size="md">
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>Save Configuration Preset</ModalHeader>
         <ModalCloseButton />
-        
+
         <ModalBody>
           <VStack spacing={4}>
             <FormControl isRequired isInvalid={!isValidName && presetName.length > 0}>
@@ -94,7 +94,7 @@ const PresetSaveDialog = ({
             <Alert status="info" size="sm">
               <AlertIcon />
               <Text fontSize="sm">
-                This will save your current ODrive configuration including power, 
+                This will save your current ODrive configuration including power,
                 motor, encoder, control, and interface settings.
               </Text>
             </Alert>

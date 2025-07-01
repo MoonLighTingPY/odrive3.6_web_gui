@@ -34,18 +34,18 @@ import {
   Alert,
   AlertIcon
 } from '@chakra-ui/react'
-import { 
-  Download, 
-  Upload, 
-  Save, 
-  MoreVertical, 
-  Edit3, 
+import {
+  Download,
+  Upload,
+  Save,
+  MoreVertical,
+  Edit3,
   Trash2,
   Plus,
   Search,
   FileArchive
 } from 'lucide-react'
-import { 
+import {
   getAllAvailablePresets,
   isFactoryPreset,
   saveCurrentConfigAsPreset,
@@ -67,7 +67,7 @@ const PresetsTab = memo(() => {
   const fileInputRef = useRef(null)
   const { isConnected, connectedDevice } = useSelector(state => state.device)
   const { powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig } = useSelector(state => state.config)
-  
+
   const deviceConfig = useMemo(() => ({
     power: powerConfig || {},
     motor: motorConfig || {},
@@ -75,7 +75,7 @@ const PresetsTab = memo(() => {
     control: controlConfig || {},
     interface: interfaceConfig || {}
   }), [powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig])
-  
+
   const [presets, setPresets] = useState({})
   const [selectedPreset, setSelectedPreset] = useState('')
   const [newPresetName, setNewPresetName] = useState('')
@@ -86,7 +86,7 @@ const PresetsTab = memo(() => {
   const [searchText, setSearchText] = useState('')
   const [isImporting, setIsImporting] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
-  
+
   const { isOpen: isCreateOpen, onOpen: onCreateOpen, onClose: onCreateClose } = useDisclosure()
   const { isOpen: isEditOpen, onOpen: onEditOpen, onClose: onEditClose } = useDisclosure()
 
@@ -111,7 +111,7 @@ const PresetsTab = memo(() => {
 
   // Filter presets based on search
   const filteredPresets = useMemo(() => {
-    return Object.entries(presets).filter(([name]) => 
+    return Object.entries(presets).filter(([name]) =>
       name.toLowerCase().includes(searchText.toLowerCase())
     ).sort(([a], [b]) => {
       const aFactory = isFactoryPreset(a)
@@ -125,21 +125,21 @@ const PresetsTab = memo(() => {
   const handleLoadPreset = (presetName) => {
     try {
       const config = loadPresetConfig(presetName)
-      
+
       // Update Redux store
       if (config.power) dispatch({ type: 'config/updatePowerConfig', payload: config.power })
       if (config.motor) dispatch({ type: 'config/updateMotorConfig', payload: config.motor })
       if (config.encoder) dispatch({ type: 'config/updateEncoderConfig', payload: config.encoder })
       if (config.control) dispatch({ type: 'config/updateControlConfig', payload: config.control })
       if (config.interface) dispatch({ type: 'config/updateInterfaceConfig', payload: config.interface })
-      
+
       // Notify ConfigurationTab
-      window.dispatchEvent(new CustomEvent('presetLoaded', { 
-        detail: { config, presetName } 
+      window.dispatchEvent(new CustomEvent('presetLoaded', {
+        detail: { config, presetName }
       }))
-      
+
       setSelectedPreset(presetName)
-      
+
       toast({
         title: 'Preset loaded',
         description: `"${presetName}" loaded to configuration`,
@@ -207,7 +207,7 @@ const PresetsTab = memo(() => {
       setNewPresetName('')
       setNewPresetDescription('')
       onCreateClose()
-      
+
       toast({
         title: 'Preset saved',
         description: `"${newPresetName}" created`,
@@ -231,7 +231,7 @@ const PresetsTab = memo(() => {
       deletePreset(presetName)
       loadPresets()
       if (selectedPreset === presetName) setSelectedPreset('')
-      
+
       toast({
         title: 'Preset deleted',
         description: `"${presetName}" removed`,
@@ -278,7 +278,7 @@ const PresetsTab = memo(() => {
       setEditDescription('')
       onEditClose()
 
-      const message = editingPreset !== editName.trim() 
+      const message = editingPreset !== editName.trim()
         ? `Preset renamed from "${editingPreset}" to "${editName.trim()}"`
         : `Preset "${editName.trim()}" updated`
 
@@ -310,7 +310,7 @@ const PresetsTab = memo(() => {
     setIsExporting(true)
     try {
       await exportPresetsAsZip(presets, toast)
-    // eslint-disable-next-line no-unused-vars
+      // eslint-disable-next-line no-unused-vars
     } catch (_) {
       // Error handling is done in the utility function
     } finally {
@@ -363,13 +363,13 @@ const PresetsTab = memo(() => {
   return (
     <Box p={4} h="100%" maxW="1400px" mx="auto">
       <VStack spacing={4} align="stretch" h="100%">
-        
+
         {/* Header with actions */}
         <HStack justify="space-between" spacing={4}>
           <Text fontSize="lg" fontWeight="bold" color="white" minW="fit-content">
             Configuration Presets ({filteredPresets.length})
           </Text>
-          
+
           <HStack spacing={2} flex="1" justify="flex-end">
             {/* Search input */}
             <HStack spacing={2} minW="250px">
@@ -384,20 +384,20 @@ const PresetsTab = memo(() => {
                 fontSize="sm"
               />
             </HStack>
-            
+
             {/* Action buttons */}
-            <Button 
-              size="sm" 
-              leftIcon={<Plus size={14} />} 
+            <Button
+              size="sm"
+              leftIcon={<Plus size={14} />}
               colorScheme="green"
               onClick={onCreateOpen}
             >
               Save Current Config
             </Button>
-            
-            <Button 
-              size="sm" 
-              leftIcon={<Download size={14} />} 
+
+            <Button
+              size="sm"
+              leftIcon={<Download size={14} />}
               variant="outline"
               onClick={handleImportClick}
               isLoading={isImporting}
@@ -405,11 +405,11 @@ const PresetsTab = memo(() => {
             >
               Import Preset
             </Button>
-            
-            <Button 
-              size="sm" 
-              leftIcon={<Upload size={14} />} 
-              variant="outline" 
+
+            <Button
+              size="sm"
+              leftIcon={<Upload size={14} />}
+              variant="outline"
               onClick={handleExportAllAsZip}
               isLoading={isExporting}
               loadingText="Exporting"
@@ -453,9 +453,9 @@ const PresetsTab = memo(() => {
               {filteredPresets.map(([name, preset]) => {
                 const isFactory = isFactoryPreset(name)
                 const isSelected = selectedPreset === name
-                
+
                 return (
-                  <Tr 
+                  <Tr
                     key={name}
                     bg={isSelected ? "blue.800" : "transparent"}
                     _hover={{ bg: isSelected ? "blue.700" : "gray.700" }}
@@ -468,8 +468,8 @@ const PresetsTab = memo(() => {
                       </Text>
                     </Td>
                     <Td py={2}>
-                      <Badge 
-                        size="sm" 
+                      <Badge
+                        size="sm"
                         colorScheme={isFactory ? "blue" : "green"}
                         variant="solid"
                       >
@@ -500,7 +500,7 @@ const PresetsTab = memo(() => {
                         >
                           Use
                         </Button>
-                        
+
                         <IconButton
                           size="xs"
                           colorScheme="gray"
@@ -513,7 +513,7 @@ const PresetsTab = memo(() => {
                           title="Export as JSON file"
                           aria-label="Export preset"
                         />
-                        
+
                         {!isFactory && (
                           <>
                             <IconButton
@@ -528,7 +528,7 @@ const PresetsTab = memo(() => {
                               title="Edit preset details"
                               aria-label="Edit preset"
                             />
-                            
+
                             <IconButton
                               size="xs"
                               colorScheme="red"
@@ -621,7 +621,7 @@ const PresetsTab = memo(() => {
                     autoFocus
                   />
                 </FormControl>
-                
+
                 <FormControl>
                   <FormLabel>Description (Optional)</FormLabel>
                   <Textarea
@@ -640,7 +640,7 @@ const PresetsTab = memo(() => {
                     </Text>
                   </Alert>
                 )}
-                
+
                 {editingPreset && isFactoryPreset(editingPreset) && (
                   <Alert status="warning" size="sm">
                     <AlertIcon />

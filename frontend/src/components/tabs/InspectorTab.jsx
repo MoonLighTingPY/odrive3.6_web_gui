@@ -44,7 +44,7 @@ const InspectorTab = memo(() => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path, value })
       })
-      
+
       if (response.ok) {
         toast({
           title: 'Success',
@@ -97,7 +97,7 @@ const InspectorTab = memo(() => {
       <Box display="flex" flexDirection="column" flex="1" p={6} minH="0">
         {/* Main Content Grid */}
         <Grid templateColumns="1fr 1.5fr" gap={6} flex="1" minH="0">
-          
+
           {/* Left Side – Property Tree & Motor Controls */}
           <GridItem display="flex" flexDirection="column" flex="1" minH="0">
             {/* make this box scrollable */}

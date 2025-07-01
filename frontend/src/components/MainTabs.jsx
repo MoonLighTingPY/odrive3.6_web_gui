@@ -26,22 +26,22 @@ const CommandConsoleTab = lazy(() => import('./tabs/CommandConsoleTab'))
 
 // Lightweight loading component
 const TabLoadingFallback = () => (
-  <Box 
-    h="100%" 
-    display="flex" 
-    alignItems="center" 
+  <Box
+    h="100%"
+    display="flex"
+    alignItems="center"
     justifyContent="center"
     bg="gray.900"
   >
     <VStack spacing={3}>
-      <Spinner 
-        size="lg" 
-        color="odrive.300" 
+      <Spinner
+        size="lg"
+        color="odrive.300"
         thickness="3px"
         speed="0.8s"
       />
-      <Text 
-        color="gray.400" 
+      <Text
+        color="gray.400"
         fontSize="sm"
         fontWeight="medium"
       >
@@ -87,7 +87,7 @@ const TAB_CONFIG = [
 ]
 
 const MainTabs = () => {
-  const { isConnected, connectedDevice, odriveState } = useSelector(state => state.device)
+  const { isConnected, odriveState } = useSelector(state => state.device)
   const [activeTab, setActiveTab] = useState(0)
 
   // Hook for dashboard telemetry
@@ -96,7 +96,7 @@ const MainTabs = () => {
   const renderTabContent = (tabConfig, index) => {
     const Component = tabConfig.component
     const commonProps = { isConnected }
-    
+
     // Add specific props based on tab type
     const getTabProps = () => {
       switch (tabConfig.id) {
@@ -124,15 +124,16 @@ const MainTabs = () => {
   }
 
   return (
-    <Box flex="1" bg="gray.900">
-      <Tabs 
-        index={activeTab} 
+    <Box flex="1" bg="gray.900" overflow="hidden">
+      <Tabs
+        index={activeTab}
         onChange={setActiveTab}
-        variant="enclosed" 
+        variant="enclosed"
         colorScheme="odrive"
         h="100%"
         display="flex"
         flexDirection="column"
+        overflow="hidden" // make sure Tabs itself never scrolls
       >
         <TabList bg="gray.800" borderBottom="1px solid" borderColor="gray.600" px={6}>
           {TAB_CONFIG.map((tabConfig) => (
@@ -162,8 +163,20 @@ const MainTabs = () => {
         </TabList>
 
         <Suspense fallback={<TabLoadingFallback />}>
-          <TabPanels flex="1" bg="gray.900">
-            {TAB_CONFIG.map((tabConfig, index) => renderTabContent(tabConfig, index))}
+          <TabPanels flex="1" minH="0" bg="gray.900">
+            {TAB_CONFIG.map((tabConfig, index) => (
+              <TabPanel
+                key={tabConfig.id}
+                p={0}
+                height="100%"
+                display="flex"
+                flexDir="column"
+                overflowY="auto"            // allow TabPanel scrolling
+                overflowX="hidden"
+              >
+                {renderTabContent(tabConfig, index)}
+              </TabPanel>
+            ))}
           </TabPanels>
         </Suspense>
       </Tabs>

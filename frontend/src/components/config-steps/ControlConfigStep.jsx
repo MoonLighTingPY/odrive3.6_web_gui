@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import React, { useState, useMemo } from 'react'
 import {
   Box,
   VStack,
@@ -10,9 +10,6 @@ import {
   Heading,
   FormControl,
   FormLabel,
-  Select,
-  NumberInput,
-  NumberInputField,
   Alert,
   AlertIcon,
   Switch,
@@ -20,31 +17,89 @@ import {
   Tooltip,
   Button,
   ButtonGroup,
-  Divider,
   SimpleGrid,
   Collapse,
   useDisclosure,
-  Badge,
 } from '@chakra-ui/react'
-import { InfoIcon, RepeatIcon, ChevronUpIcon, ChevronDownIcon } from '@chakra-ui/icons'
-import ParameterInput from '../buttons/ParameterInput'
+import { InfoIcon, RepeatIcon } from '@chakra-ui/icons'
+import ParameterInput from '../config-parameter-fields/ParameterInput'
+import ParameterSelect from '../config-parameter-fields/ParameterSelect'
+import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
 import { ODrivePropertyMappings as configurationMappings } from '../../utils/odriveUnifiedRegistry'
-import { ControlMode, InputMode} from '../../utils/odriveEnums'
+import { ControlMode, InputMode } from '../../utils/odriveEnums'
+import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
 import {
-  turnsToRpm, 
-  rpmToTurns, 
+  getGroupedAdvancedParameters,
+} from '../../utils/configParameterGrouping'
+import {
+  turnsToRpm,
+  rpmToTurns,
 } from '../../utils/unitConversions'
 
-const ControlConfigStep = ({ 
-  deviceConfig, 
-  onReadParameter, 
+// Control parameter groups
+const CONTROL_PARAM_GROUPS = {
+  // Essential Control Settings
+  control_mode: { group: 'Control', subgroup: 'Mode', importance: 'essential' },
+  input_mode: { group: 'Control', subgroup: 'Mode', importance: 'essential' },
+  pos_gain: { group: 'PID Gains', subgroup: 'Position', importance: 'essential' },
+  vel_gain: { group: 'PID Gains', subgroup: 'Velocity', importance: 'essential' },
+  vel_integrator_gain: { group: 'PID Gains', subgroup: 'Velocity', importance: 'essential' },
+  vel_limit: { group: 'Limits', subgroup: 'Velocity', importance: 'essential' },
+  vel_ramp_rate: { group: 'Limits', subgroup: 'Velocity', importance: 'essential' },
+  torque_ramp_rate: { group: 'Limits', subgroup: 'Torque', importance: 'essential' },
+
+  // Advanced parameters
+  vel_integrator_limit: { group: 'PID Gains', subgroup: 'Advanced', importance: 'advanced' },
+  vel_limit_tolerance: { group: 'Limits', subgroup: 'Advanced', importance: 'advanced' },
+  circular_setpoints: { group: 'Advanced', subgroup: 'Setpoints', importance: 'advanced' },
+  circular_setpoint_range: { group: 'Advanced', subgroup: 'Setpoints', importance: 'advanced' },
+  steps_per_circular_range: { group: 'Advanced', subgroup: 'Setpoints', importance: 'advanced' },
+  homing_speed: { group: 'Homing', subgroup: 'Homing', importance: 'advanced' },
+  inertia: { group: 'Advanced', subgroup: 'System', importance: 'advanced' },
+  input_filter_bandwidth: { group: 'Advanced', subgroup: 'Filtering', importance: 'advanced' },
+  
+  // Gain scheduling
+  gain_scheduling_width: { group: 'Gain Scheduling', subgroup: 'Gain Scheduling', importance: 'advanced' },
+  enable_gain_scheduling: { group: 'Gain Scheduling', subgroup: 'Gain Scheduling', importance: 'advanced' },
+  
+  // Anticogging
+  anticogging_enabled: { group: 'Anticogging', subgroup: 'Anticogging', importance: 'advanced' },
+  calib_anticogging: { group: 'Anticogging', subgroup: 'Anticogging', importance: 'advanced' },
+  calib_pos_threshold: { group: 'Anticogging', subgroup: 'Anticogging', importance: 'advanced' },
+  calib_vel_threshold: { group: 'Anticogging', subgroup: 'Anticogging', importance: 'advanced' },
+  cogging_ratio: { group: 'Anticogging', subgroup: 'Anticogging', importance: 'advanced' },
+  
+  // Mirroring
+  axis_to_mirror: { group: 'Mirroring', subgroup: 'Mirroring', importance: 'advanced' },
+  mirror_ratio: { group: 'Mirroring', subgroup: 'Mirroring', importance: 'advanced' },
+  torque_mirror_ratio: { group: 'Mirroring', subgroup: 'Mirroring', importance: 'advanced' },
+  
+  // Load encoder
+  load_encoder_axis: { group: 'Load Encoder', subgroup: 'Load Encoder', importance: 'advanced' },
+  
+  // Error detection
+  enable_overspeed_error: { group: 'Error Detection', subgroup: 'Overspeed', importance: 'advanced' },
+  enable_vel_limit: { group: 'Error Detection', subgroup: 'Limits', importance: 'advanced' },
+  enable_torque_mode_vel_limit: { group: 'Error Detection', subgroup: 'Limits', importance: 'advanced' },
+  
+  // Spinout detection
+  spinout_mechanical_power_threshold: { group: 'Spinout Detection', subgroup: 'Spinout', importance: 'advanced' },
+  spinout_electrical_power_threshold: { group: 'Spinout Detection', subgroup: 'Spinout', importance: 'advanced' },
+  mechanical_power_bandwidth: { group: 'Spinout Detection', subgroup: 'Spinout', importance: 'advanced' },
+  electrical_power_bandwidth: { group: 'Spinout Detection', subgroup: 'Spinout', importance: 'advanced' },
+}
+
+const ControlConfigStep = ({
+  deviceConfig,
+  onReadParameter,
   onUpdateConfig,
-  loadingParams, 
+  loadingParams,
 }) => {
   const controlConfig = deviceConfig.control || {}
   const motorConfig = deviceConfig.motor || {}
   const encoderConfig = deviceConfig.encoder || {}
   const controlMappings = configurationMappings.control
+  const controlParams = getCategoryParameters('control')
 
   const [useRpm, setUseRpm] = useState(false)
 
@@ -67,12 +122,12 @@ const ControlConfigStep = ({
   const calculatedGains = useMemo(() => {
     const motor_kv = motorConfig.motor_kv || 0
     const cpr = encoderConfig.cpr || 0
-    
+
     const torque_constant = 8.27 / motor_kv
     const pos_gain = motor_kv / 10.0 / cpr * 60
     const vel_gain = torque_constant * cpr / 10.0
     const vel_integrator_gain = 0.1 * vel_gain
-    
+
     return {
       torque_constant,
       pos_gain,
@@ -80,10 +135,6 @@ const ControlConfigStep = ({
       vel_integrator_gain
     }
   }, [motorConfig.motor_kv, encoderConfig.cpr])
-
-  const resetGainToCalculated = (gainType) => {
-    handleConfigChange(gainType, calculatedGains[gainType])
-  }
 
   const applyCalculatedGains = () => {
     handleConfigChange('pos_gain', calculatedGains.pos_gain)
@@ -108,12 +159,18 @@ const ControlConfigStep = ({
   }
 
   const isPositionControl = (controlConfig.control_mode ?? ControlMode.VELOCITY_CONTROL) === ControlMode.POSITION_CONTROL
-  const { isOpen: isCalculatedOpen, onToggle: onCalculatedToggle } = useDisclosure({ defaultIsOpen: false })
+
+  // Get advanced parameters grouped by category
+  const groupedAdvancedParams = getGroupedAdvancedParameters(controlParams, CONTROL_PARAM_GROUPS)
+  const totalAdvancedCount = Object.values(groupedAdvancedParams)
+    .reduce((total, group) => total + Object.values(group).reduce((groupTotal, subgroup) => groupTotal + subgroup.length, 0), 0)
+
+  const { isOpen: isAdvancedOpen, onToggle: onAdvancedToggle } = useDisclosure()
 
   return (
     <Box h="100%" p={3} overflow="auto">
       <VStack spacing={3} align="stretch" maxW="1400px" mx="auto">
-        
+
         {/* Control Mode Selection */}
         <Card bg="gray.800" variant="elevated">
           <CardHeader py={1}>
@@ -128,20 +185,15 @@ const ControlConfigStep = ({
                     <Icon as={InfoIcon} color="gray.400" boxSize={3} />
                   </Tooltip>
                 </HStack>
-                <Select
+                <ParameterSelect
                   value={controlConfig.control_mode ?? ControlMode.VELOCITY_CONTROL}
                   onChange={(e) => handleConfigChange('control_mode', parseInt(e.target.value))}
-                  bg="gray.700"
-                  border="1px solid"
-                  borderColor="gray.600"
-                  color="white"
+                  onRefresh={() => handleRefresh('control_mode')}
+                  isLoading={isLoading('control_mode')}
+                  parameterPath="axis0.controller.config.control_mode"
+                  configKey="control_mode"
                   size="sm"
-                >
-                  <option value={ControlMode.VOLTAGE_CONTROL}>Voltage Control</option>
-                  <option value={ControlMode.TORQUE_CONTROL}>Torque Control</option>
-                  <option value={ControlMode.VELOCITY_CONTROL}>Velocity Control</option>
-                  <option value={ControlMode.POSITION_CONTROL}>Position Control</option>
-                </Select>
+                />
               </FormControl>
 
               <FormControl>
@@ -151,22 +203,15 @@ const ControlConfigStep = ({
                     <Icon as={InfoIcon} color="gray.400" boxSize={3} />
                   </Tooltip>
                 </HStack>
-                <Select
+                <ParameterSelect
                   value={controlConfig.input_mode ?? InputMode.VEL_RAMP}
                   onChange={(e) => handleConfigChange('input_mode', parseInt(e.target.value))}
-                  bg="gray.700"
-                  border="1px solid"
-                  borderColor="gray.600"
-                  color="white"
+                  onRefresh={() => handleRefresh('input_mode')}
+                  isLoading={isLoading('input_mode')}
+                  parameterPath="axis0.controller.config.input_mode"
+                  configKey="input_mode"
                   size="sm"
-                >
-                  <option value={InputMode.INACTIVE}>Inactive</option>
-                  <option value={InputMode.PASSTHROUGH}>Passthrough</option>
-                  <option value={InputMode.VEL_RAMP}>Velocity Ramp</option>
-                  <option value={InputMode.POS_FILTER}>Position Filter</option>
-                  <option value={InputMode.TRAP_TRAJ}>Trapezoidal Trajectory</option>
-                  <option value={InputMode.TORQUE_RAMP}>Torque Ramp</option>
-                </Select>
+                />
               </FormControl>
             </SimpleGrid>
           </CardBody>
@@ -174,197 +219,110 @@ const ControlConfigStep = ({
 
         {/* Main Configuration Grid */}
         <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={4} gap={4}>
-          
-          {/* Left Column - PID Gains */}
-          <VStack spacing={3} align="stretch">
-            
-            {/* Manual PID Gains */}
-            <Card bg="gray.800" variant="elevated">
-              <CardHeader py={1}>
-                <Heading size="sm" color="white">Manual PID Controller Gains</Heading>
-              </CardHeader>
-              <CardBody py={2}>
-                <Alert status="warning" mb={2} py={1} fontSize="xs">
-                  <AlertIcon boxSize={3} />
-                  <VStack align="start" spacing={0}>
-                    <Text fontWeight="bold" fontSize="xs">ODrive v0.5.6 Control Formulas:</Text>
-                    <Text fontSize="xs">Position: <code>vel_setpoint = pos_gain × pos_error</code></Text>
-                    <Text fontSize="xs">Velocity: <code>current_setpoint = vel_gain × vel_error + vel_integrator_gain × ∫vel_error</code></Text>
-                  </VStack>
-                </Alert>
-                
-                <VStack spacing={2}>
-                  {isPositionControl && (
-                    <FormControl>
-                      <HStack justify="space-between" mb={1}>
-                        <HStack spacing={2}>
-                          <FormLabel color="white" mb={0} fontSize="xs">Position Gain</FormLabel>
-                          <Tooltip label="Proportional gain for position control. Higher values = faster response.">
-                            <Icon as={InfoIcon} color="gray.400" boxSize={3} />
-                          </Tooltip>
-                        </HStack>
-                      </HStack>
-                      <ParameterInput
-                        value={controlConfig.pos_gain}
-                        onChange={(value) => handleConfigChange('pos_gain', parseFloat(value) || 0)}
-                        onRefresh={() => handleRefresh('pos_gain')}
-                        isLoading={isLoading('pos_gain')}
-                        unit="(turns/s)/turn"
-                        precision={3}
 
-                      />
-                      <Text fontSize="xs" color="blue.300" mt={1}>
-                        Calculated: {calculatedGains.pos_gain.toFixed(3)}
-                      </Text>
-                    </FormControl>
-                  )}
-
-                  <FormControl>
-                    <HStack justify="space-between" mb={1}>
-                      <HStack spacing={2}>
-                        <FormLabel color="white" mb={0} fontSize="xs">Velocity Gain</FormLabel>
-                        <Tooltip label="Torque output per velocity error. Higher values = more aggressive velocity correction.">
-                          <Icon as={InfoIcon} color="gray.400" boxSize={3} />
-                        </Tooltip>
-                      </HStack>
-                    </HStack>
-                    <ParameterInput
-                      value={controlConfig.vel_gain}
-                      onChange={(value) => handleConfigChange('vel_gain', parseFloat(value) || 0)}
-                      onRefresh={() => handleRefresh('vel_gain')}
-                      isLoading={isLoading('vel_gain')}
-                      unit="Nm [per turn/s]"
-                      precision={6}
-                    />
-                    <Text fontSize="xs" color="blue.300" mt={1}>
-                      Calculated: {calculatedGains.vel_gain.toFixed(6)}
-                    </Text>
-                  </FormControl>
-
-                  <FormControl>
-                    <HStack justify="space-between" mb={1}>
-                      <HStack spacing={2}>
-                        <FormLabel color="white" mb={0} fontSize="xs">Velocity Integrator Gain</FormLabel>
-                        <Tooltip label="Integral gain for velocity control. Helps eliminate steady-state error.">
-                          <Icon as={InfoIcon} color="gray.400" boxSize={3} />
-                        </Tooltip>
-                      </HStack>
-                    </HStack>
-                    <ParameterInput
-                      value={controlConfig.vel_integrator_gain}
-                      onChange={(value) => handleConfigChange('vel_integrator_gain', parseFloat(value) || 0)}
-                      onRefresh={() => handleRefresh('vel_integrator_gain')}
-                      isLoading={isLoading('vel_integrator_gain')}
-                      unit="Nm⋅s [per turn/s]"
-                      precision={6}
-                    />
-                    <Text fontSize="xs" color="blue.300" mt={1}>
-                      Calculated: {calculatedGains.vel_integrator_gain.toFixed(6)}
-                    </Text>
-                  </FormControl>
+          {/* Left Column - PID Configuration */}
+          <Card bg="gray.800" variant="elevated">
+            <CardHeader py={1}>
+              <HStack justify="space-between">
+                <Heading size="sm" color="white">PID Controller Configuration</Heading>
+                <Button
+                  leftIcon={<RepeatIcon />}
+                  colorScheme="green"
+                  size="xs"
+                  onClick={applyCalculatedGains}
+                  title="Apply all calculated optimal gains"
+                >
+                  Use Calculated
+                </Button>
+              </HStack>
+            </CardHeader>
+            <CardBody py={2}>
+              <Alert status="info" mb={3} py={2} fontSize="xs">
+                <AlertIcon boxSize={3} />
+                <VStack align="start" spacing={0}>
+                  <Text fontWeight="bold" fontSize="xs">Auto-calculated based on motor config:</Text>
+                  <Text fontSize="xs">Motor Kv: {(motorConfig.motor_kv ?? 0).toFixed(0)} RPM/V, Encoder CPR: {encoderConfig.cpr || 0}</Text>
+                  <Text fontSize="xs">Torque Constant: {(calculatedGains.torque_constant ?? 0).toFixed(4)} Nm/A</Text>
+                  <Text fontSize="xs">Position Gain: {(calculatedGains.pos_gain ?? 0).toFixed(3)} (turns/s)/turn</Text>
+                  <Text fontSize="xs">Velocity Gain: {(calculatedGains.vel_gain?? 0).toFixed(4)} Nm/(turn/s)</Text>
                 </VStack>
-              </CardBody>
-            </Card>
+              </Alert>
 
-            {/* Calculated Gains Section */}
-            <Card bg="green.900" variant="elevated" borderColor="green.500" borderWidth="1px">
-              <CardHeader py={1}>
-                <HStack justify="space-between">
-                  <Heading size="sm" color="white">Calculated Optimal Gains</Heading>
-                  <HStack spacing={1}>
-                    <Button
-                      leftIcon={<RepeatIcon />}
-                      colorScheme="green"
-                      size="xs"
-                      onClick={applyCalculatedGains}
-                    >
-                      Apply All
-                    </Button>
-                    <Button
-                      size="xs"
-                      variant="ghost"
-                      onClick={onCalculatedToggle}
-                      rightIcon={isCalculatedOpen ? <ChevronUpIcon /> : <ChevronDownIcon />}
-                    >
-                      {isCalculatedOpen ? 'Hide' : 'Show'}
-                    </Button>
-                  </HStack>
-                </HStack>
-              </CardHeader>
-              <Collapse in={isCalculatedOpen}>
-                <CardBody py={2}>
-                  <Alert status="info" mb={2} py={1} fontSize="xs">
-                    <AlertIcon boxSize={3} />
-                    <VStack align="start" spacing={0}>
-                      <Text fontWeight="bold" fontSize="xs">Auto-calculated based on your motor configuration:</Text>
-                      <Text fontSize="xs">Motor Kv: {motorConfig.motor_kv || 0} RPM/V, Encoder CPR: {encoderConfig.cpr || 0}</Text>
-                      <Text fontSize="xs">Calculated Torque Constant: {calculatedGains.torque_constant.toFixed(4)} Nm/A</Text>
-                    </VStack>
-                  </Alert>
-
-                  <VStack spacing={2}>
-                    {isPositionControl && (
-                      <HStack justify="space-between" w="100%" p={2} bg="gray.800" borderRadius="md">
-                        <VStack align="start" spacing={0}>
-                          <Text color="white" fontWeight="bold" fontSize="xs">Position Gain (Calculated)</Text>
-                          <Text fontSize="xs" color="gray.300">{calculatedGains.pos_gain.toFixed(3)} (turns/s)/turn</Text>
-                        </VStack>
-                        <Button
-                          size="xs"
-                          leftIcon={<RepeatIcon />}
-                          colorScheme="blue"
-                          variant="outline"
-                          onClick={() => resetGainToCalculated('pos_gain')}
-                        >
-                          Use
-                        </Button>
+              <VStack spacing={3}>
+                {isPositionControl && (
+                  <FormControl>
+                    <HStack justify="space-between" mb={1}>
+                      <HStack spacing={2}>
+                        <FormLabel color="white" mb={0} fontSize="xs">Position Gain</FormLabel>
+                        <Tooltip label="Proportional gain for position control. Higher values = faster response.">
+                          <Icon as={InfoIcon} color="gray.400" boxSize={3} />
+                        </Tooltip>
                       </HStack>
-                    )}
-
-                    <HStack justify="space-between" w="100%" p={2} bg="gray.800" borderRadius="md">
-                      <VStack align="start" spacing={0}>
-                        <Text color="white" fontWeight="bold" fontSize="xs">Velocity Gain (Calculated)</Text>
-                        <Text fontSize="xs" color="gray.300">
-                          {calculatedGains.vel_gain.toFixed(6)} Nm [per turn/s]
-                        </Text>
-                      </VStack>
-                      <Button
-                        size="xs"
-                        leftIcon={<RepeatIcon />}
-                        colorScheme="blue"
-                        variant="outline"
-                        onClick={() => resetGainToCalculated('vel_gain')}
-                      >
-                        Use
-                      </Button>
+                      <Text fontSize="xs" color="green.300">
+                        Calc: {calculatedGains.pos_gain.toFixed(3)}
+                      </Text>
                     </HStack>
+                    <ParameterInput
+                      value={controlConfig.pos_gain}
+                      onChange={(value) => handleConfigChange('pos_gain', parseFloat(value) || 0)}
+                      onRefresh={() => handleRefresh('pos_gain')}
+                      isLoading={isLoading('pos_gain')}
+                      unit="(turns/s)/turn"
+                      precision={3}
+                    />
+                  </FormControl>
+                )}
 
-                    <HStack justify="space-between" w="100%" p={2} bg="gray.800" borderRadius="md">
-                      <VStack align="start" spacing={0}>
-                        <Text color="white" fontWeight="bold" fontSize="xs">Velocity Integrator Gain (Calculated)</Text>
-                        <Text fontSize="xs" color="gray.300">
-                          {calculatedGains.vel_integrator_gain.toFixed(6)} Nm⋅s [per turn/s]
-                        </Text>
-                      </VStack>
-                      <Button
-                        size="xs"
-                        leftIcon={<RepeatIcon />}
-                        colorScheme="blue"
-                        variant="outline"
-                        onClick={() => resetGainToCalculated('vel_integrator_gain')}
-                      >
-                        Use
-                      </Button>
+                <FormControl>
+                  <HStack justify="space-between" mb={1}>
+                    <HStack spacing={2}>
+                      <FormLabel color="white" mb={0} fontSize="xs">Velocity Gain</FormLabel>
+                      <Tooltip label="Torque output per velocity error. Higher values = more aggressive velocity correction.">
+                        <Icon as={InfoIcon} color="gray.400" boxSize={3} />
+                      </Tooltip>
                     </HStack>
-                  </VStack>
-                </CardBody>
-              </Collapse>
-            </Card>
-          </VStack>
+                    <Text fontSize="xs" color="green.300">
+                      Calc: {calculatedGains.vel_gain.toFixed(4)}
+                    </Text>
+                  </HStack>
+                  <ParameterInput
+                    value={controlConfig.vel_gain}
+                    onChange={(value) => handleConfigChange('vel_gain', parseFloat(value) || 0)}
+                    onRefresh={() => handleRefresh('vel_gain')}
+                    isLoading={isLoading('vel_gain')}
+                    unit="Nm [per turn/s]"
+                    precision={6}
+                  />
+                </FormControl>
 
-          {/* Right Column - Limits, Ramps & Advanced */}
+                <FormControl>
+                  <HStack justify="space-between" mb={1}>
+                    <HStack spacing={2}>
+                      <FormLabel color="white" mb={0} fontSize="xs">Velocity Integrator Gain</FormLabel>
+                      <Tooltip label="Integral gain for velocity control. Helps eliminate steady-state error.">
+                        <Icon as={InfoIcon} color="gray.400" boxSize={3} />
+                      </Tooltip>
+                    </HStack>
+                    <Text fontSize="xs" color="green.300">
+                      Calc: {calculatedGains.vel_integrator_gain.toFixed(4)}
+                    </Text>
+                  </HStack>
+                  <ParameterInput
+                    value={controlConfig.vel_integrator_gain}
+                    onChange={(value) => handleConfigChange('vel_integrator_gain', parseFloat(value) || 0)}
+                    onRefresh={() => handleRefresh('vel_integrator_gain')}
+                    isLoading={isLoading('vel_integrator_gain')}
+                    unit="Nm⋅s [per turn/s]"
+                    precision={6}
+                  />
+                </FormControl>
+              </VStack>
+            </CardBody>
+          </Card>
+
+          {/* Right Column - Limits & Settings */}
           <VStack spacing={3} align="stretch">
-            
+
             {/* Velocity & Acceleration Limits */}
             <Card bg="gray.800" variant="elevated">
               <CardHeader py={1}>
@@ -444,10 +402,10 @@ const ControlConfigStep = ({
               </CardBody>
             </Card>
 
-            {/* Advanced Settings */}
+            {/* Essential Settings */}
             <Card bg="gray.800" variant="elevated">
               <CardHeader py={1}>
-                <Heading size="sm" color="white">Advanced Settings</Heading>
+                <Heading size="sm" color="white">Essential Settings</Heading>
               </CardHeader>
               <CardBody py={2}>
                 <VStack spacing={2}>
@@ -504,6 +462,51 @@ const ControlConfigStep = ({
             </Card>
           </VStack>
         </SimpleGrid>
+
+        {/* Advanced Settings - Collapsible with grouping */}
+        {totalAdvancedCount > 0 && (
+          <Card bg="gray.800" variant="elevated">
+            <CardHeader py={2}>
+              <HStack justify="space-between">
+                <Heading size="sm" color="white">Advanced Settings</Heading>
+                <Button size="sm" variant="ghost" onClick={onAdvancedToggle}>
+                  {isAdvancedOpen ? 'Hide' : 'Show'} Advanced ({totalAdvancedCount} parameters)
+                </Button>
+              </HStack>
+            </CardHeader>
+            <Collapse in={isAdvancedOpen}>
+              <CardBody py={3}>
+                <VStack spacing={4} align="stretch">
+                  {Object.entries(groupedAdvancedParams).map(([groupName, subgroups]) => (
+                    <Box key={groupName}>
+                      <Text fontWeight="bold" color="blue.200" fontSize="sm" mb={3}>
+                        {groupName}
+                      </Text>
+                      <VStack spacing={3} align="stretch" pl={2}>
+                        {Object.entries(subgroups).map(([subgroupName, params]) => (
+                          <Box key={subgroupName}>
+                            <Text fontWeight="semibold" color="blue.300" fontSize="xs" mb={2}>
+                              {subgroupName}
+                            </Text>
+                            <ParameterFormGrid
+                              params={params}
+                              config={controlConfig}
+                              onChange={handleConfigChange}
+                              onRefresh={handleRefresh}
+                              isLoading={isLoading}
+                              layout="compact"
+                              showGrouping={false}
+                            />
+                          </Box>
+                        ))}
+                      </VStack>
+                    </Box>
+                  ))}
+                </VStack>
+              </CardBody>
+            </Collapse>
+          </Card>
+        )}
       </VStack>
     </Box>
   )

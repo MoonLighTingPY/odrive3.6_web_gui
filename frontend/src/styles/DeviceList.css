@@ -87,7 +87,8 @@
   color: #aaa;
 }
 
-.connect-button, .disconnect-button {
+.connect-button,
+.disconnect-button {
   padding: 8px 16px;
   border: none;
   border-radius: 4px;

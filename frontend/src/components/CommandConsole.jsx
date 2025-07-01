@@ -39,7 +39,7 @@ const CommandConsole = ({ isConnected }) => {
       })
 
       const result = await response.json()
-      
+
       // Debug: Log the actual response to see its structure
       console.log('Command response:', result)
 
@@ -101,10 +101,10 @@ const CommandConsole = ({ isConnected }) => {
 
   return (
     <VStack spacing={0} align="stretch" h="100%">
-      
+
       {/* Quick Commands Section */}
       <Box p={4} bg="gray.700" borderBottom="1px solid" borderColor="gray.600">
-        <Text fontWeight="semibold" color="white" fontSize="sm" mb={3}>Quick Commands</Text> 
+        <Text fontWeight="semibold" color="white" fontSize="sm" mb={3}>Quick Commands</Text>
         <SimpleGrid columns={{ base: 1, md: 3 }} spacing={3}>
           <FormControl size="sm">
             <FormLabel color="gray.300" fontSize="xs" mb={1}>Category</FormLabel>
@@ -128,7 +128,7 @@ const CommandConsole = ({ isConnected }) => {
               ))}
             </Select>
           </FormControl>
-          
+
           <FormControl size="sm">
             <FormLabel color="gray.300" fontSize="xs" mb={1}>Command</FormLabel>
             <Select
@@ -163,7 +163,7 @@ const CommandConsole = ({ isConnected }) => {
             </Button>
           </VStack>
         </SimpleGrid>
-        
+
         {selectedCommand && selectedCategory && (
           <Box mt={3} p={3} bg="gray.600" borderRadius="md">
             <Text fontSize="xs" color="gray.200" mb={2}>
@@ -189,9 +189,9 @@ const CommandConsole = ({ isConnected }) => {
             fontSize="sm"
             onKeyPress={(e) => e.key === 'Enter' && sendCommand()}
           />
-          <Button 
-            colorScheme="green" 
-            onClick={sendCommand} 
+          <Button
+            colorScheme="green"
+            onClick={sendCommand}
             isDisabled={!commandInput.trim() || !isConnected}
             leftIcon={<Send size={14} />}
             size="sm"
@@ -214,9 +214,9 @@ const CommandConsole = ({ isConnected }) => {
             <Badge colorScheme="gray" size="sm">{commandHistory.length}</Badge>
           </HStack>
           <Tooltip label="Clear history">
-            <IconButton 
-              size="xs" 
-              variant="ghost" 
+            <IconButton
+              size="xs"
+              variant="ghost"
               onClick={clearHistory}
               icon={<Trash2 size={14} />}
               color="gray.300"
@@ -224,7 +224,7 @@ const CommandConsole = ({ isConnected }) => {
             />
           </Tooltip>
         </HStack>
-        
+
         <Box flex="1" overflowY="auto" p={4}>
           {commandHistory.length === 0 ? (
             <Box textAlign="center" py={8}>
@@ -241,7 +241,7 @@ const CommandConsole = ({ isConnected }) => {
                       ) : (
                         <AlertCircle size={14} color="#f56565" />
                       )}
-                      <Code 
+                      <Code
                         fontSize="xs"
                         bg="transparent"
                         color={entry.success ? "green.300" : "red.300"}
@@ -273,8 +273,8 @@ const CommandConsole = ({ isConnected }) => {
                   </HStack>
                   {entry.result && (
                     <Box ml={6} mb={2}>
-                      <Text 
-                        fontSize="xs" 
+                      <Text
+                        fontSize="xs"
                         color={entry.success ? "gray.300" : "red.300"}
                         fontFamily="mono"
                         bg="gray.800"

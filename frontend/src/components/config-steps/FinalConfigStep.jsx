@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import React, { useState, useMemo } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import {
   Box,
@@ -29,13 +29,13 @@ const FinalConfigStep = () => {
   const toast = useToast()
   const dispatch = useDispatch()
   const { isOpen: isConfirmOpen, onOpen: onConfirmOpen, onClose: onConfirmClose } = useDisclosure()
-  
+
   const [isLoading, setIsLoading] = useState(false)
   const [pendingAction, setPendingAction] = useState(null)
   const [customCommands, setCustomCommands] = useState({})
   const [disabledCommands, setDisabledCommands] = useState(new Set())
   const [enableCommandEditing, setEnableCommandEditing] = useState(false)
-  
+
   const { powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig } = useSelector(state => state.config)
   const { isConnected, connectedDevice } = useSelector(state => state.device)
 
@@ -184,7 +184,7 @@ const FinalConfigStep = () => {
           </CardHeader>
           <CardBody py={3}>
             <VStack spacing={4} align="stretch">
-              
+
 
               {/* Configuration Commands - Always visible now */}
               <Box>
@@ -205,7 +205,7 @@ const FinalConfigStep = () => {
                     />
                   </HStack>
                 </HStack>
-                
+
                 {/* Commands list - no longer collapsible */}
                 <Box
                   bg="gray.900"
@@ -230,23 +230,23 @@ const FinalConfigStep = () => {
 
             </VStack>
 
-              <VStack spacing={4} w="100%" maxW="400px" mx="auto">
-              
-                
-                <Button
-                  colorScheme="blue"
-                  size="lg"
-                  w="100%"
-                  h="60px"
-                  onClick={() => handleAction('apply_and_save')}
-                  isDisabled={!isConnected}
-                  isLoading={isLoading && pendingAction === 'apply_and_save'}
-                  mt={4}
-                >
-                  ⚙️💾 Apply & Save Configuration
-                </Button>
+            <VStack spacing={4} w="100%" maxW="400px" mx="auto">
 
-              </VStack>
+
+              <Button
+                colorScheme="blue"
+                size="lg"
+                w="100%"
+                h="60px"
+                onClick={() => handleAction('apply_and_save')}
+                isDisabled={!isConnected}
+                isLoading={isLoading && pendingAction === 'apply_and_save'}
+                mt={4}
+              >
+                ⚙️💾 Apply & Save Configuration
+              </Button>
+
+            </VStack>
           </CardBody>
         </Card>
 

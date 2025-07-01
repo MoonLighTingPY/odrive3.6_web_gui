@@ -10,17 +10,18 @@ import {
 } from '@chakra-ui/react'
 import { RefreshCw } from 'lucide-react'
 
-const ParameterInput = ({ 
-  value, 
-  onChange, 
-  onRefresh, 
-  isLoading, 
-  unit, 
-  step = 0.1, 
+const ParameterInput = ({
+  value,
+  onChange,
+  onRefresh,
+  isLoading,
+  unit,
+  step = 0.1,
   precision = 3,
+  size = "sm", // Add size prop
   min, // Keep for legacy compatibility but don't enforce
   max, // Keep for legacy compatibility but don't enforce
-  ...props 
+  ...props
 }) => {
   const [inputValue, setInputValue] = useState('')
 
@@ -28,8 +29,8 @@ const ParameterInput = ({
   useEffect(() => {
     if (value !== undefined && value !== null) {
       // Format the value using precision for display
-      const formattedValue = typeof value === 'number' ? 
-        parseFloat(value.toFixed(precision)).toString() : 
+      const formattedValue = typeof value === 'number' ?
+        parseFloat(value.toFixed(precision)).toString() :
         value.toString()
       setInputValue(formattedValue)
     } else {
@@ -40,13 +41,13 @@ const ParameterInput = ({
   const handleInputChange = (e) => {
     const newValue = e.target.value
     setInputValue(newValue)
-    
+
     // Allow empty string or valid number strings (including intermediate states)
     if (newValue === '' || newValue === '-' || newValue === '.' || newValue === '-.') {
       // Don't call onChange for incomplete numbers
       return
     }
-    
+
     // Parse and validate the number
     const numValue = parseFloat(newValue)
     if (!isNaN(numValue)) {
@@ -60,8 +61,8 @@ const ParameterInput = ({
     const numValue = parseFloat(inputValue)
     if (isNaN(numValue)) {
       if (value !== undefined && value !== null) {
-        const formattedValue = typeof value === 'number' ? 
-          parseFloat(value.toFixed(precision)).toString() : 
+        const formattedValue = typeof value === 'number' ?
+          parseFloat(value.toFixed(precision)).toString() :
           value.toString()
         setInputValue(formattedValue)
       } else {
@@ -79,21 +80,21 @@ const ParameterInput = ({
   const handleKeyDown = (e) => {
     // Allow: backspace, delete, tab, escape, enter
     if ([8, 9, 27, 13, 46].indexOf(e.keyCode) !== -1 ||
-        // Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
-        (e.keyCode === 65 && e.ctrlKey === true) ||
-        (e.keyCode === 67 && e.ctrlKey === true) ||
-        (e.keyCode === 86 && e.ctrlKey === true) ||
-        (e.keyCode === 88 && e.ctrlKey === true) ||
-        // Allow: home, end, left, right
-        (e.keyCode >= 35 && e.keyCode <= 39)) {
+      // Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
+      (e.keyCode === 65 && e.ctrlKey === true) ||
+      (e.keyCode === 67 && e.ctrlKey === true) ||
+      (e.keyCode === 86 && e.ctrlKey === true) ||
+      (e.keyCode === 88 && e.ctrlKey === true) ||
+      // Allow: home, end, left, right
+      (e.keyCode >= 35 && e.keyCode <= 39)) {
       return
     }
-    
+
     // Allow: numbers, decimal point, minus sign
-    if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && 
-        (e.keyCode < 96 || e.keyCode > 105) && 
-        e.keyCode !== 190 && e.keyCode !== 110 && // decimal points
-        e.keyCode !== 189 && e.keyCode !== 109) { // minus signs
+    if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) &&
+      (e.keyCode < 96 || e.keyCode > 105) &&
+      e.keyCode !== 190 && e.keyCode !== 110 && // decimal points
+      e.keyCode !== 189 && e.keyCode !== 109) { // minus signs
       e.preventDefault()
     }
   }
@@ -105,7 +106,7 @@ const ParameterInput = ({
       const currentValue = parseFloat(inputValue) || 0
       const increment = e.keyCode === 38 ? step : -step
       const newValue = currentValue + increment
-      
+
       // No min/max constraints - allow any value
       const formattedValue = parseFloat(newValue.toFixed(precision)).toString()
       setInputValue(formattedValue)
@@ -121,29 +122,29 @@ const ParameterInput = ({
         onBlur={handleBlur}
         onKeyDown={handleKeyDown}
         onKeyUp={handleKeyUp}
-        bg="gray.700" 
-        border="1px solid" 
-        borderColor="gray.600" 
+        bg="gray.700"
+        border="1px solid"
+        borderColor="gray.600"
         color="white"
-        size="sm"
-        flex="1"
+        size={size} // Use size prop
+        width={props.width}
         placeholder="0"
         step={step}
-        {...props}
+        {...Object.fromEntries(Object.entries(props).filter(([k]) => k !== 'selectOptions' && k !== 'width'))}
       />
-      
+
       {unit && (
-        <Text color="gray.300" minW="40px" fontSize="sm">
+        <Text color="gray.300" minW="40px" fontSize={size === "xs" ? "xs" : "sm"}>
           {unit}
         </Text>
       )}
-      
+
       <Tooltip label={`Refresh from ODrive (Step: ${step})`}>
         <IconButton
-          icon={isLoading ? <Spinner size="xs" /> : <RefreshCw size={12} />}
+          icon={isLoading ? <Spinner size="xs" /> : <RefreshCw size={size === "xs" ? 10 : 12} />}
           onClick={onRefresh}
           isDisabled={isLoading}
-          size="xs"
+          size={size === "xs" ? "xs" : "xs"}
           variant="ghost"
           colorScheme="blue"
           aria-label="Refresh parameter"

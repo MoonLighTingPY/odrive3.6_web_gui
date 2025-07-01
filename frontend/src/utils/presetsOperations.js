@@ -11,7 +11,7 @@ export const exportPresetsAsZip = async (presets, toast) => {
   try {
     const zip = new JSZip()
     const userPresets = Object.entries(presets).filter(([name]) => !name.startsWith('factory_'))
-    
+
     if (userPresets.length === 0) {
       toast({
         title: 'No user presets to export',
@@ -53,7 +53,7 @@ export const exportPresetsAsZip = async (presets, toast) => {
     const url = URL.createObjectURL(content)
     const link = document.createElement('a')
     link.href = url
-    
+
     const timestamp = new Date().toISOString().split('T')[0]
     link.download = `odrive_presets_${timestamp}.zip`
     document.body.appendChild(link)
@@ -86,7 +86,7 @@ export const exportPresetsAsZip = async (presets, toast) => {
  */
 export const importJsonPresets = async (file, toast) => {
   const results = await importPresetsFromFile(file, false)
-  
+
   let resultMessage = `Imported: ${results.imported}`
   if (results.skipped > 0) {
     resultMessage += `, Skipped: ${results.skipped} (already exist)`
@@ -112,7 +112,7 @@ export const importJsonPresets = async (file, toast) => {
 export const importZipPresets = async (file, toast) => {
   const zip = new JSZip()
   const contents = await zip.loadAsync(file)
-  
+
   let imported = 0
   let skipped = 0
   let errors = []
@@ -123,13 +123,13 @@ export const importZipPresets = async (file, toast) => {
       try {
         const content = await fileObj.async('text')
         const data = JSON.parse(content)
-        
+
         // Handle both single preset format and multi-preset format
         if (data.preset) {
           // Single preset format
           const presetName = data.preset.name || filename.replace('.json', '')
           const existingPresets = JSON.parse(localStorage.getItem('odrive_config_presets') || '{}')
-          
+
           if (existingPresets[presetName]) {
             skipped++
           } else {
@@ -140,7 +140,7 @@ export const importZipPresets = async (file, toast) => {
         } else if (data.presets) {
           // Multi-preset format
           const existingPresets = JSON.parse(localStorage.getItem('odrive_config_presets') || '{}')
-          
+
           Object.entries(data.presets).forEach(([name, preset]) => {
             if (existingPresets[name]) {
               skipped++
@@ -149,7 +149,7 @@ export const importZipPresets = async (file, toast) => {
               imported++
             }
           })
-          
+
           localStorage.setItem('odrive_config_presets', JSON.stringify(existingPresets))
         }
       } catch (error) {

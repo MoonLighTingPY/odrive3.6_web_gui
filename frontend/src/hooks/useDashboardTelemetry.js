@@ -76,20 +76,20 @@ export const useDashboardTelemetry = () => {
           // Check if we have the expected structure
           if (data && typeof data === 'object') {
             const mapping = {
-              vbus_voltage:                         'vbus_voltage',
-              motor_current:                        'axis0.motor.current_control.Iq_measured',
-              encoder_pos:                          'axis0.encoder.pos_estimate',
-              encoder_vel:                          'axis0.encoder.vel_estimate',
-              motor_temp:                           'axis0.motor.motor_thermistor.temperature',
-              fet_temp:                             'axis0.motor.fet_thermistor.temperature',
-              axis_state:                           'axis0.current_state',
-              axis_error:                           'axis0.error',
-              motor_error:                          'axis0.motor.error',
-              encoder_error:                        'axis0.encoder.error',
-              controller_error:                     'axis0.controller.error',
-              sensorless_error:                     'axis0.sensorless_estimator.error',
+              vbus_voltage: 'vbus_voltage',
+              motor_current: 'axis0.motor.current_control.Iq_measured',
+              encoder_pos: 'axis0.encoder.pos_estimate',
+              encoder_vel: 'axis0.encoder.vel_estimate',
+              motor_temp: 'axis0.motor.motor_thermistor.temperature',
+              fet_temp: 'axis0.motor.fet_thermistor.temperature',
+              axis_state: 'axis0.current_state',
+              axis_error: 'axis0.error',
+              motor_error: 'axis0.motor.error',
+              encoder_error: 'axis0.encoder.error',
+              controller_error: 'axis0.controller.error',
+              sensorless_error: 'axis0.sensorless_estimator.error',
             }
-            
+
             const telemetryData = {}
             Object.entries(mapping).forEach(([key, path]) => {
               const val = data[path]  // Changed from data.data[path] to data[path]
@@ -100,7 +100,7 @@ export const useDashboardTelemetry = () => {
 
             // Dispatch to telemetry slice for immediate updates
             dispatch(updateTelemetry(telemetryData))
-            
+
             // Debounced update to main device state (for compatibility and error codes)
             const dashboardData = {
               device: {
@@ -135,13 +135,13 @@ export const useDashboardTelemetry = () => {
               },
               timestamp: Date.now()  // Generate timestamp if not provided
             }
-            
+
             // Debounced dispatch to main device state
             debouncedDeviceDispatch(dashboardData)
-            
+
             // Set connection health to true when we successfully get data
             dispatch(setTelemetryConnectionHealth(true))
-            
+
           } else {
             console.warn('Unexpected telemetry response structure:', data)
           }

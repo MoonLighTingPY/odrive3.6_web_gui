@@ -99,7 +99,7 @@ const PresetComparison = ({ currentConfig, presetName }) => {
               </Box>
               <AccordionIcon />
             </AccordionButton>
-            
+
             <AccordionPanel pb={4}>
               <Table size="sm" variant="simple">
                 <Thead>

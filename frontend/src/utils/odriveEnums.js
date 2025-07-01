@@ -48,7 +48,7 @@ export const ControlMode = {
   TORQUE_CONTROL: 1,
   VELOCITY_CONTROL: 2,
   POSITION_CONTROL: 3,
-  
+
 }
 
 export const getControlModeName = (mode) => {
