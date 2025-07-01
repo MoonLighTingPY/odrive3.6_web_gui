@@ -1,21 +1,27 @@
 import React from 'react'
 import {
   VStack,
-  HStack,
   Box,
   Heading,
   Card,
   CardHeader,
   CardBody,
   SimpleGrid,
+  Collapse,
+  useDisclosure,
+  Button,
+  HStack,
+  Text,
 } from '@chakra-ui/react'
 import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
 import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
-import { POWER_PARAM_GROUPS, getParameterGroup, getParameterSubgroup } from '../../utils/configParameterGrouping'
-
-function getGroup(param) {
-  return getParameterGroup(param, POWER_PARAM_GROUPS)
-}
+import { 
+  POWER_PARAM_GROUPS, 
+  getParameterGroup, 
+  getParameterSubgroup,
+  getParametersByImportance,
+  getGroupedAdvancedParameters,
+} from '../../utils/configParameterGrouping'
 
 const PowerConfigStep = ({
   deviceConfig,
@@ -38,13 +44,23 @@ const PowerConfigStep = ({
     return loadingParams.has(`power.${configKey}`)
   }
 
-  // Group parameters by logical UI section
-  const groupedParams = {}
-  powerParams.forEach(param => {
-    const group = getGroup(param)
-    if (!groupedParams[group]) groupedParams[group] = []
-    groupedParams[group].push(param)
+  // Get essential parameters
+  const essentialParams = getParametersByImportance(powerParams, POWER_PARAM_GROUPS, 'essential')
+
+  // Group essential parameters by logical UI section
+  const groupedEssentialParams = {}
+  essentialParams.forEach(param => {
+    const group = getParameterGroup(param, POWER_PARAM_GROUPS)
+    if (!groupedEssentialParams[group]) groupedEssentialParams[group] = []
+    groupedEssentialParams[group].push(param)
   })
+
+  // Get advanced parameters grouped by category
+  const groupedAdvancedParams = getGroupedAdvancedParameters(powerParams, POWER_PARAM_GROUPS)
+  const totalAdvancedCount = Object.values(groupedAdvancedParams)
+    .reduce((total, group) => total + Object.values(group).reduce((groupTotal, subgroup) => groupTotal + subgroup.length, 0), 0)
+
+  const { isOpen: isAdvancedOpen, onToggle: onAdvancedToggle } = useDisclosure()
 
   return (
     <Box h="100%" p={3} overflow="auto">
@@ -57,7 +73,7 @@ const PowerConfigStep = ({
             </CardHeader>
             <CardBody py={2}>
               <ParameterFormGrid
-                params={groupedParams['DC Bus Voltage Protection']}
+                params={groupedEssentialParams['DC Bus Voltage Protection'] || []}
                 config={powerConfig}
                 onChange={handleConfigChange}
                 onRefresh={handleRefresh}
@@ -74,7 +90,7 @@ const PowerConfigStep = ({
             </CardHeader>
             <CardBody py={2}>
               <ParameterFormGrid
-                params={groupedParams['Current Limits & Brake Resistor']}
+                params={groupedEssentialParams['Current Limits & Brake Resistor'] || []}
                 config={powerConfig}
                 onChange={handleConfigChange}
                 onRefresh={handleRefresh}
@@ -85,39 +101,48 @@ const PowerConfigStep = ({
           </Card>
         </SimpleGrid>
 
-        {/* FET Thermistor */}
-        <Card bg="gray.800" variant="elevated">
-          <CardHeader py={1}>
-            <Heading size="sm" color="white">FET Thermistor</Heading>
-          </CardHeader>
-          <CardBody py={2}>
-            <ParameterFormGrid
-              params={groupedParams['FET Thermistor']}
-              config={powerConfig}
-              onChange={handleConfigChange}
-              onRefresh={handleRefresh}
-              isLoading={isLoading}
-              subgroup={param => getParameterSubgroup(param, POWER_PARAM_GROUPS)}
-            />
-          </CardBody>
-        </Card>
-
-        {/* Miscellaneous */}
-        {groupedParams['Miscellaneous'] && (
+        {/* Advanced Settings - Collapsible with grouping */}
+        {totalAdvancedCount > 0 && (
           <Card bg="gray.800" variant="elevated">
-            <CardHeader py={1}>
-              <Heading size="sm" color="white">Miscellaneous</Heading>
+            <CardHeader py={2}>
+              <HStack justify="space-between">
+                <Heading size="sm" color="white">Advanced Settings</Heading>
+                <Button size="sm" variant="ghost" onClick={onAdvancedToggle}>
+                  {isAdvancedOpen ? 'Hide' : 'Show'} Advanced ({totalAdvancedCount} parameters)
+                </Button>
+              </HStack>
             </CardHeader>
-            <CardBody py={2}>
-              <ParameterFormGrid
-                params={groupedParams['Miscellaneous']}
-                config={powerConfig}
-                onChange={handleConfigChange}
-                onRefresh={handleRefresh}
-                isLoading={isLoading}
-                subgroup={param => getParameterSubgroup(param, POWER_PARAM_GROUPS)}
-              />
-            </CardBody>
+            <Collapse in={isAdvancedOpen}>
+              <CardBody py={3}>
+                <VStack spacing={4} align="stretch">
+                  {Object.entries(groupedAdvancedParams).map(([groupName, subgroups]) => (
+                    <Box key={groupName}>
+                      <Text fontWeight="bold" color="blue.200" fontSize="sm" mb={3}>
+                        {groupName}
+                      </Text>
+                      <VStack spacing={3} align="stretch" pl={2}>
+                        {Object.entries(subgroups).map(([subgroupName, params]) => (
+                          <Box key={subgroupName}>
+                            <Text fontWeight="semibold" color="blue.300" fontSize="xs" mb={2}>
+                              {subgroupName}
+                            </Text>
+                            <ParameterFormGrid
+                              params={params}
+                              config={powerConfig}
+                              onChange={handleConfigChange}
+                              onRefresh={handleRefresh}
+                              isLoading={isLoading}
+                              layout="compact"
+                              showGrouping={false}
+                            />
+                          </Box>
+                        ))}
+                      </VStack>
+                    </Box>
+                  ))}
+                </VStack>
+              </CardBody>
+            </Collapse>
           </Card>
         )}
       </VStack>

@@ -1,6 +1,7 @@
 import React from 'react'
 import {
   VStack,
+  HStack,
   Box,
   Heading,
   Card,
@@ -8,17 +9,23 @@ import {
   CardBody,
   Text,
   Badge,
+  Button,
+  FormControl,
+  FormLabel,
+  SimpleGrid,
+  Collapse,
+  useDisclosure,
 } from '@chakra-ui/react'
 import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
+import ParameterInput from '../config-parameter-fields/ParameterInput'
+import ParameterSelect from '../config-parameter-fields/ParameterSelect'
 import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
 import {
   MOTOR_PARAM_GROUPS,
-  getParameterGroup,
-  getOrderedGroupedParameters,
+  getParametersByImportance,
+  getGroupedAdvancedParameters,
 } from '../../utils/configParameterGrouping'
 
-
-const NUM_COLUMNS = 3
 
 const MotorConfigStep = ({
   deviceConfig,
@@ -41,141 +48,166 @@ const MotorConfigStep = ({
     return loadingParams.has(`motor.${configKey}`)
   }
 
-  // Use the new utility for grouping
-  const { groupOrder, subgroupOrder, grouped } = getOrderedGroupedParameters(
-    motorParams,
-    MOTOR_PARAM_GROUPS
-  )
+  // Get essential parameters only (merged critical + important)
+  const essentialParams = getParametersByImportance(motorParams, MOTOR_PARAM_GROUPS, 'essential')
+  
+  // Get advanced parameters grouped by category
+  const groupedAdvancedParams = getGroupedAdvancedParameters(motorParams, MOTOR_PARAM_GROUPS)
+  const totalAdvancedCount = Object.values(groupedAdvancedParams)
+    .reduce((total, group) => total + Object.values(group).reduce((groupTotal, subgroup) => groupTotal + subgroup.length, 0), 0)
 
-  // Render groups and subgroups in order
-  const cards = groupOrder
-    .filter(group => group !== 'Miscellaneous' && group !== 'Other')
-    .map(group => (
-      <Card
-        key={group}
-        bg="gray.800"
-        variant="elevated"
-        sx={{
-          breakInside: 'avoid',
-          marginBottom: '24px',
-          width: '100%',
-          display: 'block',
-        }}
-      >
-        <CardHeader py={1}>
-          <Heading size="sm" color="white">{group}</Heading>
-        </CardHeader>
-        <CardBody py={2}>
-          {subgroupOrder[group].map(subgroup => {
-            const params = grouped[group][subgroup]
-            if (!params.length) return null
-            return (
-              <Box key={subgroup} mb={subgroup ? 4 : 0}>
-                {subgroup && (
-                  <Text fontWeight="bold" color="blue.300" fontSize="sm" mb={1}>
-                    {subgroup}
-                  </Text>
-                )}
-                <ParameterFormGrid
-                  params={params}
-                  config={motorConfig}
-                  onChange={handleConfigChange}
-                  onRefresh={handleRefresh}
-                  isLoading={isLoading}
-                />
-              </Box>
-            )
-          })}
-        </CardBody>
-      </Card>
-    ))
-
-  // Calculated values card
-  const calculatedKt = 8.27 / (motorConfig.motor_kv || 0)
-  const maxTorque = calculatedKt * (motorConfig.current_lim || 0)
-  const calculatedCard = (
-    <Card
-      bg="gray.800"
-      variant="elevated"
-      sx={{
-        breakInside: 'avoid',
-        marginBottom: '24px',
-        width: '100%',
-        display: 'block',
-      }}
-    >
-      <CardHeader py={2}>
-        <Heading size="sm" color="white">Calculated Values</Heading>
-      </CardHeader>
-      <CardBody py={2}>
-        <VStack spacing={2} align="stretch">
-          <Box display="flex" justifyContent="space-between">
-            <Text color="gray.300" fontSize="sm">Torque Constant (Kt):</Text>
-            <Text fontWeight="bold" color="green.300" fontSize="sm">
-              {calculatedKt.toFixed(4)} Nm/A
-            </Text>
-          </Box>
-          <Box display="flex" justifyContent="space-between">
-            <Text color="gray.300" fontSize="sm">Max Torque:</Text>
-            <Text fontWeight="bold" color="green.300" fontSize="sm">
-              {maxTorque.toFixed(2)} Nm
-            </Text>
-          </Box>
-          <Box display="flex" justifyContent="space-between">
-            <Text color="gray.300" fontSize="sm">Motor Type:</Text>
-            <Badge colorScheme={motorConfig.motor_type === 0 ? "blue" : "purple"} fontSize="xs">
-              {motorConfig.motor_type === 0 ? "High Current" : "Gimbal"}
-            </Badge>
-          </Box>
-        </VStack>
-      </CardBody>
-    </Card>
-  )
-
-  // Miscellaneous card
-  const miscParams = motorParams.filter(
-    param => getParameterGroup(param, MOTOR_PARAM_GROUPS) === 'Miscellaneous'
-  )
-  const miscCard = miscParams.length > 0 && (
-    <Card
-      bg="gray.800"
-      variant="elevated"
-      sx={{
-        breakInside: 'avoid',
-        marginBottom: '24px',
-        width: '100%',
-        display: 'block',
-      }}
-    >
-      <CardHeader py={1}>
-        <Heading size="sm" color="white">Miscellaneous</Heading>
-      </CardHeader>
-      <CardBody py={2}>
-        <ParameterFormGrid
-          params={miscParams}
-          config={motorConfig}
-          onChange={handleConfigChange}
-          onRefresh={handleRefresh}
-          isLoading={isLoading}
-        />
-      </CardBody>
-    </Card>
-  )
+  const { isOpen: isAdvancedOpen, onToggle: onAdvancedToggle } = useDisclosure()
 
   return (
     <Box h="100%" p={3} overflow="auto">
-      <VStack spacing={3} align="stretch" maxW="1400px" mx="auto">
-        <Box
-          sx={{
-            columnCount: [1, 1, NUM_COLUMNS],
-            columnGap: '24px',
-            width: '100%',
-          }}
-        >
-          {cards}
-          {miscCard}
-          {calculatedCard}
-        </Box>
+      <VStack spacing={4} align="stretch" maxW="1200px" mx="auto">
+        
+        {/* Essential Motor Settings - Custom UI */}
+        <Card bg="gray.800" variant="elevated">
+          <CardHeader py={3}>
+            <Heading size="md" color="white">Essential Motor Settings</Heading>
+          </CardHeader>
+          <CardBody py={4}>
+            <SimpleGrid columns={{ base: 1, md: 2 }} spacing={6}>
+              <FormControl>
+                <FormLabel color="white" fontSize="sm">Motor Type</FormLabel>
+                <ParameterSelect
+                  value={motorConfig.motor_type || 0}
+                  onChange={(e) => handleConfigChange('motor_type', parseInt(e.target.value))}
+                  onRefresh={() => handleRefresh('motor_type', 'axis0.motor.config.motor_type')}
+                  isLoading={isLoading('motor_type')}
+                >
+                  <option value={0}>High Current</option>
+                  <option value={2}>Gimbal</option>
+                  <option value={3}>ACIM</option>
+                </ParameterSelect>
+              </FormControl>
+
+              <FormControl>
+                <FormLabel color="white" fontSize="sm">Pole Pairs</FormLabel>
+                <ParameterInput
+                  value={motorConfig.pole_pairs}
+                  onChange={(value) => handleConfigChange('pole_pairs', value)}
+                  onRefresh={() => handleRefresh('pole_pairs', 'axis0.motor.config.pole_pairs')}
+                  isLoading={isLoading('pole_pairs')}
+                  step={1}
+                  precision={0}
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel color="white" fontSize="sm">Motor Kv (RPM/V)</FormLabel>
+                <ParameterInput
+                  value={motorConfig.motor_kv}
+                  onChange={(value) => handleConfigChange('motor_kv', value)}
+                  onRefresh={() => handleRefresh('motor_kv', 'axis0.motor.config.torque_constant')}
+                  isLoading={isLoading('motor_kv')}
+                  unit="RPM/V"
+                  step={10}
+                  precision={1}
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel color="white" fontSize="sm">Current Limit (A)</FormLabel>
+                <ParameterInput
+                  value={motorConfig.current_lim}
+                  onChange={(value) => handleConfigChange('current_lim', value)}
+                  onRefresh={() => handleRefresh('current_lim', 'axis0.motor.config.current_lim')}
+                  isLoading={isLoading('current_lim')}
+                  unit="A"
+                  step={1}
+                  precision={1}
+                />
+              </FormControl>
+            </SimpleGrid>
+
+            {/* Additional essential parameters in auto-generated grid */}
+            <Box mt={6}>
+              <ParameterFormGrid
+                params={essentialParams.filter(p => !['motor_type', 'pole_pairs', 'motor_kv', 'current_lim'].includes(p.configKey))}
+                config={motorConfig}
+                onChange={handleConfigChange}
+                onRefresh={handleRefresh}
+                isLoading={isLoading}
+                layout="grid"
+                maxColumns={2}
+              />
+            </Box>
+          </CardBody>
+        </Card>
+
+        {/* Calculated Values */}
+        <Card bg="gray.800" variant="elevated">
+          <CardHeader py={2}>
+            <Heading size="sm" color="white">Calculated Values</Heading>
+          </CardHeader>
+          <CardBody py={3}>
+            <SimpleGrid columns={{ base: 1, md: 3 }} spacing={4}>
+              <Box>
+                <Text color="gray.400" fontSize="xs">Torque Constant (Kt)</Text>
+                <Text fontWeight="bold" color="green.300" fontSize="sm">
+                  {(8.27 / (motorConfig.motor_kv || 1)).toFixed(4)} Nm/A
+                </Text>
+              </Box>
+              <Box>
+                <Text color="gray.400" fontSize="xs">Max Torque</Text>
+                <Text fontWeight="bold" color="green.300" fontSize="sm">
+                  {((8.27 / (motorConfig.motor_kv || 1)) * (motorConfig.current_lim || 0)).toFixed(2)} Nm
+                </Text>
+              </Box>
+              <Box>
+                <Text color="gray.400" fontSize="xs">Motor Type</Text>
+                <Badge colorScheme={motorConfig.motor_type === 0 ? "blue" : "purple"} fontSize="xs">
+                  {motorConfig.motor_type === 0 ? "High Current" : motorConfig.motor_type === 2 ? "Gimbal" : "ACIM"}
+                </Badge>
+              </Box>
+            </SimpleGrid>
+          </CardBody>
+        </Card>
+
+        {/* Advanced Settings - Collapsible with grouping */}
+        <Card bg="gray.800" variant="elevated">
+          <CardHeader py={2}>
+            <HStack justify="space-between">
+              <Heading size="sm" color="white">Advanced Settings</Heading>
+              <Button size="sm" variant="ghost" onClick={onAdvancedToggle}>
+                {isAdvancedOpen ? 'Hide' : 'Show'} Advanced ({totalAdvancedCount} parameters)
+              </Button>
+            </HStack>
+          </CardHeader>
+          <Collapse in={isAdvancedOpen}>
+            <CardBody py={3}>
+              <VStack spacing={4} align="stretch">
+                {Object.entries(groupedAdvancedParams).map(([groupName, subgroups]) => (
+                  <Box key={groupName}>
+                    <Text fontWeight="bold" color="blue.200" fontSize="sm" mb={3}>
+                      {groupName}
+                    </Text>
+                    <VStack spacing={3} align="stretch" pl={2}>
+                      {Object.entries(subgroups).map(([subgroupName, params]) => (
+                        <Box key={subgroupName}>
+                          <Text fontWeight="semibold" color="blue.300" fontSize="xs" mb={2}>
+                            {subgroupName}
+                          </Text>
+                          <ParameterFormGrid
+                            params={params}
+                            config={motorConfig}
+                            onChange={handleConfigChange}
+                            onRefresh={handleRefresh}
+                            isLoading={isLoading}
+                            layout="compact"
+                            showGrouping={false}
+                          />
+                        </Box>
+                      ))}
+                    </VStack>
+                  </Box>
+                ))}
+              </VStack>
+            </CardBody>
+          </Collapse>
+        </Card>
       </VStack>
     </Box>
   )

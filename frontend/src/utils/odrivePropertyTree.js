@@ -222,8 +222,14 @@ export const odrivePropertyTree = {
             description: 'Motor configuration and calibration parameters',
             properties: {
               pre_calibrated: { name: 'Pre-calibrated', description: 'Motor marked as pre-calibrated', writable: true, type: 'boolean' },
-              motor_type: { name: 'Motor Type', description: 'Motor type (0=HIGH_CURRENT, 2=GIMBAL, 3=ACIM)', writable: true, type: 'number' },
-              pole_pairs: { name: 'Pole Pairs', description: 'Number of motor pole pairs', writable: true, type: 'number', step: 1 },
+              motor_type: { name: 'Motor Type', description: 'Motor type (0=HIGH_CURRENT, 2=GIMBAL, 3=ACIM)', writable: true, type: 'number',
+                selectOptions: [
+                  { value: 0, label: 'High Current' },
+                  { value: 2, label: 'Gimbal' },
+                  { value: 3, label: 'ACIM' }
+                ]
+              },
+              pole_pairs: { name: 'Pole Pairs', description: 'Number of motor pole pairs', writable: true, type: 'number' },
               calibration_current: { name: 'Calibration Current', description: 'Current used for motor calibration (A)', writable: true, type: 'number', step: 0.1, decimals: 1, hasSlider: true },
               resistance_calib_max_voltage: { name: 'Resistance Calibration Max Voltage', description: 'Maximum voltage for resistance calibration (V)', writable: true, type: 'number', step: 0.1, decimals: 1, hasSlider: true },
               phase_inductance: { name: 'Phase Inductance', description: 'Motor phase inductance (H)', writable: true, type: 'number', min: 0, max: 0.01, step: 0.000001, decimals: 6, hasSlider: true },
@@ -311,7 +317,14 @@ export const odrivePropertyTree = {
             name: 'Encoder Configuration',
             description: 'Encoder configuration and calibration parameters',
             properties: {
-              mode: { name: 'Encoder Mode', description: 'Encoder mode (0=INCREMENTAL, 1=HALL, 2=SINCOS, 256=SPI_ABS_CUI, 257=SPI_ABS_AMS, 258=SPI_ABS_AEAT, 259=SPI_ABS_RLS, 260=SPI_ABS_MA732)', writable: true, type: 'number' },
+              mode: { name: 'Encoder Mode', description: 'Encoder mode (0=INCREMENTAL, 1=HALL, 2=SINCOS, 256=SPI_ABS_CUI, 257=SPI_ABS_AMS, 258=SPI_ABS_AEAT, 259=SPI_ABS_RLS, 260=SPI_ABS_MA732)', writable: true, type: 'number',
+                selectOptions: [
+                  { value: 0, label: 'Incremental' },
+                  { value: 1, label: 'Hall' },
+                  { value: 2, label: 'Sinusoidal' },
+                  { value: 3, label: 'SPI Absolute' }
+                ]
+              },
               use_index: { name: 'Use Index', description: 'Use encoder index signal', writable: true, type: 'boolean' },
               find_idx_on_lockin_only: { name: 'Find Index on Lock-in Only', description: 'Only find index during lock-in phase', writable: true, type: 'boolean' },
               abs_spi_cs_gpio_pin: { name: 'Absolute SPI CS GPIO Pin', description: 'GPIO pin for absolute SPI chip select', writable: true, type: 'number' },
@@ -386,8 +399,39 @@ export const odrivePropertyTree = {
             name: 'Controller Configuration',
             description: 'Controller configuration parameters',
             properties: {
-              control_mode: { name: 'Control Mode', description: 'Control mode (0=VOLTAGE, 1=TORQUE, 2=VELOCITY, 3=POSITION)', writable: true, type: 'number', min: 0, max: 3 },
-              input_mode: { name: 'Input Mode', description: 'Input mode (0=INACTIVE, 1=PASSTHROUGH, 2=VEL_RAMP, 3=POS_FILTER, 4=MIX_CHANNELS, 5=TRAP_TRAJ, 6=TORQUE_RAMP, 7=MIRROR, 8=TUNING)', writable: true, type: 'number', min: 0, max: 8 },
+              control_mode: { 
+                name: 'Control Mode', 
+                description: 'Control mode (0=VOLTAGE, 1=TORQUE, 2=VELOCITY, 3=POSITION)', 
+                writable: true, 
+                type: 'number', 
+                min: 0, 
+                max: 3,
+                selectOptions: [
+                  { value: 0, label: 'Voltage Control' },
+                  { value: 1, label: 'Torque Control' },
+                  { value: 2, label: 'Velocity Control' },
+                  { value: 3, label: 'Position Control' }
+                ]
+              },
+              input_mode: { 
+                name: 'Input Mode', 
+                description: 'Input mode (0=INACTIVE, 1=PASSTHROUGH, 2=VEL_RAMP, 3=POS_FILTER, 4=MIX_CHANNELS, 5=TRAP_TRAJ, 6=TORQUE_RAMP, 7=MIRROR, 8=TUNING)', 
+                writable: true, 
+                type: 'number', 
+                min: 0, 
+                max: 8,
+                selectOptions: [
+                  { value: 0, label: 'Inactive' },
+                  { value: 1, label: 'Passthrough' },
+                  { value: 2, label: 'Velocity Ramp' },
+                  { value: 3, label: 'Position Filter' },
+                  { value: 4, label: 'Mix Channels' },
+                  { value: 5, label: 'Trapezoidal Trajectory' },
+                  { value: 6, label: 'Torque Ramp' },
+                  { value: 7, label: 'Mirror' },
+                  { value: 8, label: 'Tuning' }
+                ]
+              },
               pos_gain: { name: 'Position Gain', description: 'Position controller proportional gain', writable: true, type: 'number', step: 0.1, decimals: 3, hasSlider: true },
               vel_gain: { name: 'Velocity Gain', description: 'Velocity controller proportional gain', writable: true, type: 'number', step: 0.001, decimals: 6, hasSlider: true },
               vel_integrator_gain: { name: 'Velocity Integrator Gain', description: 'Velocity controller integral gain', writable: true, type: 'number', step: 0.001, decimals: 6, hasSlider: true },

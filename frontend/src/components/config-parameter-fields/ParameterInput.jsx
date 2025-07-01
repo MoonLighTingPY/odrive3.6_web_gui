@@ -18,6 +18,7 @@ const ParameterInput = ({
   unit,
   step = 0.1,
   precision = 3,
+  size = "sm", // Add size prop
   min, // Keep for legacy compatibility but don't enforce
   max, // Keep for legacy compatibility but don't enforce
   ...props
@@ -125,25 +126,25 @@ const ParameterInput = ({
         border="1px solid"
         borderColor="gray.600"
         color="white"
-        size="sm"
+        size={size} // Use size prop
         width={props.width}
         placeholder="0"
         step={step}
-        {...Object.fromEntries(Object.entries(props).filter(([k]) => k !== 'selectOptions'))}
+        {...Object.fromEntries(Object.entries(props).filter(([k]) => k !== 'selectOptions' && k !== 'width'))}
       />
 
       {unit && (
-        <Text color="gray.300" minW="40px" fontSize="sm">
+        <Text color="gray.300" minW="40px" fontSize={size === "xs" ? "xs" : "sm"}>
           {unit}
         </Text>
       )}
 
       <Tooltip label={`Refresh from ODrive (Step: ${step})`}>
         <IconButton
-          icon={isLoading ? <Spinner size="xs" /> : <RefreshCw size={12} />}
+          icon={isLoading ? <Spinner size="xs" /> : <RefreshCw size={size === "xs" ? 10 : 12} />}
           onClick={onRefresh}
           isDisabled={isLoading}
-          size="xs"
+          size={size === "xs" ? "xs" : "xs"}
           variant="ghost"
           colorScheme="blue"
           aria-label="Refresh parameter"

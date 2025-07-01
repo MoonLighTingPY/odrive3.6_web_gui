@@ -7,6 +7,7 @@ const ParameterSwitch = ({
   onChange,
   onRefresh,
   isLoading,
+  size = "sm", // Add size prop
   ...props
 }) => (
   <HStack spacing={1}>
@@ -14,15 +15,15 @@ const ParameterSwitch = ({
       isChecked={!!value}
       onChange={e => onChange(e.target.checked)}
       colorScheme="odrive"
-      size="sm"
+      size={size} // Use size prop
       {...props}
     />
     <Tooltip label="Refresh from ODrive">
       <IconButton
-        icon={isLoading ? <Spinner size="xs" /> : <RefreshCw size={12} />}
+        icon={isLoading ? <Spinner size="xs" /> : <RefreshCw size={size === "xs" ? 10 : 12} />}
         onClick={onRefresh}
         isDisabled={isLoading}
-        size="xs"
+        size={size === "xs" ? "xs" : "xs"}
         variant="ghost"
         colorScheme="blue"
         aria-label="Refresh parameter"
