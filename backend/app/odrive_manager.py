@@ -4,6 +4,8 @@ import odrive
 from typing import Dict, Any, List, Optional
 import threading
 from queue import Queue
+import usb.core
+import usb.util
 
 logger = logging.getLogger(__name__)
 
@@ -12,8 +14,10 @@ class ODriveManager:
         self.odrives = {}
         self.current_device = None
         self.current_device_serial = None
-        self.expecting_reconnection = False  # Only set by save operations
+        self.expecting_reconnection = False
         self.request_lock = threading.Lock()
+        self.usb_error_count = 0  # Track consecutive USB errors
+        self.last_usb_reset = 0   # Track when we last reset USB
 
     @property
     def odrv(self):
@@ -89,13 +93,68 @@ class ODriveManager:
             logger.error(f"Error disconnecting: {e}")
             return False
 
+    def _reset_usb_devices(self):
+        """Reset USB devices to clear stuck states"""
+        try:
+            current_time = time.time()
+            # Don't reset too frequently (minimum 10 seconds between resets)
+            if current_time - self.last_usb_reset < 10:
+                logger.info("Skipping USB reset - too recent")
+                return False
+                
+            logger.info("Attempting to reset ODrive USB devices...")
+            self.last_usb_reset = current_time
+            
+            # Find and reset ODrive devices
+            # ODrive vendor ID is 0x1209, product IDs are 0x0d32, 0x0d33, etc.
+            devices = usb.core.find(find_all=True, idVendor=0x1209)
+            reset_count = 0
+            
+            for device in devices:
+                try:
+                    logger.info(f"Resetting USB device: {device.idVendor:04x}:{device.idProduct:04x}")
+                    device.reset()
+                    reset_count += 1
+                    time.sleep(0.5)  # Brief delay between resets
+                except Exception as e:
+                    logger.warning(f"Failed to reset USB device: {e}")
+                    
+            if reset_count > 0:
+                logger.info(f"Reset {reset_count} USB devices, waiting for devices to reinitialize...")
+                time.sleep(3)  # Wait for devices to come back online
+                return True
+            else:
+                logger.warning("No ODrive USB devices found to reset")
+                return False
+                
+        except Exception as e:
+            logger.error(f"Error during USB reset: {e}")
+            return False
+
+    def _clear_odrive_cache(self):
+        """Clear internal ODrive caches that might be holding stale references"""
+        try:
+            # Clear any cached device references
+            self.current_device = None
+            self.current_device_serial = None
+            
+            # Force garbage collection to clean up any lingering USB handles
+            import gc
+            gc.collect()
+            
+            logger.info("Cleared ODrive device cache")
+        except Exception as e:
+            logger.warning(f"Error clearing ODrive cache: {e}")
+
     def scan_for_devices(self) -> List[Dict[str, Any]]:
-        """Scan for ODrive devices"""
-        self.current_device = None
-        self.current_device_serial = None
+        """Scan for ODrive devices with USB error recovery"""
         devices = []
         try:
             logger.info("Scanning for ODrive devices...")
+            
+            # Clear any stale references before scanning
+            self.current_device = None
+            self.current_device_serial = None
             
             # Find all connected ODrives
             odrv = odrive.find_any(timeout=5)
@@ -110,6 +169,10 @@ class ODriveManager:
                     }
                     devices.append(device_info)
                     logger.info(f"Found ODrive: {device_info}")
+                    
+                    # Reset error count on successful scan
+                    self.usb_error_count = 0
+                    
                 except Exception as e:
                     logger.error(f"Error getting device info: {e}")
                     # Add a basic entry even if we can't get details
@@ -124,7 +187,56 @@ class ODriveManager:
                 logger.info("No ODrive devices found")
                 
         except Exception as e:
-            logger.error(f"Error during device scan: {e}")
+            error_str = str(e)
+            logger.error(f"Error during device scan: {error_str}")
+            
+            # Check for specific USB errors that indicate device is stuck
+            if ("Failed to open USB device: -5" in error_str or 
+                "Failed to open USB device: -12" in error_str or
+                "LIBUSB_ERROR" in error_str):
+                
+                self.usb_error_count += 1
+                logger.warning(f"USB error detected (count: {self.usb_error_count}): {error_str}")
+                
+                # Try recovery after first error
+                if self.usb_error_count >= 1:
+                    logger.info("Attempting USB error recovery...")
+                    
+                    # Step 1: Clear cache and force cleanup
+                    self._clear_odrive_cache()
+                    
+                    # Step 2: Reset USB devices
+                    if self._reset_usb_devices():
+                        # Step 3: Try scanning again after reset
+                        try:
+                            logger.info("Retrying scan after USB reset...")
+                            odrv = odrive.find_any(timeout=8)
+                            if odrv:
+                                device_info = {
+                                    'path': 'USB:0',
+                                    'serial': hex(odrv.serial_number) if hasattr(odrv, 'serial_number') else 'unknown_0',
+                                    'fw_version': f"v{odrv.fw_version_major}.{odrv.fw_version_minor}.{odrv.fw_version_revision}" if hasattr(odrv, 'fw_version_major') else 'v0.5.6',
+                                    'hw_version': f"v{odrv.hw_version_major}.{odrv.hw_version_minor}" if hasattr(odrv, 'hw_version_major') else 'v3.6-56V',
+                                    'index': 0
+                                }
+                                devices.append(device_info)
+                                logger.info(f"Recovery successful! Found ODrive: {device_info}")
+                                self.usb_error_count = 0  # Reset error count on success
+                            else:
+                                logger.warning("No devices found after USB reset")
+                        except Exception as retry_e:
+                            logger.error(f"Retry after USB reset failed: {retry_e}")
+                            # Re-raise the original error for the route to handle
+                            raise e
+                    else:
+                        # Re-raise the original error if reset failed
+                        raise e
+                else:
+                    # Re-raise for first occurrence
+                    raise e
+            else:
+                # Re-raise non-USB errors
+                raise e
         
         return devices
 

@@ -39,9 +39,22 @@ def scan_devices():
         try:
             devices = odrive_manager.scan_for_devices()
         except Exception as e:
-            if "Failed to open USB device: -5" in str(e):
-                logger.error("[UsbDiscoverer] Failed to open USB device: -5")
-                return jsonify({'error': '[UsbDiscoverer] Failed to open USB device: -5'}), 500
+            error_str = str(e)
+            if "Failed to open USB device: -5" in error_str:
+                logger.error("[UsbDiscoverer] Failed to open USB device: -5 (device not found)")
+                return jsonify({
+                    'error': '[UsbDiscoverer] Failed to open USB device: -5 (LIBUSB_ERROR_NOT_FOUND). The ODrive may be disconnected or the USB connection is unstable. Try unplugging and reconnecting the USB cable.'
+                }), 500
+            elif "Failed to open USB device: -12" in error_str:
+                logger.error("[UsbDiscoverer] Failed to open USB device: -12 (insufficient memory)")
+                return jsonify({
+                    'error': '[UsbDiscoverer] Failed to open USB device: -12 (LIBUSB_ERROR_NO_MEM). USB subsystem error - try unplugging the ODrive, waiting 5 seconds, then reconnecting.'
+                }), 500
+            elif "LIBUSB_ERROR" in error_str:
+                logger.error(f"LibUSB error: {error_str}")
+                return jsonify({
+                    'error': f'USB communication error: {error_str}. Try disconnecting and reconnecting the ODrive.'
+                }), 500
             raise
         logger.info(f"Scan completed, found {len(devices)} devices")
         return jsonify(devices)

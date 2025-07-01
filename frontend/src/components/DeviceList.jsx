@@ -319,11 +319,11 @@ const DeviceList = memo(() => {
         // Check for USB error
         if (
           devices.error &&
-          devices.error.includes('[UsbDiscoverer] Failed to open USB device: -5')
+          devices.error.includes('[UsbDiscoverer] Failed to open USB device:')
         ) {
           toast({
             title: 'USB Error',
-            description: 'Failed to open USB device (-5): It may be disconnected or busy. Replugging the USB cable usually helps.',
+            description: 'Failed to open USB device: It may be disconnected or busy. Replugging the USB cable usually helps.',
             status: 'error',
             duration: 10000,
           })
