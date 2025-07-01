@@ -10,7 +10,6 @@ import {
   CardBody,
   FormControl,
   FormLabel,
-  Select,
   Switch,
   Icon,
   Tooltip,
@@ -24,6 +23,7 @@ import {
 import { InfoIcon } from '@chakra-ui/icons'
 import ParameterInput from '../config-parameter-fields/ParameterInput'
 import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
+import ParameterSelect from '../config-parameter-fields/ParameterSelect'
 import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
 import { EncoderMode } from '../../utils/odriveEnums'
 import {
@@ -112,25 +112,16 @@ const EncoderConfigStep = ({
                     <Icon as={InfoIcon} color="gray.400" boxSize={3} />
                   </Tooltip>
                 </HStack>
-                <Select
+                <ParameterSelect
                   value={encoderConfig.encoder_type ?? ""}
                   onChange={(e) => handleConfigChange('encoder_type', parseInt(e.target.value))}
-                  bg="gray.700"
-                  border="1px solid"
-                  borderColor="gray.600"
-                  color="white"
+                  onRefresh={() => handleRefresh('encoder_type', 'axis0.encoder.config.mode')}
+                  isLoading={isLoading('encoder_type')}
+                  parameterPath="axis0.encoder.config.mode"
+                  configKey="encoder_type"
                   size="sm"
                   placeholder="Select encoder type"
-                >
-                  <option value={EncoderMode.INCREMENTAL}>Incremental</option>
-                  <option value={EncoderMode.HALL}>Hall Effect</option>
-                  <option value={EncoderMode.SINCOS}>SinCos</option>
-                  <option value={EncoderMode.SPI_ABS_CUI}>SPI Absolute (CUI)</option>
-                  <option value={EncoderMode.SPI_ABS_AMS}>SPI Absolute (AMS)</option>
-                  <option value={EncoderMode.SPI_ABS_AEAT}>SPI Absolute (AEAT)</option>
-                  <option value={EncoderMode.SPI_ABS_RLS}>SPI Absolute (RLS)</option>
-                  <option value={EncoderMode.SPI_ABS_MA732}>SPI Absolute (MA732)</option>
-                </Select>
+                />
               </FormControl>
 
               {/* Type-specific helper info */}
@@ -192,19 +183,17 @@ const EncoderConfigStep = ({
 
                   <FormControl>
                     <FormLabel color="white" mb={1} fontSize="xs">Direction</FormLabel>
-                    <Select
+                    <ParameterSelect
                       value={encoderConfig.direction ?? ""}
                       onChange={(e) => handleConfigChange('direction', parseInt(e.target.value))}
-                      bg="gray.700"
-                      border="1px solid"
-                      borderColor="gray.600"
-                      color="white"
+                      onRefresh={() => handleRefresh('direction', 'axis0.encoder.config.direction')}
+                      isLoading={isLoading('direction')}
+                      parameterPath="axis0.encoder.config.direction"
+                      configKey="direction"
                       size="sm"
                       placeholder="Select direction"
                     >
-                      <option value={1}>Forward</option>
-                      <option value={-1}>Reverse</option>
-                    </Select>
+                    </ParameterSelect>
                   </FormControl>
                 </VStack>
               </Box>

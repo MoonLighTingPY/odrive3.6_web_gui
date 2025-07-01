@@ -666,14 +666,45 @@ class ODriveUnifiedRegistry {
   }
 
   findParameter(identifier) {
+    // Try to find in config categories first
     for (const [category, params] of Object.entries(this.configCategories)) {
       const found = params.find(p =>
         p.path === identifier ||
         p.configKey === identifier ||
-        p.odriveCommand.includes(identifier)
+        p.odriveCommand.includes(identifier) ||
+        p.odriveCommand === identifier
       )
       if (found) return { ...found, category }
     }
+    
+    // Try to find directly in property tree
+    const findInTree = (node, basePath = '') => {
+      if (node.properties) {
+        for (const [propName, prop] of Object.entries(node.properties)) {
+          const fullPath = basePath ? `${basePath}.${propName}` : propName
+          if (fullPath === identifier || propName === identifier) {
+            return prop
+          }
+        }
+      }
+      
+      if (node.children) {
+        for (const [childName, childNode] of Object.entries(node.children)) {
+          const childPath = basePath ? `${basePath}.${childName}` : childName
+          const found = findInTree(childNode, childPath)
+          if (found) return found
+        }
+      }
+      
+      return null
+    }
+    
+    // Search the property tree directly
+    for (const [sectionName, section] of Object.entries(this.propertyTree)) {
+      const found = findInTree(section, sectionName)
+      if (found) return found
+    }
+    
     return null
   }
 

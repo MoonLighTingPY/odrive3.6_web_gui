@@ -10,7 +10,6 @@ import {
   Heading,
   FormControl,
   FormLabel,
-  Select,
   Alert,
   AlertIcon,
   Switch,
@@ -24,6 +23,7 @@ import {
 } from '@chakra-ui/react'
 import { InfoIcon, RepeatIcon } from '@chakra-ui/icons'
 import ParameterInput from '../config-parameter-fields/ParameterInput'
+import ParameterSelect from '../config-parameter-fields/ParameterSelect'
 import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
 import { ODrivePropertyMappings as configurationMappings } from '../../utils/odriveUnifiedRegistry'
 import { ControlMode, InputMode } from '../../utils/odriveEnums'
@@ -185,20 +185,15 @@ const ControlConfigStep = ({
                     <Icon as={InfoIcon} color="gray.400" boxSize={3} />
                   </Tooltip>
                 </HStack>
-                <Select
+                <ParameterSelect
                   value={controlConfig.control_mode ?? ControlMode.VELOCITY_CONTROL}
                   onChange={(e) => handleConfigChange('control_mode', parseInt(e.target.value))}
-                  bg="gray.700"
-                  border="1px solid"
-                  borderColor="gray.600"
-                  color="white"
+                  onRefresh={() => handleRefresh('control_mode')}
+                  isLoading={isLoading('control_mode')}
+                  parameterPath="axis0.controller.config.control_mode"
+                  configKey="control_mode"
                   size="sm"
-                >
-                  <option value={ControlMode.VOLTAGE_CONTROL}>Voltage Control</option>
-                  <option value={ControlMode.TORQUE_CONTROL}>Torque Control</option>
-                  <option value={ControlMode.VELOCITY_CONTROL}>Velocity Control</option>
-                  <option value={ControlMode.POSITION_CONTROL}>Position Control</option>
-                </Select>
+                />
               </FormControl>
 
               <FormControl>
@@ -208,22 +203,15 @@ const ControlConfigStep = ({
                     <Icon as={InfoIcon} color="gray.400" boxSize={3} />
                   </Tooltip>
                 </HStack>
-                <Select
+                <ParameterSelect
                   value={controlConfig.input_mode ?? InputMode.VEL_RAMP}
                   onChange={(e) => handleConfigChange('input_mode', parseInt(e.target.value))}
-                  bg="gray.700"
-                  border="1px solid"
-                  borderColor="gray.600"
-                  color="white"
+                  onRefresh={() => handleRefresh('input_mode')}
+                  isLoading={isLoading('input_mode')}
+                  parameterPath="axis0.controller.config.input_mode"
+                  configKey="input_mode"
                   size="sm"
-                >
-                  <option value={InputMode.INACTIVE}>Inactive</option>
-                  <option value={InputMode.PASSTHROUGH}>Passthrough</option>
-                  <option value={InputMode.VEL_RAMP}>Velocity Ramp</option>
-                  <option value={InputMode.POS_FILTER}>Position Filter</option>
-                  <option value={InputMode.TRAP_TRAJ}>Trapezoidal Trajectory</option>
-                  <option value={InputMode.TORQUE_RAMP}>Torque Ramp</option>
-                </Select>
+                />
               </FormControl>
             </SimpleGrid>
           </CardBody>
@@ -253,7 +241,10 @@ const ControlConfigStep = ({
                 <AlertIcon boxSize={3} />
                 <VStack align="start" spacing={0}>
                   <Text fontWeight="bold" fontSize="xs">Auto-calculated based on motor config:</Text>
-                  <Text fontSize="xs">Motor Kv: {motorConfig.motor_kv || 0} RPM/V, Encoder CPR: {encoderConfig.cpr || 0}</Text>
+                  <Text fontSize="xs">Motor Kv: {motorConfig.motor_kv.toFixed(0) || 0} RPM/V, Encoder CPR: {encoderConfig.cpr || 0}</Text>
+                  <Text fontSize="xs">Torque Constant: {calculatedGains.torque_constant.toFixed(4)} Nm/A</Text>
+                  <Text fontSize="xs">Position Gain: {calculatedGains.pos_gain.toFixed(3)} (turns/s)/turn</Text>
+                  <Text fontSize="xs">Velocity Gain: {calculatedGains.vel_gain.toFixed(4)} Nm/(turn/s)</Text>
                 </VStack>
               </Alert>
 

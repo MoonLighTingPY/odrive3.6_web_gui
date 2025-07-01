@@ -10,7 +10,6 @@ import {
   CardBody,
   FormControl,
   FormLabel,
-  Select,
   Switch,
   Icon,
   Tooltip,
@@ -25,6 +24,7 @@ import {
 import { InfoIcon } from '@chakra-ui/icons'
 import ParameterInput from '../config-parameter-fields/ParameterInput'
 import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
+import ParameterSelect from '../config-parameter-fields/ParameterSelect'
 import { ODrivePropertyMappings as configurationMappings } from '../../utils/odriveUnifiedRegistry'
 import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
 import {
@@ -160,21 +160,15 @@ const InterfaceConfigStep = ({
                   <HStack spacing={4} w="100%">
                     <FormControl flex="1">
                       <FormLabel color="white" mb={1} fontSize="sm">CAN Baudrate</FormLabel>
-                      <Select
+                      <ParameterSelect
                         value={interfaceConfig.can_baudrate ?? 0}
                         onChange={(e) => handleConfigChange('can_baudrate', parseInt(e.target.value))}
-                        bg="gray.700"
-                        border="1px solid"
-                        borderColor="gray.600"
-                        color="white"
+                        onRefresh={() => handleRefresh('can_baudrate')}
+                        isLoading={isLoading('can_baudrate')}
+                        parameterPath="can.config.baud_rate"
                         size="sm"
                         placeholder="Select Baudrate"
-                      >
-                        <option value={125000}>125 kbps</option>
-                        <option value={250000}>250 kbps</option>
-                        <option value={500000}>500 kbps</option>
-                        <option value={1000000}>1 Mbps</option>
-                      </Select>
+                      />
                     </FormControl>
 
                     <FormControl flex="1">
@@ -231,41 +225,28 @@ const InterfaceConfigStep = ({
                         <HStack spacing={4} w="100%">
                           <FormControl flex="1">
                             <FormLabel color="white" mb={1} fontSize="xs">Baudrate</FormLabel>
-                            <Select
+                            <ParameterSelect
                               value={interfaceConfig.uart_a_baudrate ?? 115200}
                               onChange={(e) => handleConfigChange('uart_a_baudrate', parseInt(e.target.value))}
-                              bg="gray.700"
-                              border="1px solid"
-                              borderColor="gray.600"
-                              color="white"
+                              onRefresh={() => handleRefresh('uart_a_baudrate')}
+                              isLoading={isLoading('uart_a_baudrate')}
+                              parameterPath="config.uart_a_baudrate"
+                              configKey="uart_a_baudrate"
                               size="sm"
-                            >
-                              <option value={9600}>9600 bps</option>
-                              <option value={19200}>19200 bps</option>
-                              <option value={38400}>38400 bps</option>
-                              <option value={57600}>57600 bps</option>
-                              <option value={115200}>115200 bps</option>
-                              <option value={230400}>230400 bps</option>
-                              <option value={460800}>460800 bps</option>
-                              <option value={921600}>921600 bps</option>
-                            </Select>
+                            />
                           </FormControl>
 
                           <FormControl flex="1">
                             <FormLabel color="white" mb={1} fontSize="xs">Protocol</FormLabel>
-                            <Select
+                            <ParameterSelect
                               value={interfaceConfig.uart0_protocol ?? 1}
                               onChange={(e) => handleConfigChange('uart0_protocol', parseInt(e.target.value))}
-                              bg="gray.700"
-                              border="1px solid"
-                              borderColor="gray.600"
-                              color="white"
+                              onRefresh={() => handleRefresh('uart0_protocol')}
+                              isLoading={isLoading('uart0_protocol')}
+                              parameterPath="config.uart0_protocol"
                               size="sm"
                             >
-                              <option value={1}>ASCII</option>
-                              <option value={3}>ASCII + STDOUT</option>
-                              <option value={4}>Native (Fibre)</option>
-                            </Select>
+                            </ParameterSelect>
                           </FormControl>
                         </HStack>
                       )}
@@ -295,41 +276,28 @@ const InterfaceConfigStep = ({
                         <HStack spacing={4} w="100%">
                           <FormControl flex="1">
                             <FormLabel color="white" mb={1} fontSize="xs">Baudrate</FormLabel>
-                            <Select
+                            <ParameterSelect
                               value={interfaceConfig.uart_b_baudrate ?? 115200}
                               onChange={(e) => handleConfigChange('uart_b_baudrate', parseInt(e.target.value))}
-                              bg="gray.700"
-                              border="1px solid"
-                              borderColor="gray.600"
-                              color="white"
+                              onRefresh={() => handleRefresh('uart_b_baudrate')}
+                              isLoading={isLoading('uart_b_baudrate')}
+                              parameterPath="config.uart_b_baudrate"
+                              configKey="uart_b_baudrate"
                               size="sm"
-                            >
-                              <option value={9600}>9600 bps</option>
-                              <option value={19200}>19200 bps</option>
-                              <option value={38400}>38400 bps</option>
-                              <option value={57600}>57600 bps</option>
-                              <option value={115200}>115200 bps</option>
-                              <option value={230400}>230400 bps</option>
-                              <option value={460800}>460800 bps</option>
-                              <option value={921600}>921600 bps</option>
-                            </Select>
+                            />
                           </FormControl>
 
                           <FormControl flex="1">
                             <FormLabel color="white" mb={1} fontSize="xs">Protocol</FormLabel>
-                            <Select
+                            <ParameterSelect
                               value={interfaceConfig.uart1_protocol ?? 1}
                               onChange={(e) => handleConfigChange('uart1_protocol', parseInt(e.target.value))}
-                              bg="gray.700"
-                              border="1px solid"
-                              borderColor="gray.600"
-                              color="white"
+                              onRefresh={() => handleRefresh('uart1_protocol')}
+                              isLoading={isLoading('uart1_protocol')}
+                              parameterPath="config.uart1_protocol"
                               size="sm"
                             >
-                              <option value={1}>ASCII</option>
-                              <option value={3}>ASCII + STDOUT</option>
-                              <option value={4}>Native (Fibre)</option>
-                            </Select>
+                            </ParameterSelect>
                           </FormControl>
                         </HStack>
                       )}

@@ -111,10 +111,10 @@ const MotorConfigStep = ({
                   onChange={(e) => handleConfigChange('motor_type', parseInt(e.target.value))}
                   onRefresh={() => handleRefresh('motor_type', 'axis0.motor.config.motor_type')}
                   isLoading={isLoading('motor_type')}
+                  parameterPath="axis0.motor.config.motor_type"
+                  configKey="motor_type"
+                  size="sm"
                 >
-                  <option value={0}>High Current</option>
-                  <option value={2}>Gimbal</option>
-                  <option value={3}>ACIM</option>
                 </ParameterSelect>
               </FormControl>
 
