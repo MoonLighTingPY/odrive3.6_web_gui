@@ -297,8 +297,20 @@ const ConfigurationTab = memo(() => {
 
     setIsApplyingSave(true)
     try {
+      // Mark that we're expecting a reconnection
+      sessionStorage.setItem('expectingReconnection', 'true')
+      
       await applyAndSaveConfiguration(deviceConfig, toast, dispatch, connectedDevice)
+      
+      // Clear the flag after successful operation
+      setTimeout(() => {
+        sessionStorage.removeItem('expectingReconnection')
+      }, 5000) // Clear after 5 seconds
+      
     } catch (error) {
+      // Clear the flag on error
+      sessionStorage.removeItem('expectingReconnection')
+      
       toast({
         title: 'Apply & Save Failed',
         description: error.message,

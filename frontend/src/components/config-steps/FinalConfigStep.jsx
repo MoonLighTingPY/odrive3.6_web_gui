@@ -59,6 +59,7 @@ const FinalConfigStep = () => {
     }).filter((_, index) => !disabledCommands.has(index))
   }, [baseGeneratedCommands, customCommands, disabledCommands])
 
+  // Update the executeAction function to ensure consistent reconnection behavior
   const executeAction = async (action) => {
     if (!isConnected) {
       toast({
@@ -73,6 +74,9 @@ const FinalConfigStep = () => {
     setIsLoading(true)
     try {
       if (action === 'apply_and_save') {
+        // Mark that we're expecting a reconnection
+        sessionStorage.setItem('expectingReconnection', 'true')
+        
         // Use the edited/filtered commands, not just the generated ones
         // Step 1: Apply configuration
         toast({
@@ -94,14 +98,22 @@ const FinalConfigStep = () => {
 
         try {
           await saveAndRebootWithReconnect(toast, dispatch, connectedDevice)
+          
+          // Clear the flag after successful operation
+          setTimeout(() => {
+            sessionStorage.removeItem('expectingReconnection')
+          }, 5000)
+          
         } catch (error) {
           // Handle save errors...
           if (
             error.message &&
             (error.message.includes('reboot') || error.message.includes('disconnect'))
           ) {
-            // treat as success
+            // treat as success for disconnect/reboot errors
+            sessionStorage.removeItem('expectingReconnection')
           } else {
+            sessionStorage.removeItem('expectingReconnection')
             throw error
           }
         }
@@ -110,6 +122,9 @@ const FinalConfigStep = () => {
         await executeConfigAction(action, { commands: finalCommands })
       }
     } catch (error) {
+      // Clear the flag on any error
+      sessionStorage.removeItem('expectingReconnection')
+      
       toast({
         title: 'Error',
         description: error.message,
