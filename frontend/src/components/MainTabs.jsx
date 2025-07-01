@@ -168,7 +168,7 @@ const MainTabs = () => {
               <TabPanel
                 key={tabConfig.id}
                 p={0}
-                height="100vh"                   // fill the TabPanels area
+                height="100%"
                 display="flex"
                 flexDir="column"
                 overflowY="auto"            // allow TabPanel scrolling
