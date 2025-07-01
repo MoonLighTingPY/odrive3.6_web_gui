@@ -16,11 +16,67 @@ import {
   Tooltip,
   SimpleGrid,
   Alert,
-  AlertIcon
+  AlertIcon,
+  Collapse,
+  useDisclosure,
+  Button,
+  Badge,
 } from '@chakra-ui/react'
 import { InfoIcon } from '@chakra-ui/icons'
 import ParameterInput from '../config-parameter-fields/ParameterInput'
+import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
 import { ODrivePropertyMappings as configurationMappings } from '../../utils/odriveUnifiedRegistry'
+import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
+import {
+  getGroupedAdvancedParameters,
+} from '../../utils/configParameterGrouping'
+
+// Interface parameter groups
+const INTERFACE_PARAM_GROUPS = {
+  // Essential Interface Settings
+  enable_uart_a: { group: 'UART', subgroup: 'UART A', importance: 'essential' },
+  uart_a_baudrate: { group: 'UART', subgroup: 'UART A', importance: 'essential' },
+  uart0_protocol: { group: 'UART', subgroup: 'UART A', importance: 'essential' },
+  enable_uart_b: { group: 'UART', subgroup: 'UART B', importance: 'essential' },
+  uart_b_baudrate: { group: 'UART', subgroup: 'UART B', importance: 'essential' },
+  uart1_protocol: { group: 'UART', subgroup: 'UART B', importance: 'essential' },
+  
+  can_node_id: { group: 'CAN', subgroup: 'CAN', importance: 'essential' },
+  can_node_id_extended: { group: 'CAN', subgroup: 'CAN', importance: 'essential' },
+  can_baudrate: { group: 'CAN', subgroup: 'CAN', importance: 'essential' },
+  heartbeat_rate_ms: { group: 'CAN', subgroup: 'CAN', importance: 'essential' },
+  
+  enable_step_dir: { group: 'Step/Direction', subgroup: 'Step/Direction', importance: 'essential' },
+  step_dir_always_on: { group: 'Step/Direction', subgroup: 'Step/Direction', importance: 'essential' },
+  
+  enable_watchdog: { group: 'Safety', subgroup: 'Watchdog', importance: 'essential' },
+  watchdog_timeout: { group: 'Safety', subgroup: 'Watchdog', importance: 'essential' },
+  enable_sensorless: { group: 'Safety', subgroup: 'Safety', importance: 'essential' },
+
+  // Advanced parameters
+  enable_uart_c: { group: 'UART', subgroup: 'UART C', importance: 'advanced' },
+  uart_c_baudrate: { group: 'UART', subgroup: 'UART C', importance: 'advanced' },
+  uart2_protocol: { group: 'UART', subgroup: 'UART C', importance: 'advanced' },
+  
+  enable_can_a: { group: 'CAN', subgroup: 'Advanced', importance: 'advanced' },
+  enable_i2c_a: { group: 'I2C', subgroup: 'I2C', importance: 'advanced' },
+  
+  usb_cdc_protocol: { group: 'USB', subgroup: 'USB', importance: 'advanced' },
+  
+  error_gpio_pin: { group: 'GPIO', subgroup: 'Error Handling', importance: 'advanced' },
+  gpio1_mode: { group: 'GPIO', subgroup: 'GPIO Modes', importance: 'advanced' },
+  gpio2_mode: { group: 'GPIO', subgroup: 'GPIO Modes', importance: 'advanced' },
+  gpio3_mode: { group: 'GPIO', subgroup: 'GPIO Modes', importance: 'advanced' },
+  gpio4_mode: { group: 'GPIO', subgroup: 'GPIO Modes', importance: 'advanced' },
+  
+  // Analog mapping
+  gpio3_analog_mapping: { group: 'Analog', subgroup: 'Analog Mapping', importance: 'advanced' },
+  gpio4_analog_mapping: { group: 'Analog', subgroup: 'Analog Mapping', importance: 'advanced' },
+  
+  // Step/Direction advanced
+  step_gpio_pin: { group: 'Step/Direction', subgroup: 'Advanced', importance: 'advanced' },
+  dir_gpio_pin: { group: 'Step/Direction', subgroup: 'Advanced', importance: 'advanced' },
+}
 
 const InterfaceConfigStep = ({
   deviceConfig,
@@ -30,6 +86,7 @@ const InterfaceConfigStep = ({
 }) => {
   const interfaceConfig = deviceConfig.interface || {}
   const interfaceMappings = configurationMappings.interface
+  const interfaceParams = getCategoryParameters('interface')
 
   const handleConfigChange = (configKey, value) => {
     onUpdateConfig('interface', configKey, value)
@@ -46,13 +103,24 @@ const InterfaceConfigStep = ({
     return loadingParams.has(`interface.${configKey}`)
   }
 
+  // Get advanced parameters grouped by category
+  const groupedAdvancedParams = getGroupedAdvancedParameters(interfaceParams, INTERFACE_PARAM_GROUPS)
+  const totalAdvancedCount = Object.values(groupedAdvancedParams)
+    .reduce((total, group) => total + Object.values(group).reduce((groupTotal, subgroup) => groupTotal + subgroup.length, 0), 0)
+
+  const { isOpen: isAdvancedOpen, onToggle: onAdvancedToggle } = useDisclosure()
+
   return (
     <Box h="100%" p={3} overflow="auto">
       <VStack spacing={3} align="stretch" maxW="1400px" mx="auto">
+
+        {/* Essential Interface Configuration */}
         <SimpleGrid columns={{ base: 1, lg: 2 }} spacing={4} gap={4}>
-          {/* Left Column */}
+          
+          {/* Left Column - Communication Interfaces */}
           <VStack spacing={3} align="stretch">
 
+            {/* CAN Bus Interface */}
             <Card bg="gray.800" variant="elevated">
               <CardHeader py={1}>
                 <Heading size="sm" color="white">CAN Bus Interface</Heading>
@@ -68,6 +136,8 @@ const InterfaceConfigStep = ({
                         onRefresh={() => handleRefresh('can_node_id')}
                         isLoading={isLoading('can_node_id')}
                         precision={0}
+                        min={0}
+                        max={127}
                       />
                     </FormControl>
 
@@ -110,130 +180,170 @@ const InterfaceConfigStep = ({
                     <FormControl flex="1">
                       <FormLabel color="white" mb={1} fontSize="sm">Heartbeat Rate</FormLabel>
                       <ParameterInput
-                        value={interfaceConfig.heartbeat_rate_ms} // Fixed: was can_heartbeat_rate_ms
-                        onChange={(value) => handleConfigChange('heartbeat_rate_ms', parseInt(value) || 0)} // Fixed
-                        onRefresh={() => handleRefresh('heartbeat_rate_ms')} // Fixed
-                        isLoading={isLoading('heartbeat_rate_ms')} // Fixed
+                        value={interfaceConfig.heartbeat_rate_ms}
+                        onChange={(value) => handleConfigChange('heartbeat_rate_ms', parseInt(value) || 0)}
+                        onRefresh={() => handleRefresh('heartbeat_rate_ms')}
+                        isLoading={isLoading('heartbeat_rate_ms')}
                         unit="ms"
                         precision={0}
+                        min={0}
+                        max={10000}
                       />
                     </FormControl>
                   </HStack>
+
+                  <Alert status="info" py={2} fontSize="xs">
+                    <AlertIcon boxSize={3} />
+                    <Text fontSize="xs">CAN communication allows multiple ODrives on a single bus. Set unique node IDs for each device.</Text>
+                  </Alert>
                 </VStack>
               </CardBody>
             </Card>
 
+            {/* UART Interface */}
             <Card bg="gray.800" variant="elevated">
               <CardHeader py={1}>
-                <Heading size="sm" color="white">UART Interface</Heading>
+                <Heading size="sm" color="white">UART Serial Interface</Heading>
               </CardHeader>
               <CardBody py={2}>
                 <VStack spacing={3}>
-                  <FormControl>
-                    <HStack spacing={2} mb={1}>
-                      <Switch
-                        isChecked={interfaceConfig.enable_uart_a}
-                        onChange={(e) => handleConfigChange('enable_uart_a', e.target.checked)}
-                        colorScheme="odrive"
-                        size="sm"
-                      />
-                      <FormLabel color="white" mb={0} fontSize="sm">Enable UART A</FormLabel>
-                      <Tooltip label="Enable UART_A serial communication on GPIO1/2.">
-                        <Icon as={InfoIcon} color="gray.400" boxSize={3} />
-                      </Tooltip>
-                    </HStack>
-                  </FormControl>
-
-                  {interfaceConfig.enable_uart_a && (
-                    <HStack spacing={4} w="100%">
-                      <FormControl flex="1">
-                        <FormLabel color="white" mb={1} fontSize="sm">UART_A Baudrate</FormLabel>
-                        <ParameterInput
-                          value={interfaceConfig.uart_a_baudrate}
-                          onChange={(value) => handleConfigChange('uart_a_baudrate', parseInt(value) || 0)}
-                          onRefresh={() => handleRefresh('uart_a_baudrate')}
-                          isLoading={isLoading('uart_a_baudrate')}
-                          unit="bps"
-                          step={9600}
-                          precision={0}
-                          min={9600}
-                          max={921600}
-                        />
+                  
+                  {/* UART A */}
+                  <Box w="100%">
+                    <Text fontWeight="semibold" color="blue.300" fontSize="sm" mb={2}>UART A (GPIO1/2)</Text>
+                    <VStack spacing={2}>
+                      <FormControl>
+                        <HStack spacing={2} mb={1}>
+                          <Switch
+                            isChecked={interfaceConfig.enable_uart_a}
+                            onChange={(e) => handleConfigChange('enable_uart_a', e.target.checked)}
+                            colorScheme="odrive"
+                            size="sm"
+                          />
+                          <FormLabel color="white" mb={0} fontSize="sm">Enable UART A</FormLabel>
+                          <Tooltip label="Enable UART_A serial communication on GPIO1/2.">
+                            <Icon as={InfoIcon} color="gray.400" boxSize={3} />
+                          </Tooltip>
+                        </HStack>
                       </FormControl>
 
-                      <FormControl flex="1">
-                        <FormLabel color="white" mb={1} fontSize="sm">Protocol</FormLabel>
-                        <Select
-                          value={interfaceConfig.uart0_protocol}
-                          onChange={(e) => handleConfigChange('uart0_protocol', parseInt(e.target.value))}
-                          bg="gray.700"
-                          border="1px solid"
-                          borderColor="gray.600"
-                          color="white"
-                          size="sm"
-                        >
-                          <option value={1}>ASCII</option>
-                          <option value={3}>ASCII + STDOUT</option>
-                          <option value={4}>Native</option>
-                        </Select>
-                      </FormControl>
-                    </HStack>
-                  )}
+                      {interfaceConfig.enable_uart_a && (
+                        <HStack spacing={4} w="100%">
+                          <FormControl flex="1">
+                            <FormLabel color="white" mb={1} fontSize="xs">Baudrate</FormLabel>
+                            <Select
+                              value={interfaceConfig.uart_a_baudrate ?? 115200}
+                              onChange={(e) => handleConfigChange('uart_a_baudrate', parseInt(e.target.value))}
+                              bg="gray.700"
+                              border="1px solid"
+                              borderColor="gray.600"
+                              color="white"
+                              size="sm"
+                            >
+                              <option value={9600}>9600 bps</option>
+                              <option value={19200}>19200 bps</option>
+                              <option value={38400}>38400 bps</option>
+                              <option value={57600}>57600 bps</option>
+                              <option value={115200}>115200 bps</option>
+                              <option value={230400}>230400 bps</option>
+                              <option value={460800}>460800 bps</option>
+                              <option value={921600}>921600 bps</option>
+                            </Select>
+                          </FormControl>
 
-                  <FormControl>
-                    <HStack spacing={2} mb={1}>
-                      <Switch
-                        isChecked={interfaceConfig.enable_uart_b}
-                        onChange={(e) => handleConfigChange('enable_uart_b', e.target.checked)}
-                        colorScheme="odrive"
-                        size="sm"
-                      />
-                      <FormLabel color="white" mb={0} fontSize="sm">Enable UART B</FormLabel>
-                      <Tooltip label="Enable UART_B serial communication on GPIO3/4.">
-                        <Icon as={InfoIcon} color="gray.400" boxSize={3} />
-                      </Tooltip>
-                    </HStack>
-                  </FormControl>
+                          <FormControl flex="1">
+                            <FormLabel color="white" mb={1} fontSize="xs">Protocol</FormLabel>
+                            <Select
+                              value={interfaceConfig.uart0_protocol ?? 1}
+                              onChange={(e) => handleConfigChange('uart0_protocol', parseInt(e.target.value))}
+                              bg="gray.700"
+                              border="1px solid"
+                              borderColor="gray.600"
+                              color="white"
+                              size="sm"
+                            >
+                              <option value={1}>ASCII</option>
+                              <option value={3}>ASCII + STDOUT</option>
+                              <option value={4}>Native (Fibre)</option>
+                            </Select>
+                          </FormControl>
+                        </HStack>
+                      )}
+                    </VStack>
+                  </Box>
 
-                  {interfaceConfig.enable_uart_b && (
-                    <HStack spacing={4} w="100%">
-                      <FormControl flex="1">
-                        <FormLabel color="white" mb={1} fontSize="sm">UART_B Baudrate</FormLabel>
-                        <ParameterInput
-                          value={interfaceConfig.uart_b_baudrate}
-                          onChange={(value) => handleConfigChange('uart_b_baudrate', parseInt(value) || 0)}
-                          onRefresh={() => handleRefresh('uart_b_baudrate')}
-                          isLoading={isLoading('uart_b_baudrate')}
-                          unit="bps"
-                          step={9600}
-                          precision={0}
-                          min={9600}
-                          max={921600}
-                        />
+                  {/* UART B */}
+                  <Box w="100%">
+                    <Text fontWeight="semibold" color="blue.300" fontSize="sm" mb={2}>UART B (GPIO3/4)</Text>
+                    <VStack spacing={2}>
+                      <FormControl>
+                        <HStack spacing={2} mb={1}>
+                          <Switch
+                            isChecked={interfaceConfig.enable_uart_b}
+                            onChange={(e) => handleConfigChange('enable_uart_b', e.target.checked)}
+                            colorScheme="odrive"
+                            size="sm"
+                          />
+                          <FormLabel color="white" mb={0} fontSize="sm">Enable UART B</FormLabel>
+                          <Tooltip label="Enable UART_B serial communication on GPIO3/4.">
+                            <Icon as={InfoIcon} color="gray.400" boxSize={3} />
+                          </Tooltip>
+                        </HStack>
                       </FormControl>
 
-                      <FormControl flex="1">
-                        <FormLabel color="white" mb={1} fontSize="sm">Protocol</FormLabel>
-                        <Select
-                          value={interfaceConfig.uart1_protocol}
-                          onChange={(e) => handleConfigChange('uart1_protocol', parseInt(e.target.value))}
-                          bg="gray.700"
-                          border="1px solid"
-                          borderColor="gray.600"
-                          color="white"
-                          size="sm"
-                        >
-                          <option value={1}>ASCII</option>
-                          <option value={3}>ASCII + STDOUT</option>
-                          <option value={4}>Native</option>
-                        </Select>
-                      </FormControl>
-                    </HStack>
-                  )}
+                      {interfaceConfig.enable_uart_b && (
+                        <HStack spacing={4} w="100%">
+                          <FormControl flex="1">
+                            <FormLabel color="white" mb={1} fontSize="xs">Baudrate</FormLabel>
+                            <Select
+                              value={interfaceConfig.uart_b_baudrate ?? 115200}
+                              onChange={(e) => handleConfigChange('uart_b_baudrate', parseInt(e.target.value))}
+                              bg="gray.700"
+                              border="1px solid"
+                              borderColor="gray.600"
+                              color="white"
+                              size="sm"
+                            >
+                              <option value={9600}>9600 bps</option>
+                              <option value={19200}>19200 bps</option>
+                              <option value={38400}>38400 bps</option>
+                              <option value={57600}>57600 bps</option>
+                              <option value={115200}>115200 bps</option>
+                              <option value={230400}>230400 bps</option>
+                              <option value={460800}>460800 bps</option>
+                              <option value={921600}>921600 bps</option>
+                            </Select>
+                          </FormControl>
+
+                          <FormControl flex="1">
+                            <FormLabel color="white" mb={1} fontSize="xs">Protocol</FormLabel>
+                            <Select
+                              value={interfaceConfig.uart1_protocol ?? 1}
+                              onChange={(e) => handleConfigChange('uart1_protocol', parseInt(e.target.value))}
+                              bg="gray.700"
+                              border="1px solid"
+                              borderColor="gray.600"
+                              color="white"
+                              size="sm"
+                            >
+                              <option value={1}>ASCII</option>
+                              <option value={3}>ASCII + STDOUT</option>
+                              <option value={4}>Native (Fibre)</option>
+                            </Select>
+                          </FormControl>
+                        </HStack>
+                      )}
+                    </VStack>
+                  </Box>
                 </VStack>
               </CardBody>
             </Card>
+          </VStack>
 
+          {/* Right Column - Control Interfaces & Safety */}
+          <VStack spacing={3} align="stretch">
+
+            {/* Step/Direction Interface */}
             <Card bg="gray.800" variant="elevated">
               <CardHeader py={1}>
                 <Heading size="sm" color="white">Step/Direction Interface</Heading>
@@ -275,16 +385,14 @@ const InterfaceConfigStep = ({
                   {interfaceConfig.enable_step_dir && (
                     <Alert status="info" py={2} fontSize="xs">
                       <AlertIcon boxSize={3} />
-                      <Text fontSize="xs">Step/Dir mode uses GPIO1 for step input and GPIO2 for direction input.</Text>
+                      <Text fontSize="xs">Step/Dir mode uses GPIO1 for step input and GPIO2 for direction input. This conflicts with UART A.</Text>
                     </Alert>
                   )}
                 </VStack>
               </CardBody>
             </Card>
-          </VStack>
 
-          {/* Right Column */}
-          <VStack spacing={3} align="stretch">
+            {/* Safety Features */}
             <Card bg="gray.800" variant="elevated">
               <CardHeader py={1}>
                 <Heading size="sm" color="white">Safety Features</Heading>
@@ -310,7 +418,7 @@ const InterfaceConfigStep = ({
                     <FormControl>
                       <FormLabel color="white" mb={1} fontSize="sm">Watchdog Timeout</FormLabel>
                       <ParameterInput
-                        value={interfaceConfig.watchdog_timeout}
+                        value={interfaceConfig.watchdog_timeout ?? 1.0}
                         onChange={(value) => handleConfigChange('watchdog_timeout', parseFloat(value) || 0)}
                         onRefresh={() => handleRefresh('watchdog_timeout')}
                         isLoading={isLoading('watchdog_timeout')}
@@ -341,55 +449,102 @@ const InterfaceConfigStep = ({
               </CardBody>
             </Card>
 
+            {/* Smart GPIO Configuration */}
             <Card bg="gray.800" variant="elevated">
               <CardHeader py={1}>
-                <Heading size="sm" color="white">GPIO Configuration</Heading>
+                <Heading size="sm" color="white">Smart GPIO Configuration</Heading>
               </CardHeader>
               <CardBody py={2}>
                 <Alert status="info" mb={3} py={2} fontSize="xs">
                   <AlertIcon boxSize={3} />
-                  <Text fontSize="xs">Some pins may be reserved based on interface settings.</Text>
+                  <Text fontSize="xs">GPIO pins are automatically configured based on enabled interfaces. Manual override available in Advanced settings.</Text>
                 </Alert>
+                
                 <VStack spacing={2}>
-                  {[1, 2, 3, 4].map(pin => (
-                    <FormControl key={pin}>
-                      <HStack spacing={2}>
-                        <Text color="white" minW="60px" fontSize="sm">GPIO{pin}:</Text>
-                        <Select
-                          value={interfaceConfig[`gpio${pin}_mode`] || 0}
-                          onChange={(e) => handleConfigChange(`gpio${pin}_mode`, parseInt(e.target.value))}
-                          bg="gray.700"
-                          border="1px solid"
-                          borderColor="gray.600"
-                          color="white"
-                          size="sm"
-                          isDisabled={
-                            (interfaceConfig.enable_step_dir && (pin === 1 || pin === 2)) ||
-                            (interfaceConfig.enable_uart_a && (pin === 1 || pin === 2)) ||
-                            (interfaceConfig.enable_uart_b && (pin === 3 || pin === 4))
-                          }
-                        >
-                          <option value={0}>Digital</option>
-                          <option value={1}>Digital Pull-up</option>
-                          <option value={2}>Digital Pull-down</option>
-                          <option value={3}>Analog Input</option>
-                          <option value={11}>UART A TX</option>
-                          <option value={12}>UART A RX</option>
-                          <option value={13}>UART B TX</option>
-                          <option value={14}>UART B RX</option>
-                          <option value={7}>CAN A</option>
-                          <option value={8}>CAN B</option>
-                          <option value={9}>Step Input</option>
-                          <option value={10}>Dir Input</option>
-                        </Select>
+                  {[1, 2, 3, 4].map(pin => {
+                    let pinFunction = 'Digital'
+                    let isReserved = false
+                    let reservedBy = ''
+
+                    // Determine pin function based on interface settings
+                    if (interfaceConfig.enable_step_dir && (pin === 1 || pin === 2)) {
+                      pinFunction = pin === 1 ? 'Step Input' : 'Dir Input'
+                      isReserved = true
+                      reservedBy = 'Step/Dir'
+                    } else if (interfaceConfig.enable_uart_a && (pin === 1 || pin === 2)) {
+                      pinFunction = pin === 1 ? 'UART A TX' : 'UART A RX'
+                      isReserved = true
+                      reservedBy = 'UART A'
+                    } else if (interfaceConfig.enable_uart_b && (pin === 3 || pin === 4)) {
+                      pinFunction = pin === 3 ? 'UART B TX' : 'UART B RX'
+                      isReserved = true
+                      reservedBy = 'UART B'
+                    }
+
+                    return (
+                      <HStack key={pin} justify="space-between" w="100%" p={2} bg={isReserved ? "blue.900" : "gray.700"} borderRadius="md">
+                        <HStack spacing={2}>
+                          <Text color="white" fontWeight="bold" fontSize="sm" minW="60px">GPIO{pin}:</Text>
+                          <Text color={isReserved ? "blue.200" : "gray.300"} fontSize="sm">
+                            {pinFunction}
+                          </Text>
+                        </HStack>
+                        {isReserved && (
+                          <Badge colorScheme="blue" size="sm">{reservedBy}</Badge>
+                        )}
                       </HStack>
-                    </FormControl>
-                  ))}
+                    )
+                  })}
                 </VStack>
               </CardBody>
             </Card>
           </VStack>
         </SimpleGrid>
+
+        {/* Advanced Settings - Collapsible with grouping */}
+        {totalAdvancedCount > 0 && (
+          <Card bg="gray.800" variant="elevated">
+            <CardHeader py={2}>
+              <HStack justify="space-between">
+                <Heading size="sm" color="white">Advanced Interface Settings</Heading>
+                <Button size="sm" variant="ghost" onClick={onAdvancedToggle}>
+                  {isAdvancedOpen ? 'Hide' : 'Show'} Advanced ({totalAdvancedCount} parameters)
+                </Button>
+              </HStack>
+            </CardHeader>
+            <Collapse in={isAdvancedOpen}>
+              <CardBody py={3}>
+                <VStack spacing={4} align="stretch">
+                  {Object.entries(groupedAdvancedParams).map(([groupName, subgroups]) => (
+                    <Box key={groupName}>
+                      <Text fontWeight="bold" color="blue.200" fontSize="sm" mb={3}>
+                        {groupName}
+                      </Text>
+                      <VStack spacing={3} align="stretch" pl={2}>
+                        {Object.entries(subgroups).map(([subgroupName, params]) => (
+                          <Box key={subgroupName}>
+                            <Text fontWeight="semibold" color="blue.300" fontSize="xs" mb={2}>
+                              {subgroupName}
+                            </Text>
+                            <ParameterFormGrid
+                              params={params}
+                              config={interfaceConfig}
+                              onChange={handleConfigChange}
+                              onRefresh={handleRefresh}
+                              isLoading={isLoading}
+                              layout="compact"
+                              showGrouping={false}
+                            />
+                          </Box>
+                        ))}
+                      </VStack>
+                    </Box>
+                  ))}
+                </VStack>
+              </CardBody>
+            </Collapse>
+          </Card>
+        )}
       </VStack>
     </Box>
   )
