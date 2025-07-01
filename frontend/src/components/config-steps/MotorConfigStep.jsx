@@ -21,11 +21,46 @@ import ParameterInput from '../config-parameter-fields/ParameterInput'
 import ParameterSelect from '../config-parameter-fields/ParameterSelect'
 import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
 import {
-  MOTOR_PARAM_GROUPS,
   getParametersByImportance,
   getGroupedAdvancedParameters,
 } from '../../utils/configParameterGrouping'
 
+// Motor parameter groups
+const MOTOR_PARAM_GROUPS = {
+  // Essential Motor Settings (critical + important merged)
+  motor_type: { group: 'Motor', subgroup: 'Basics', importance: 'essential' },
+  pole_pairs: { group: 'Motor', subgroup: 'Basics', importance: 'essential' },
+  motor_kv: { group: 'Motor', subgroup: 'Basics', importance: 'essential' },
+  current_lim: { group: 'Limits & Calibration', subgroup: 'Limits', importance: 'essential' },
+  calibration_current: { group: 'Limits & Calibration', subgroup: 'Calibration', importance: 'essential' },
+  phase_resistance: { group: 'Motor', subgroup: 'Electrical', importance: 'essential' },
+  phase_inductance: { group: 'Motor', subgroup: 'Electrical', importance: 'essential' },
+  torque_lim: { group: 'Limits & Calibration', subgroup: 'Limits', importance: 'essential' },
+
+  // Advanced parameters (everything else)
+  resistance_calib_max_voltage: { group: 'Motor', subgroup: 'Electrical', importance: 'advanced' },
+  motor_thermistor_enabled: { group: 'Motor', subgroup: 'Thermistor', importance: 'advanced' },
+  gpio_pin: { group: 'Motor', subgroup: 'Thermistor', importance: 'advanced' },
+  motor_temp_limit_lower: { group: 'Motor', subgroup: 'Thermistor', importance: 'advanced' },
+  motor_temp_limit_upper: { group: 'Motor', subgroup: 'Thermistor', importance: 'advanced' },
+  requested_current_range: { group: 'Limits & Calibration', subgroup: 'Limits', importance: 'advanced' },
+  current_control_bandwidth: { group: 'Limits & Calibration', subgroup: 'Calibration', importance: 'advanced' },
+  pre_calibrated: { group: 'Limits & Calibration', subgroup: 'Calibration', importance: 'advanced' },
+
+  // Lock-in Parameters
+  lock_in_spin_current: { group: 'Lock-in', subgroup: 'Lock-in', importance: 'advanced' },
+  ramp_time: { group: 'Lock-in', subgroup: 'Lock-in', importance: 'advanced' },
+  ramp_distance: { group: 'Lock-in', subgroup: 'Lock-in', importance: 'advanced' },
+  accel: { group: 'Lock-in', subgroup: 'Lock-in', importance: 'advanced' },
+  vel: { group: 'Lock-in', subgroup: 'Lock-in', importance: 'advanced' },
+
+  // AC Induction Motor (ACIM) Parameters
+  acim_gain_min_flux: { group: 'ACIM', subgroup: 'ACIM', importance: 'advanced' },
+  acim_autoflux_enable: { group: 'ACIM', subgroup: 'ACIM', importance: 'advanced' },
+  acim_autoflux_min_Id: { group: 'ACIM', subgroup: 'ACIM', importance: 'advanced' },
+  acim_autoflux_attack_gain: { group: 'ACIM', subgroup: 'ACIM', importance: 'advanced' },
+  acim_autoflux_decay_gain: { group: 'ACIM', subgroup: 'ACIM', importance: 'advanced' },
+}
 
 const MotorConfigStep = ({
   deviceConfig,
