@@ -17,7 +17,8 @@ import {
   SliderThumb,
   Button,
   Input,
-  Select
+  Select,
+  Tooltip
 } from '@chakra-ui/react'
 import { EditIcon, CheckIcon, CloseIcon, RepeatIcon } from '@chakra-ui/icons'
 
@@ -55,9 +56,39 @@ const PropertyItem = memo(({
     )
   }
 
-  const displayValue = value !== undefined ? value : 'N/A'
+
   const isWritable = prop.writable || false
-  const valueType = typeof value
+  const valueType = prop.valueType || 'Unknown'
+  
+  // Parse valueType to get the base type and constraints
+  const getTypeInfo = (valueType) => {
+    if (valueType.includes('BoolProperty')) {
+      return { baseType: 'boolean', displayType: 'Bool' }
+    } else if (valueType.includes('Float32Property')) {
+      return { baseType: 'number', displayType: 'Float32', isFloat: true }
+    } else if (valueType.includes('Int32Property')) {
+      return { baseType: 'number', displayType: 'Int32', isInteger: true }
+    } else if (valueType.includes('Uint32Property')) {
+      return { baseType: 'number', displayType: 'UInt32', isInteger: true, isUnsigned: true }
+    } else if (valueType.includes('Uint64Property')) {
+      return { baseType: 'number', displayType: 'UInt64', isInteger: true, isUnsigned: true }
+    } else if (valueType.includes('Uint16Property')) {
+      return { baseType: 'number', displayType: 'UInt16', isInteger: true, isUnsigned: true }
+    } else if (valueType.includes('Uint8Property')) {
+      return { baseType: 'number', displayType: 'UInt8', isInteger: true, isUnsigned: true }
+    } else if (valueType.includes('Int64Property')) {
+      return { baseType: 'number', displayType: 'Int64', isInteger: true }
+    } else if (valueType.includes('Property[')) {
+      // Handle enum types like Property[ODrive.Controller.ControlMode]
+      const enumMatch = valueType.match(/Property\[(.+)\]/)
+      const enumType = enumMatch ? enumMatch[1].split('.').pop() : 'Enum'
+      return { baseType: 'number', displayType: enumType, isEnum: true }
+    } else {
+      return { baseType: 'unknown', displayType: valueType }
+    }
+  }
+
+  const typeInfo = getTypeInfo(valueType)
   
   const isActualError = (path, val) => {
     const errorRegisters = [
@@ -78,20 +109,67 @@ const PropertyItem = memo(({
   }
   
   const isError = isActualError(displayPath, value)
-  const isChartable = true
+  const isChartable = typeInfo.baseType === 'number' || typeInfo.baseType === 'boolean'
   const isCharted = selectedProperties.includes(displayPath)
   const propName = prop.name || displayPath.split('.').pop()
   const isSetpoint = prop.isSetpoint === true
-  const shouldShowSlider = prop.hasSlider === true || isSetpoint
+  const shouldShowSlider = (prop.hasSlider === true || isSetpoint) && typeInfo.baseType === 'number'
   
   // Check if this property should be a select
   const hasSelectOptions = prop.selectOptions && Array.isArray(prop.selectOptions) && prop.selectOptions.length > 0
   const shouldShowSelect = hasSelectOptions && isWritable
 
+  // Validate input based on type
+  const validateInput = (inputValue) => {
+    if (typeInfo.baseType === 'boolean') {
+      return inputValue === 'true' || inputValue === 'false'
+    } else if (typeInfo.baseType === 'number') {
+      const num = parseFloat(inputValue)
+      if (isNaN(num)) return false
+      
+      // Check integer constraints
+      if (typeInfo.isInteger && !Number.isInteger(num)) return false
+      
+      // Check unsigned constraints
+      if (typeInfo.isUnsigned && num < 0) return false
+      
+      // Check type-specific ranges
+      if (typeInfo.displayType === 'UInt8' && (num < 0 || num > 255)) return false
+      if (typeInfo.displayType === 'UInt16' && (num < 0 || num > 65535)) return false
+      if (typeInfo.displayType === 'UInt32' && (num < 0 || num > 4294967295)) return false
+      if (typeInfo.displayType === 'Int32' && (num < -2147483648 || num > 2147483647)) return false
+      
+      return true
+    }
+    return true
+  }
+
+  const formatValueForDisplay = (val) => {
+    if (val === undefined || val === null) return 'N/A'
+    
+    if (typeInfo.baseType === 'boolean') {
+      return val ? 'True' : 'False'
+    } else if (typeInfo.baseType === 'number') {
+      if (shouldShowSelect) {
+        const option = prop.selectOptions.find(opt => opt.value === val)
+        return option ? option.label : String(val)
+      }
+      
+      if (typeInfo.isInteger) {
+        return String(Math.round(val))
+      } else if (typeInfo.isFloat) {
+        const decimals = prop.decimals !== undefined ? prop.decimals : 3
+        return val.toFixed(Math.min(decimals, 6))
+      }
+      return String(val)
+    }
+    return String(val)
+  }
+
   const getSliderProps = () => {
     const min = prop.min !== undefined ? prop.min : -100
     const max = prop.max !== undefined ? prop.max : 100
-    const step = prop.step !== undefined ? prop.step : 0.1
+    const step = prop.step !== undefined ? prop.step : (typeInfo.isInteger ? 1 : 0.1)
     
     return { min, max, step }
   }
@@ -103,7 +181,9 @@ const PropertyItem = memo(({
   const handleSliderChangeEnd = async (newValue) => {
     if (prop.writable && isConnected && updateProperty) {
       let formattedValue = newValue
-      if (prop.decimals !== undefined) {
+      if (typeInfo.isInteger) {
+        formattedValue = Math.round(newValue)
+      } else if (prop.decimals !== undefined) {
         formattedValue = parseFloat(newValue.toFixed(prop.decimals))
       }
       
@@ -165,13 +245,8 @@ const PropertyItem = memo(({
     }
   }
 
-  const getSelectDisplayValue = () => {
-    if (hasSelectOptions && value !== undefined) {
-      const option = prop.selectOptions.find(opt => opt.value === value)
-      return option ? option.label : String(value)
-    }
-    return String(displayValue)
-  }
+
+  const isValidInput = editValue ? validateInput(editValue) : true
 
   return (
     <Box
@@ -200,6 +275,13 @@ const PropertyItem = memo(({
                 <Badge size="xs" colorScheme={isWritable ? "green" : "gray"} variant="subtle">
                   {isWritable ? "RW" : "RO"}
                 </Badge>
+                
+                <Tooltip label={`Type: ${valueType}`} placement="top">
+                  <Badge size="xs" colorScheme="blue" variant="outline">
+                    {typeInfo.displayType}
+                  </Badge>
+                </Tooltip>
+                
                 <Text 
                   fontSize="sm" 
                   fontWeight="semibold" 
@@ -226,7 +308,7 @@ const PropertyItem = memo(({
           <HStack spacing={1} minW="fit-content">
             {isEditing ? (
               <>
-                {valueType === 'boolean' ? (
+                {typeInfo.baseType === 'boolean' ? (
                   <Switch
                     size="sm"
                     isChecked={editValue === 'true'}
@@ -263,16 +345,17 @@ const PropertyItem = memo(({
                     size="sm"
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    type="number"
-                    step={prop.step}
+                    type={typeInfo.baseType === 'number' ? 'number' : 'text'}
+                    step={typeInfo.isInteger ? 1 : (prop.step || 0.1)}
                     w="80px"
-                    bg="gray.700"
+                    bg={isValidInput ? "gray.700" : "red.800"}
                     color="white"
                     fontSize="xs"
+                    borderColor={isValidInput ? "gray.600" : "red.500"}
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault()
-                        saveEdit()
+                        if (isValidInput) saveEdit()
                       } else if (e.key === 'Escape') {
                         e.preventDefault()
                         cancelEdit()
@@ -286,7 +369,7 @@ const PropertyItem = memo(({
                   colorScheme="green"
                   icon={<CheckIcon />}
                   onClick={saveEdit}
-                  isDisabled={!isConnected}
+                  isDisabled={!isConnected || !isValidInput}
                 />
                 <IconButton
                   size="xs"
@@ -306,14 +389,7 @@ const PropertyItem = memo(({
                   minW="60px"
                   textAlign="right"
                 >
-                  {value !== undefined 
-                    ? (shouldShowSelect 
-                        ? getSelectDisplayValue()
-                        : (typeof displayValue === 'number' 
-                            ? displayValue.toFixed(Math.min(prop.decimals || 2, 3))
-                            : String(displayValue)))
-                    : 'N/A'
-                  }
+                  {formatValueForDisplay(value)}
                 </Text>
                 
                 {/* Quick Select Dropdown for select properties */}
@@ -350,12 +426,19 @@ const PropertyItem = memo(({
                     variant="ghost"
                     icon={<EditIcon />}
                     onClick={() => {
-                      // round initial editValue without limiting further precision
-                      const initial = valueType === 'number'
-                        ? // use prop.decimals for display rounding, default to 6
-                          parseFloat(displayValue)
-                            .toFixed(prop.decimals != null ? prop.decimals : 6)
-                        : displayValue
+                      let initial
+                      if (typeInfo.baseType === 'boolean') {
+                        initial = value ? 'true' : 'false'
+                      } else if (typeInfo.baseType === 'number') {
+                        if (typeInfo.isInteger) {
+                          initial = String(Math.round(value || 0))
+                        } else {
+                          const decimals = prop.decimals !== undefined ? prop.decimals : 6
+                          initial = parseFloat(value || 0).toFixed(decimals)
+                        }
+                      } else {
+                        initial = String(value || '')
+                      }
                       startEditing(displayPath, initial)
                     }}
                   />
@@ -365,7 +448,16 @@ const PropertyItem = memo(({
           </HStack>
         </HStack>
 
-        {shouldShowSlider && isWritable && prop.type === 'number' && isConnected && !isEditing && !shouldShowSelect && (
+        {/* Type validation error message */}
+        {isEditing && !isValidInput && (
+          <Text fontSize="xs" color="red.300">
+            Invalid {typeInfo.displayType} value
+            {typeInfo.isUnsigned && ' (must be non-negative)'}
+            {typeInfo.isInteger && ' (must be integer)'}
+          </Text>
+        )}
+
+        {shouldShowSlider && isWritable && typeInfo.baseType === 'number' && isConnected && !isEditing && !shouldShowSelect && (
           <HStack spacing={2} w="100%">
             <Slider
               value={sliderValue}
