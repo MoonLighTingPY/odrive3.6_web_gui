@@ -150,7 +150,8 @@ const PropertyItem = memo(({
     if (typeInfo.baseType === 'boolean') {
       return val ? 'True' : 'False'
     } else if (typeInfo.baseType === 'number') {
-      if (shouldShowSelect) {
+      // For enum properties (both writable and read-only), show the label
+      if (hasSelectOptions) {
         const option = prop.selectOptions.find(opt => opt.value === val)
         return option ? option.label : String(val)
       }
@@ -320,7 +321,7 @@ const PropertyItem = memo(({
                     size="sm"
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
-                    w="120px"
+                    w="160px"
                     bg="gray.700"
                     color="white"
                     fontSize="xs"
@@ -392,13 +393,13 @@ const PropertyItem = memo(({
                   {formatValueForDisplay(value)}
                 </Text>
                 
-                {/* Quick Select Dropdown for select properties */}
+                {/* Quick Select Dropdown for select properties - only show for writable */}
                 {shouldShowSelect && isConnected && !isRefreshing && (
                   <Select
                     size="xs"
-                    value={value ?? ''}
+                    value={value ?? 0}
                     onChange={handleSelectChange}
-                    w="100px"
+                    w="140px"
                     bg="gray.700"
                     color="white"
                     fontSize="xs"

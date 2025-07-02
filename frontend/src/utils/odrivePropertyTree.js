@@ -262,7 +262,27 @@ export const odrivePropertyTree = {
     description: 'Motor axis 0 configuration and status',
     properties: {
       error: { name: 'Axis Error', description: 'Current axis error flags', writable: false, type: 'number', valueType: 'Property[ODrive.Axis.Error]' },
-      current_state: { name: 'Current State', description: 'Current axis state', writable: false, type: 'number', valueType: 'Property[ODrive.Axis.AxisState]' },
+      current_state: { 
+        name: 'Current State', 
+        description: 'Current axis state', 
+        writable: false, type: 'number', 
+        valueType: 'Property[ODrive.Axis.AxisState]',
+        selectOptions: [
+          { value: 0, label: 'Undefined' },
+          { value: 1, label: 'Idle' },
+          { value: 2, label: 'Startup Sequence' },
+          { value: 3, label: 'Full Calibration' },
+          { value: 4, label: 'Motor Calibration' },
+          { value: 6, label: 'Encoder Index Search' },
+          { value: 7, label: 'Encoder Offset Calibration' },
+          { value: 8, label: 'Closed Loop Control' },
+          { value: 9, label: 'Lockin Spin' },
+          { value: 10, label: 'Encoder Direction Find' },
+          { value: 11, label: 'Homing' },
+          { value: 12, label: 'Encoder Hall Polarity Cal' },
+          { value: 13, label: 'Encoder Hall Phase Cal' }
+        ]
+       },
       requested_state: {
         name: 'Requested State',
         description: 'Requested axis state',
@@ -592,9 +612,9 @@ export const odrivePropertyTree = {
           pos_setpoint: { name: 'Position Setpoint', description: 'Current position setpoint (counts)', writable: false, type: 'number', decimals: 3, valueType: 'Float32Property' },
           vel_setpoint: { name: 'Velocity Setpoint', description: 'Current velocity setpoint (counts/s)', writable: false, type: 'number', decimals: 3, valueType: 'Float32Property' },
           torque_setpoint: { name: 'Torque Setpoint', description: 'Current torque setpoint (Nm)', writable: false, type: 'number', decimals: 3, valueType: 'Float32Property' },
-          trajectory_done: { name: 'Trajectory Done', description: 'Whether trajectory is complete', writable: false, type: 'boolean' },
+          trajectory_done: { name: 'Trajectory Done', description: 'Whether trajectory is complete', writable: false, type: 'boolean', valueType: 'BoolProperty' },
           vel_integrator_torque: { name: 'Velocity Integrator Torque', description: 'Torque from velocity integrator (Nm)', writable: false, type: 'number', decimals: 6, valueType: 'Float32Property' },
-          anticogging_valid: { name: 'Anticogging Valid', description: 'Whether anticogging calibration is valid', writable: false, type: 'boolean' },
+          anticogging_valid: { name: 'Anticogging Valid', description: 'Whether anticogging calibration is valid', writable: false, type: 'boolean', valueType: 'BoolProperty' },
           autotuning_phase: { name: 'Autotuning Phase', description: 'Current autotuning phase', writable: false, type: 'number', valueType: 'Float32Property' },
           mechanical_power: { name: 'Mechanical Power', description: 'Mechanical power output (W)', writable: false, type: 'number', decimals: 1, valueType: 'Float32Property' },
           electrical_power: { name: 'Electrical Power', description: 'Electrical power consumption (W)', writable: false, type: 'number', decimals: 1, valueType: 'Float32Property' },
