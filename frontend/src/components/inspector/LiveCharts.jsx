@@ -28,6 +28,9 @@ import {
   ResponsiveContainer,
 } from 'recharts'
 import { useChartsTelemetry } from '../../hooks/useChartsTelemetry'
+import { applyChartFilter } from '../../utils/chartFilters'
+import { Icon } from '@chakra-ui/react'
+
 
 // Move ChartComponent outside as a separate component
 const ChartComponent = memo(({ property, index, data, chartColors, chartConfig, getPropertyDisplayName }) => (
@@ -80,6 +83,7 @@ const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
   const [chartData, setChartData] = useState([])
   const [timeWindow, setTimeWindow] = useState(60) // Default 60 seconds
   const [previewTimeWindow, setPreviewTimeWindow] = useState(timeWindow)
+  const [chartFilters, setChartFilters] = useState({}) // Track filter state per property
 
   const chartColors = useMemo(() => [
     '#3B82F6', '#EF4444', '#10B981', '#F59E0B', 
@@ -87,15 +91,7 @@ const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
     '#EC4899', '#6366F1', '#14B8A6', '#F472B6'
   ], [])
 
-  // Time window options for the slider
-  const timeWindowOptions = useMemo(() => [
-    { value: 10, label: '10s' },
-    { value: 30, label: '30s' },
-    { value: 60, label: '1m' },
-    { value: 120, label: '2m' },
-    { value: 300, label: '5m' },
-    { value: 600, label: '10m' }
-  ], [])
+
 
   const handleChartData = useCallback((data) => {
     if (!data.data) return
@@ -129,7 +125,7 @@ const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
       const filteredData = newData.filter(d => d.time > cutoffTime)
       
       // Calculate relative time based on the visible window
-      const processedData = filteredData.map((item, index) => {
+      const processedData = filteredData.map((item) => {
         if (filteredData.length === 0) return item
         
         // Use the oldest visible sample as the reference point (time 0)
@@ -183,7 +179,7 @@ const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
         return processedData
       })
     }
-  }, [timeWindow])
+  }, [chartData.length, timeWindow])
 
   const getPropertyDisplayName = useCallback((property) => {
     return property.split('.').pop()
@@ -203,10 +199,19 @@ const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
 
   // Use useMemo for expensive chart data transformations
   const processedChartData = useMemo(() => {
-    return chartData.map((sample) => ({
+    let data = chartData.map((sample) => ({
       ...sample,
     }))
-  }, [chartData])
+    
+    // Apply filters to enabled properties
+    Object.entries(chartFilters).forEach(([property, filter]) => {
+      if (filter.enabled && selectedProperties.includes(property)) {
+        data = applyChartFilter(data, property, filter.type, filter.options)
+      }
+    })
+    
+    return data
+  }, [chartData, chartFilters, selectedProperties])
 
   const renderChart = useCallback((property, index) => (
     <Box 
@@ -254,6 +259,30 @@ const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
                   : 'N/A'
               }
             </Text>
+            
+            {/* Filter Toggle Button */}
+            <Tooltip label={chartFilters[property]?.enabled ? "Disable filter" : "Enable filter"} placement="top">
+              <IconButton
+                size="xs"
+                variant="ghost"
+                colorScheme={chartFilters[property]?.enabled ? "green" : "gray"}
+                icon={<Icon viewBox="0 0 24 24" boxSize={3}>
+                  <path fill="currentColor" d="M14,12V19.88C14.04,20.18 13.94,20.5 13.71,20.71C13.32,21.1 12.69,21.1 12.3,20.71L10.29,18.7C10.06,18.47 9.96,18.16 10,17.87V12H9.97L4.21,4.62C3.87,4.19 3.95,3.56 4.38,3.22C4.57,3.08 4.78,3 5,3V3H19V3C19.22,3 19.43,3.08 19.62,3.22C20.05,3.56 20.13,4.19 19.79,4.62L14.03,12H14Z" />
+                </Icon>}
+                onClick={() => {
+                  setChartFilters(prev => ({
+                    ...prev,
+                    [property]: {
+                      enabled: !prev[property]?.enabled,
+                      type: prev[property]?.type || 'moving_average',
+                      options: prev[property]?.options || { windowSize: 5 }
+                    }
+                  }))
+                }}
+                aria-label="Toggle filter"
+              />
+            </Tooltip>
+            
             <Tooltip label="Remove from charts" placement="top">
               <IconButton
                 size="xs"
@@ -279,7 +308,7 @@ const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
         </Box>
       </VStack>
     </Box>
-  ), [chartData, chartColors, processedChartData, chartConfig, getPropertyDisplayName, handleRemoveChart])
+  ), [chartColors, getPropertyDisplayName, chartData, chartFilters, processedChartData, chartConfig, handleRemoveChart])
 
   // Update preview immediately for badge display
   const handleTimeWindowPreview = useCallback((value) => {
@@ -315,6 +344,19 @@ const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
       return remainingMinutes === 0 ? `${hours}h` : `${hours}h${remainingMinutes}m`
     }
   }, [])
+
+  // Clean up filters when properties are removed
+  useEffect(() => {
+    setChartFilters(prev => {
+      const newFilters = {}
+      selectedProperties.forEach(property => {
+        if (prev[property]) {
+          newFilters[property] = prev[property]
+        }
+      })
+      return newFilters
+    })
+  }, [selectedProperties])
 
   return (
     <Box h="100%" display="flex" flexDirection="column">
