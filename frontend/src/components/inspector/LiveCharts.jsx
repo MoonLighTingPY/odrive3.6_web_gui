@@ -11,6 +11,11 @@ import {
   Badge,
   IconButton,
   Tooltip,
+  Slider,
+  SliderTrack,
+  SliderFilledTrack,
+  SliderThumb,
+  SliderMark,
 } from '@chakra-ui/react'
 import { CloseIcon } from '@chakra-ui/icons'
 import {
@@ -73,11 +78,23 @@ ChartComponent.displayName = 'ChartComponent'
 
 const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
   const [chartData, setChartData] = useState([])
-  
+  const [timeWindow, setTimeWindow] = useState(60) // Default 60 seconds
+  const [previewTimeWindow, setPreviewTimeWindow] = useState(timeWindow)
+
   const chartColors = useMemo(() => [
     '#3B82F6', '#EF4444', '#10B981', '#F59E0B', 
     '#8B5CF6', '#06B6D4', '#84CC16', '#F97316',
     '#EC4899', '#6366F1', '#14B8A6', '#F472B6'
+  ], [])
+
+  // Time window options for the slider
+  const timeWindowOptions = useMemo(() => [
+    { value: 10, label: '10s' },
+    { value: 30, label: '30s' },
+    { value: 60, label: '1m' },
+    { value: 120, label: '2m' },
+    { value: 300, label: '5m' },
+    { value: 600, label: '10m' }
   ], [])
 
   const handleChartData = useCallback((data) => {
@@ -85,9 +102,9 @@ const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
 
     setChartData(prev => {
       const timestamp = data.timestamp
+      
       const sample = { 
-        time: timestamp,
-        relativeTime: prev.length > 0 ? (timestamp - prev[0].time) / 1000 : 0
+        time: timestamp
       }
 
       Object.entries(data.data).forEach(([property, value]) => {
@@ -106,11 +123,28 @@ const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
       })
 
       const newData = [...prev, sample]
-      const cutoffTime = timestamp - 60000
+      
+      // Filter by time window first
+      const cutoffTime = timestamp - (timeWindow * 1000)
       const filteredData = newData.filter(d => d.time > cutoffTime)
-      return filteredData.length > 1000 ? filteredData.slice(-1000) : filteredData
+      
+      // Calculate relative time based on the visible window
+      const processedData = filteredData.map((item, index) => {
+        if (filteredData.length === 0) return item
+        
+        // Use the oldest visible sample as the reference point (time 0)
+        const oldestVisibleTime = filteredData[0].time
+        const relativeTime = (item.time - oldestVisibleTime) / 1000
+        
+        return {
+          ...item,
+          relativeTime: relativeTime
+        }
+      })
+      
+      return processedData.length > 1000 ? processedData.slice(-1000) : processedData
     })
-  }, [selectedProperties]) // Remove chartData dependency
+  }, [selectedProperties, timeWindow])
 
   // Use the new charts telemetry hook
   useChartsTelemetry(selectedProperties, handleChartData)
@@ -121,6 +155,35 @@ const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
       setChartData([])
     }
   }, [selectedProperties.length])
+
+  // Recalculate relative times when time window changes
+  useEffect(() => {
+    if (chartData.length > 0) {
+      const currentTime = Date.now()
+      const cutoffTime = currentTime - (timeWindow * 1000)
+      
+      setChartData(prev => {
+        // Filter by new time window
+        const filteredData = prev.filter(d => d.time > cutoffTime)
+        
+        // Recalculate relative times for the new window
+        const processedData = filteredData.map((item) => {
+          if (filteredData.length === 0) return item
+          
+          // Use the oldest visible sample as the reference point (time 0)
+          const oldestVisibleTime = filteredData[0].time
+          const relativeTime = (item.time - oldestVisibleTime) / 1000
+          
+          return {
+            ...item,
+            relativeTime: relativeTime
+          }
+        })
+        
+        return processedData
+      })
+    }
+  }, [timeWindow])
 
   const getPropertyDisplayName = useCallback((property) => {
     return property.split('.').pop()
@@ -218,6 +281,41 @@ const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
     </Box>
   ), [chartData, chartColors, processedChartData, chartConfig, getPropertyDisplayName, handleRemoveChart])
 
+  // Update preview immediately for badge display
+  const handleTimeWindowPreview = useCallback((value) => {
+    const integerValue = Math.round(value)
+    const clampedValue = Math.max(10, Math.min(600, integerValue))
+    setPreviewTimeWindow(clampedValue)
+  }, [])
+
+  // Only update actual time window when slider is released
+  const handleTimeWindowChange = useCallback((value) => {
+    const integerValue = Math.round(value)
+    const clampedValue = Math.max(10, Math.min(600, integerValue))
+    setTimeWindow(clampedValue)
+    setPreviewTimeWindow(clampedValue)
+  }, [])
+
+  // Sync preview with actual value when timeWindow changes externally
+  useEffect(() => {
+    setPreviewTimeWindow(timeWindow)
+  }, [timeWindow])
+
+  const formatTimeLabel = useCallback((value) => {
+    // For any integer value, format appropriately
+    if (value < 60) {
+      return `${value}s`
+    } else if (value < 3600) {
+      const minutes = Math.floor(value / 60)
+      const seconds = value % 60
+      return seconds === 0 ? `${minutes}m` : `${minutes}m${seconds}s`
+    } else {
+      const hours = Math.floor(value / 3600)
+      const remainingMinutes = Math.floor((value % 3600) / 60)
+      return remainingMinutes === 0 ? `${hours}h` : `${hours}h${remainingMinutes}m`
+    }
+  }, [])
+
   return (
     <Box h="100%" display="flex" flexDirection="column">
       {selectedProperties.length === 0 ? (
@@ -236,16 +334,62 @@ const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
       ) : (
         <Card bg="gray.800" variant="elevated" h="100%" display="flex" flexDirection="column">
           <CardHeader py={3} flexShrink={0}>
-            <HStack justify="space-between">
-              <Heading size="md" color="white">
-                Live Charts
-              </Heading>
-              <HStack spacing={2}>
-                <Badge colorScheme="blue" variant="outline">
-                  {selectedProperties.length} chart{selectedProperties.length !== 1 ? 's' : ''}
-                </Badge>
+            <VStack spacing={3} align="stretch">
+              <HStack justify="space-between">
+                <Heading size="md" color="white">
+                  Live Charts
+                </Heading>
+                <HStack spacing={2}>
+                  <Badge colorScheme="blue" variant="outline">
+                    {selectedProperties.length} chart{selectedProperties.length !== 1 ? 's' : ''}
+                  </Badge>
+                </HStack>
               </HStack>
-            </HStack>
+              
+              {/* Time Window Slider */}
+              <Box>
+                <HStack justify="space-between" mb={2}>
+                  <Text fontSize="sm" color="gray.300" fontWeight="medium">
+                    Time Window
+                  </Text>
+                  <Badge colorScheme="blue" variant="subtle" fontSize="xs">
+                    {formatTimeLabel(previewTimeWindow)}
+                  </Badge>
+                </HStack>
+                <Box px={3}>
+                  <Slider
+                    value={previewTimeWindow}
+                    onChange={handleTimeWindowPreview}
+                    onChangeEnd={handleTimeWindowChange}
+                    min={10}
+                    max={600}
+                    step={1}
+                    colorScheme="blue"
+                  >
+                    <SliderTrack bg="gray.600">
+                      <SliderFilledTrack bg="blue.400" />
+                    </SliderTrack>
+                    {/* Keep some reference marks but don't snap to them */}
+                    <SliderMark value={30} mt={2} ml={-2} fontSize="xs" color="gray.500">
+                      30s
+                    </SliderMark>
+                    <SliderMark value={60} mt={2} ml={-2} fontSize="xs" color="gray.500">
+                      1m
+                    </SliderMark>
+                    <SliderMark value={120} mt={2} ml={-2} fontSize="xs" color="gray.500">
+                      2m
+                    </SliderMark>
+                    <SliderMark value={300} mt={2} ml={-2} fontSize="xs" color="gray.500">
+                      5m
+                    </SliderMark>
+                    <SliderMark value={600} mt={2} ml={-2} fontSize="xs" color="gray.500">
+                      10m
+                    </SliderMark>
+                    <SliderThumb boxSize={4} bg="blue.500" />
+                  </Slider>
+                </Box>
+              </Box>
+            </VStack>
           </CardHeader>
           <CardBody flex="1" minH="0" p={0}>
             <Box 
