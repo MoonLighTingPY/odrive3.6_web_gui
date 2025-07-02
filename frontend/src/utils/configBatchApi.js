@@ -123,12 +123,17 @@ export const loadAllConfigurationBatch = async () => {
       // Find the parameter in the registry
       const param = odriveRegistry.findParameter(propertyPath)
 
-      if (param) {
+      if (param && param.category) {
         let processedValue = value
 
         // Handle special value conversions
         if (param.configKey === 'motor_kv' && param.path.includes('torque_constant')) {
           processedValue = convertTorqueConstantToKv(value)
+        }
+
+        // Ensure the category exists
+        if (!categorizedResults[param.category]) {
+          categorizedResults[param.category] = {}
         }
 
         // Store in the appropriate category

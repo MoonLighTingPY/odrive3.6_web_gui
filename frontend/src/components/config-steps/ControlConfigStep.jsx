@@ -231,22 +231,14 @@ const ControlConfigStep = ({
                   size="xs"
                   onClick={applyCalculatedGains}
                   title="Apply all calculated optimal gains"
+                  mt={3}
                 >
                   Use Calculated
                 </Button>
               </HStack>
             </CardHeader>
             <CardBody py={2}>
-              <Alert status="info" mb={3} py={2} fontSize="xs">
-                <AlertIcon boxSize={3} />
-                <VStack align="start" spacing={0}>
-                  <Text fontWeight="bold" fontSize="xs">Auto-calculated based on motor config:</Text>
-                  <Text fontSize="xs">Motor Kv: {(motorConfig.motor_kv ?? 0).toFixed(0)} RPM/V, Encoder CPR: {encoderConfig.cpr || 0}</Text>
-                  <Text fontSize="xs">Torque Constant: {(calculatedGains.torque_constant ?? 0).toFixed(4)} Nm/A</Text>
-                  <Text fontSize="xs">Position Gain: {(calculatedGains.pos_gain ?? 0).toFixed(3)} (turns/s)/turn</Text>
-                  <Text fontSize="xs">Velocity Gain: {(calculatedGains.vel_gain?? 0).toFixed(4)} Nm/(turn/s)</Text>
-                </VStack>
-              </Alert>
+
 
               <VStack spacing={3}>
                 {isPositionControl && (
