@@ -30,6 +30,7 @@ import {
 import { useChartsTelemetry } from '../../hooks/useChartsTelemetry'
 import { applyChartFilter } from '../../utils/chartFilters'
 import { Icon } from '@chakra-ui/react'
+import { calculateAllPropertiesStats, formatStatValue, getRecommendedDecimals } from '../../utils/chartStatistics'
 
 
 // Move ChartComponent outside as a separate component
@@ -197,8 +198,8 @@ const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
     isAnimationActive: false
   }), [])
 
-  // Use useMemo for expensive chart data transformations
-  const processedChartData = useMemo(() => {
+  // Use useMemo for expensive chart data transformations and statistics
+  const { processedChartData, chartStats } = useMemo(() => {
     let data = chartData.map((sample) => ({
       ...sample,
     }))
@@ -210,8 +211,14 @@ const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
       }
     })
     
-    return data
-  }, [chartData, chartFilters, selectedProperties])
+    // Calculate statistics for all selected properties
+    const stats = calculateAllPropertiesStats(data, selectedProperties, timeWindow * 1000)
+    
+    return {
+      processedChartData: data,
+      chartStats: stats
+    }
+  }, [chartData, chartFilters, selectedProperties, timeWindow])
 
   const renderChart = useCallback((property, index) => (
     <Box 
@@ -239,6 +246,22 @@ const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
             </Text>
           </HStack>
           <HStack spacing={2}>
+            /* Statistics Display */
+                  <HStack spacing={1} align="end">
+                    <Text fontSize="xs" color="gray.500" fontFamily="mono">
+                    Min: {formatStatValue(chartStats[property]?.min, getRecommendedDecimals(chartStats[property]?.min))}
+                    </Text>
+                    <Box h="18px" borderRight="1px solid" borderColor="gray.600" />
+                    <Text fontSize="xs" color="gray.500" fontFamily="mono">
+                    Max: {formatStatValue(chartStats[property]?.max, getRecommendedDecimals(chartStats[property]?.max))}
+                    </Text>
+                    <Box h="18px" borderRight="1px solid" borderColor="gray.600" />
+                    <Text fontSize="xs" color="gray.500" fontFamily="mono">
+                    Avg: {formatStatValue(chartStats[property]?.average, getRecommendedDecimals(chartStats[property]?.average))}
+                    </Text>
+                  </HStack>
+
+                  {/* Current Value */}
             <Text fontSize="xs" color="gray.400" fontFamily="mono" minW="80px" textAlign="right">
               {
                 chartData.length > 0
@@ -308,7 +331,7 @@ const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
         </Box>
       </VStack>
     </Box>
-  ), [chartColors, getPropertyDisplayName, chartData, chartFilters, processedChartData, chartConfig, handleRemoveChart])
+  ), [chartColors, getPropertyDisplayName, chartStats, chartData, chartFilters, processedChartData, chartConfig, handleRemoveChart])
 
   // Update preview immediately for badge display
   const handleTimeWindowPreview = useCallback((value) => {
