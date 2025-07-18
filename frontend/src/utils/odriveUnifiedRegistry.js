@@ -720,6 +720,7 @@ class ODriveUnifiedRegistry {
     console.log('Device config:', deviceConfig)
     
     // Generate commands for each category
+    // eslint-disable-next-line no-unused-vars
     Object.entries(this.configCategories).forEach(([category, params]) => {
       const categoryConfig = deviceConfig[category]
       

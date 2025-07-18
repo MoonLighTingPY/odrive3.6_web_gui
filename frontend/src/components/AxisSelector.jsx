@@ -43,9 +43,6 @@ const AxisSelector = ({ size = "sm", showLabel = true, variant = "outline" }) =>
           </Button>
         ))}
       </ButtonGroup>
-      <Badge colorScheme="blue" size="sm">
-        Active: {selectedAxis}
-      </Badge>
     </HStack>
   )
 }
