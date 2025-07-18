@@ -23,7 +23,7 @@ import CommandList from '../CommandList'
 import ConfirmationModal from '../modals/ConfirmationModal'
 
 // Import shared utilities
-import { generateAllCommands, getDebugInfo } from '../../utils/odriveUnifiedRegistry'
+import { generateAllCommands } from '../../utils/odriveUnifiedRegistry'
 import { executeConfigAction, saveAndRebootWithReconnect } from '../../utils/configurationActions'
 
 const FinalConfigStep = () => {
@@ -38,46 +38,33 @@ const FinalConfigStep = () => {
   const [enableCommandEditing, setEnableCommandEditing] = useState(false)
 
   const { powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig } = useSelector(state => state.config)
+  const { axisConfigs } = useSelector(state => state.config)
   const { isConnected, connectedDevice } = useSelector(state => state.device)
   const selectedAxis = useSelector(state => state.ui.selectedAxis)
 
   const baseGeneratedCommands = useMemo(() => {
-    console.log('=== FinalConfigStep: Generating commands ===')
-    console.log('Selected axis:', selectedAxis)
-    console.log('Raw configs from Redux:', {
-      powerConfig,
-      motorConfig,
-      encoderConfig,
-      controlConfig,
-      interfaceConfig
-    })
-    
     // Get axis-specific configurations
     const config = {
       power: {
         // Combine global and axis-specific power configs
         ...powerConfig, // Global power config
-        ...(powerConfig?.[`axis${selectedAxis}`] || {}), // Axis-specific power config if it exists
+        ...(axisConfigs?.[`axis${selectedAxis}`]?.powerConfig || {}), // Axis-specific power config if it exists
       },
-      motor: motorConfig?.[`axis${selectedAxis}`] || {}, // Axis-specific
-      encoder: encoderConfig?.[`axis${selectedAxis}`] || {}, // Axis-specific
-      control: controlConfig?.[`axis${selectedAxis}`] || {}, // Axis-specific
+      motor: axisConfigs?.[`axis${selectedAxis}`]?.motorConfig || motorConfig || {},
+      encoder: axisConfigs?.[`axis${selectedAxis}`]?.encoderConfig || encoderConfig || {},  
+      control: axisConfigs?.[`axis${selectedAxis}`]?.controlConfig || controlConfig || {},
       interface: {
         // Combine global and axis-specific interface configs
         ...interfaceConfig, // Global interface config
-        ...(interfaceConfig?.[`axis${selectedAxis}`] || {}), // Axis-specific interface config if it exists
+        ...(axisConfigs?.[`axis${selectedAxis}`]?.interfaceConfig || {}), // Axis-specific interface config if it exists
       }
     }
     
-    console.log('Processed config for command generation:', config)
-    console.log('Registry debug info:', getDebugInfo())
     
     const commands = generateAllCommands(config, selectedAxis)
-    console.log('Generated commands:', commands)
-    console.log('Command count:', commands.length)
     
     return commands
-  }, [powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig, selectedAxis])
+  }, [powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig, axisConfigs, selectedAxis])
 
   // Final commands list with custom edits applied
   const finalCommands = useMemo(() => {

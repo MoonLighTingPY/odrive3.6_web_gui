@@ -155,6 +155,7 @@ export const usePropertyRefresh = (odrivePropertyTree, collectAllProperties, isC
             ...prev,
             [displayPath]: data.value
           }))
+        // eslint-disable-next-line no-unused-vars
         } catch (jsonError) {
           // If JSON parsing fails, try to handle Infinity values
           try {

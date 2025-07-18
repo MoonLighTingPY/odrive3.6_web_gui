@@ -110,56 +110,52 @@ class ODriveUnifiedRegistry {
   }
 
   _generateCommandGenerators() {
-    const generators = {}
+  const generators = {}
 
-    Object.entries(this.configCategories).forEach(([category, params]) => {
-      generators[category] = (config, axisNumber = 0) => {
-        const commands = []
-        
-        // Remove axisNumber from config to avoid treating it as a parameter
-        const { axisNumber: _, ...configWithoutAxis } = config
-        
-        params.forEach(param => {
-          const value = configWithoutAxis[param.configKey]
-          if (value !== undefined && value !== null) {
-            // Skip non-config parameters
-            const skip = ['calib_anticogging', 'anticogging_valid', 'autotuning_phase', 'endstop_state', 'temperature']
-            if (skip.includes(param.path.split('.').pop())) return
+  Object.entries(this.configCategories).forEach(([category, params]) => {
+    generators[category] = (config, axisNumber = 0) => {
+      const commands = []
+      
+      // Remove axisNumber from config to avoid treating it as a parameter
+      const { axisNumber: _, ...configWithoutAxis } = config
+      
+      params.forEach(param => {
+        const value = configWithoutAxis[param.configKey]
+        if (value !== undefined && value !== null) {
+          // Skip non-config parameters
+          const skip = ['calib_anticogging', 'anticogging_valid', 'autotuning_phase', 'endstop_state', 'temperature']
+          if (skip.includes(param.path.split('.').pop())) return
 
-            let commandValue = value
-            
-            // Handle special value conversions
-            if (param.configKey === 'motor_kv' && param.path.includes('torque_constant')) {
-              commandValue = convertKvToTorqueConstant(value)
-            } else if (param.property.type === 'boolean') {
-              commandValue = value ? 'True' : 'False'
-            } else if (param.configKey === 'torque_lim' && (value === 'inf' || value === Infinity)) {
-              commandValue = 1000000
-            }
-
-            // Generate the correct ODrive command with proper axis handling
-            let odriveCommand = param.odriveCommand
-            
-            // NEW: For axis-specific parameters, ONLY generate for the selected axis
-            if (param.isAxisSpecific) {
-              // Replace any axis number in the command with the selected axis
-              odriveCommand = odriveCommand.replace(/axis[0-9]+/g, `axis${axisNumber}`)
-              
-              // Only add the command - no need to check if axisNumber !== 0
-              commands.push(`odrv0.${odriveCommand} = ${commandValue}`)
-            } else {
-              // For truly global parameters, add as-is
-              commands.push(`odrv0.${odriveCommand} = ${commandValue}`)
-            }
+          let commandValue = value
+          
+          // Handle special value conversions
+          if (param.configKey === 'motor_kv' && param.path.includes('torque_constant')) {
+            commandValue = convertKvToTorqueConstant(value)
+          } else if (param.property.type === 'boolean') {
+            commandValue = value ? 'True' : 'False'
+          } else if (param.configKey === 'torque_lim' && (value === 'inf' || value === Infinity)) {
+            commandValue = 1000000
           }
-        })
-        
-        return commands
-      }
-    })
 
-    return generators
-  }
+          // Generate the correct ODrive command with proper axis handling
+          let odriveCommand = param.odriveCommand
+          
+          // For axis-specific parameters, replace axis number with selected axis
+          if (param.isAxisSpecific) {
+            odriveCommand = odriveCommand.replace(/axis[0-9]+/g, `axis${axisNumber}`)
+          }
+          
+          // Add the command - THIS IS THE KEY FIX
+          commands.push(`odrv0.${odriveCommand} = ${commandValue}`)
+        }
+      })
+      
+      return commands
+    }
+  })
+
+  return generators
+}
 
   _generateCommands() {
     const commands = {
@@ -677,7 +673,6 @@ class ODriveUnifiedRegistry {
     }
     return specialMappings[lastPart] || lastPart
   }
-
   _isConfigParameter(path) {
     if (path.endsWith('.error')) {
       return false
@@ -729,12 +724,10 @@ class ODriveUnifiedRegistry {
         return
       }
       
-      console.log(`Processing category ${category} with config:`, categoryConfig)
       
       // Pass the axis number to the command generator
       const categoryCommands = this.generateCommands(category, { ...categoryConfig, axisNumber }, axisNumber)
       
-      console.log(`Generated ${categoryCommands.length} commands for ${category}:`, categoryCommands)
       
       commands.push(...categoryCommands)
     })
