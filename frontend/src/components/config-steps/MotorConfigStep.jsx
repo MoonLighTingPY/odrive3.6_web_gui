@@ -28,7 +28,7 @@ import { useSelector } from 'react-redux'
 
 // Motor parameter groups
 const MOTOR_PARAM_GROUPS = {
-  // Essential Motor Settings (critical + important merged)
+  // Essential Motor Settings (no duplicates in advanced)
   motor_type: { group: 'Motor', subgroup: 'Basics', importance: 'essential' },
   pole_pairs: { group: 'Motor', subgroup: 'Basics', importance: 'essential' },
   motor_kv: { group: 'Motor', subgroup: 'Basics', importance: 'essential' },
@@ -38,29 +38,41 @@ const MOTOR_PARAM_GROUPS = {
   phase_inductance: { group: 'Motor', subgroup: 'Electrical', importance: 'essential' },
   torque_lim: { group: 'Limits & Calibration', subgroup: 'Limits', importance: 'essential' },
 
-  // Advanced parameters (everything else)
-  resistance_calib_max_voltage: { group: 'Motor', subgroup: 'Electrical', importance: 'advanced' },
-  motor_thermistor_enabled: { group: 'Motor', subgroup: 'Thermistor', importance: 'advanced' },
-  gpio_pin: { group: 'Motor', subgroup: 'Thermistor', importance: 'advanced' },
-  motor_temp_limit_lower: { group: 'Motor', subgroup: 'Thermistor', importance: 'advanced' },
-  motor_temp_limit_upper: { group: 'Motor', subgroup: 'Thermistor', importance: 'advanced' },
-  requested_current_range: { group: 'Limits & Calibration', subgroup: 'Limits', importance: 'advanced' },
-  current_control_bandwidth: { group: 'Limits & Calibration', subgroup: 'Calibration', importance: 'advanced' },
-  pre_calibrated: { group: 'Limits & Calibration', subgroup: 'Calibration', importance: 'advanced' },
+  // Advanced - Motor Properties
+  resistance_calib_max_voltage: { group: 'Motor Configuration', subgroup: 'Electrical', importance: 'advanced' },
+  current_control_bandwidth: { group: 'Motor Configuration', subgroup: 'Control', importance: 'advanced' },
+  requested_current_range: { group: 'Motor Configuration', subgroup: 'Control', importance: 'advanced' },
+  pre_calibrated: { group: 'Motor Configuration', subgroup: 'Calibration', importance: 'advanced' },
+  current_lim_margin: { group: 'Motor Configuration', subgroup: 'Limits', importance: 'advanced' },
+  inverter_temp_limit_lower: { group: 'Motor Configuration', subgroup: 'Temperature', importance: 'advanced' },
+  inverter_temp_limit_upper: { group: 'Motor Configuration', subgroup: 'Temperature', importance: 'advanced' },
 
-  // Lock-in Parameters
-  lock_in_spin_current: { group: 'Lock-in', subgroup: 'Lock-in', importance: 'advanced' },
-  ramp_time: { group: 'Lock-in', subgroup: 'Lock-in', importance: 'advanced' },
-  ramp_distance: { group: 'Lock-in', subgroup: 'Lock-in', importance: 'advanced' },
-  accel: { group: 'Lock-in', subgroup: 'Lock-in', importance: 'advanced' },
-  vel: { group: 'Lock-in', subgroup: 'Lock-in', importance: 'advanced' },
+  // Advanced - Thermistor
+  motor_thermistor_enabled: { group: 'Thermistor', subgroup: 'Motor Thermistor', importance: 'advanced' },
+  motor_thermistor_gpio_pin: { group: 'Thermistor', subgroup: 'Motor Thermistor', importance: 'advanced' },
+  motor_temp_limit_lower: { group: 'Thermistor', subgroup: 'Motor Thermistor', importance: 'advanced' },
+  motor_temp_limit_upper: { group: 'Thermistor', subgroup: 'Motor Thermistor', importance: 'advanced' },
 
-  // AC Induction Motor (ACIM) Parameters
-  acim_gain_min_flux: { group: 'ACIM', subgroup: 'ACIM', importance: 'advanced' },
-  acim_autoflux_enable: { group: 'ACIM', subgroup: 'ACIM', importance: 'advanced' },
-  acim_autoflux_min_Id: { group: 'ACIM', subgroup: 'ACIM', importance: 'advanced' },
-  acim_autoflux_attack_gain: { group: 'ACIM', subgroup: 'ACIM', importance: 'advanced' },
-  acim_autoflux_decay_gain: { group: 'ACIM', subgroup: 'ACIM', importance: 'advanced' },
+  // Advanced - Lock-in (only one entry per parameter)
+  lock_in_spin_current: { group: 'Lock-in Configuration', subgroup: 'Calibration Lock-in', importance: 'advanced' },
+  calibration_lockin_ramp_time: { group: 'Lock-in Configuration', subgroup: 'Calibration Lock-in', importance: 'advanced' },
+  calibration_lockin_ramp_distance: { group: 'Lock-in Configuration', subgroup: 'Calibration Lock-in', importance: 'advanced' },
+  calibration_lockin_accel: { group: 'Lock-in Configuration', subgroup: 'Calibration Lock-in', importance: 'advanced' },
+  calibration_lockin_vel: { group: 'Lock-in Configuration', subgroup: 'Calibration Lock-in', importance: 'advanced' },
+  
+  // Separate sensorless parameters (these should be different from general lock-in)
+  sensorless_ramp_current: { group: 'Lock-in Configuration', subgroup: 'Sensorless Ramp', importance: 'advanced' },
+  sensorless_ramp_ramp_time: { group: 'Lock-in Configuration', subgroup: 'Sensorless Ramp', importance: 'advanced' },
+  sensorless_ramp_ramp_distance: { group: 'Lock-in Configuration', subgroup: 'Sensorless Ramp', importance: 'advanced' },
+  sensorless_ramp_accel: { group: 'Lock-in Configuration', subgroup: 'Sensorless Ramp', importance: 'advanced' },
+  sensorless_ramp_vel: { group: 'Lock-in Configuration', subgroup: 'Sensorless Ramp', importance: 'advanced' },
+
+  // ACIM
+  acim_gain_min_flux: { group: 'ACIM', subgroup: 'ACIM Configuration', importance: 'advanced' },
+  acim_autoflux_enable: { group: 'ACIM', subgroup: 'ACIM Configuration', importance: 'advanced' },
+  acim_autoflux_min_Id: { group: 'ACIM', subgroup: 'ACIM Configuration', importance: 'advanced' },
+  acim_autoflux_attack_gain: { group: 'ACIM', subgroup: 'ACIM Configuration', importance: 'advanced' },
+  acim_autoflux_decay_gain: { group: 'ACIM', subgroup: 'ACIM Configuration', importance: 'advanced' },
 }
 
 const MotorConfigStep = ({
