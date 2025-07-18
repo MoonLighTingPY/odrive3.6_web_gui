@@ -14,7 +14,8 @@ import {
   useDisclosure,
   Switch,
   FormControl,
-  FormLabel
+  FormLabel,
+  Badge
 } from '@chakra-ui/react'
 
 // Import our components
@@ -22,7 +23,7 @@ import CommandList from '../CommandList'
 import ConfirmationModal from '../modals/ConfirmationModal'
 
 // Import shared utilities
-import { generateAllCommands } from '../../utils/odriveUnifiedRegistry'
+import { generateAllCommands, getDebugInfo } from '../../utils/odriveUnifiedRegistry'
 import { executeConfigAction, saveAndRebootWithReconnect } from '../../utils/configurationActions'
 
 const FinalConfigStep = () => {
@@ -41,6 +42,16 @@ const FinalConfigStep = () => {
   const selectedAxis = useSelector(state => state.ui.selectedAxis)
 
   const baseGeneratedCommands = useMemo(() => {
+    console.log('=== FinalConfigStep: Generating commands ===')
+    console.log('Selected axis:', selectedAxis)
+    console.log('Raw configs from Redux:', {
+      powerConfig,
+      motorConfig,
+      encoderConfig,
+      controlConfig,
+      interfaceConfig
+    })
+    
     // Get axis-specific configurations
     const config = {
       power: powerConfig, // Global
@@ -50,7 +61,14 @@ const FinalConfigStep = () => {
       interface: interfaceConfig // Global
     }
     
-    return generateAllCommands(config, selectedAxis)
+    console.log('Processed config for command generation:', config)
+    console.log('Registry debug info:', getDebugInfo())
+    
+    const commands = generateAllCommands(config, selectedAxis)
+    console.log('Generated commands:', commands)
+    console.log('Command count:', commands.length)
+    
+    return commands
   }, [powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig, selectedAxis])
 
   // Final commands list with custom edits applied
@@ -60,7 +78,7 @@ const FinalConfigStep = () => {
       return customCommands[index] || command
     }).filter((_, index) => !disabledCommands.has(index))
   }, [baseGeneratedCommands, customCommands, disabledCommands])
-console.log('Final Commands:', finalCommands)
+
   // Update the executeAction function to ensure consistent reconnection behavior
   const executeAction = async (action) => {
     if (!isConnected) {
@@ -248,7 +266,6 @@ console.log('Final Commands:', finalCommands)
             </VStack>
 
             <VStack spacing={4} w="100%" maxW="400px" mx="auto">
-
 
               <Button
                 colorScheme="blue"
