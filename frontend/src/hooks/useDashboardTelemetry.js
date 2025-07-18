@@ -8,7 +8,7 @@ export const useDashboardTelemetry = () => {
   const { isConnected, connectedDevice } = useSelector(state => state.device)
   const selectedAxis = useSelector(state => state.ui.selectedAxis) // ADD THIS
   const dispatch = useDispatch()
-  const updateRate = 50
+  const updateRate = 50000
   const lastSerialRef = useRef(null)
 
   // Track last connected serial

@@ -37,34 +37,39 @@ const FinalConfigStep = () => {
   const [disabledCommands, setDisabledCommands] = useState(new Set())
   const [enableCommandEditing, setEnableCommandEditing] = useState(false)
 
-  const { powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig } = useSelector(state => state.config)
+  const { powerConfig, interfaceConfig } = useSelector(state => state.config)
   const { axisConfigs } = useSelector(state => state.config)
   const { isConnected, connectedDevice } = useSelector(state => state.device)
   const selectedAxis = useSelector(state => state.ui.selectedAxis)
 
   const baseGeneratedCommands = useMemo(() => {
-    // Get axis-specific configurations
-    const config = {
-      power: {
-        // Combine global and axis-specific power configs
-        ...powerConfig, // Global power config
-        ...(axisConfigs?.[`axis${selectedAxis}`]?.powerConfig || {}), // Axis-specific power config if it exists
-      },
-      motor: axisConfigs?.[`axis${selectedAxis}`]?.motorConfig || motorConfig || {},
-      encoder: axisConfigs?.[`axis${selectedAxis}`]?.encoderConfig || encoderConfig || {},  
-      control: axisConfigs?.[`axis${selectedAxis}`]?.controlConfig || controlConfig || {},
-      interface: {
-        // Combine global and axis-specific interface configs
-        ...interfaceConfig, // Global interface config
-        ...(axisConfigs?.[`axis${selectedAxis}`]?.interfaceConfig || {}), // Axis-specific interface config if it exists
-      }
-    }
-    
-    
-    const commands = generateAllCommands(config, selectedAxis)
-    
-    return commands
-  }, [powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig, axisConfigs, selectedAxis])
+  console.log('Raw Redux state:')
+  console.log('selectedAxis:', selectedAxis)
+  
+  // CLEAN the axis-specific configs by removing nested axis data
+  const cleanConfig = (configObj) => {
+    if (!configObj) return {}
+    const cleaned = { ...configObj }
+    delete cleaned.axis0      // Remove nested axis data
+    delete cleaned.axis1      // Remove nested axis data  
+    delete cleaned.axisNumber // Remove axis markers
+    return cleaned
+  }
+  
+  const config = {
+    power: powerConfig,
+    motor: cleanConfig(axisConfigs?.[`axis${selectedAxis}`]?.motorConfig),
+    encoder: cleanConfig(axisConfigs?.[`axis${selectedAxis}`]?.encoderConfig),
+    control: cleanConfig(axisConfigs?.[`axis${selectedAxis}`]?.controlConfig),
+    interface: interfaceConfig
+  }
+  
+  console.log('Cleaned config for axis', selectedAxis, ':', config)
+  
+  const commands = generateAllCommands(config, selectedAxis)
+  return commands
+}, [powerConfig, interfaceConfig, axisConfigs, selectedAxis]) // Only these dependencies
+
 
   // Final commands list with custom edits applied
   const finalCommands = useMemo(() => {

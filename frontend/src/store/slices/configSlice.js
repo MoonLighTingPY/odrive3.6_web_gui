@@ -237,16 +237,10 @@ const configSlice = createSlice({
         }
       }
       
-      // Update only the specified axis
       const axisKey = `axis${axisNumber}`
       state.axisConfigs[axisKey].motorConfig = { 
         ...state.axisConfigs[axisKey].motorConfig, 
         ...config 
-      }
-      
-      // Keep legacy motorConfig for compatibility
-      if (axisNumber === 0) {
-        state.motorConfig = { ...state.motorConfig, ...config }
       }
     },
     updateEncoderConfig: (state, action) => {
@@ -265,10 +259,6 @@ const configSlice = createSlice({
         ...config 
       }
       
-      // Keep legacy encoderConfig for compatibility
-      if (axisNumber === 0) {
-        state.encoderConfig = { ...state.encoderConfig, ...config }
-      }
     },
     updateControlConfig: (state, action) => {
       const { axisNumber = 0, ...config } = action.payload
@@ -286,10 +276,6 @@ const configSlice = createSlice({
         ...config 
       }
       
-      // Keep legacy controlConfig for compatibility
-      if (axisNumber === 0) {
-        state.controlConfig = { ...state.controlConfig, ...config }
-      }
     },
     updateInterfaceConfig: (state, action) => {
       const { axisNumber, ...config } = action.payload
