@@ -43,20 +43,25 @@ export function getParametersByImportance(params, groupMap, importance = 'essent
 }
 
 // Enhanced function for organized advanced parameters
-export function getGroupedAdvancedParameters(params, groupMap) {
-  const advancedParams = getParametersByImportance(params, groupMap, 'all')
-    .filter(param => getParameterImportance(param, groupMap) === 'advanced')
-
+export const getGroupedAdvancedParameters = (params, paramGroups) => {
   const grouped = {}
-  advancedParams.forEach(param => {
-    const group = getParameterGroup(param, groupMap)
-    const subgroup = getParameterSubgroup(param, groupMap)
+  const addedParams = new Set() // Track already added parameters
+  
+  params.forEach(param => {
+    const paramGroup = getParameterGroup(param, paramGroups)
+    const paramSubgroup = getParameterSubgroup(param, paramGroups)
+    const importance = getParameterImportance(param, paramGroups)
     
-    if (!grouped[group]) grouped[group] = {}
-    if (!grouped[group][subgroup]) grouped[group][subgroup] = []
-    grouped[group][subgroup].push(param)
+    // Only include advanced parameters that haven't been added yet
+    if (importance === 'advanced' && !addedParams.has(param.configKey)) {
+      if (!grouped[paramGroup]) grouped[paramGroup] = {}
+      if (!grouped[paramGroup][paramSubgroup]) grouped[paramGroup][paramSubgroup] = []
+      
+      grouped[paramGroup][paramSubgroup].push(param)
+      addedParams.add(param.configKey) // Mark as added
+    }
   })
-
+  
   return grouped
 }
 
