@@ -59,7 +59,7 @@ const FinalConfigStep = () => {
       return customCommands[index] || command
     }).filter((_, index) => !disabledCommands.has(index))
   }, [baseGeneratedCommands, customCommands, disabledCommands])
-
+console.log('Final Commands:', finalCommands)
   // Update the executeAction function to ensure consistent reconnection behavior
   const executeAction = async (action) => {
     if (!isConnected) {

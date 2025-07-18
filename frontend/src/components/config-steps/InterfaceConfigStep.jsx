@@ -25,7 +25,6 @@ import { InfoIcon } from '@chakra-ui/icons'
 import ParameterInput from '../config-parameter-fields/ParameterInput'
 import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
 import ParameterSelect from '../config-parameter-fields/ParameterSelect'
-import { ODrivePropertyMappings as configurationMappings } from '../../utils/odriveUnifiedRegistry'
 import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
 import {
   getGroupedAdvancedParameters,
@@ -86,7 +85,6 @@ const InterfaceConfigStep = ({
   loadingParams,
 }) => {
   const interfaceConfig = deviceConfig.interface || {}
-  const interfaceMappings = configurationMappings.interface
   const interfaceParams = getCategoryParameters('interface')
   const selectedAxis = useSelector(state => state.ui.selectedAxis)
 
@@ -95,10 +93,7 @@ const InterfaceConfigStep = ({
   }
 
   const handleRefresh = (configKey) => {
-    const odriveParam = interfaceMappings[configKey]
-    if (odriveParam) {
-      onReadParameter(odriveParam, 'interface', configKey, selectedAxis)
-    }
+    onReadParameter('interface', configKey, selectedAxis)
   }
 
   const isLoading = (configKey) => {

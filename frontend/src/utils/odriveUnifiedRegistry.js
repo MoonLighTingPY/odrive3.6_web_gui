@@ -116,8 +116,12 @@ class ODriveUnifiedRegistry {
       const commands = []
       const axisNumber = config.axisNumber || 0 // Get axis number from config
       
+      // Create a copy without axisNumber instead of deleting it
+      const configWithoutAxis = { ...config }
+      delete configWithoutAxis.axisNumber
+      
       params.forEach(param => {
-        const value = config[param.configKey]
+        const value = configWithoutAxis[param.configKey]
         if (value !== undefined && value !== null) {
           const skip = ['calib_anticogging', 'anticogging_valid', 'autotuning_phase', 'endstop_state', 'temperature']
           if (skip.includes(param.path.split('.').pop())) return
@@ -659,17 +663,27 @@ class ODriveUnifiedRegistry {
     return this.commandGenerators[category]?.(config) || []
   }
 
-  generateAllCommands(deviceConfig, axisNumber = 0) { // ADD axisNumber parameter
+  generateAllCommands(deviceConfig, axisNumber = 0) {
     const commands = []
     
     // Power commands (no axis specific)
-    commands.push(...this.generateCommands('power', deviceConfig.power))
+    if (deviceConfig.power) {
+      commands.push(...this.generateCommands('power', deviceConfig.power))
+    }
     
-    // Axis-specific commands - pass axisNumber
-    commands.push(...this.generateCommands('motor', { ...deviceConfig.motor, axisNumber }))
-    commands.push(...this.generateCommands('encoder', { ...deviceConfig.encoder, axisNumber }))
-    commands.push(...this.generateCommands('control', { ...deviceConfig.control, axisNumber }))
-    commands.push(...this.generateCommands('interface', deviceConfig.interface))
+    // Axis-specific commands - ONLY generate for the selected axis
+    if (deviceConfig.motor) {
+      commands.push(...this.generateCommands('motor', { ...deviceConfig.motor, axisNumber }))
+    }
+    if (deviceConfig.encoder) {
+      commands.push(...this.generateCommands('encoder', { ...deviceConfig.encoder, axisNumber }))
+    }
+    if (deviceConfig.control) {
+      commands.push(...this.generateCommands('control', { ...deviceConfig.control, axisNumber }))
+    }
+    if (deviceConfig.interface) {
+      commands.push(...this.generateCommands('interface', deviceConfig.interface))
+    }
     
     return commands.filter(cmd => cmd && cmd.trim())
   }

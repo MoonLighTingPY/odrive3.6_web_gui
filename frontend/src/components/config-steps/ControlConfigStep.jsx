@@ -25,7 +25,6 @@ import { InfoIcon, RepeatIcon } from '@chakra-ui/icons'
 import ParameterInput from '../config-parameter-fields/ParameterInput'
 import ParameterSelect from '../config-parameter-fields/ParameterSelect'
 import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
-import { ODrivePropertyMappings as configurationMappings } from '../../utils/odriveUnifiedRegistry'
 import { ControlMode, InputMode } from '../../utils/odriveEnums'
 import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
 import {
@@ -99,7 +98,6 @@ const ControlConfigStep = ({
   const controlConfig = deviceConfig.control || {}
   const motorConfig = deviceConfig.motor || {}
   const encoderConfig = deviceConfig.encoder || {}
-  const controlMappings = configurationMappings.control
   const controlParams = getCategoryParameters('control')
 
   const [useRpm, setUseRpm] = useState(false)
@@ -112,10 +110,7 @@ const ControlConfigStep = ({
 
 
   const handleRefresh = (configKey) => {
-  const odriveParam = controlMappings[configKey]
-  if (odriveParam) {
-    onReadParameter('control', configKey, selectedAxis) // ADD selectedAxis
-  }
+    onReadParameter('control', configKey, selectedAxis)
 }
 
   const isLoading = (configKey) => {

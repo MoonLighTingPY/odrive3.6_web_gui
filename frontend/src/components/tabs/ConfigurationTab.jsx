@@ -27,7 +27,7 @@ import {
   loadAllConfigurationBatch
 } from '../../utils/configBatchApi'
 import EraseConfigModal from '../modals/EraseConfigModal'
-import { getPropertyMappings } from '../../utils/odriveUnifiedRegistry'
+import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
 
 // Configuration steps array
 const CONFIGURATION_STEPS = [
@@ -222,61 +222,61 @@ const ConfigurationTab = memo(() => {
   // Update parameter reading to be axis-aware
   const handleReadParameter = useCallback(async (category, configKey, axisNumber = selectedAxis) => {
     if (!isConnected) return
-
-    setLoadingParams(prev => new Set(prev).add(`${category}.${configKey}`))
-
+    
+    setLoadingParams(prev => new Set([...prev, `${category}.${configKey}`]))
+    
     try {
-      // Get the proper ODrive path for the parameter using getPropertyMappings
-      const propertyMappings = getPropertyMappings(category)
-      let odrivePath = propertyMappings[configKey]
+      // Build the correct ODrive path based on category and axis
+      let odriveCommand
+      if (category === 'power' || category === 'interface') {
+        // Power and interface are global, not axis-specific
+        const param = getCategoryParameters(category).find(p => p.configKey === configKey)
+        odriveCommand = param?.odriveCommand || `config.${configKey}`
+      } else {
+        // Motor, encoder, control are axis-specific
+        const param = getCategoryParameters(category).find(p => p.configKey === configKey)
+        if (param?.odriveCommand) {
+          odriveCommand = param.odriveCommand.replace(/axis0/g, `axis${axisNumber}`)
+        } else {
+          odriveCommand = `axis${axisNumber}.${category}.config.${configKey}`
+        }
+      }
       
-      if (!odrivePath) {
-        throw new Error(`Parameter ${configKey} not found in category ${category}`)
-      }
-
-      // Handle axis-specific parameters
-      if (category !== 'power' && category !== 'interface') {
-        // Replace axis0 with selected axis for motor/encoder/control parameters
-        odrivePath = odrivePath.replace(/axis0/g, `axis${axisNumber}`)
-      }
-
-      console.log(`Reading parameter: ${category}.${configKey} from ${odrivePath}`)
-
-      const response = await fetch('/api/odrive/get_property', {
+      const response = await fetch('/api/odrive/property', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: odrivePath })
+        body: JSON.stringify({ path: odriveCommand })
       })
-
+      
       if (response.ok) {
         const data = await response.json()
         let value = data.value
 
         // Handle special conversions
-        if (configKey === 'motor_kv' && odrivePath.includes('torque_constant')) {
+        if (configKey === 'motor_kv' && odriveCommand.includes('torque_constant')) {
           value = convertTorqueConstantToKv(value)
         }
 
         // Update the device config
         handleUpdateConfig(category, configKey, value, axisNumber)
+        
 
         toast({
           title: 'Parameter Read',
-          description: `${configKey}: ${value}`,
+          description: `${configKey}: ${data.value} (axis${axisNumber})`,
           status: 'success',
           duration: 2000,
         })
       } else {
-        const error = await response.json()
-        throw new Error(error.error || `Failed to read ${configKey}`)
+        throw new Error('Failed to read parameter')
       }
     } catch (error) {
       console.error(`Failed to read ${category}.${configKey}:`, error)
       toast({
         title: 'Read Failed',
-        description: `Failed to read ${category}: ${error.message}`,
+        description: `Failed to read ${configKey}: ${error.message}`,
         status: 'error',
-        duration: 5000,
+        duration: 3000,
       })
     } finally {
       setLoadingParams(prev => {

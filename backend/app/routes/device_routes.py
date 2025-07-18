@@ -206,7 +206,7 @@ def get_property_value_direct(odrv, path):
         if not odrv:
             return None
         
-        # Handle special system properties
+        # Handle special system properties that map to config.*
         if path.startswith('system.'):
             prop = path.replace('system.', '')
             if prop in ['dc_bus_overvoltage_trip_level', 'dc_bus_undervoltage_trip_level', 
@@ -224,6 +224,7 @@ def get_property_value_direct(odrv, path):
             if hasattr(current, part):
                 current = getattr(current, part)
             else:
+                logger.debug(f"Property part '{part}' not found in path '{actual_path}'")
                 return None
         
         return current

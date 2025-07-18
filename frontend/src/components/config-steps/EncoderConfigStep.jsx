@@ -81,8 +81,8 @@ const EncoderConfigStep = ({
     onUpdateConfig('encoder', configKey, value, selectedAxis)
   }
 
-  const handleRefresh = (configKey, odrivePath) => {
-    onReadParameter(odrivePath, 'encoder', configKey, selectedAxis)
+  const handleRefresh = (configKey) => {
+    onReadParameter('encoder', configKey, selectedAxis)
   }
 
   const isLoading = (configKey) => {
@@ -117,7 +117,7 @@ const EncoderConfigStep = ({
                 <ParameterSelect
                   value={encoderConfig.encoder_type ?? ""}
                   onChange={(e) => handleConfigChange('encoder_type', parseInt(e.target.value))}
-                  onRefresh={() => handleRefresh('encoder_type', 'axis0.encoder.config.mode')}
+                  onRefresh={() => handleRefresh('encoder_type')}
                   isLoading={isLoading('encoder_type')}
                   parameterPath="axis0.encoder.config.mode"
                   configKey="encoder_type"
@@ -165,7 +165,7 @@ const EncoderConfigStep = ({
                     <ParameterInput
                       value={encoderConfig.cpr}
                       onChange={(value) => handleConfigChange('cpr', parseInt(value) || 0)}
-                      onRefresh={() => handleRefresh('cpr', 'axis0.encoder.config.cpr')}
+                      onRefresh={() => handleRefresh('cpr')}
                       isLoading={isLoading('cpr')}
                       precision={0}
                     />
@@ -176,7 +176,7 @@ const EncoderConfigStep = ({
                     <ParameterInput
                       value={encoderConfig.bandwidth}
                       onChange={(value) => handleConfigChange('bandwidth', parseFloat(value) || 0)}
-                      onRefresh={() => handleRefresh('bandwidth', 'axis0.encoder.config.bandwidth')}
+                      onRefresh={() => handleRefresh('bandwidth')}
                       isLoading={isLoading('bandwidth')}
                       unit="Hz"
                       precision={0}
@@ -188,7 +188,7 @@ const EncoderConfigStep = ({
                     <ParameterSelect
                       value={encoderConfig.direction ?? ""}
                       onChange={(e) => handleConfigChange('direction', parseInt(e.target.value))}
-                      onRefresh={() => handleRefresh('direction', 'axis0.encoder.config.direction')}
+                      onRefresh={() => handleRefresh('direction')}
                       isLoading={isLoading('direction')}
                       parameterPath="axis0.encoder.config.direction"
                       configKey="direction"
@@ -209,7 +209,7 @@ const EncoderConfigStep = ({
                     <ParameterInput
                       value={encoderConfig.calib_range}
                       onChange={(value) => handleConfigChange('calib_range', parseFloat(value) || 0)}
-                      onRefresh={() => handleRefresh('calib_range', 'axis0.encoder.config.calib_range')}
+                      onRefresh={() => handleRefresh('calib_range')}
                       isLoading={isLoading('calib_range')}
                       unit="rad"
                       precision={6}
@@ -221,7 +221,7 @@ const EncoderConfigStep = ({
                     <ParameterInput
                       value={encoderConfig.calib_scan_distance}
                       onChange={(value) => handleConfigChange('calib_scan_distance', parseInt(value) || 0)}
-                      onRefresh={() => handleRefresh('calib_scan_distance', 'axis0.encoder.config.calib_scan_distance')}
+                      onRefresh={() => handleRefresh('calib_scan_distance')}
                       isLoading={isLoading('calib_scan_distance')}
                       precision={0}
                     />
@@ -232,7 +232,7 @@ const EncoderConfigStep = ({
                     <ParameterInput
                       value={encoderConfig.calib_scan_omega}
                       onChange={(value) => handleConfigChange('calib_scan_omega', parseFloat(value) || 0)}
-                      onRefresh={() => handleRefresh('calib_scan_omega', 'axis0.encoder.config.calib_scan_omega')}
+                      onRefresh={() => handleRefresh('calib_scan_omega')}
                       isLoading={isLoading('calib_scan_omega')}
                       unit="rad/s"
                       precision={3}
