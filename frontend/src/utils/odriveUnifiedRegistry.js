@@ -140,12 +140,17 @@ class ODriveUnifiedRegistry {
             // Generate the correct ODrive command with proper axis handling
             let odriveCommand = param.odriveCommand
             
-            // For axis-specific parameters, replace axis0 with the selected axis
-            if (param.isAxisSpecific && axisNumber !== 0) {
-              odriveCommand = odriveCommand.replace(/axis0/g, `axis${axisNumber}`)
+            // NEW: For axis-specific parameters, ONLY generate for the selected axis
+            if (param.isAxisSpecific) {
+              // Replace any axis number in the command with the selected axis
+              odriveCommand = odriveCommand.replace(/axis[0-9]+/g, `axis${axisNumber}`)
+              
+              // Only add the command - no need to check if axisNumber !== 0
+              commands.push(`odrv0.${odriveCommand} = ${commandValue}`)
+            } else {
+              // For truly global parameters, add as-is
+              commands.push(`odrv0.${odriveCommand} = ${commandValue}`)
             }
-
-            commands.push(`odrv0.${odriveCommand} = ${commandValue}`)
           }
         })
         
@@ -204,25 +209,40 @@ class ODriveUnifiedRegistry {
 
   // NEW: Determine if a parameter is axis-specific
   _isAxisSpecific(path) {
-    // Power and interface can have some axis-specific parameters
+    // Axis-specific patterns - these should ONLY appear for the selected axis
     if (path.includes('axis0.') || path.includes('axis1.') || 
         path.includes('motor.') || path.includes('encoder.') || 
         path.includes('controller.') || path.includes('calibration_lockin') ||
+        path.includes('sensorless_ramp') || path.includes('general_lockin') ||
         path.includes('enable_step_dir') || path.includes('step_gpio_pin') || 
         path.includes('dir_gpio_pin') || path.includes('enable_watchdog') ||
-        path.includes('watchdog_timeout') || path.includes('enable_sensorless_mode')) {
+        path.includes('watchdog_timeout') || path.includes('enable_sensorless_mode') ||
+        path.includes('startup_') || path.includes('fet_thermistor') ||
+        path.includes('motor_thermistor') || path.includes('endstop') ||
+        path.includes('mechanical_brake') || path.includes('sensorless_estimator') ||
+        path.includes('anticogging') || path.includes('autotuning') ||
+        path.includes('trap_traj') || path.includes('requested_state') ||
+        // CAN node settings are axis-specific
+        path.includes('.can.node_id') || path.includes('.can.is_extended') ||
+        path.includes('.can.heartbeat_rate_ms') || path.includes('.can.encoder_rate_ms') ||
+        path.includes('.can.encoder_error_rate_ms') || path.includes('.can.controller_error_rate_ms') ||
+        path.includes('.can.motor_error_rate_ms') || path.includes('.can.sensorless_error_rate_ms')) {
       return true
     }
     
-    // These are truly global
+    // These are truly global - should appear regardless of selected axis
     if (path.includes('config.dc_') || path.includes('config.brake_') || 
         path.includes('config.enable_brake_') || path.includes('config.uart') ||
         path.includes('config.enable_uart') || path.includes('config.usb_') ||
         path.includes('config.enable_can_') || path.includes('config.enable_i2c_') ||
-        path.includes('can.config.') || path.includes('system.')) {
+        path.includes('config.error_gpio_pin') || path.includes('config.gpio') ||
+        // Global CAN settings (not axis-specific)
+        path.includes('can.config.baud_rate') || path.includes('can.config.protocol') ||
+        path.includes('system.')) {
       return false
     }
     
+    // Default to axis-specific for safety
     return false
   }
 
