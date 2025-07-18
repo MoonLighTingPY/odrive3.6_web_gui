@@ -54,11 +54,19 @@ const FinalConfigStep = () => {
     
     // Get axis-specific configurations
     const config = {
-      power: powerConfig, // Global
+      power: {
+        // Combine global and axis-specific power configs
+        ...powerConfig, // Global power config
+        ...(powerConfig?.[`axis${selectedAxis}`] || {}), // Axis-specific power config if it exists
+      },
       motor: motorConfig?.[`axis${selectedAxis}`] || {}, // Axis-specific
       encoder: encoderConfig?.[`axis${selectedAxis}`] || {}, // Axis-specific
       control: controlConfig?.[`axis${selectedAxis}`] || {}, // Axis-specific
-      interface: interfaceConfig // Global
+      interface: {
+        // Combine global and axis-specific interface configs
+        ...interfaceConfig, // Global interface config
+        ...(interfaceConfig?.[`axis${selectedAxis}`] || {}), // Axis-specific interface config if it exists
+      }
     }
     
     console.log('Processed config for command generation:', config)

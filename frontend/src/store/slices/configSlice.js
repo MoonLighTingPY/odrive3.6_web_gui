@@ -50,6 +50,31 @@ const initialState = {
         load_encoder_axis: 0,
         input_filter_bandwidth: 2.0,
       },
+      // Power Configuration (NEW - axis-specific)
+      powerConfig: {
+        fet_thermistor_enabled: true,
+        fet_temp_limit_lower: 100,
+        fet_temp_limit_upper: 120,
+        // Add other axis-specific power parameters
+      },
+      // Interface Configuration (NEW - axis-specific)
+      interfaceConfig: {
+        enable_step_dir: false,
+        step_dir_always_on: false,
+        step_gpio_pin: 7,
+        dir_gpio_pin: 8,
+        enable_watchdog: false,
+        watchdog_timeout: 0.0,
+        enable_sensorless_mode: false,
+        can_node_id: 0,
+        can_node_id_extended: false,
+        can_heartbeat_rate_ms: 100,
+        encoder_error_rate_ms: 0,
+        controller_error_rate_ms: 0,
+        motor_error_rate_ms: 0,
+        sensorless_error_rate_ms: 0,
+        // Add other axis-specific interface parameters
+      },
     },
     axis1: {
       // Motor Configuration
@@ -93,6 +118,31 @@ const initialState = {
         load_encoder_axis: 0,
         input_filter_bandwidth: 2.0,
       },
+      // Power Configuration (NEW - axis-specific)
+      powerConfig: {
+        fet_thermistor_enabled: true,
+        fet_temp_limit_lower: 100,
+        fet_temp_limit_upper: 120,
+        // Add other axis-specific power parameters
+      },
+      // Interface Configuration (NEW - axis-specific)
+      interfaceConfig: {
+        enable_step_dir: false,
+        step_dir_always_on: false,
+        step_gpio_pin: 7,
+        dir_gpio_pin: 8,
+        enable_watchdog: false,
+        watchdog_timeout: 0.0,
+        enable_sensorless_mode: false,
+        can_node_id: 0,
+        can_node_id_extended: false,
+        can_heartbeat_rate_ms: 100,
+        encoder_error_rate_ms: 0,
+        controller_error_rate_ms: 0,
+        motor_error_rate_ms: 0,
+        sensorless_error_rate_ms: 0,
+        // Add other axis-specific interface parameters
+      },
     },
   },
 
@@ -104,30 +154,29 @@ const initialState = {
     dc_max_negative_current: -10.0,
     brake_resistance: 2.0,
     brake_resistor_enabled: false,
+    usb_cdc_protocol: 3,
+    max_regen_current: 0,
+    enable_brake_resistor: false,
+    // Only truly global power parameters
   },
 
   // Interface Configuration
   interfaceConfig: {
-    // CAN
-    can_node_id: 0,
-    can_node_id_extended: false,
+    // Only truly global interface parameters
+    enable_uart_a: true,
+    enable_uart_b: true, 
+    enable_uart_c: false,
+    uart_a_baudrate: 115200,
+    uart_b_baudrate: 115200,
+    uart_c_baudrate: 115200,
+    enable_can_a: true,
+    enable_i2c_a: false,
+    uart0_protocol: 3,
+    uart1_protocol: 3,
+    uart2_protocol: 3,
+    error_gpio_pin: 0,
     can_baudrate: 250000,
-    can_heartbeat_rate_ms: 100,
-    enable_can: false,
-    // UART
-    uart_baudrate: 115200,
-    enable_uart: false,
-    // GPIO
-    gpio1_mode: 0, // GpioMode.DIGITAL
-    gpio2_mode: 0,
-    gpio3_mode: 0,
-    gpio4_mode: 0,
-    // Watchdog
-    enable_watchdog: false,
-    watchdog_timeout: 0.0,
-    enable_step_dir: false,
-    step_dir_always_on: false,
-    enable_sensorless: false,
+    can_protocol: 1,
   },
 }
 
@@ -143,21 +192,40 @@ const configSlice = createSlice({
       state.uiPreferences = { ...state.uiPreferences, ...action.payload }
     },
     updatePowerConfig: (state, action) => {
-      Object.keys(action.payload).forEach(key => {
-        const value = action.payload[key]
-        if (typeof value === 'number' && !isNaN(value)) {
-          state.powerConfig[key] = value
-        } else if (typeof value === 'boolean') {
-          state.powerConfig[key] = value
-        } else if (typeof value === 'string' && value.trim() !== '') {
-          const numValue = parseFloat(value)
-          if (!isNaN(numValue)) {
-            state.powerConfig[key] = numValue
-          } else {
-            state.powerConfig[key] = value
+      const { axisNumber, ...config } = action.payload
+      
+      if (axisNumber !== undefined) {
+        // Axis-specific power config
+        if (!state.axisConfigs) {
+          state.axisConfigs = {
+            axis0: { motorConfig: {}, encoderConfig: {}, controlConfig: {}, powerConfig: {}, interfaceConfig: {} },
+            axis1: { motorConfig: {}, encoderConfig: {}, controlConfig: {}, powerConfig: {}, interfaceConfig: {} }
           }
         }
-      })
+        
+        const axisKey = `axis${axisNumber}`
+        state.axisConfigs[axisKey].powerConfig = { 
+          ...state.axisConfigs[axisKey].powerConfig, 
+          ...config 
+        }
+      } else {
+        // Global power config
+        Object.keys(config).forEach(key => {
+          const value = config[key]
+          if (typeof value === 'number' && !isNaN(value)) {
+            state.powerConfig[key] = value
+          } else if (typeof value === 'boolean') {
+            state.powerConfig[key] = value
+          } else if (typeof value === 'string' && value.trim() !== '') {
+            const numValue = parseFloat(value)
+            if (!isNaN(numValue)) {
+              state.powerConfig[key] = numValue
+            } else {
+              state.powerConfig[key] = value
+            }
+          }
+        })
+      }
     },
     updateMotorConfig: (state, action) => {
       const { axisNumber = 0, ...config } = action.payload
@@ -224,21 +292,40 @@ const configSlice = createSlice({
       }
     },
     updateInterfaceConfig: (state, action) => {
-      Object.keys(action.payload).forEach(key => {
-        const value = action.payload[key]
-        if (typeof value === 'number' && !isNaN(value)) {
-          state.interfaceConfig[key] = value
-        } else if (typeof value === 'boolean') {
-          state.interfaceConfig[key] = value
-        } else if (typeof value === 'string' && value.trim() !== '') {
-          const numValue = parseFloat(value)
-          if (!isNaN(numValue)) {
-            state.interfaceConfig[key] = numValue
-          } else {
-            state.interfaceConfig[key] = value
+      const { axisNumber, ...config } = action.payload
+      
+      if (axisNumber !== undefined) {
+        // Axis-specific interface config
+        if (!state.axisConfigs) {
+          state.axisConfigs = {
+            axis0: { motorConfig: {}, encoderConfig: {}, controlConfig: {}, powerConfig: {}, interfaceConfig: {} },
+            axis1: { motorConfig: {}, encoderConfig: {}, controlConfig: {}, powerConfig: {}, interfaceConfig: {} }
           }
         }
-      })
+        
+        const axisKey = `axis${axisNumber}`
+        state.axisConfigs[axisKey].interfaceConfig = { 
+          ...state.axisConfigs[axisKey].interfaceConfig, 
+          ...config 
+        }
+      } else {
+        // Global interface config
+        Object.keys(config).forEach(key => {
+          const value = config[key]
+          if (typeof value === 'number' && !isNaN(value)) {
+            state.interfaceConfig[key] = value
+          } else if (typeof value === 'boolean') {
+            state.interfaceConfig[key] = value
+          } else if (typeof value === 'string' && value.trim() !== '') {
+            const numValue = parseFloat(value)
+            if (!isNaN(numValue)) {
+              state.interfaceConfig[key] = numValue
+            } else {
+              state.interfaceConfig[key] = value
+            }
+          }
+        })
+      }
     },
     resetConfig: () => {
       return initialState
