@@ -160,25 +160,17 @@ const configSlice = createSlice({
       })
     },
     updateMotorConfig: (state, action) => {
-      Object.keys(action.payload).forEach(key => {
-        const value = action.payload[key]
-        if (typeof value === 'number' && !isNaN(value)) {
-          state.axisConfigs.axis0.motorConfig[key] = value
-          state.axisConfigs.axis1.motorConfig[key] = value
-        } else if (typeof value === 'boolean') {
-          state.axisConfigs.axis0.motorConfig[key] = value
-          state.axisConfigs.axis1.motorConfig[key] = value
-        } else if (typeof value === 'string' && value.trim() !== '') {
-          const numValue = parseFloat(value)
-          if (!isNaN(numValue)) {
-            state.axisConfigs.axis0.motorConfig[key] = numValue
-            state.axisConfigs.axis1.motorConfig[key] = numValue
-          } else {
-            state.axisConfigs.axis0.motorConfig[key] = value
-            state.axisConfigs.axis1.motorConfig[key] = value
-          }
+      // Initialize axisConfigs if it doesn't exist
+      if (!state.axisConfigs) {
+        state.axisConfigs = {
+          axis0: { motorConfig: {}, encoderConfig: {}, controlConfig: {} },
+          axis1: { motorConfig: {}, encoderConfig: {}, controlConfig: {} }
         }
-      })
+      }
+      
+      // Update both the legacy motorConfig and axis-specific configs
+      state.motorConfig = { ...state.motorConfig, ...action.payload }
+      state.axisConfigs.axis0.motorConfig = { ...state.axisConfigs.axis0.motorConfig, ...action.payload }
     },
     updateEncoderConfig: (state, action) => {
       Object.keys(action.payload).forEach(key => {

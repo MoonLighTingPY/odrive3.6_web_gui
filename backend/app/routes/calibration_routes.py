@@ -27,8 +27,9 @@ def calibrate():
     try:
         data = request.get_json() or {}
         calibration_type = data.get('type', 'full')
+        axis_number = data.get('axis', 0)  # Default to axis 0
         
-        logger.info(f"Starting {calibration_type} calibration...")
+        logger.info(f"Starting {calibration_type} calibration on axis{axis_number}...")
         
         # Check prerequisites first
         prerequisites = check_calibration_prerequisites(odrive_manager)
@@ -36,13 +37,14 @@ def calibrate():
             return jsonify({'error': f"Calibration prerequisites not met: {prerequisites.get('reason', 'Unknown error')}"})
         
         if calibration_type == 'full':
-            result = odrive_manager.execute_command('device.axis0.requested_state = 3')
+            result = odrive_manager.execute_command(f'device.axis{axis_number}.requested_state = 3')
             if 'error' not in result:
-                logger.info("Full calibration sequence started successfully")
+                logger.info(f"Full calibration sequence started successfully on axis{axis_number}")
                 return jsonify({
-                    'message': 'Full calibration started (Motor -> Encoder Polarity -> Encoder Offset)',
+                    'message': f'Full calibration started on axis{axis_number} (Motor -> Encoder Polarity -> Encoder Offset)',
                     'sequence': ['motor', 'encoder_polarity', 'encoder_offset'],
-                    'next_state': 'full_calibration'
+                    'next_state': 'full_calibration',
+                    'axis': axis_number
                 })
         elif calibration_type == 'motor':
             # For motor-only calibration, we need to ensure it doesn't auto-continue
@@ -54,49 +56,54 @@ def calibrate():
             odrive_manager.execute_command('device.axis0.config.startup_encoder_offset_calibration = False')
             
             # Start motor calibration only
-            result = odrive_manager.execute_command('device.axis0.requested_state = 4')
+            result = odrive_manager.execute_command(f'device.axis{axis_number}.requested_state = 4')
             if 'error' not in result:
                 logger.info("Motor-only calibration started successfully")
                 return jsonify({
                     'message': 'Motor calibration started (motor parameters only)',
                     'sequence': ['motor'],
-                    'next_state': 'motor_calibration'
+                    'next_state': 'motor_calibration',
+                    'axis': axis_number
                 })
         elif calibration_type == 'encoder_polarity':
-            result = odrive_manager.execute_command('device.axis0.requested_state = 10')
+            result = odrive_manager.execute_command(f'device.axis{axis_number}.requested_state = 10')
             if 'error' not in result:
                 logger.info("Encoder polarity calibration started successfully")
                 return jsonify({
                     'message': 'Encoder polarity calibration started',
                     'sequence': ['encoder_polarity'],
-                    'next_state': 'encoder_dir_find'
+                    'next_state': 'encoder_dir_find',
+                    'axis': axis_number
                 })
         elif calibration_type == 'encoder_offset':
-            result = odrive_manager.execute_command('device.axis0.requested_state = 7')
+            result = odrive_manager.execute_command(f'device.axis{axis_number}.requested_state = 7')
             if 'error' not in result:
                 logger.info("Encoder offset calibration started successfully")
                 return jsonify({
                     'message': 'Encoder offset calibration started',
                     'sequence': ['encoder_offset'],
-                    'next_state': 'encoder_offset_calibration'
+                    'next_state': 'encoder_offset_calibration',
+                    'axis': axis_number
                 })
         elif calibration_type == 'encoder_sequence':
-            result = odrive_manager.execute_command('device.axis0.requested_state = 10')
+            result = odrive_manager.execute_command(f'device.axis{axis_number}.requested_state = 10')
             if 'error' not in result:
                 logger.info("Encoder sequence calibration started successfully")
                 return jsonify({
                     'message': 'Encoder calibration started (Polarity -> Offset)',
                     'sequence': ['encoder_polarity', 'encoder_offset'],
-                    'next_state': 'encoder_dir_find'
+                    'next_state': 'encoder_dir_find',
+                    'axis': axis_number
                 })
         elif calibration_type == 'encoder_index_search':
-            result = odrive_manager.execute_command('device.axis0.requested_state = 6')
+            result = odrive_manager.execute_command(f'device.axis{axis_number}.requested_state = 6')
             if 'error' not in result:
                 logger.info("Encoder index search started successfully")
                 return jsonify({
                     'message': 'Encoder index search started',
                     'sequence': ['encoder_index_search'],
-                    'next_state': 'encoder_index_search'
+                    'next_state': 'encoder_index_search',
+                    'axis': axis_number
                 })
         else:
             return jsonify({'error': f'Unknown calibration type: {calibration_type}'}), 400

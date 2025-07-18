@@ -30,6 +30,7 @@ import { InfoIcon, SearchIcon } from '@chakra-ui/icons'
 import { getAxisStateName } from '../utils/odriveEnums'
 import { getErrorDescription, getErrorColor, isErrorCritical } from '../utils/odriveErrors'
 import '../styles/DeviceList.css'
+import AxisSelector from './AxisSelector'
 
 // Memoized Status Badge Component
 const StatusBadge = memo(({ isConnected, connectedDevice, device }) => {
@@ -458,9 +459,12 @@ const DeviceList = memo(() => {
     <Box className="device-list" p={4} h="100%">
       <VStack spacing={4} align="stretch" h="100%">
         <HStack justify="space-between">
-          <Text fontSize="lg" fontWeight="bold" color="white">
-            ODrive Devices
-          </Text>
+          <VStack align="start" spacing={1}>
+            <Text fontSize="lg" fontWeight="bold" color="white">
+              ODrive Devices
+            </Text>
+            {isConnected && <AxisSelector size="xs" />}
+          </VStack>
           <Button
             size="sm"
             colorScheme="odrive"

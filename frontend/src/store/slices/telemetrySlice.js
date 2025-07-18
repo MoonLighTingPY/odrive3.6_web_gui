@@ -44,27 +44,50 @@ const telemetrySlice = createSlice({
   initialState,
   reducers: {
     updateTelemetry: (state, action) => {
-      const { path, value, timestamp } = action.payload
+      // The issue is that telemetryData is passed directly instead of with path
+      // We need to handle both formats: {path, value} and direct telemetry object
       
-      // Handle axis-specific paths
-      const axisMatch = path.match(/^axis(\d+)\.(.+)/)
-      if (axisMatch) {
-        const [, axisNum, property] = axisMatch
-        const axisKey = `axis${axisNum}`
+      if (action.payload.path !== undefined) {
+        // Handle individual property updates with path
+        const { path, value, timestamp } = action.payload
         
-        if (!state.axes[axisKey]) {
-          state.axes[axisKey] = { ...initialState.axes.axis0 }
+        if (!path) {
+          console.warn('Telemetry update received undefined path:', action.payload)
+          return
         }
         
-        state.axes[axisKey][property] = value
+        // Handle axis-specific paths
+        const axisMatch = path.match(/^axis(\d+)\.(.+)/)
+        if (axisMatch) {
+          const [, axisNum, property] = axisMatch
+          const axisKey = `axis${axisNum}`
+          
+          if (!state.axes[axisKey]) {
+            state.axes[axisKey] = { ...initialState.axes.axis0 }
+          }
+          
+          state.axes[axisKey][property] = value
+        } else {
+          // Global telemetry
+          state[path] = value
+        }
+        
+        state.lastUpdate = timestamp || Date.now()
+        state.updateCount += 1
+        state.connectionHealth = true
       } else {
-        // Global telemetry
-        state[path] = value
+        // Handle bulk telemetry update (direct object)
+        Object.keys(action.payload).forEach(key => {
+          if (key !== 'timestamp') {
+            // Map telemetry keys to global state
+            state[key] = action.payload[key]
+          }
+        })
+        
+        state.lastUpdate = action.payload.timestamp || Date.now()
+        state.updateCount += 1
+        state.connectionHealth = true
       }
-      
-      state.lastUpdate = timestamp || Date.now()
-      state.updateCount += 1
-      state.connectionHealth = true
     },
     setTelemetryConnectionHealth: (state, action) => {
       state.connectionHealth = action.payload

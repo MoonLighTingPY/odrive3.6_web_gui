@@ -261,11 +261,5 @@ export const odrivePropertyTree = {
   // Axis 0 tree structure
   axis0: generateAxisTree(0),
   axis1: generateAxisTree(1),
-  axis2: generateAxisTree(2),
-  axis3: generateAxisTree(3),
-  axis4: generateAxisTree(4),
-  axis5: generateAxisTree(5),
-  axis6: generateAxisTree(6),
-  axis7: generateAxisTree(7),
 };
 
