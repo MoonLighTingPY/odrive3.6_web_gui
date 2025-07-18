@@ -189,7 +189,7 @@ const ControlConfigStep = ({
                   onChange={(e) => handleConfigChange('control_mode', parseInt(e.target.value))}
                   onRefresh={() => handleRefresh('control_mode')}
                   isLoading={isLoading('control_mode')}
-                  parameterPath="axis0.controller.config.control_mode"
+                  parameterPath={`axis${selectedAxis}.controller.config.control_mode`}
                   configKey="control_mode"
                   size="sm"
                 />
@@ -207,7 +207,7 @@ const ControlConfigStep = ({
                   onChange={(e) => handleConfigChange('input_mode', parseInt(e.target.value))}
                   onRefresh={() => handleRefresh('input_mode')}
                   isLoading={isLoading('input_mode')}
-                  parameterPath="axis0.controller.config.input_mode"
+                  parameterPath={`axis${selectedAxis}.controller.config.input_mode`}
                   configKey="input_mode"
                   size="sm"
                 />

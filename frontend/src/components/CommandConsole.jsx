@@ -168,7 +168,6 @@ const CommandConsole = ({ isConnected }) => {
               isDisabled={!selectedCategory}
             >
               {selectedCategory && odriveCommands[selectedCategory]?.map(cmd => {
-                // Replace axis0 with selected axis in command display
                 const displayCommand = cmd.command.replace(/axis0/g, `axis${selectedAxis}`)
                 return (
                   <option key={cmd.command} value={cmd.command}>

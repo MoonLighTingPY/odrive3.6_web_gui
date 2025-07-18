@@ -121,7 +121,7 @@ const EncoderConfigStep = ({
                   onChange={(e) => handleConfigChange('encoder_type', parseInt(e.target.value))}
                   onRefresh={() => handleRefresh('encoder_type')}
                   isLoading={isLoading('encoder_type')}
-                  parameterPath="axis0.encoder.config.mode"
+                  parameterPath={`axis${selectedAxis}.encoder.config.mode`}
                   configKey="encoder_type"
                   size="sm"
                   placeholder="Select encoder type"
@@ -192,7 +192,7 @@ const EncoderConfigStep = ({
                       onChange={(e) => handleConfigChange('direction', parseInt(e.target.value))}
                       onRefresh={() => handleRefresh('direction')}
                       isLoading={isLoading('direction')}
-                      parameterPath="axis0.encoder.config.direction"
+                      parameterPath={`axis${selectedAxis}.encoder.config.direction`}
                       configKey="direction"
                       size="sm"
                       placeholder="Select direction"
