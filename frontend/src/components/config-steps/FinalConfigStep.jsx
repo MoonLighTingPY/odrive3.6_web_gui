@@ -14,8 +14,7 @@ import {
   useDisclosure,
   Switch,
   FormControl,
-  FormLabel,
-  Badge
+  FormLabel
 } from '@chakra-ui/react'
 
 // Import our components
@@ -23,7 +22,7 @@ import CommandList from '../CommandList'
 import ConfirmationModal from '../modals/ConfirmationModal'
 
 // Import shared utilities
-import { generateAllCommands } from '../../utils/odriveUnifiedRegistry'
+import { generateConfigCommands } from '../../utils/configCommandGenerator'
 import { executeConfigAction, saveAndRebootWithReconnect } from '../../utils/configurationActions'
 
 const FinalConfigStep = () => {
@@ -37,39 +36,20 @@ const FinalConfigStep = () => {
   const [disabledCommands, setDisabledCommands] = useState(new Set())
   const [enableCommandEditing, setEnableCommandEditing] = useState(false)
 
-  const { powerConfig, interfaceConfig } = useSelector(state => state.config)
-  const { axisConfigs } = useSelector(state => state.config)
+  const { powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig } = useSelector(state => state.config)
   const { isConnected, connectedDevice } = useSelector(state => state.device)
-  const selectedAxis = useSelector(state => state.ui.selectedAxis)
 
+  // Generate base commands using shared utility
   const baseGeneratedCommands = useMemo(() => {
-  console.log('Raw Redux state:')
-  console.log('selectedAxis:', selectedAxis)
-  
-  // CLEAN the axis-specific configs by removing nested axis data
-  const cleanConfig = (configObj) => {
-    if (!configObj) return {}
-    const cleaned = { ...configObj }
-    delete cleaned.axis0      // Remove nested axis data
-    delete cleaned.axis1      // Remove nested axis data  
-    delete cleaned.axisNumber // Remove axis markers
-    return cleaned
-  }
-  
-  const config = {
-    power: powerConfig,
-    motor: cleanConfig(axisConfigs?.[`axis${selectedAxis}`]?.motorConfig),
-    encoder: cleanConfig(axisConfigs?.[`axis${selectedAxis}`]?.encoderConfig),
-    control: cleanConfig(axisConfigs?.[`axis${selectedAxis}`]?.controlConfig),
-    interface: interfaceConfig
-  }
-  
-  console.log('Cleaned config for axis', selectedAxis, ':', config)
-  
-  const commands = generateAllCommands(config, selectedAxis)
-  return commands
-}, [powerConfig, interfaceConfig, axisConfigs, selectedAxis]) // Only these dependencies
-
+    const deviceConfig = {
+      power: powerConfig,
+      motor: motorConfig,
+      encoder: encoderConfig,
+      control: controlConfig,
+      interface: interfaceConfig
+    }
+    return generateConfigCommands(deviceConfig)
+  }, [powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig])
 
   // Final commands list with custom edits applied
   const finalCommands = useMemo(() => {
@@ -266,6 +246,7 @@ const FinalConfigStep = () => {
             </VStack>
 
             <VStack spacing={4} w="100%" maxW="400px" mx="auto">
+
 
               <Button
                 colorScheme="blue"

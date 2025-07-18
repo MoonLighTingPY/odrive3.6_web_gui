@@ -15,13 +15,13 @@ class ODriveUnifiedRegistry {
     this.batchPaths = this._generateBatchPaths()
     this.propertyMappings = this._generatePropertyMappings()
     this.commandGenerators = this._generateCommandGenerators()
-    this.commands = this._generateCommands()
+    this.commands = this._generateCommands() // Add this line
 
     console.log('ODrive Unified Registry initialized:', {
       categories: Object.keys(this.configCategories),
       totalParams: Object.values(this.configCategories).reduce((sum, params) => sum + params.length, 0),
       batchPathsCount: this.batchPaths.length,
-      commandsCount: Object.values(this.commands).reduce((sum, cmds) => sum + cmds.length, 0)
+      commandsCount: Object.values(this.commands).reduce((sum, cmds) => sum + cmds.length, 0) // Add this
     })
   }
 
@@ -45,8 +45,7 @@ class ODriveUnifiedRegistry {
             step: property.step,
             decimals: property.decimals,
             hasSlider: property.hasSlider,
-            isSetpoint: property.isSetpoint,
-            isAxisSpecific: this._isAxisSpecific(path) // NEW: Track if parameter is axis-specific
+            isSetpoint: property.isSetpoint
           }
           categories[category].push(param)
         }
@@ -110,52 +109,46 @@ class ODriveUnifiedRegistry {
   }
 
   _generateCommandGenerators() {
-  const generators = {}
+    const generators = {}
 
-  Object.entries(this.configCategories).forEach(([category, params]) => {
-    generators[category] = (config, axisNumber = 0) => {
-      const commands = []
-      
-      // Remove axisNumber from config to avoid treating it as a parameter
-      const { axisNumber: _, ...configWithoutAxis } = config
-      
-      params.forEach(param => {
-        const value = configWithoutAxis[param.configKey]
-        if (value !== undefined && value !== null) {
-          // Skip non-config parameters
-          const skip = ['calib_anticogging', 'anticogging_valid', 'autotuning_phase', 'endstop_state', 'temperature']
-          if (skip.includes(param.path.split('.').pop())) return
+    Object.entries(this.configCategories).forEach(([category, params]) => {
+      generators[category] = (config, axisNumber = 0) => {
+        const commands = []
+        
+        // Remove axisNumber from config to avoid treating it as a parameter
+        const { axisNumber: _, ...configWithoutAxis } = config
+        
+        params.forEach(param => {
+          const value = configWithoutAxis[param.configKey]
+          if (value !== undefined && value !== null) {
+            // Skip non-config parameters
+            const skip = ['calib_anticogging', 'anticogging_valid', 'autotuning_phase', 'endstop_state', 'temperature']
+            if (skip.includes(param.path.split('.').pop())) return
 
-          let commandValue = value
-          
-          // Handle special value conversions
-          if (param.configKey === 'motor_kv' && param.path.includes('torque_constant')) {
-            commandValue = convertKvToTorqueConstant(value)
-          } else if (param.property.type === 'boolean') {
-            commandValue = value ? 'True' : 'False'
-          } else if (param.configKey === 'torque_lim' && (value === 'inf' || value === Infinity)) {
-            commandValue = 1000000
+            let commandValue = value
+            
+            // Handle special value conversions
+            if (param.configKey === 'motor_kv' && param.path.includes('torque_constant')) {
+              commandValue = convertKvToTorqueConstant(value)
+            } else if (param.property.type === 'boolean') {
+              commandValue = value ? 'True' : 'False'
+            } else if (param.configKey === 'torque_lim' && (value === 'inf' || value === Infinity)) {
+              commandValue = 1000000
+            }
+
+            // SIMPLE FIX: Just replace axis0 with selected axis in ALL commands
+            let odriveCommand = param.odriveCommand.replace(/axis0/g, `axis${axisNumber}`)
+            
+            commands.push(`odrv0.${odriveCommand} = ${commandValue}`)
           }
+        })
+        
+        return commands
+      }
+    })
 
-          // Generate the correct ODrive command with proper axis handling
-          let odriveCommand = param.odriveCommand
-          
-          // For axis-specific parameters, replace axis number with selected axis
-          if (param.isAxisSpecific) {
-            odriveCommand = odriveCommand.replace(/axis[0-9]+/g, `axis${axisNumber}`)
-          }
-          
-          // Add the command - THIS IS THE KEY FIX
-          commands.push(`odrv0.${odriveCommand} = ${commandValue}`)
-        }
-      })
-      
-      return commands
-    }
-  })
-
-  return generators
-}
+    return generators
+  }
 
   _generateCommands() {
     const commands = {
@@ -172,7 +165,7 @@ class ODriveUnifiedRegistry {
     // Generate read commands for all properties (both readable and writable)
     this._traversePropertyTree((path, property) => {
       const category = this._inferCommandCategory(path, property)
-      if (category && commands[category]) {
+      if (category && commands[category]) {  // Add safety check here
         const odriveCommand = this._pathToODriveCommand(path)
 
         // Read command
@@ -192,7 +185,7 @@ class ODriveUnifiedRegistry {
           })
         }
       } else if (category) {
-      
+        // Debug: log unmapped categories
         console.warn(`Unmapped command category: ${category} for path: ${path}`)
       }
     })
@@ -201,45 +194,6 @@ class ODriveUnifiedRegistry {
     this._addSpecialCommands(commands)
 
     return commands
-  }
-
-  // NEW: Determine if a parameter is axis-specific
-  _isAxisSpecific(path) {
-    // Axis-specific patterns - these should ONLY appear for the selected axis
-    if (path.includes('axis0.') || path.includes('axis1.') || 
-        path.includes('motor.') || path.includes('encoder.') || 
-        path.includes('controller.') || path.includes('calibration_lockin') ||
-        path.includes('sensorless_ramp') || path.includes('general_lockin') ||
-        path.includes('enable_step_dir') || path.includes('step_gpio_pin') || 
-        path.includes('dir_gpio_pin') || path.includes('enable_watchdog') ||
-        path.includes('watchdog_timeout') || path.includes('enable_sensorless_mode') ||
-        path.includes('startup_') || path.includes('fet_thermistor') ||
-        path.includes('motor_thermistor') || path.includes('endstop') ||
-        path.includes('mechanical_brake') || path.includes('sensorless_estimator') ||
-        path.includes('anticogging') || path.includes('autotuning') ||
-        path.includes('trap_traj') || path.includes('requested_state') ||
-        // CAN node settings are axis-specific
-        path.includes('.can.node_id') || path.includes('.can.is_extended') ||
-        path.includes('.can.heartbeat_rate_ms') || path.includes('.can.encoder_rate_ms') ||
-        path.includes('.can.encoder_error_rate_ms') || path.includes('.can.controller_error_rate_ms') ||
-        path.includes('.can.motor_error_rate_ms') || path.includes('.can.sensorless_error_rate_ms')) {
-      return true
-    }
-    
-    // These are truly global - should appear regardless of selected axis
-    if (path.includes('config.dc_') || path.includes('config.brake_') || 
-        path.includes('config.enable_brake_') || path.includes('config.uart') ||
-        path.includes('config.enable_uart') || path.includes('config.usb_') ||
-        path.includes('config.enable_can_') || path.includes('config.enable_i2c_') ||
-        path.includes('config.error_gpio_pin') || path.includes('config.gpio') ||
-        // Global CAN settings (not axis-specific)
-        path.includes('can.config.baud_rate') || path.includes('can.config.protocol') ||
-        path.includes('system.')) {
-      return false
-    }
-    
-    // Default to axis-specific for safety
-    return false
   }
 
   // eslint-disable-next-line no-unused-vars
@@ -673,6 +627,7 @@ class ODriveUnifiedRegistry {
     }
     return specialMappings[lastPart] || lastPart
   }
+
   _isConfigParameter(path) {
     if (path.endsWith('.error')) {
       return false
@@ -703,37 +658,18 @@ class ODriveUnifiedRegistry {
     return category ? this.propertyMappings[category] : this.propertyMappings
   }
 
-  generateCommands(category, config, axisNumber = 0) {
-    return this.commandGenerators[category]?.(config, axisNumber) || []
+  generateCommands(category, config) {
+    return this.commandGenerators[category]?.(config) || []
   }
 
-  // REWRITTEN: Complete rewrite of generateAllCommands
-  generateAllCommands(deviceConfig, axisNumber = 0) {
-    const commands = []
-    
-    console.log('Generating commands for axis:', axisNumber)
-    console.log('Device config:', deviceConfig)
-    
-    // Generate commands for each category
-    // eslint-disable-next-line no-unused-vars
-    Object.entries(this.configCategories).forEach(([category, params]) => {
-      const categoryConfig = deviceConfig[category]
-      
-      if (!categoryConfig) {
-        console.log(`No config found for category: ${category}`)
-        return
+  generateAllCommands(deviceConfig) {
+    const allCommands = []
+    Object.entries(deviceConfig).forEach(([category, cfg]) => {
+      if (cfg && Object.keys(cfg).length > 0) {
+        allCommands.push(...this.generateCommands(category, cfg))
       }
-      
-      
-      // Pass the axis number to the command generator
-      const categoryCommands = this.generateCommands(category, { ...categoryConfig, axisNumber }, axisNumber)
-      
-      
-      commands.push(...categoryCommands)
     })
-    
-    console.log(`Total commands generated: ${commands.length}`)
-    return commands.filter(cmd => cmd && cmd.trim())
+    return allCommands
   }
 
   getConfigCategories() {
@@ -829,7 +765,7 @@ class ODriveUnifiedRegistry {
       sampleParams: Object.fromEntries(
         Object.entries(this.configCategories).map(([cat, params]) => [
           cat,
-          params.slice(0, 3).map(p => ({ key: p.configKey, path: p.path, command: p.odriveCommand, isAxisSpecific: p.isAxisSpecific }))
+          params.slice(0, 3).map(p => ({ key: p.configKey, path: p.path, command: p.odriveCommand }))
         ])
       ),
       sampleBatchPaths: this.batchPaths.slice(0, 10)
@@ -846,7 +782,7 @@ const odriveRegistry = new ODriveUnifiedRegistry()
 export const getBatchPaths = () => odriveRegistry.getBatchPaths()
 export const getPropertyMappings = (category) => odriveRegistry.getPropertyMappings(category)
 export const generateCommands = (category, config) => odriveRegistry.generateCommands(category, config)
-export const generateAllCommands = (deviceConfig, axisNumber = 0) => odriveRegistry.generateAllCommands(deviceConfig, axisNumber)
+export const generateAllCommands = (deviceConfig) => odriveRegistry.generateAllCommands(deviceConfig)
 export const findParameter = (identifier) => odriveRegistry.findParameter(identifier)
 export const getCategoryParameters = (category) => odriveRegistry.getCategoryParameters(category)
 export const getParameterMetadata = (category, configKey) => odriveRegistry.getParameterMetadata(category, configKey)
