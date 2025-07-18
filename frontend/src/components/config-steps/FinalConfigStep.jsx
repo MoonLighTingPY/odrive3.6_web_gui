@@ -41,16 +41,17 @@ const FinalConfigStep = () => {
   const selectedAxis = useSelector(state => state.ui.selectedAxis)
 
   const baseGeneratedCommands = useMemo(() => {
-  const config = {
-    power: powerConfig,
-    motor: motorConfig,
-    encoder: encoderConfig,
-    control: controlConfig,
-    interface: interfaceConfig
-  }
-  
-  return generateAllCommands(config, selectedAxis) // Pass selectedAxis
-}, [powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig, selectedAxis])
+    // Get axis-specific configurations
+    const config = {
+      power: powerConfig, // Global
+      motor: motorConfig?.[`axis${selectedAxis}`] || {}, // Axis-specific
+      encoder: encoderConfig?.[`axis${selectedAxis}`] || {}, // Axis-specific
+      control: controlConfig?.[`axis${selectedAxis}`] || {}, // Axis-specific
+      interface: interfaceConfig // Global
+    }
+    
+    return generateAllCommands(config, selectedAxis)
+  }, [powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig, selectedAxis])
 
   // Final commands list with custom edits applied
   const finalCommands = useMemo(() => {

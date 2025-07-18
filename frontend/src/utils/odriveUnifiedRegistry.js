@@ -117,8 +117,7 @@ class ODriveUnifiedRegistry {
       const axisNumber = config.axisNumber || 0 // Get axis number from config
       
       // Create a copy without axisNumber instead of deleting it
-      const configWithoutAxis = { ...config }
-      delete configWithoutAxis.axisNumber
+      const { axisNumber: _, ...configWithoutAxis } = config
       
       params.forEach(param => {
         const value = configWithoutAxis[param.configKey]

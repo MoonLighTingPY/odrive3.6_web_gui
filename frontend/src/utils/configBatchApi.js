@@ -99,12 +99,12 @@ export const loadAllConfigurationBatch = async () => {
   // Load all parameters in one batch request
   const allResults = await loadConfigurationBatch(allPaths);
 
-  // Organize results by category using unified registry logic
+  // Organize results by category AND axis
   const categorizedResults = {
     power: {},
-    motor: {},
-    encoder: {},
-    control: {},
+    motor: { axis0: {}, axis1: {} },
+    encoder: { axis0: {}, axis1: {} },
+    control: { axis0: {}, axis1: {} },
     interface: {}
   };
 
@@ -131,38 +131,20 @@ export const loadAllConfigurationBatch = async () => {
           processedValue = convertTorqueConstantToKv(value)
         }
 
-        // Ensure the category exists
-        if (!categorizedResults[param.category]) {
-          categorizedResults[param.category] = {}
-        }
+        // Determine axis number from path
+        const axisMatch = propertyPath.match(/axis(\d+)/)
+        const axisNumber = axisMatch ? parseInt(axisMatch[1]) : null
 
-        // Store in the appropriate category
-        categorizedResults[param.category][param.configKey] = processedValue
-
-        // Also store original torque constant if we converted it
-        if (param.configKey === 'motor_kv') {
-          categorizedResults[param.category]['motor_kv'] = convertTorqueConstantToKv(value)
-        }
-      } else {
-        // Fallback: try to categorize unknown parameters using old logic
-        console.warn(`Parameter not found in unified registry: ${propertyPath}, using fallback categorization`)
-
-        const configKey = propertyPath.split('.').pop()
-
-        if (propertyPath.includes('.config.dc_') || propertyPath.includes('.config.brake_') || propertyPath.includes('.config.enable_brake_')) {
-          categorizedResults.power[configKey === 'enable_brake_resistor' ? 'brake_resistor_enabled' : configKey] = value
-        } else if (propertyPath.includes('.motor.config.') || propertyPath.includes('.calibration_lockin.')) {
-          if (configKey === 'current' && propertyPath.includes('calibration_lockin')) {
-            categorizedResults.motor['lock_in_spin_current'] = value
-          } else {
-            categorizedResults.motor[configKey] = value
+        if (param.category === 'motor' || param.category === 'encoder' || param.category === 'control') {
+          if (axisNumber !== null) {
+            if (!categorizedResults[param.category][`axis${axisNumber}`]) {
+              categorizedResults[param.category][`axis${axisNumber}`] = {}
+            }
+            categorizedResults[param.category][`axis${axisNumber}`][param.configKey] = processedValue
           }
-        } else if (propertyPath.includes('.encoder.config.')) {
-          categorizedResults.encoder[configKey === 'mode' ? 'encoder_type' : configKey] = value
-        } else if (propertyPath.includes('.controller.config.')) {
-          categorizedResults.control[configKey] = value
         } else {
-          categorizedResults.interface[configKey] = value
+          // Power and interface are global
+          categorizedResults[param.category][param.configKey] = processedValue
         }
       }
     }

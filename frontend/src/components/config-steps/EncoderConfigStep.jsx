@@ -24,12 +24,12 @@ import { InfoIcon } from '@chakra-ui/icons'
 import ParameterInput from '../config-parameter-fields/ParameterInput'
 import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
 import ParameterSelect from '../config-parameter-fields/ParameterSelect'
-import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
 import { EncoderMode } from '../../utils/odriveEnums'
 import {
   getGroupedAdvancedParameters,
 } from '../../utils/configParameterGrouping'
 import { useSelector } from 'react-redux'
+import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
 
 // Encoder parameter groups
 const ENCODER_PARAM_GROUPS = {
@@ -73,9 +73,11 @@ const EncoderConfigStep = ({
   onUpdateConfig,
   loadingParams,
 }) => {
-  const encoderConfig = deviceConfig.encoder || {}
-  const encoderParams = getCategoryParameters('encoder')
   const selectedAxis = useSelector(state => state.ui.selectedAxis)
+  
+  // Get axis-specific encoder config
+  const encoderConfig = deviceConfig.encoder?.[`axis${selectedAxis}`] || {}
+  const encoderParams = getCategoryParameters('encoder')
 
   const handleConfigChange = (configKey, value) => {
     onUpdateConfig('encoder', configKey, value, selectedAxis)

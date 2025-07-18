@@ -193,16 +193,32 @@ const ConfigurationTab = memo(() => {
 
   // Update the config update handler
   const handleUpdateConfig = useCallback((category, configKey, value, axisNumber = selectedAxis) => {
-    setDeviceConfig(prev => ({
-      ...prev,
-      [category]: {
-        ...prev[category],
-        [configKey]: value,
-        axisNumber // Ensure axisNumber is included
+    setDeviceConfig(prev => {
+      // For axis-specific categories, store config per axis
+      if (category === 'motor' || category === 'encoder' || category === 'control') {
+        return {
+          ...prev,
+          [category]: {
+            ...prev[category],
+            [`axis${axisNumber}`]: {
+              ...prev[category]?.[`axis${axisNumber}`],
+              [configKey]: value
+            }
+          }
+        }
+      } else {
+        // Power and interface are global
+        return {
+          ...prev,
+          [category]: {
+            ...prev[category],
+            [configKey]: value
+          }
+        }
       }
-    }))
+    })
     
-    // Also dispatch to Redux store with axis information
+    // Dispatch to Redux with axis info
     const actionMap = {
       power: 'config/updatePowerConfig',
       motor: 'config/updateMotorConfig', 

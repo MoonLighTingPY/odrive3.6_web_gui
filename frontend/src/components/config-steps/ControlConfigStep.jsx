@@ -26,7 +26,6 @@ import ParameterInput from '../config-parameter-fields/ParameterInput'
 import ParameterSelect from '../config-parameter-fields/ParameterSelect'
 import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
 import { ControlMode, InputMode } from '../../utils/odriveEnums'
-import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
 import {
   getGroupedAdvancedParameters,
 } from '../../utils/configParameterGrouping'
@@ -35,6 +34,7 @@ import {
   rpmToTurns,
 } from '../../utils/unitConversions'
 import { useSelector } from 'react-redux'
+import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
 
 // Control parameter groups
 const CONTROL_PARAM_GROUPS = {
@@ -95,19 +95,18 @@ const ControlConfigStep = ({
   onUpdateConfig,
   loadingParams,
 }) => {
-  const controlConfig = deviceConfig.control || {}
-  const motorConfig = deviceConfig.motor || {}
-  const encoderConfig = deviceConfig.encoder || {}
-  const controlParams = getCategoryParameters('control')
+  const selectedAxis = useSelector(state => state.ui.selectedAxis)
+  
+  // Get axis-specific control config
+  const controlConfig = deviceConfig.control?.[`axis${selectedAxis}`] || {}
+  const motorConfig = deviceConfig.motor?.[`axis${selectedAxis}`] || {}
+  const encoderConfig = deviceConfig.encoder?.[`axis${selectedAxis}`] || {}
 
   const [useRpm, setUseRpm] = useState(false)
 
-  const selectedAxis = useSelector(state => state.ui.selectedAxis)
-
   const handleConfigChange = (configKey, value) => {
-    onUpdateConfig('control', configKey, value, selectedAxis) // ADD selectedAxis
+    onUpdateConfig('control', configKey, value, selectedAxis)
   }
-
 
   const handleRefresh = (configKey) => {
     onReadParameter('control', configKey, selectedAxis)
@@ -160,6 +159,7 @@ const ControlConfigStep = ({
   const isPositionControl = (controlConfig.control_mode ?? ControlMode.VELOCITY_CONTROL) === ControlMode.POSITION_CONTROL
 
   // Get advanced parameters grouped by category
+  const controlParams = getCategoryParameters('control')
   const groupedAdvancedParams = getGroupedAdvancedParameters(controlParams, CONTROL_PARAM_GROUPS)
   const totalAdvancedCount = Object.values(groupedAdvancedParams)
     .reduce((total, group) => total + Object.values(group).reduce((groupTotal, subgroup) => groupTotal + subgroup.length, 0), 0)

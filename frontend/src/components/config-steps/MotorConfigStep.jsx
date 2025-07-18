@@ -70,16 +70,18 @@ const MotorConfigStep = ({
   loadingParams,
 }) => {
   const selectedAxis = useSelector(state => state.ui.selectedAxis)
-  const motorConfig = deviceConfig.motor || {}
+  
+  // Get axis-specific motor config
+  const motorConfig = deviceConfig.motor?.[`axis${selectedAxis}`] || {}
+  
   const motorParams = getCategoryParameters('motor')
 
   const handleConfigChange = (configKey, value) => {
-    onUpdateConfig('motor', configKey, value, selectedAxis) // ADD selectedAxis
+    onUpdateConfig('motor', configKey, value, selectedAxis)
   }
 
-  // When reading parameters, also consider the selected axis
   const handleReadParameter = (configKey) => {
-    onReadParameter('motor', configKey, selectedAxis) // ADD selectedAxis
+    onReadParameter('motor', configKey, selectedAxis)
   }
 
   const isLoading = (configKey) => {
