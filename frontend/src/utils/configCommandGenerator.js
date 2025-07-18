@@ -433,18 +433,40 @@ export const generateInterfaceCommands = (interfaceConfig = {}) => {
 /**
  * Generate all configuration commands for ODrive v0.5.6
  * @param {Object} config - Configuration object containing all sections
- * @param {Object} config.power - Power configuration
- * @param {Object} config.motor - Motor configuration  
- * @param {Object} config.encoder - Encoder configuration
- * @param {Object} config.control - Control configuration
- * @param {Object} config.interface - Interface configuration
+ * @param {number|null} axisNumber - Target axis number (0, 1, or null for both)
  * @returns {Array<string>} Array of ODrive commands
  */
-export const generateConfigCommands = (config = {}, axisNumber = 0) => { // ADD axisNumber parameter
+export const generateConfigCommands = (config = {}, axisNumber = 0) => {
   // Use the unified registry to generate all commands with axis support
-  return odriveRegistry.generateAllCommands(config, axisNumber) // PASS axisNumber
+  const allCommands = odriveRegistry.generateAllCommands(config, axisNumber)
+  
+  // If axisNumber is null, return all commands (both axes)
+  if (axisNumber === null) {
+    return allCommands
+  }
+  
+  // Filter commands to only include the specified axis
+  const targetAxisPattern = new RegExp(`\\.axis${axisNumber}\\.`)
+  const globalConfigPattern = /^odrv0\.config\./
+  const globalCanPattern = /^odrv0\.can\./
+  
+  return allCommands.filter(command => {
+    // Always include global config commands (odrv0.config.*)
+    if (globalConfigPattern.test(command)) return true
+    
+    // Always include global CAN commands (odrv0.can.*)
+    if (globalCanPattern.test(command)) return true
+    
+    // Include commands that match the target axis
+    if (targetAxisPattern.test(command)) return true
+    
+    // Exclude commands for other axes
+    if (command.includes('.axis0.') || command.includes('.axis1.')) return false
+    
+    // Include any other commands (shouldn't be any, but just in case)
+    return true
+  })
 }
-
 
 /**
  * Generate save and reboot commands
