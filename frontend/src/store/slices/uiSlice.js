@@ -82,6 +82,12 @@ const uiSlice = createSlice({
     setSelectedAxis: (state, action) => {
       state.selectedAxis = action.payload
     },
+    validateSelectedAxis: (state, action) => {
+      const { availableAxes } = action.payload
+      if (!availableAxes.includes(state.selectedAxis)) {
+        state.selectedAxis = availableAxes[0] || 0
+      }
+    },
   },
 })
 
@@ -100,6 +106,7 @@ export const {
   addCommandToHistory,
   clearCommandHistory,
   setSelectedAxis,
+  validateSelectedAxis,
 } = uiSlice.actions
 
 export default uiSlice.reducer

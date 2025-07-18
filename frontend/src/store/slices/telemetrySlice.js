@@ -1,26 +1,42 @@
 import { createSlice } from '@reduxjs/toolkit'
 
+// Update initialState to support multiple axes
 const initialState = {
-  // High-frequency telemetry data
+  // Global telemetry
   vbus_voltage: 0,
-  motor_current: 0,
-  encoder_pos: 0,
-  encoder_vel: 0,
-  motor_temp: 0,
-  fet_temp: 0,
-  axis_state: 0,
-
-  // Error codes for immediate error detection
-  axis_error: 0,
-  motor_error: 0,
-  encoder_error: 0,
-  controller_error: 0,
-  sensorless_error: 0,
-
-  // Metadata
   lastUpdate: 0,
   updateCount: 0,
   connectionHealth: true,
+  
+  // Axis-specific telemetry (will be populated dynamically)
+  axes: {
+    axis0: {
+      motor_current: 0,
+      encoder_pos: 0,
+      encoder_vel: 0,
+      motor_temp: 0,
+      fet_temp: 0,
+      axis_state: 0,
+      axis_error: 0,
+      motor_error: 0,
+      encoder_error: 0,
+      controller_error: 0,
+      sensorless_error: 0,
+    },
+    axis1: {
+      motor_current: 0,
+      encoder_pos: 0,
+      encoder_vel: 0,
+      motor_temp: 0,
+      fet_temp: 0,
+      axis_state: 0,
+      axis_error: 0,
+      motor_error: 0,
+      encoder_error: 0,
+      controller_error: 0,
+      sensorless_error: 0,
+    }
+  }
 }
 
 const telemetrySlice = createSlice({
@@ -28,12 +44,25 @@ const telemetrySlice = createSlice({
   initialState,
   reducers: {
     updateTelemetry: (state, action) => {
-      Object.entries(action.payload).forEach(([key, value]) => {
-        if (value !== undefined) {
-          state[key] = value
+      const { path, value, timestamp } = action.payload
+      
+      // Handle axis-specific paths
+      const axisMatch = path.match(/^axis(\d+)\.(.+)/)
+      if (axisMatch) {
+        const [, axisNum, property] = axisMatch
+        const axisKey = `axis${axisNum}`
+        
+        if (!state.axes[axisKey]) {
+          state.axes[axisKey] = { ...initialState.axes.axis0 }
         }
-      })
-      state.lastUpdate = Date.now()
+        
+        state.axes[axisKey][property] = value
+      } else {
+        // Global telemetry
+        state[path] = value
+      }
+      
+      state.lastUpdate = timestamp || Date.now()
       state.updateCount += 1
       state.connectionHealth = true
     },
