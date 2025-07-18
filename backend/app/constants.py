@@ -1,1 +1,1 @@
-VERSION = "uranium_1.3.5"
+VERSION = "lithium_1.4.0"

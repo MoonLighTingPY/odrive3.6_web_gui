@@ -28,3 +28,4 @@ dist-ssr
 .venv/
 __pycache__/
 backend/build/*
+frontend/package-lock.json

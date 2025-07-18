@@ -328,13 +328,6 @@ const DeviceList = memo(() => {
             status: 'error',
             duration: 10000,
           })
-        } else {
-          toast({
-            title: 'Scan Failed',
-            description: devices.error || 'Scan failed',
-            status: 'error',
-            duration: 3000,
-          })
         }
         dispatch(setAvailableDevices([]))
       }
