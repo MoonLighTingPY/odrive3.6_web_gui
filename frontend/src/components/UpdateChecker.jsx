@@ -92,6 +92,8 @@ const UpdateChecker = () => {
 
   // Auto-check for updates on component mount (no toast)
   useEffect(() => {
+    const isDev = import.meta.env.DEV || import.meta.env.MODE === 'development'
+    if (isDev) return
     const timer = setTimeout(() => {
       checkForUpdates(false)
     }, 1000)
