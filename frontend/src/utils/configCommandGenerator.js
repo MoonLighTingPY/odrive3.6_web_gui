@@ -440,11 +440,10 @@ export const generateInterfaceCommands = (interfaceConfig = {}) => {
  * @param {Object} config.interface - Interface configuration
  * @returns {Array<string>} Array of ODrive commands
  */
-export const generateConfigCommands = (config = {}) => {
-  // Use the unified registry to generate all commands, including advanced/hidden ones
-  return odriveRegistry.generateAllCommands(config)
+export const generateConfigCommands = (config = {}, axisNumber = 0) => { // ADD axisNumber parameter
+  // Use the unified registry to generate all commands with axis support
+  return odriveRegistry.generateAllCommands(config, axisNumber) // PASS axisNumber
 }
-
 
 
 /**

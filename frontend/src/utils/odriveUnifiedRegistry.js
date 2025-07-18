@@ -109,35 +109,43 @@ class ODriveUnifiedRegistry {
   }
 
   _generateCommandGenerators() {
-    const generators = {}
+  const generators = {}
 
-    Object.entries(this.configCategories).forEach(([category, params]) => {
-      generators[category] = (config) => {
-        const commands = []
-        params.forEach(param => {
-          const value = config[param.configKey]
-          if (value !== undefined && value !== null) {
-            const skip = ['calib_anticogging', 'anticogging_valid', 'autotuning_phase', 'endstop_state', 'temperature']
-            if (skip.includes(param.path.split('.').pop())) return
+  Object.entries(this.configCategories).forEach(([category, params]) => {
+    generators[category] = (config) => {
+      const commands = []
+      const axisNumber = config.axisNumber || 0 // Get axis number from config
+      
+      params.forEach(param => {
+        const value = config[param.configKey]
+        if (value !== undefined && value !== null) {
+          const skip = ['calib_anticogging', 'anticogging_valid', 'autotuning_phase', 'endstop_state', 'temperature']
+          if (skip.includes(param.path.split('.').pop())) return
 
-            let commandValue = value
-            if (param.configKey === 'motor_kv' && param.path.includes('torque_constant')) {
-              commandValue = convertKvToTorqueConstant(value)
-            } else if (param.property.type === 'boolean') {
-              commandValue = value ? 'True' : 'False'
-            } else if (param.configKey === 'torque_lim' && (value === 'inf' || value === Infinity)) {
-              commandValue = 1000000
-            }
-
-            commands.push(`odrv0.${param.odriveCommand} = ${commandValue}`)
+          let commandValue = value
+          if (param.configKey === 'motor_kv' && param.path.includes('torque_constant')) {
+            commandValue = convertKvToTorqueConstant(value)
+          } else if (param.property.type === 'boolean') {
+            commandValue = value ? 'True' : 'False'
+          } else if (param.configKey === 'torque_lim' && (value === 'inf' || value === Infinity)) {
+            commandValue = 1000000
           }
-        })
-        return commands
-      }
-    })
 
-    return generators
-  }
+          // Handle axis-specific commands
+          let odriveCommand = param.odriveCommand
+          if (category !== 'power' && category !== 'interface' && axisNumber !== 0) {
+            odriveCommand = odriveCommand.replace(/axis0/g, `axis${axisNumber}`)
+          }
+
+          commands.push(`odrv0.${odriveCommand} = ${commandValue}`)
+        }
+      })
+      return commands
+    }
+  })
+
+  return generators
+}
 
   _generateCommands() {
     const commands = {
@@ -651,14 +659,19 @@ class ODriveUnifiedRegistry {
     return this.commandGenerators[category]?.(config) || []
   }
 
-  generateAllCommands(deviceConfig) {
-    const allCommands = []
-    Object.entries(deviceConfig).forEach(([category, cfg]) => {
-      if (cfg && Object.keys(cfg).length > 0) {
-        allCommands.push(...this.generateCommands(category, cfg))
-      }
-    })
-    return allCommands
+  generateAllCommands(deviceConfig, axisNumber = 0) { // ADD axisNumber parameter
+    const commands = []
+    
+    // Power commands (no axis specific)
+    commands.push(...this.generateCommands('power', deviceConfig.power))
+    
+    // Axis-specific commands - pass axisNumber
+    commands.push(...this.generateCommands('motor', { ...deviceConfig.motor, axisNumber }))
+    commands.push(...this.generateCommands('encoder', { ...deviceConfig.encoder, axisNumber }))
+    commands.push(...this.generateCommands('control', { ...deviceConfig.control, axisNumber }))
+    commands.push(...this.generateCommands('interface', deviceConfig.interface))
+    
+    return commands.filter(cmd => cmd && cmd.trim())
   }
 
   getConfigCategories() {
@@ -771,7 +784,7 @@ const odriveRegistry = new ODriveUnifiedRegistry()
 export const getBatchPaths = () => odriveRegistry.getBatchPaths()
 export const getPropertyMappings = (category) => odriveRegistry.getPropertyMappings(category)
 export const generateCommands = (category, config) => odriveRegistry.generateCommands(category, config)
-export const generateAllCommands = (deviceConfig) => odriveRegistry.generateAllCommands(deviceConfig)
+export const generateAllCommands = (deviceConfig, axisNumber = 0) => odriveRegistry.generateAllCommands(deviceConfig, axisNumber)
 export const findParameter = (identifier) => odriveRegistry.findParameter(identifier)
 export const getCategoryParameters = (category) => odriveRegistry.getCategoryParameters(category)
 export const getParameterMetadata = (category, configKey) => odriveRegistry.getParameterMetadata(category, configKey)

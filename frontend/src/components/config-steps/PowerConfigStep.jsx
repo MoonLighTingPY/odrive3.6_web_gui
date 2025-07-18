@@ -60,8 +60,8 @@ const PowerConfigStep = ({
     onUpdateConfig('power', configKey, value)
   }
 
-  const handleRefresh = (configKey, odrivePath) => {
-    onReadParameter(odrivePath, 'power', configKey)
+  const handleRefresh = (configKey) => {
+    onReadParameter('power', configKey)
   }
 
   const isLoading = (configKey) => {

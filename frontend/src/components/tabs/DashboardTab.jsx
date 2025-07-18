@@ -78,6 +78,7 @@ const DashboardTab = memo(() => {
   // Use telemetry slice for high-frequency data
   const telemetry = useSelector(state => state.telemetry)
   const { connectedDevice, odriveState } = useSelector(state => state.device)
+  const selectedAxis = useSelector(state => state.ui.selectedAxis) // ADD THIS
 
   const [selectedError, setSelectedError] = useState({ code: null, type: null })
   const { isOpen: isTroubleshootingOpen, onOpen: onTroubleshootingOpen, onClose: onTroubleshootingClose } = useDisclosure()
@@ -94,17 +95,17 @@ const DashboardTab = memo(() => {
     connectionHealth
   } = telemetry
 
-  // Get axis0 data from odriveState for error checking
-  const axis0Data = odriveState.device?.axis0
+  // Get axis data from odriveState for error checking - USE SELECTED AXIS
+  const axisData = odriveState.device?.[`axis${selectedAxis}`]
 
   // Helper function to get current error codes from both sources
   const getCurrentErrors = () => {
     return {
-      axis_error: telemetry?.axis_error || axis0Data?.error || 0,
-      motor_error: telemetry?.motor_error || axis0Data?.motor?.error || 0,
-      encoder_error: telemetry?.encoder_error || axis0Data?.encoder?.error || 0,
-      controller_error: telemetry?.controller_error || axis0Data?.controller?.error || 0,
-      sensorless_error: telemetry?.sensorless_error || axis0Data?.sensorless_estimator?.error || 0,
+      axis_error: telemetry?.axis_error || axisData?.error || 0,
+      motor_error: telemetry?.motor_error || axisData?.motor?.error || 0,
+      encoder_error: telemetry?.encoder_error || axisData?.encoder?.error || 0,
+      controller_error: telemetry?.controller_error || axisData?.controller?.error || 0,
+      sensorless_error: telemetry?.sensorless_error || axisData?.sensorless_estimator?.error || 0,
     }
   }
 
@@ -376,7 +377,7 @@ const DashboardTab = memo(() => {
               </CardHeader>
               <CardBody>
                 <MotorControls
-                  axisNumber={0}
+                  axisNumber={selectedAxis} // CHANGE from 0 to selectedAxis
                   size="md"
                   orientation="horizontal"
                   variant="full"

@@ -22,7 +22,7 @@ import CommandList from '../CommandList'
 import ConfirmationModal from '../modals/ConfirmationModal'
 
 // Import shared utilities
-import { generateConfigCommands } from '../../utils/configCommandGenerator'
+import { generateAllCommands } from '../../utils/odriveUnifiedRegistry'
 import { executeConfigAction, saveAndRebootWithReconnect } from '../../utils/configurationActions'
 
 const FinalConfigStep = () => {
@@ -38,18 +38,19 @@ const FinalConfigStep = () => {
 
   const { powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig } = useSelector(state => state.config)
   const { isConnected, connectedDevice } = useSelector(state => state.device)
+  const selectedAxis = useSelector(state => state.ui.selectedAxis)
 
-  // Generate base commands using shared utility
   const baseGeneratedCommands = useMemo(() => {
-    const deviceConfig = {
-      power: powerConfig,
-      motor: motorConfig,
-      encoder: encoderConfig,
-      control: controlConfig,
-      interface: interfaceConfig
-    }
-    return generateConfigCommands(deviceConfig)
-  }, [powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig])
+  const config = {
+    power: powerConfig,
+    motor: motorConfig,
+    encoder: encoderConfig,
+    control: controlConfig,
+    interface: interfaceConfig
+  }
+  
+  return generateAllCommands(config, selectedAxis) // Pass selectedAxis
+}, [powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig, selectedAxis])
 
   // Final commands list with custom edits applied
   const finalCommands = useMemo(() => {

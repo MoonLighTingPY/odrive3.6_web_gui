@@ -24,6 +24,7 @@ import {
   getParametersByImportance,
   getGroupedAdvancedParameters,
 } from '../../utils/configParameterGrouping'
+import { useSelector } from 'react-redux'
 
 // Motor parameter groups
 const MOTOR_PARAM_GROUPS = {
@@ -68,15 +69,17 @@ const MotorConfigStep = ({
   onUpdateConfig,
   loadingParams,
 }) => {
+  const selectedAxis = useSelector(state => state.ui.selectedAxis)
   const motorConfig = deviceConfig.motor || {}
   const motorParams = getCategoryParameters('motor')
 
   const handleConfigChange = (configKey, value) => {
-    onUpdateConfig('motor', configKey, value)
+    onUpdateConfig('motor', configKey, value, selectedAxis) // ADD selectedAxis
   }
 
-  const handleRefresh = (configKey, odrivePath) => {
-    onReadParameter(odrivePath, 'motor', configKey)
+  // When reading parameters, also consider the selected axis
+  const handleReadParameter = (configKey) => {
+    onReadParameter('motor', configKey, selectedAxis) // ADD selectedAxis
   }
 
   const isLoading = (configKey) => {
@@ -109,7 +112,7 @@ const MotorConfigStep = ({
                 <ParameterSelect
                   value={motorConfig.motor_type || 0}
                   onChange={(e) => handleConfigChange('motor_type', parseInt(e.target.value))}
-                  onRefresh={() => handleRefresh('motor_type', 'axis0.motor.config.motor_type')}
+                  onRefresh={() => handleReadParameter('motor_type')}
                   isLoading={isLoading('motor_type')}
                   parameterPath="axis0.motor.config.motor_type"
                   configKey="motor_type"
@@ -123,7 +126,7 @@ const MotorConfigStep = ({
                 <ParameterInput
                   value={motorConfig.pole_pairs}
                   onChange={(value) => handleConfigChange('pole_pairs', value)}
-                  onRefresh={() => handleRefresh('pole_pairs', 'axis0.motor.config.pole_pairs')}
+                  onRefresh={() => handleReadParameter('pole_pairs')}
                   isLoading={isLoading('pole_pairs')}
                   step={1}
                   precision={0}
@@ -135,7 +138,7 @@ const MotorConfigStep = ({
                 <ParameterInput
                   value={motorConfig.motor_kv}
                   onChange={(value) => handleConfigChange('motor_kv', value)}
-                  onRefresh={() => handleRefresh('motor_kv', 'axis0.motor.config.torque_constant')}
+                  onRefresh={() => handleReadParameter('motor_kv')}
                   isLoading={isLoading('motor_kv')}
                   unit="RPM/V"
                   step={10}
@@ -148,7 +151,7 @@ const MotorConfigStep = ({
                 <ParameterInput
                   value={motorConfig.current_lim}
                   onChange={(value) => handleConfigChange('current_lim', value)}
-                  onRefresh={() => handleRefresh('current_lim', 'axis0.motor.config.current_lim')}
+                  onRefresh={() => handleReadParameter('current_lim')}
                   isLoading={isLoading('current_lim')}
                   unit="A"
                   step={1}
@@ -163,7 +166,7 @@ const MotorConfigStep = ({
                 params={essentialParams.filter(p => !['motor_type', 'pole_pairs', 'motor_kv', 'current_lim'].includes(p.configKey))}
                 config={motorConfig}
                 onChange={handleConfigChange}
-                onRefresh={handleRefresh}
+                onRefresh={handleReadParameter}
                 isLoading={isLoading}
                 layout="grid"
                 maxColumns={2}
@@ -229,7 +232,7 @@ const MotorConfigStep = ({
                             params={params}
                             config={motorConfig}
                             onChange={handleConfigChange}
-                            onRefresh={handleRefresh}
+                            onRefresh={handleReadParameter}
                             isLoading={isLoading}
                             layout="compact"
                             showGrouping={false}

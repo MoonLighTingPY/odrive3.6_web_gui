@@ -35,6 +35,7 @@ import {
   turnsToRpm,
   rpmToTurns,
 } from '../../utils/unitConversions'
+import { useSelector } from 'react-redux'
 
 // Control parameter groups
 const CONTROL_PARAM_GROUPS = {
@@ -103,16 +104,19 @@ const ControlConfigStep = ({
 
   const [useRpm, setUseRpm] = useState(false)
 
+  const selectedAxis = useSelector(state => state.ui.selectedAxis)
+
   const handleConfigChange = (configKey, value) => {
-    onUpdateConfig('control', configKey, value)
+    onUpdateConfig('control', configKey, value, selectedAxis) // ADD selectedAxis
   }
 
+
   const handleRefresh = (configKey) => {
-    const odriveParam = controlMappings[configKey]
-    if (odriveParam) {
-      onReadParameter(odriveParam, 'control', configKey)
-    }
+  const odriveParam = controlMappings[configKey]
+  if (odriveParam) {
+    onReadParameter('control', configKey, selectedAxis) // ADD selectedAxis
   }
+}
 
   const isLoading = (configKey) => {
     return loadingParams.has(`control.${configKey}`)

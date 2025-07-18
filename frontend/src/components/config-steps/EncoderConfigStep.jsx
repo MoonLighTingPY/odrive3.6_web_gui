@@ -29,6 +29,7 @@ import { EncoderMode } from '../../utils/odriveEnums'
 import {
   getGroupedAdvancedParameters,
 } from '../../utils/configParameterGrouping'
+import { useSelector } from 'react-redux'
 
 // Encoder parameter groups
 const ENCODER_PARAM_GROUPS = {
@@ -74,13 +75,14 @@ const EncoderConfigStep = ({
 }) => {
   const encoderConfig = deviceConfig.encoder || {}
   const encoderParams = getCategoryParameters('encoder')
+  const selectedAxis = useSelector(state => state.ui.selectedAxis)
 
   const handleConfigChange = (configKey, value) => {
-    onUpdateConfig('encoder', configKey, value)
+    onUpdateConfig('encoder', configKey, value, selectedAxis)
   }
 
   const handleRefresh = (configKey, odrivePath) => {
-    onReadParameter(odrivePath, 'encoder', configKey)
+    onReadParameter(odrivePath, 'encoder', configKey, selectedAxis)
   }
 
   const isLoading = (configKey) => {

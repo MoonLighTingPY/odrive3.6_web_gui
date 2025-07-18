@@ -27,6 +27,7 @@ import {
   loadAllConfigurationBatch
 } from '../../utils/configBatchApi'
 import EraseConfigModal from '../modals/EraseConfigModal'
+import { getPropertyMappings } from '../../utils/odriveUnifiedRegistry'
 
 // Configuration steps array
 const CONFIGURATION_STEPS = [
@@ -44,6 +45,7 @@ const ConfigurationTab = memo(() => {
 
   const { isConnected, connectedDevice } = useSelector(state => state.device)
   const { activeConfigStep } = useSelector(state => state.ui)
+  const selectedAxis = useSelector(state => state.ui.selectedAxis) // ADD THIS
 
   const [deviceConfig, setDeviceConfig] = useState({
     power: {},
@@ -189,83 +191,101 @@ const ConfigurationTab = memo(() => {
     }
   }, [isConnected, isPullingConfig, pullBatchParams, toast])
 
-  const onUpdateConfig = (category, key, value) => {
-    // Update local device config
+  // Update the config update handler
+  const handleUpdateConfig = useCallback((category, configKey, value, axisNumber = selectedAxis) => {
     setDeviceConfig(prev => ({
       ...prev,
       [category]: {
         ...prev[category],
-        [key]: value
+        [configKey]: value,
+        axisNumber // Ensure axisNumber is included
       }
     }))
-
-    // Also update Redux store so presets can see the changes
+    
+    // Also dispatch to Redux store with axis information
     const actionMap = {
       power: 'config/updatePowerConfig',
-      motor: 'config/updateMotorConfig',
+      motor: 'config/updateMotorConfig', 
       encoder: 'config/updateEncoderConfig',
       control: 'config/updateControlConfig',
       interface: 'config/updateInterfaceConfig'
     }
-
+    
     if (actionMap[category]) {
       dispatch({
         type: actionMap[category],
-        payload: { [key]: value }
+        payload: { [configKey]: value, axisNumber }
       })
     }
-  }
+  }, [selectedAxis, dispatch])
 
-  // Function to read a single parameter from ODrive
-  const readParameter = async (odriveParam, configCategory, configKey) => {
+  // Update parameter reading to be axis-aware
+  const handleReadParameter = useCallback(async (category, configKey, axisNumber = selectedAxis) => {
     if (!isConnected) return
 
-    const paramId = `${configCategory}.${configKey}`
-    setLoadingParams(prev => new Set([...prev, paramId]))
+    setLoadingParams(prev => new Set(prev).add(`${category}.${configKey}`))
 
     try {
-      const response = await fetch('/api/odrive/command', {
+      // Get the proper ODrive path for the parameter using getPropertyMappings
+      const propertyMappings = getPropertyMappings(category)
+      let odrivePath = propertyMappings[configKey]
+      
+      if (!odrivePath) {
+        throw new Error(`Parameter ${configKey} not found in category ${category}`)
+      }
+
+      // Handle axis-specific parameters
+      if (category !== 'power' && category !== 'interface') {
+        // Replace axis0 with selected axis for motor/encoder/control parameters
+        odrivePath = odrivePath.replace(/axis0/g, `axis${axisNumber}`)
+      }
+
+      console.log(`Reading parameter: ${category}.${configKey} from ${odrivePath}`)
+
+      const response = await fetch('/api/odrive/get_property', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ command: `odrv0.${odriveParam}` })
+        body: JSON.stringify({ path: odrivePath })
       })
 
       if (response.ok) {
-        const result = await response.json()
-        let value = result.result
+        const data = await response.json()
+        let value = data.value
 
         // Handle special conversions
-        if (configKey === 'motor_kv' && odriveParam.includes('torque_constant')) {
-          // Convert torque constant to Kv
+        if (configKey === 'motor_kv' && odrivePath.includes('torque_constant')) {
           value = convertTorqueConstantToKv(value)
         }
 
-        setDeviceConfig(prev => ({
-          ...prev,
-          [configCategory]: {
-            ...prev[configCategory],
-            [configKey]: value
-          }
-        }))
+        // Update the device config
+        handleUpdateConfig(category, configKey, value, axisNumber)
 
+        toast({
+          title: 'Parameter Read',
+          description: `${configKey}: ${value}`,
+          status: 'success',
+          duration: 2000,
+        })
       } else {
-        throw new Error('Failed to read parameter')
+        const error = await response.json()
+        throw new Error(error.error || `Failed to read ${configKey}`)
       }
     } catch (error) {
+      console.error(`Failed to read ${category}.${configKey}:`, error)
       toast({
-        title: 'Read failed',
-        description: `Failed to read ${configKey}: ${error.message}`,
+        title: 'Read Failed',
+        description: `Failed to read ${category}: ${error.message}`,
         status: 'error',
-        duration: 3000,
+        duration: 5000,
       })
     } finally {
       setLoadingParams(prev => {
         const newSet = new Set(prev)
-        newSet.delete(paramId)
+        newSet.delete(`${category}.${configKey}`)
         return newSet
       })
     }
-  }
+  }, [isConnected, selectedAxis, toast, handleUpdateConfig])
 
   // Apply and Save function using shared utility
   const handleApplyAndSave = async () => {
@@ -519,8 +539,8 @@ const ConfigurationTab = memo(() => {
         {CurrentStepComponent && (
           <CurrentStepComponent
             deviceConfig={deviceConfig}
-            onReadParameter={readParameter}
-            onUpdateConfig={onUpdateConfig}
+            onReadParameter={handleReadParameter}
+            onUpdateConfig={handleUpdateConfig}
             loadingParams={loadingParams}
           />
         )}

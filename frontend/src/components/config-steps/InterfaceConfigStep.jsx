@@ -30,6 +30,7 @@ import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
 import {
   getGroupedAdvancedParameters,
 } from '../../utils/configParameterGrouping'
+import { useSelector } from 'react-redux'
 
 // Interface parameter groups
 const INTERFACE_PARAM_GROUPS = {
@@ -87,15 +88,16 @@ const InterfaceConfigStep = ({
   const interfaceConfig = deviceConfig.interface || {}
   const interfaceMappings = configurationMappings.interface
   const interfaceParams = getCategoryParameters('interface')
+  const selectedAxis = useSelector(state => state.ui.selectedAxis)
 
   const handleConfigChange = (configKey, value) => {
-    onUpdateConfig('interface', configKey, value)
+    onUpdateConfig('interface', configKey, value, selectedAxis)
   }
 
   const handleRefresh = (configKey) => {
     const odriveParam = interfaceMappings[configKey]
     if (odriveParam) {
-      onReadParameter(odriveParam, 'interface', configKey)
+      onReadParameter(odriveParam, 'interface', configKey, selectedAxis)
     }
   }
 

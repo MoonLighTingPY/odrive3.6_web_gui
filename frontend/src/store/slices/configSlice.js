@@ -160,7 +160,8 @@ const configSlice = createSlice({
       })
     },
     updateMotorConfig: (state, action) => {
-      // Initialize axisConfigs if it doesn't exist
+      const { axisNumber = 0, ...config } = action.payload
+      
       if (!state.axisConfigs) {
         state.axisConfigs = {
           axis0: { motorConfig: {}, encoderConfig: {}, controlConfig: {} },
@@ -168,51 +169,59 @@ const configSlice = createSlice({
         }
       }
       
-      // Update both the legacy motorConfig and axis-specific configs
-      state.motorConfig = { ...state.motorConfig, ...action.payload }
-      state.axisConfigs.axis0.motorConfig = { ...state.axisConfigs.axis0.motorConfig, ...action.payload }
+      // Update only the specified axis
+      const axisKey = `axis${axisNumber}`
+      state.axisConfigs[axisKey].motorConfig = { 
+        ...state.axisConfigs[axisKey].motorConfig, 
+        ...config 
+      }
+      
+      // Keep legacy motorConfig for compatibility
+      if (axisNumber === 0) {
+        state.motorConfig = { ...state.motorConfig, ...config }
+      }
     },
     updateEncoderConfig: (state, action) => {
-      Object.keys(action.payload).forEach(key => {
-        const value = action.payload[key]
-        if (typeof value === 'number' && !isNaN(value)) {
-          state.axisConfigs.axis0.encoderConfig[key] = value
-          state.axisConfigs.axis1.encoderConfig[key] = value
-        } else if (typeof value === 'boolean') {
-          state.axisConfigs.axis0.encoderConfig[key] = value
-          state.axisConfigs.axis1.encoderConfig[key] = value
-        } else if (typeof value === 'string' && value.trim() !== '') {
-          const numValue = parseFloat(value)
-          if (!isNaN(numValue)) {
-            state.axisConfigs.axis0.encoderConfig[key] = numValue
-            state.axisConfigs.axis1.encoderConfig[key] = numValue
-          } else {
-            state.axisConfigs.axis0.encoderConfig[key] = value
-            state.axisConfigs.axis1.encoderConfig[key] = value
-          }
+      const { axisNumber = 0, ...config } = action.payload
+      
+      if (!state.axisConfigs) {
+        state.axisConfigs = {
+          axis0: { motorConfig: {}, encoderConfig: {}, controlConfig: {} },
+          axis1: { motorConfig: {}, encoderConfig: {}, controlConfig: {} }
         }
-      })
+      }
+      
+      const axisKey = `axis${axisNumber}`
+      state.axisConfigs[axisKey].encoderConfig = { 
+        ...state.axisConfigs[axisKey].encoderConfig, 
+        ...config 
+      }
+      
+      // Keep legacy encoderConfig for compatibility
+      if (axisNumber === 0) {
+        state.encoderConfig = { ...state.encoderConfig, ...config }
+      }
     },
     updateControlConfig: (state, action) => {
-      Object.keys(action.payload).forEach(key => {
-        const value = action.payload[key]
-        if (typeof value === 'number' && !isNaN(value)) {
-          state.axisConfigs.axis0.controlConfig[key] = value
-          state.axisConfigs.axis1.controlConfig[key] = value
-        } else if (typeof value === 'boolean') {
-          state.axisConfigs.axis0.controlConfig[key] = value
-          state.axisConfigs.axis1.controlConfig[key] = value
-        } else if (typeof value === 'string' && value.trim() !== '') {
-          const numValue = parseFloat(value)
-          if (!isNaN(numValue)) {
-            state.axisConfigs.axis0.controlConfig[key] = numValue
-            state.axisConfigs.axis1.controlConfig[key] = numValue
-          } else {
-            state.axisConfigs.axis0.controlConfig[key] = value
-            state.axisConfigs.axis1.controlConfig[key] = value
-          }
+      const { axisNumber = 0, ...config } = action.payload
+      
+      if (!state.axisConfigs) {
+        state.axisConfigs = {
+          axis0: { motorConfig: {}, encoderConfig: {}, controlConfig: {} },
+          axis1: { motorConfig: {}, encoderConfig: {}, controlConfig: {} }
         }
-      })
+      }
+      
+      const axisKey = `axis${axisNumber}`
+      state.axisConfigs[axisKey].controlConfig = { 
+        ...state.axisConfigs[axisKey].controlConfig, 
+        ...config 
+      }
+      
+      // Keep legacy controlConfig for compatibility
+      if (axisNumber === 0) {
+        state.controlConfig = { ...state.controlConfig, ...config }
+      }
     },
     updateInterfaceConfig: (state, action) => {
       Object.keys(action.payload).forEach(key => {

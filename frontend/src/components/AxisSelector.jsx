@@ -12,7 +12,7 @@ import {
 const AxisSelector = ({ size = "sm", showLabel = true, variant = "outline" }) => {
   const dispatch = useDispatch()
   const selectedAxis = useSelector(state => state.ui.selectedAxis)
-  const { isConnected, odriveState } = useSelector(state => state.device)
+  const { isConnected } = useSelector(state => state.device)
   
   // For ODrive 3.6, we have axis0 and axis1 available
   // Later we can make this dynamic based on device detection
