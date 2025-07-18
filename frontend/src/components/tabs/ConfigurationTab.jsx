@@ -45,7 +45,10 @@ const ConfigurationTab = memo(() => {
 
   const { isConnected, connectedDevice } = useSelector(state => state.device)
   const { activeConfigStep } = useSelector(state => state.ui)
-  const selectedAxis = useSelector(state => state.ui.selectedAxis) // ADD THIS
+  const selectedAxis = useSelector(state => state.ui.selectedAxis)
+  
+  // Add this at component level instead of inside handleApplyAndSave
+  const reduxConfig = useSelector(state => state.config)
 
   const [deviceConfig, setDeviceConfig] = useState({
     power: {},
@@ -315,8 +318,17 @@ const ConfigurationTab = memo(() => {
       return
     }
 
+    // Use the component-level reduxConfig instead of calling useSelector here
+    const fullConfig = {
+      power: reduxConfig.powerConfig,
+      motor: reduxConfig.motorConfig,
+      encoder: reduxConfig.encoderConfig,
+      control: reduxConfig.controlConfig,
+      interface: reduxConfig.interfaceConfig
+    }
+
     // Check if we have any actual configuration values
-    const hasValidConfig = Object.values(deviceConfig).some(category =>
+    const hasValidConfig = Object.values(fullConfig).some(category =>
       Object.keys(category).length > 0 &&
       Object.values(category).some(value => value !== undefined && value !== null && value !== '')
     )
@@ -336,12 +348,13 @@ const ConfigurationTab = memo(() => {
       // Mark that we're expecting a reconnection
       sessionStorage.setItem('expectingReconnection', 'true')
       
-      await applyAndSaveConfiguration(deviceConfig, toast, dispatch, connectedDevice)
+      // Use full config and respect selected axis
+      await applyAndSaveConfiguration(fullConfig, toast, dispatch, connectedDevice, selectedAxis)
       
       // Clear the flag after successful operation
       setTimeout(() => {
         sessionStorage.removeItem('expectingReconnection')
-      }, 5000) // Clear after 5 seconds
+      }, 5000)
       
     } catch (error) {
       // Clear the flag on error
