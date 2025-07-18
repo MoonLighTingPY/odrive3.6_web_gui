@@ -30,6 +30,7 @@ import { InfoIcon, SearchIcon } from '@chakra-ui/icons'
 import { getAxisStateName } from '../utils/odriveEnums'
 import { getErrorDescription, getErrorColor, isErrorCritical } from '../utils/odriveErrors'
 import '../styles/DeviceList.css'
+import AxisSelector from './AxisSelector'
 
 // Memoized Status Badge Component
 const StatusBadge = memo(({ isConnected, connectedDevice, device }) => {
@@ -114,7 +115,7 @@ const ErrorDisplay = memo(({ errorCode, errorType = 'axis', handleErrorClick }) 
 ErrorDisplay.displayName = 'ErrorDisplay'
 
 // Memoized Device Status Component
-const DeviceStatusDisplay = memo(({ telemetry, odriveState }) => {
+const DeviceStatusDisplay = memo(({ telemetry, odriveState, selectedAxis }) => {
   const getAxisStateColorScheme = (state) => {
     if (state === 8) return "green" // CLOSED_LOOP_CONTROL
     if (state === 1) return "blue" // IDLE
@@ -122,11 +123,11 @@ const DeviceStatusDisplay = memo(({ telemetry, odriveState }) => {
     return "red" // Error or undefined
   }
 
-  // Use telemetry data for real-time values, fallback to odriveState
+  // Use telemetry data for real-time values, fallback to odriveState with selected axis
   const vbusVoltage = telemetry?.vbus_voltage ?? odriveState.device?.vbus_voltage ?? 0
-  const motorCurrent = telemetry?.motor_current ?? odriveState.device?.axis0?.motor?.current_control?.Iq_measured ?? 0
-  const encoderPos = telemetry?.encoder_pos ?? odriveState.device?.axis0?.encoder?.pos_estimate ?? 0
-  const axisState = telemetry?.axis_state ?? odriveState.device?.axis0?.current_state ?? 0
+  const motorCurrent = telemetry?.motor_current ?? odriveState.device?.[`axis${selectedAxis}`]?.motor?.current_control?.Iq_measured ?? 0
+  const encoderPos = telemetry?.encoder_pos ?? odriveState.device?.[`axis${selectedAxis}`]?.encoder?.pos_estimate ?? 0
+  const axisState = telemetry?.axis_state ?? odriveState.device?.[`axis${selectedAxis}`]?.current_state ?? 0
 
   return (
     <VStack spacing={2} align="stretch">
@@ -137,7 +138,7 @@ const DeviceStatusDisplay = memo(({ telemetry, odriveState }) => {
         </Text>
       </HStack>
       <HStack justify="space-between">
-        <Text fontSize="sm" color="gray.300">Axis State:</Text>
+        <Text fontSize="sm" color="gray.300">Axis {selectedAxis} State:</Text>
         <Text fontSize="sm" fontWeight="bold" color="white">
           {axisState}
         </Text>
@@ -283,6 +284,7 @@ const DeviceList = memo(() => {
 
   // Use telemetry slice for real-time data
   const telemetry = useSelector(state => state.telemetry)
+  const selectedAxis = useSelector(state => state.ui.selectedAxis)
 
   const {
     availableDevices,
@@ -293,14 +295,14 @@ const DeviceList = memo(() => {
 
   // Helper function to get current error codes from both sources
   const getCurrentErrors = () => {
-    return {
-      axis_error: telemetry?.axis_error || odriveState.device?.axis0?.error || 0,
-      motor_error: telemetry?.motor_error || odriveState.device?.axis0?.motor?.error || 0,
-      encoder_error: telemetry?.encoder_error || odriveState.device?.axis0?.encoder?.error || 0,
-      controller_error: telemetry?.controller_error || odriveState.device?.axis0?.controller?.error || 0,
-      sensorless_error: telemetry?.sensorless_error || odriveState.device?.axis0?.sensorless_estimator?.error || 0,
-    }
+  return {
+    axis_error: telemetry?.axis_error || odriveState.device?.[`axis${selectedAxis}`]?.error || 0,
+    motor_error: telemetry?.motor_error || odriveState.device?.[`axis${selectedAxis}`]?.motor?.error || 0,
+    encoder_error: telemetry?.encoder_error || odriveState.device?.[`axis${selectedAxis}`]?.encoder?.error || 0,
+    controller_error: telemetry?.controller_error || odriveState.device?.[`axis${selectedAxis}`]?.controller?.error || 0,
+    sensorless_error: telemetry?.sensorless_error || odriveState.device?.[`axis${selectedAxis}`]?.sensorless_estimator?.error || 0,
   }
+}
 
   const scanForDevices = useCallback(async () => {
     if (isScanningRef.current) return
@@ -452,15 +454,18 @@ const DeviceList = memo(() => {
       scanForDevices()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConnected])
+  }, [isConnected, selectedAxis])
 
   return (
     <Box className="device-list" p={4} h="100%">
       <VStack spacing={4} align="stretch" h="100%">
         <HStack justify="space-between">
-          <Text fontSize="lg" fontWeight="bold" color="white">
-            ODrive Devices
-          </Text>
+          <VStack align="start" spacing={1}>
+            <Text fontSize="lg" fontWeight="bold" color="white">
+              ODrive Devices
+            </Text>
+            {isConnected && <AxisSelector size="xs" />}
+          </VStack>
           <Button
             size="sm"
             colorScheme="odrive"
@@ -502,7 +507,11 @@ const DeviceList = memo(() => {
               <Text fontSize="md" fontWeight="bold" mb={1} color="white">
                 Device Status
               </Text>
-              <DeviceStatusDisplay telemetry={telemetry} odriveState={odriveState} />
+              <DeviceStatusDisplay 
+  telemetry={telemetry} 
+  odriveState={odriveState} 
+  selectedAxis={selectedAxis}
+/>
 
               {/* Clear Errors Button - only shown if errors exist */}
               {hasAnyErrors && (

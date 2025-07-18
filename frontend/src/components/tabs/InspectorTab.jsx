@@ -26,6 +26,7 @@ import { EnableMotorButton, DisableMotorButton, CalibrationButton, ClearErrorsBu
 const InspectorTab = memo(() => {
   const toast = useToast()
   const { isConnected, odriveState } = useSelector(state => state.device)
+  const selectedAxis = useSelector(state => state.ui.selectedAxis)
   const [searchFilter, setSearchFilter] = useState('')
   const [selectedProperties, setSelectedProperties] = useState([])
   const [refreshTrigger, setRefreshTrigger] = useState(0)
@@ -117,15 +118,15 @@ const InspectorTab = memo(() => {
             {/* Motor controls stay fixed */}
             <Card bg="gray.800" variant="elevated" flexShrink={0} mt={4}>
               <CardHeader py={2}>
-                <Heading size="sm" color="white">Motor Controls</Heading>
+                <Heading size="sm" color="white">Motor Controls - Axis {selectedAxis}</Heading>
               </CardHeader>
               <CardBody py={2}>
                 <VStack spacing={2}>
                   <SimpleGrid columns={2} spacing={2} w="100%">
-                    <EnableMotorButton axisNumber={0} size="sm" />
-                    <DisableMotorButton axisNumber={0} size="sm" />
-                    <CalibrationButton axisNumber={0} size="sm" />
-                    <ClearErrorsButton axisNumber={0} size="sm" />
+                    <EnableMotorButton axisNumber={selectedAxis} size="sm" />
+                    <DisableMotorButton axisNumber={selectedAxis} size="sm" />
+                    <CalibrationButton axisNumber={selectedAxis} size="sm" />
+                    <ClearErrorsButton axisNumber={selectedAxis} size="sm" />
                     <SaveAndRebootButton size="sm" gridColumn="span 2" />
                   </SimpleGrid>
                 </VStack>

@@ -1,75 +1,94 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
+import { useSelector } from 'react-redux'
+import { useToast } from '@chakra-ui/react'
+import { ODriveCommands } from '../utils/odriveUnifiedRegistry'
 import {
-  VStack,
-  HStack,
-  Text,
-  Input,
-  Button,
-  Box,
-  Code,
-  Badge,
-  useToast,
-  Select,
-  FormControl,
-  FormLabel,
-  IconButton,
-  Tooltip,
-  Divider,
-  SimpleGrid,
+  Box, VStack, HStack, Input, Button, Text, Select, FormControl, FormLabel,
+  SimpleGrid, Code, Tooltip, IconButton, Badge
 } from '@chakra-ui/react'
-import { Send, Clock, AlertCircle, CheckCircle, Copy, Trash2 } from 'lucide-react'
-import { ODriveCommands as odriveCommands } from '../utils/odriveUnifiedRegistry'
-import { SaveAndRebootButton } from './MotorControls'
+import { Send, Copy, Clock, Trash2, CheckCircle, AlertCircle } from 'lucide-react'
 
 const CommandConsole = ({ isConnected }) => {
-  const toast = useToast()
   const [commandInput, setCommandInput] = useState('')
-  const [commandHistory, setCommandHistory] = useState([])
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedCommand, setSelectedCommand] = useState('')
+  const [commandHistory, setCommandHistory] = useState([])
+  
+  const toast = useToast()
+  
+  // Get selected axis from Redux
+  const selectedAxis = useSelector(state => state.ui.selectedAxis)
+  
+  // Define useODriveCommand hook inline (like in useOdriveButtons.jsx)
+  const sendCommand = async (command) => {
+    const response = await fetch('/api/odrive/command', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ command })
+    })
 
-  const sendCommand = async () => {
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.error || 'Command failed')
+    }
+
+    const result = await response.json()
+    return result
+  }
+  
+  // Get ODrive commands
+  const odriveCommands = ODriveCommands
+
+  const sendCommandHandler = async () => {
     if (!commandInput.trim()) return
 
     try {
-      const response = await fetch('/api/odrive/command', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ command: commandInput })
-      })
-
-      const result = await response.json()
-
-      // Debug: Log the actual response to see its structure
-      console.log('Command response:', result)
-
-      const newEntry = {
-        command: commandInput,
-        result: result.result || result.response || result.output || result.error || result.message || JSON.stringify(result),
-        success: response.ok,
-        timestamp: new Date().toLocaleTimeString()
-      }
-
-      setCommandHistory(prev => [newEntry, ...prev.slice(0, 49)])
-      setCommandInput('')
-
-      if (response.ok) {
-        toast({
-          title: 'Command executed',
-          status: 'success',
-          duration: 2000,
-        })
+      const result = await sendCommand(commandInput)
+      
+      // Format the result properly for display
+      let formattedResult
+      if (typeof result === 'object' && result !== null) {
+        // If it's an object, try to extract the actual value or stringify it nicely
+        if (result.result !== undefined) {
+          formattedResult = result.result
+        } else if (result.value !== undefined) {
+          formattedResult = result.value
+        } else if (result.response !== undefined) {
+          formattedResult = result.response
+        } else {
+          formattedResult = JSON.stringify(result, null, 2)
+        }
       } else {
-        toast({
-          title: 'Command failed',
-          description: result.error || result.message || 'Unknown error',
-          status: 'error',
-          duration: 3000,
-        })
+        formattedResult = result
       }
-    } catch (error) {
+      
+      const historyEntry = {
+        command: commandInput,
+        timestamp: new Date().toLocaleTimeString(),
+        success: true,
+        result: formattedResult
+      }
+      
+      setCommandHistory(prev => [...prev, historyEntry])
+      setCommandInput('')
+      
       toast({
-        title: 'Connection error',
+        title: 'Command sent successfully',
+        status: 'success',
+        duration: 2000,
+      })
+    } catch (error) {
+      const historyEntry = {
+        command: commandInput,
+        timestamp: new Date().toLocaleTimeString(),
+        success: false,
+        result: error.message
+      }
+      
+      setCommandHistory(prev => [...prev, historyEntry])
+      
+      toast({
+        title: 'Command failed',
         description: error.message,
         status: 'error',
         duration: 3000,
@@ -78,7 +97,9 @@ const CommandConsole = ({ isConnected }) => {
   }
 
   const insertCommand = (command) => {
-    setCommandInput(command)
+    // Replace axis placeholders with selected axis
+    const axisAwareCommand = command.replace(/axis0/g, `axis${selectedAxis}`)
+    setCommandInput(axisAwareCommand)
   }
 
   const clearHistory = () => {
@@ -101,10 +122,14 @@ const CommandConsole = ({ isConnected }) => {
 
   return (
     <VStack spacing={0} align="stretch" h="100%">
-
       {/* Quick Commands Section */}
       <Box p={4} bg="gray.700" borderBottom="1px solid" borderColor="gray.600">
-        <Text fontWeight="semibold" color="white" fontSize="sm" mb={3}>Quick Commands</Text>
+        <HStack justify="space-between" mb={3}>
+          <Text fontWeight="semibold" color="white" fontSize="sm">Quick Commands</Text>
+          <Badge colorScheme="blue" variant="solid" fontSize="xs">
+            Axis {selectedAxis}
+          </Badge>
+        </HStack>
         <SimpleGrid columns={{ base: 1, md: 3 }} spacing={3}>
           <FormControl size="sm">
             <FormLabel color="gray.300" fontSize="xs" mb={1}>Category</FormLabel>
@@ -142,11 +167,14 @@ const CommandConsole = ({ isConnected }) => {
               placeholder="Select command"
               isDisabled={!selectedCategory}
             >
-              {selectedCategory && odriveCommands[selectedCategory]?.map(cmd => (
-                <option key={cmd.command} value={cmd.command}>
-                  {cmd.name}
-                </option>
-              ))}
+              {selectedCategory && odriveCommands[selectedCategory]?.map(cmd => {
+                const displayCommand = cmd.command.replace(/axis0/g, `axis${selectedAxis}`)
+                return (
+                  <option key={cmd.command} value={cmd.command}>
+                    {cmd.name} - {displayCommand}
+                  </option>
+                )
+              })}
             </Select>
           </FormControl>
 
@@ -169,7 +197,9 @@ const CommandConsole = ({ isConnected }) => {
             <Text fontSize="xs" color="gray.200" mb={2}>
               {odriveCommands[selectedCategory].find(cmd => cmd.command === selectedCommand)?.description}
             </Text>
-            <Code fontSize="xs" colorScheme="blue" p={2} borderRadius="md">{selectedCommand}</Code>
+            <Code fontSize="xs" colorScheme="blue" p={2} borderRadius="md">
+              {selectedCommand.replace(/axis0/g, `axis${selectedAxis}`)}
+            </Code>
           </Box>
         )}
       </Box>
@@ -180,18 +210,18 @@ const CommandConsole = ({ isConnected }) => {
           <Input
             value={commandInput}
             onChange={(e) => setCommandInput(e.target.value)}
-            placeholder="Enter ODrive command (e.g., odrv0.axis0.requested_state = 1)"
+            placeholder={`Enter ODrive command (e.g., odrv0.axis${selectedAxis}.requested_state = 1)`}
             bg="gray.600"
             border="1px solid"
             borderColor="gray.500"
             color="white"
             fontFamily="mono"
             fontSize="sm"
-            onKeyPress={(e) => e.key === 'Enter' && sendCommand()}
+            onKeyPress={(e) => e.key === 'Enter' && sendCommandHandler()}
           />
           <Button
             colorScheme="green"
-            onClick={sendCommand}
+            onClick={sendCommandHandler}
             isDisabled={!commandInput.trim() || !isConnected}
             leftIcon={<Send size={14} />}
             size="sm"
@@ -199,7 +229,6 @@ const CommandConsole = ({ isConnected }) => {
           >
             Send
           </Button>
-          <SaveAndRebootButton size="sm" />
         </HStack>
       </Box>
 
@@ -282,11 +311,13 @@ const CommandConsole = ({ isConnected }) => {
                         borderRadius="md"
                         whiteSpace="pre-wrap"
                       >
-                        {String(entry.result)}
+                        {typeof entry.result === 'object' && entry.result !== null 
+                          ? JSON.stringify(entry.result, null, 2) 
+                          : String(entry.result)
+                        }
                       </Text>
                     </Box>
                   )}
-                  {index < commandHistory.length - 1 && <Divider borderColor="gray.600" />}
                 </Box>
               ))}
             </VStack>

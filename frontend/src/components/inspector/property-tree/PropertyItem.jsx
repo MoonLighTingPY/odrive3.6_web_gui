@@ -156,13 +156,19 @@ const PropertyItem = memo(({
         return option ? option.label : String(val)
       }
       
+      // Ensure val is actually a number before calling toFixed
+      const numVal = typeof val === 'number' ? val : parseFloat(val)
+      if (isNaN(numVal)) {
+        return String(val) // Return as string if not a valid number
+      }
+      
       if (typeInfo.isInteger) {
-        return String(Math.round(val))
+        return String(Math.round(numVal))
       } else if (typeInfo.isFloat) {
         const decimals = prop.decimals !== undefined ? prop.decimals : 3
-        return val.toFixed(Math.min(decimals, 6))
+        return numVal.toFixed(Math.min(decimals, 6))
       }
-      return String(val)
+      return String(numVal)
     }
     return String(val)
   }

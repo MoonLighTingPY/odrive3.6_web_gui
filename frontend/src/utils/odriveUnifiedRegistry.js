@@ -112,15 +112,22 @@ class ODriveUnifiedRegistry {
     const generators = {}
 
     Object.entries(this.configCategories).forEach(([category, params]) => {
-      generators[category] = (config) => {
+      generators[category] = (config, axisNumber = 0) => {
         const commands = []
+        
+        // Remove axisNumber from config to avoid treating it as a parameter
+        const { axisNumber: _, ...configWithoutAxis } = config
+        
         params.forEach(param => {
-          const value = config[param.configKey]
+          const value = configWithoutAxis[param.configKey]
           if (value !== undefined && value !== null) {
+            // Skip non-config parameters
             const skip = ['calib_anticogging', 'anticogging_valid', 'autotuning_phase', 'endstop_state', 'temperature']
             if (skip.includes(param.path.split('.').pop())) return
 
             let commandValue = value
+            
+            // Handle special value conversions
             if (param.configKey === 'motor_kv' && param.path.includes('torque_constant')) {
               commandValue = convertKvToTorqueConstant(value)
             } else if (param.property.type === 'boolean') {
@@ -129,9 +136,13 @@ class ODriveUnifiedRegistry {
               commandValue = 1000000
             }
 
-            commands.push(`odrv0.${param.odriveCommand} = ${commandValue}`)
+            // SIMPLE FIX: Just replace axis0 with selected axis in ALL commands
+            let odriveCommand = param.odriveCommand.replace(/axis0/g, `axis${axisNumber}`)
+            
+            commands.push(`odrv0.${odriveCommand} = ${commandValue}`)
           }
         })
+        
         return commands
       }
     })

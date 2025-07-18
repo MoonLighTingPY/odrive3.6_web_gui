@@ -14,7 +14,8 @@ import {
   useDisclosure,
   Switch,
   FormControl,
-  FormLabel
+  FormLabel,
+  Checkbox
 } from '@chakra-ui/react'
 
 // Import our components
@@ -35,11 +36,13 @@ const FinalConfigStep = () => {
   const [customCommands, setCustomCommands] = useState({})
   const [disabledCommands, setDisabledCommands] = useState(new Set())
   const [enableCommandEditing, setEnableCommandEditing] = useState(false)
+  const [applyToBothAxes, setApplyToBothAxes] = useState(false)
 
   const { powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig } = useSelector(state => state.config)
   const { isConnected, connectedDevice } = useSelector(state => state.device)
+  const { selectedAxis } = useSelector(state => state.ui)
 
-  // Generate base commands using shared utility
+  // Update the command generation logic
   const baseGeneratedCommands = useMemo(() => {
     const deviceConfig = {
       power: powerConfig,
@@ -48,8 +51,11 @@ const FinalConfigStep = () => {
       control: controlConfig,
       interface: interfaceConfig
     }
-    return generateConfigCommands(deviceConfig)
-  }, [powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig])
+    
+    // Pass null for both axes, or specific axis number for single axis
+    const targetAxis = applyToBothAxes ? null : selectedAxis
+    return generateConfigCommands(deviceConfig, targetAxis)
+  }, [powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig, selectedAxis, applyToBothAxes])
 
   // Final commands list with custom edits applied
   const finalCommands = useMemo(() => {
@@ -187,7 +193,16 @@ const FinalConfigStep = () => {
     return details[action] || {}
   }
 
-  const enabledCommandCount = baseGeneratedCommands.length - disabledCommands.size + Object.keys(customCommands).filter(key => parseInt(key) >= baseGeneratedCommands.length).length
+  // Update the axis display text function
+  const getAxisDisplayText = () => {
+    if (applyToBothAxes) {
+      return 'Both Axes (Axis 0 & Axis 1)'
+    }
+    return `Axis ${selectedAxis} Only`
+  }
+
+  // Update the command count display
+  const enabledCommandCount = finalCommands.length
 
   return (
     <Box h="100%" p={3} overflow="auto">
@@ -200,12 +215,37 @@ const FinalConfigStep = () => {
           <CardBody py={3}>
             <VStack spacing={4} align="stretch">
 
+              {/* Axis Selection Controls */}
+              <Box>
+                <VStack spacing={3} align="stretch">
+                  <HStack justify="space-between" align="center">
+                    <FormControl display="flex" alignItems="center" w="auto">
+                      <HStack spacing={2}>
+                        
+                      <FormLabel htmlFor="apply-both-axes" mb="0" color="gray.300" fontSize="sm" mr={2}>
+                        Apply to both axes
+                      </FormLabel>
+                      </HStack>
+                      <Checkbox
+                        id="apply-both-axes"
+                        size="md"
+                        colorScheme="blue"
+                        isChecked={applyToBothAxes}
+                        onChange={(e) => setApplyToBothAxes(e.target.checked)}
+                      />
+                    </FormControl>
+                  </HStack>
+                  
+                </VStack>
+              </Box>
 
-              {/* Configuration Commands - Always visible now */}
+              {/* Configuration Commands */}
               <Box>
                 <HStack justify="space-between" mb={3}>
                   <Text fontWeight="bold" color="white" fontSize="lg">
-                    Configuration Commands ({enabledCommandCount} commands)
+                    Configuration Commands: <Text as="span" color="gray.400" fontSize="md" fontWeight="normal">
+                      {enabledCommandCount} commands for {getAxisDisplayText()}
+                    </Text>
                   </Text>
                   <HStack spacing={2} align="center">
                     <FormLabel htmlFor="enable-editing" mb="0" color="gray.300" fontSize="sm">
@@ -221,7 +261,7 @@ const FinalConfigStep = () => {
                   </HStack>
                 </HStack>
 
-                {/* Commands list - no longer collapsible */}
+                {/* Commands list */}
                 <Box
                   bg="gray.900"
                   p={4}
@@ -246,8 +286,6 @@ const FinalConfigStep = () => {
             </VStack>
 
             <VStack spacing={4} w="100%" maxW="400px" mx="auto">
-
-
               <Button
                 colorScheme="blue"
                 size="lg"
@@ -260,7 +298,6 @@ const FinalConfigStep = () => {
               >
                 ⚙️💾 Apply & Save Configuration
               </Button>
-
             </VStack>
           </CardBody>
         </Card>
@@ -274,6 +311,7 @@ const FinalConfigStep = () => {
           isLoading={isLoading}
           enabledCommandCount={enabledCommandCount}
           customCommandCount={Object.keys(customCommands).length}
+          targetAxis={applyToBothAxes ? 'both' : selectedAxis}
         />
       </VStack>
     </Box>

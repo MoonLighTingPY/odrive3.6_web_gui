@@ -21,7 +21,7 @@ import {
   getParametersByImportance,
   getGroupedAdvancedParameters,
 } from '../../utils/configParameterGrouping'
-
+import { useSelector } from 'react-redux'
 // Power parameter groups
 const POWER_PARAM_GROUPS = {
   // DC Bus Voltage Protection (including ramp)
@@ -55,13 +55,14 @@ const PowerConfigStep = ({
 }) => {
   const powerConfig = deviceConfig.power || {}
   const powerParams = getCategoryParameters('power')
+  const selectedAxis = useSelector(state => state.ui.selectedAxis)
 
   const handleConfigChange = (configKey, value) => {
     onUpdateConfig('power', configKey, value)
   }
 
-  const handleRefresh = (configKey, odrivePath) => {
-    onReadParameter(odrivePath, 'power', configKey)
+  const handleRefresh = (configKey) => {
+    onReadParameter('power', configKey, selectedAxis)
   }
 
   const isLoading = (configKey) => {

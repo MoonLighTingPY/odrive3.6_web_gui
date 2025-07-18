@@ -25,9 +25,7 @@ import { InfoIcon, RepeatIcon } from '@chakra-ui/icons'
 import ParameterInput from '../config-parameter-fields/ParameterInput'
 import ParameterSelect from '../config-parameter-fields/ParameterSelect'
 import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
-import { ODrivePropertyMappings as configurationMappings } from '../../utils/odriveUnifiedRegistry'
 import { ControlMode, InputMode } from '../../utils/odriveEnums'
-import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
 import {
   getGroupedAdvancedParameters,
 } from '../../utils/configParameterGrouping'
@@ -35,6 +33,8 @@ import {
   turnsToRpm,
   rpmToTurns,
 } from '../../utils/unitConversions'
+import { useSelector } from 'react-redux'
+import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
 
 // Control parameter groups
 const CONTROL_PARAM_GROUPS = {
@@ -95,24 +95,22 @@ const ControlConfigStep = ({
   onUpdateConfig,
   loadingParams,
 }) => {
-  const controlConfig = deviceConfig.control || {}
-  const motorConfig = deviceConfig.motor || {}
-  const encoderConfig = deviceConfig.encoder || {}
-  const controlMappings = configurationMappings.control
-  const controlParams = getCategoryParameters('control')
+  const selectedAxis = useSelector(state => state.ui.selectedAxis)
+  
+  // Get axis-specific control config
+  const controlConfig = deviceConfig.control?.[`axis${selectedAxis}`] || {}
+  const motorConfig = deviceConfig.motor?.[`axis${selectedAxis}`] || {}
+  const encoderConfig = deviceConfig.encoder?.[`axis${selectedAxis}`] || {}
 
   const [useRpm, setUseRpm] = useState(false)
 
   const handleConfigChange = (configKey, value) => {
-    onUpdateConfig('control', configKey, value)
+    onUpdateConfig('control', configKey, value, selectedAxis)
   }
 
   const handleRefresh = (configKey) => {
-    const odriveParam = controlMappings[configKey]
-    if (odriveParam) {
-      onReadParameter(odriveParam, 'control', configKey)
-    }
-  }
+    onReadParameter('control', configKey, selectedAxis)
+}
 
   const isLoading = (configKey) => {
     return loadingParams.has(`control.${configKey}`)
@@ -161,6 +159,7 @@ const ControlConfigStep = ({
   const isPositionControl = (controlConfig.control_mode ?? ControlMode.VELOCITY_CONTROL) === ControlMode.POSITION_CONTROL
 
   // Get advanced parameters grouped by category
+  const controlParams = getCategoryParameters('control')
   const groupedAdvancedParams = getGroupedAdvancedParameters(controlParams, CONTROL_PARAM_GROUPS)
   const totalAdvancedCount = Object.values(groupedAdvancedParams)
     .reduce((total, group) => total + Object.values(group).reduce((groupTotal, subgroup) => groupTotal + subgroup.length, 0), 0)
@@ -190,7 +189,7 @@ const ControlConfigStep = ({
                   onChange={(e) => handleConfigChange('control_mode', parseInt(e.target.value))}
                   onRefresh={() => handleRefresh('control_mode')}
                   isLoading={isLoading('control_mode')}
-                  parameterPath="axis0.controller.config.control_mode"
+                  parameterPath={`axis${selectedAxis}.controller.config.control_mode`}
                   configKey="control_mode"
                   size="sm"
                 />
@@ -208,7 +207,7 @@ const ControlConfigStep = ({
                   onChange={(e) => handleConfigChange('input_mode', parseInt(e.target.value))}
                   onRefresh={() => handleRefresh('input_mode')}
                   isLoading={isLoading('input_mode')}
-                  parameterPath="axis0.controller.config.input_mode"
+                  parameterPath={`axis${selectedAxis}.controller.config.input_mode`}
                   configKey="input_mode"
                   size="sm"
                 />
