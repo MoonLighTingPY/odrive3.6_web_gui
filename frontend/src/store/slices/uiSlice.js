@@ -7,6 +7,7 @@ const initialState = {
   theme: 'dark',
   activeConfigStep: 1, // Changed from configurationStep to activeConfigStep to match usage
   commandHistory: [],
+  selectedAxis: 0, // NEW: Global axis selection
 }
 
 const uiSlice = createSlice({
@@ -78,6 +79,9 @@ const uiSlice = createSlice({
     clearCommandHistory: (state) => {
       state.commandHistory = []
     },
+    setSelectedAxis: (state, action) => {
+      state.selectedAxis = action.payload
+    },
   },
 })
 
@@ -95,6 +99,7 @@ export const {
   resetConfigStep,
   addCommandToHistory,
   clearCommandHistory,
+  setSelectedAxis,
 } = uiSlice.actions
 
 export default uiSlice.reducer
