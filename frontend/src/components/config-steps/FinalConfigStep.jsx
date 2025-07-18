@@ -219,13 +219,13 @@ const FinalConfigStep = () => {
               <Box>
                 <VStack spacing={3} align="stretch">
                   <HStack justify="space-between" align="center">
-                    <Text color="white" fontSize="md" fontWeight="medium">
-                      Configuration Target: <Text as="span" color="blue.300" fontWeight="bold">{getAxisDisplayText()}</Text>
-                    </Text>
                     <FormControl display="flex" alignItems="center" w="auto">
+                      <HStack spacing={2}>
+                        
                       <FormLabel htmlFor="apply-both-axes" mb="0" color="gray.300" fontSize="sm" mr={2}>
                         Apply to both axes
                       </FormLabel>
+                      </HStack>
                       <Checkbox
                         id="apply-both-axes"
                         size="md"
@@ -242,14 +242,11 @@ const FinalConfigStep = () => {
               {/* Configuration Commands */}
               <Box>
                 <HStack justify="space-between" mb={3}>
-                  <VStack align="start" spacing={1}>
-                    <Text fontWeight="bold" color="white" fontSize="lg">
-                      Configuration Commands
-                    </Text>
-                    <Text color="gray.400" fontSize="sm">
+                  <Text fontWeight="bold" color="white" fontSize="lg">
+                    Configuration Commands: <Text as="span" color="gray.400" fontSize="md" fontWeight="normal">
                       {enabledCommandCount} commands for {getAxisDisplayText()}
                     </Text>
-                  </VStack>
+                  </Text>
                   <HStack spacing={2} align="center">
                     <FormLabel htmlFor="enable-editing" mb="0" color="gray.300" fontSize="sm">
                       Enable Editing
