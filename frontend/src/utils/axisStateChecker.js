@@ -65,11 +65,13 @@ export const useAxisStates = () => {
   const axis0State = getAxisState(0)
   const axis1State = getAxisState(1)
 
-  const isAxis0Idle = axis0State === AXIS_STATES.IDLE
-  const isAxis1Idle = axis1State === AXIS_STATES.IDLE
+  // FIXED: Treat UNDEFINED same as IDLE since undefined axes don't need to be set to idle
+  const isAxis0Idle = axis0State === AXIS_STATES.IDLE || axis0State === AXIS_STATES.UNDEFINED
+  const isAxis1Idle = axis1State === AXIS_STATES.IDLE || axis1State === AXIS_STATES.UNDEFINED
   const areBothAxesIdle = isAxis0Idle && isAxis1Idle
 
   const nonIdleAxes = []
+  // Only add axes to nonIdleAxes if they're actually in a non-idle, non-undefined state
   if (!isAxis0Idle) nonIdleAxes.push({ axis: 0, state: axis0State, stateName: getAxisStateName(axis0State) })
   if (!isAxis1Idle) nonIdleAxes.push({ axis: 1, state: axis1State, stateName: getAxisStateName(axis1State) })
 
