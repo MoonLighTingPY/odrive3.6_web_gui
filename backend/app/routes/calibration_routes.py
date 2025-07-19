@@ -16,7 +16,8 @@ def init_routes(manager):
 @calibration_bp.route('/calibration_prerequisites', methods=['GET']) 
 def calibration_prerequisites():
     try:
-        result = check_calibration_prerequisites(odrive_manager)
+        axis_number = int(request.args.get('axis', 0))
+        result = check_calibration_prerequisites(odrive_manager, axis_number)
         return jsonify(result)
     except Exception as e:
         logger.error(f"Error in calibration_prerequisites: {e}")
@@ -32,7 +33,7 @@ def calibrate():
         logger.info(f"Starting {calibration_type} calibration on axis{axis_number}...")
         
         # Check prerequisites first
-        prerequisites = check_calibration_prerequisites(odrive_manager)
+        prerequisites = check_calibration_prerequisites(odrive_manager, axis_number)
         if not prerequisites.get('ready', False):
             return jsonify({'error': f"Calibration prerequisites not met: {prerequisites.get('reason', 'Unknown error')}"})
         
@@ -310,9 +311,11 @@ def auto_continue_calibration():
 @calibration_bp.route('/encoder_direction_find', methods=['POST'])
 def encoder_direction_find():
     try:
-        result = odrive_manager.execute_command('device.axis0.requested_state = 10')
+        data = request.get_json() or {}
+        axis_number = data.get('axis', 0)
+        result = odrive_manager.execute_command(f'device.axis{axis_number}.requested_state = 10')
         if 'error' not in result:
-            return jsonify({'message': 'Encoder direction finding started'})
+            return jsonify({'message': f'Encoder direction finding started on axis{axis_number}'})
         else:
             return jsonify(result), 400
     except Exception as e:
