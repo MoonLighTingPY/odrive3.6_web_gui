@@ -52,9 +52,9 @@ def calibrate():
             logger.info("Preparing motor-only calibration...")
             
             # Temporarily disable encoder startup sequences to prevent auto-continuation
-            odrive_manager.execute_command('device.axis0.config.startup_encoder_index_search = False')
-            odrive_manager.execute_command('device.axis0.config.startup_encoder_offset_calibration = False')
-            
+            odrive_manager.execute_command(f'device.{axis_number}.config.startup_encoder_index_search = False')
+            odrive_manager.execute_command(f'device.{axis_number}.config.startup_encoder_offset_calibration = False')
+
             # Start motor calibration only
             result = odrive_manager.execute_command(f'device.axis{axis_number}.requested_state = 4')
             if 'error' not in result:
