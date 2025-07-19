@@ -277,22 +277,25 @@ def auto_continue_calibration():
     try:
         data = request.get_json() or {}
         next_step = data.get('step', '')
+        axis_number = data.get('axis', 0)  # Get axis from request, default to 0
         
-        logger.info(f"Auto-continuing calibration to step: {next_step}")
+        logger.info(f"Auto-continuing calibration to step: {next_step} on axis{axis_number}")
         
         if next_step == 'encoder_polarity':
-            result = odrive_manager.execute_command('device.axis0.requested_state = 10')
+            result = odrive_manager.execute_command(f'device.axis{axis_number}.requested_state = 10')
             if 'error' not in result:
                 return jsonify({
-                    'message': 'Auto-continuing to encoder polarity calibration',
-                    'next_state': 'encoder_dir_find'
+                    'message': f'Auto-continuing to encoder polarity calibration on axis{axis_number}',
+                    'next_state': 'encoder_dir_find',
+                    'axis': axis_number
                 })
         elif next_step == 'encoder_offset':
-            result = odrive_manager.execute_command('device.axis0.requested_state = 7')
+            result = odrive_manager.execute_command(f'device.axis{axis_number}.requested_state = 7')
             if 'error' not in result:
                 return jsonify({
-                    'message': 'Auto-continuing to encoder offset calibration', 
-                    'next_state': 'encoder_offset_calibration'
+                    'message': f'Auto-continuing to encoder offset calibration on axis{axis_number}', 
+                    'next_state': 'encoder_offset_calibration',
+                    'axis': axis_number
                 })
         else:
             return jsonify({'error': 'Invalid auto-continue step'}), 400

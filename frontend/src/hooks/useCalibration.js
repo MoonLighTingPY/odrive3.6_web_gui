@@ -87,7 +87,10 @@ export const useCalibration = () => {
                     const continueResponse = await fetch('/api/odrive/auto_continue_calibration', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ step: 'encoder_offset' })
+                      body: JSON.stringify({ 
+                        step: 'encoder_offset',
+                        axis: selectedAxis  // Add this line
+                      })
                     })
 
                     if (continueResponse.ok) {
