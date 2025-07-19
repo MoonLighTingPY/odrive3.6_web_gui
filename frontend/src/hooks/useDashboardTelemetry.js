@@ -4,11 +4,19 @@ import { debounce } from 'lodash'
 import { updateOdriveState, setConnectedDevice } from '../store/slices/deviceSlice'
 import { updateTelemetry, setTelemetryConnectionHealth } from '../store/slices/telemetrySlice'
 
+
 export const useDashboardTelemetry = () => {
   const { isConnected, connectedDevice } = useSelector(state => state.device)
   const selectedAxis = useSelector(state => state.ui.selectedAxis) // ADD THIS
   const dispatch = useDispatch()
-  const updateRate = 50000
+  let updateRate
+  // for dev mode, update every 5000ms
+  // for prod mode, update every 50ms
+  if (import.meta.env.DEV) {
+    updateRate = 5000
+  } else {
+    updateRate = 50
+  }
   const lastSerialRef = useRef(null)
 
   // Track last connected serial

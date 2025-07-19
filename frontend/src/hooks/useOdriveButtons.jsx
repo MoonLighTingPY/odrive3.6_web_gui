@@ -4,6 +4,7 @@ import { useState } from 'react'
 import CalibrationModal from '../components/modals/CalibrationModal'
 import { useCalibration } from './useCalibration'
 import { saveAndRebootWithReconnect } from '../utils/configurationActions'
+import { useAxisStateGuard } from './useAxisStateGuard'
 
 // Custom hook for shared command functionality
 const useODriveCommand = () => {
@@ -378,6 +379,7 @@ export const SaveAndRebootButton = ({ size = "sm", gridColumn, ...props }) => {
   const dispatch = useDispatch()
   const toast = useToast()
   const [isLoading, setIsLoading] = useState(false)
+  const { executeWithAxisCheck } = useAxisStateGuard()
 
   const handleSaveAndReboot = async () => {
     if (!isConnected) return
@@ -385,7 +387,7 @@ export const SaveAndRebootButton = ({ size = "sm", gridColumn, ...props }) => {
     setIsLoading(true)
     try {
       await saveAndRebootWithReconnect(toast, dispatch, connectedDevice)
-      // eslint-disable-next-line no-unused-vars
+    // eslint-disable-next-line no-unused-vars
     } catch (_) {
       // saveAndRebootWithReconnect already handles toasts
     } finally {
@@ -393,19 +395,28 @@ export const SaveAndRebootButton = ({ size = "sm", gridColumn, ...props }) => {
     }
   }
 
+  const { execute, AxisGuardModal } = executeWithAxisCheck(
+    handleSaveAndReboot,
+    "save and reboot the ODrive",
+    "Save & Reboot"
+  )
+
   return (
-    <Button
-      size={size}
-      colorScheme="blue"
-      onClick={handleSaveAndReboot}
-      isDisabled={!isConnected}
-      isLoading={isLoading}
-      loadingText="Saving..."
-      title={isConnected ? "Save configuration and reboot ODrive" : "Not connected to ODrive"}
-      gridColumn={gridColumn}
-      {...props}
-    >
-      Save & Reboot
-    </Button>
+    <>
+      <Button
+        size={size}
+        colorScheme="blue"
+        onClick={execute}
+        isDisabled={!isConnected}
+        isLoading={isLoading}
+        loadingText="Saving..."
+        title={isConnected ? "Save configuration and reboot ODrive" : "Not connected to ODrive"}
+        gridColumn={gridColumn}
+        {...props}
+      >
+        Save & Reboot
+      </Button>
+      <AxisGuardModal />
+    </>
   )
 }

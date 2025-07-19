@@ -25,6 +25,7 @@ import ConfirmationModal from '../modals/ConfirmationModal'
 // Import shared utilities
 import { generateConfigCommands } from '../../utils/configCommandGenerator'
 import { executeConfigAction, saveAndRebootWithReconnect } from '../../utils/configurationActions'
+import { useAxisStateGuard } from '../../hooks/useAxisStateGuard'
 
 const FinalConfigStep = () => {
   const toast = useToast()
@@ -37,6 +38,7 @@ const FinalConfigStep = () => {
   const [disabledCommands, setDisabledCommands] = useState(new Set())
   const [enableCommandEditing, setEnableCommandEditing] = useState(false)
   const [applyToBothAxes, setApplyToBothAxes] = useState(false)
+  const { executeWithAxisCheck } = useAxisStateGuard()
 
   const { powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig } = useSelector(state => state.config)
   const { isConnected, connectedDevice } = useSelector(state => state.device)
@@ -144,8 +146,22 @@ const FinalConfigStep = () => {
   }
 
   const handleAction = (action) => {
-    setPendingAction(action)
-    onConfirmOpen()
+    const actionDetails = getActionDetails(action)
+    
+    const { execute, AxisGuardModal } = executeWithAxisCheck(
+      () => {
+        setPendingAction(action)
+        onConfirmOpen()
+      },
+      actionDetails.description,
+      actionDetails.confirmText
+    )
+
+    // Execute with axis check
+    execute()
+    
+    // Store the modal component for rendering
+    setAxisGuardModal(AxisGuardModal)
   }
 
   // Handler functions for child components
@@ -203,6 +219,9 @@ const FinalConfigStep = () => {
 
   // Update the command count display
   const enabledCommandCount = finalCommands.length
+
+  // Add state for the modal
+  const [AxisGuardModal, setAxisGuardModal] = useState(null)
 
   return (
     <Box h="100%" p={3} overflow="auto">
@@ -301,6 +320,9 @@ const FinalConfigStep = () => {
             </VStack>
           </CardBody>
         </Card>
+
+        {/* Render the axis guard modal if it exists */}
+        {AxisGuardModal && <AxisGuardModal />}
 
         <ConfirmationModal
           isOpen={isConfirmOpen}

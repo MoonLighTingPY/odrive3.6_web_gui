@@ -135,10 +135,11 @@ export const startCalibration = async (type = 'full') => {
 
 /**
  * Get calibration status
+ * @param {number} selectedAxis - Axis number to query
  * @returns {Promise<Object>} Calibration status from the API
  */
-export const getCalibrationStatus = async () => {
-  const response = await fetch('/api/odrive/calibration_status')
+export const getCalibrationStatus = async (selectedAxis) => {
+  const response = await fetch(`/api/odrive/calibration_status?axis=${selectedAxis}`)
 
   if (!response.ok) {
     throw new Error('Failed to get calibration status')
@@ -147,25 +148,7 @@ export const getCalibrationStatus = async () => {
   return await response.json()
 }
 
-/**
- * Auto-continue calibration sequence
- * @param {string} step - Next calibration step
- * @returns {Promise<Object>} Response from the API
- */
-export const autoContinueCalibration = async (step) => {
-  const response = await fetch('/api/odrive/auto_continue_calibration', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ step })
-  })
 
-  if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.message || 'Auto-continue failed')
-  }
-
-  return await response.json()
-}
 
 /**
  * Execute ODrive command

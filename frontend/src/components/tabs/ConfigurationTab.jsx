@@ -28,6 +28,7 @@ import {
 } from '../../utils/configBatchApi'
 import EraseConfigModal from '../modals/EraseConfigModal'
 import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
+import { useAxisStateGuard } from '../../hooks/useAxisStateGuard'
 
 // Configuration steps array
 const CONFIGURATION_STEPS = [
@@ -46,6 +47,7 @@ const ConfigurationTab = memo(() => {
   const { isConnected, connectedDevice } = useSelector(state => state.device)
   const { activeConfigStep } = useSelector(state => state.ui)
   const selectedAxis = useSelector(state => state.ui.selectedAxis)
+  const { executeWithAxisCheck } = useAxisStateGuard()
   
   // Add this at component level instead of inside handleApplyAndSave
   const reduxConfig = useSelector(state => state.config)
@@ -345,21 +347,13 @@ const ConfigurationTab = memo(() => {
 
     setIsApplyingSave(true)
     try {
-      // Mark that we're expecting a reconnection
       sessionStorage.setItem('expectingReconnection', 'true')
-      
-      // Use full config and respect selected axis
       await applyAndSaveConfiguration(fullConfig, toast, dispatch, connectedDevice, selectedAxis)
-      
-      // Clear the flag after successful operation
       setTimeout(() => {
         sessionStorage.removeItem('expectingReconnection')
       }, 5000)
-      
     } catch (error) {
-      // Clear the flag on error
       sessionStorage.removeItem('expectingReconnection')
-      
       toast({
         title: 'Apply & Save Failed',
         description: error.message,
@@ -370,6 +364,12 @@ const ConfigurationTab = memo(() => {
       setIsApplyingSave(false)
     }
   }
+
+  const { execute: executeApplyAndSave, AxisGuardModal } = executeWithAxisCheck(
+    handleApplyAndSave,
+    "apply and save the configuration",
+    "Apply & Save"
+  )
 
   const nextConfigStep = () => {
     if (activeConfigStep < steps.length) {
@@ -549,7 +549,7 @@ const ConfigurationTab = memo(() => {
                 <Button
                   colorScheme="blue"
                   size="md"
-                  onClick={handleApplyAndSave}
+                  onClick={executeApplyAndSave}
                   isDisabled={!isConnected}
                   isLoading={isApplyingSave}
                   loadingText="Applying & Saving..."
@@ -580,6 +580,7 @@ const ConfigurationTab = memo(() => {
         isOpen={isEraseOpen}
         onClose={onEraseClose}
       />
+      <AxisGuardModal />
     </Flex>
   )
 })

@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useToast } from '@chakra-ui/react'
+import { useSelector } from 'react-redux'
 
 export const useCalibration = () => {
   const toast = useToast()
+  const selectedAxis = useSelector(state => state.ui.selectedAxis)
 
   // Calibration state
   const [calibrationStatus, setCalibrationStatus] = useState(null)
@@ -17,7 +19,7 @@ export const useCalibration = () => {
     if (isCalibrating) {
       interval = setInterval(async () => {
         try {
-          const response = await fetch('/api/odrive/calibration_status')
+          const response = await fetch(`/api/odrive/calibration_status?axis=${selectedAxis}`)
           if (response.ok) {
             const status = await response.json()
             console.log('Calibration status update:', status)
@@ -85,7 +87,10 @@ export const useCalibration = () => {
                     const continueResponse = await fetch('/api/odrive/auto_continue_calibration', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ step: 'encoder_offset' })
+                      body: JSON.stringify({ 
+                        step: 'encoder_offset',
+                        axis: selectedAxis  // Add this line
+                      })
                     })
 
                     if (continueResponse.ok) {
@@ -136,7 +141,7 @@ export const useCalibration = () => {
 
       return () => clearInterval(interval)
     }
-  }, [isCalibrating, toast, calibrationStatus?.auto_continue_in_progress])
+  }, [isCalibrating, toast, calibrationStatus?.auto_continue_in_progress, selectedAxis])
 
   const startCalibration = async (type = 'full') => {
     try {
