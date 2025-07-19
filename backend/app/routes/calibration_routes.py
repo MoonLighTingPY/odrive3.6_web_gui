@@ -120,31 +120,32 @@ def calibrate():
 @calibration_bp.route('/calibration_status', methods=['GET'])
 def calibration_status():
     try:
+        axis_number = int(request.args.get('axis', 0))  # <-- get axis from query param, default 0
+
         if not odrive_manager.current_device:
             return jsonify({'error': 'No device connected'}), 400
-        
-        # Get current axis state
-        axis_state_result = odrive_manager.execute_command('device.axis0.current_state')
+
+        # Use axis_number in all commands below
+        axis_state_result = odrive_manager.execute_command(f'device.axis{axis_number}.current_state')
         axis_state = 1  # Default to IDLE
         if 'result' in axis_state_result and 'error' not in axis_state_result:
             try:
                 axis_state = int(float(axis_state_result['result']))
             except (ValueError, TypeError):
                 axis_state = 1
-        
-        # Get calibration flags
-        motor_calibrated_result = odrive_manager.execute_command('device.axis0.motor.is_calibrated')
-        encoder_ready_result = odrive_manager.execute_command('device.axis0.encoder.is_ready')
-        
+
+        motor_calibrated_result = odrive_manager.execute_command(f'device.axis{axis_number}.motor.is_calibrated')
+        encoder_ready_result = odrive_manager.execute_command(f'device.axis{axis_number}.encoder.is_ready')
+
         motor_calibrated = False
         if 'result' in motor_calibrated_result and 'error' not in motor_calibrated_result:
-            motor_calibrated = str(motor_calibrated_result['result']).lower() in ['true', '1', 'True']
-        
-        encoder_ready = False  
+            motor_calibrated = str(motor_calibrated_result['result']).lower() in ['true', '1', 'true']
+
+        encoder_ready = False
         if 'result' in encoder_ready_result and 'error' not in encoder_ready_result:
-            encoder_ready = str(encoder_ready_result['result']).lower() in ['true', '1', 'True']
-        
-        encoder_direction_result = odrive_manager.execute_command('device.axis0.encoder.config.direction')
+            encoder_ready = str(encoder_ready_result['result']).lower() in ['true', '1', 'true']
+
+        encoder_direction_result = odrive_manager.execute_command(f'device.axis{axis_number}.encoder.config.direction')
         encoder_polarity_calibrated = False
         if 'result' in encoder_direction_result and 'error' not in encoder_direction_result:
             try:
@@ -152,11 +153,11 @@ def calibration_status():
                 encoder_polarity_calibrated = direction_value != 0
             except (ValueError, TypeError):
                 encoder_polarity_calibrated = False
-        
+
         # Get error states
-        axis_error_result = odrive_manager.execute_command('device.axis0.error')
-        motor_error_result = odrive_manager.execute_command('device.axis0.motor.error')
-        encoder_error_result = odrive_manager.execute_command('device.axis0.encoder.error')
+        axis_error_result = odrive_manager.execute_command(f'device.axis{axis_number}.error')
+        motor_error_result = odrive_manager.execute_command(f'device.axis{axis_number}.motor.error')
+        encoder_error_result = odrive_manager.execute_command(f'device.axis{axis_number}.encoder.error')
         
         axis_error = 0
         if 'result' in axis_error_result and 'error' not in axis_error_result:

@@ -135,10 +135,11 @@ export const startCalibration = async (type = 'full') => {
 
 /**
  * Get calibration status
+ * @param {number} selectedAxis - Axis number to query
  * @returns {Promise<Object>} Calibration status from the API
  */
-export const getCalibrationStatus = async () => {
-  const response = await fetch('/api/odrive/calibration_status')
+export const getCalibrationStatus = async (selectedAxis) => {
+  const response = await fetch(`/api/odrive/calibration_status?axis=${selectedAxis}`)
 
   if (!response.ok) {
     throw new Error('Failed to get calibration status')
