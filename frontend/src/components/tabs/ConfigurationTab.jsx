@@ -47,6 +47,7 @@ const ConfigurationTab = memo(() => {
   const { isConnected, connectedDevice } = useSelector(state => state.device)
   const { activeConfigStep } = useSelector(state => state.ui)
   const selectedAxis = useSelector(state => state.ui.selectedAxis)
+  const { executeWithAxisCheck } = useAxisStateGuard()
   
   // Add this at component level instead of inside handleApplyAndSave
   const reduxConfig = useSelector(state => state.config)
