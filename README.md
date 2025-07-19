@@ -44,7 +44,7 @@ The official ODrive GUI only supports newer firmware versions, leaving v0.5.6 us
 | Command Console            | ✅     | Categorized native protocol commands                |
 | Calibration (motor/encoder)           | 🛠️     | Finished, but no calib. state persistance after reboot yet                |
 | Multi-Device Support            | 🛠️     | Finished, but not tested enough yet                |
-| Multi-Axis Support            | 🚫     | In development, only axis0 supported for now |
+| Multi-Axis Support            | ✅     | Configure/calibrate/tweak properties of any axis |
 
 
 ### Configuration
