@@ -60,6 +60,7 @@ import {
   handleFileImport
 } from '../../utils/presetsOperations'
 import { applyAndSaveConfiguration } from '../../utils/configurationActions'
+import { useAxisStateGuard } from '../../hooks/useAxisStateGuard'
 
 const PresetsTab = memo(() => {
   const dispatch = useDispatch()
@@ -67,6 +68,7 @@ const PresetsTab = memo(() => {
   const fileInputRef = useRef(null)
   const { isConnected, connectedDevice } = useSelector(state => state.device)
   const { powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig } = useSelector(state => state.config)
+  const { executeWithAxisCheck } = useAxisStateGuard()
 
   const deviceConfig = useMemo(() => ({
     power: powerConfig || {},
@@ -360,6 +362,13 @@ const PresetsTab = memo(() => {
     )
   }
 
+  // Add this after the other state declarations (around line 93)
+  const { execute: executeApplyAndSave, AxisGuardModal } = executeWithAxisCheck(
+    () => handleApplyPreset(selectedPreset),
+    "apply and save the preset",
+    "Apply & Save"
+  )
+
   return (
     <Box p={4} h="100%" maxW="1400px" mx="auto">
       <VStack spacing={4} align="stretch" h="100%">
@@ -429,7 +438,7 @@ const PresetsTab = memo(() => {
               size="sm"
               colorScheme="green"
               leftIcon={<Download size={14} />}
-              onClick={() => handleApplyPreset(selectedPreset)}
+              onClick={executeApplyAndSave}
               isDisabled={!isConnected}
             >
               Apply & Save to ODrive
@@ -666,6 +675,7 @@ const PresetsTab = memo(() => {
           </ModalContent>
         </Modal>
 
+        {AxisGuardModal && <AxisGuardModal />}
       </VStack>
     </Box>
   )

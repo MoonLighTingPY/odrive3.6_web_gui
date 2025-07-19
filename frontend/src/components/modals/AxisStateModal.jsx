@@ -116,7 +116,7 @@ const AxisStateModal = ({
               isLoading={isSettingIdle}
               loadingText="Setting Idle..."
             >
-              Set to Idle & Continue
+              Set both to Idle
             </Button>
             <Button
               colorScheme="red"
@@ -124,7 +124,7 @@ const AxisStateModal = ({
               onClick={handleContinueAnyway}
               title="Force continue - not recommended"
             >
-              Continue Anyway
+              Continue
             </Button>
           </HStack>
         </ModalFooter>
