@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { debounce } from 'lodash'
 import { updateOdriveState, setConnectedDevice } from '../store/slices/deviceSlice'
 import { updateTelemetry, setTelemetryConnectionHealth } from '../store/slices/telemetrySlice'
-import process from 'process'
+
 
 export const useDashboardTelemetry = () => {
   const { isConnected, connectedDevice } = useSelector(state => state.device)
@@ -12,7 +12,7 @@ export const useDashboardTelemetry = () => {
   let updateRate
   // for dev mode, update every 5000ms
   // for prod mode, update every 50ms
-  if (process.env.NODE_ENV === 'development') {
+  if (import.meta.env.DEV) {
     updateRate = 5000
   } else {
     updateRate = 50
