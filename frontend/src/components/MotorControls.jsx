@@ -33,6 +33,7 @@ const MotorControls = ({ axisNumber = 0, size = "sm", orientation = "horizontal"
           <EncoderOffsetCalibrationButton axisNumber={axisNumber} size={size} />
           <EncoderIndexSearchButton axisNumber={axisNumber} size={size} />
 
+          <SaveAndRebootButton axisNumber={axisNumber} size={size} />
         </ContainerComponent>
       </VStack>
     )
