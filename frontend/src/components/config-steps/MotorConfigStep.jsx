@@ -282,34 +282,17 @@ const MotorConfigStep = ({
           </CardBody>
         </Card>
 
-        {/* Advanced Settings - Collapsible with grouping */}
-        <Card bg="gray.800" variant="elevated">
-          <CardHeader py={2}>
-            <HStack justify="space-between">
-              <Heading size="sm" color="white">Advanced Settings</Heading>
-              <Button size="sm" variant="ghost" onClick={onAdvancedToggle}>
-                {isAdvancedOpen ? 'Hide' : 'Show'} Advanced ({totalAdvancedCount} parameters)
-              </Button>
-            </HStack>
-          </CardHeader>
-          <Collapse in={isAdvancedOpen}>
-            <CardBody py={3}>
-              <VStack spacing={4} align="stretch">
-                <AdvancedSettingsSection
-                  title="Advanced Settings"
-                  isOpen={isAdvancedOpen}
-                  onToggle={onAdvancedToggle}
-                  paramCount={totalAdvancedCount}
-                  groupedParams={groupedAdvancedParams}
-                  config={motorConfig}
-                  onChange={handleConfigChange}
-                  onRefresh={handleReadParameter}
-                  isLoading={isLoading}
-                />
-              </VStack>
-            </CardBody>
-          </Collapse>
-        </Card>
+        <AdvancedSettingsSection
+          title="Advanced Settings"
+          isOpen={isAdvancedOpen}
+          onToggle={onAdvancedToggle}
+          paramCount={totalAdvancedCount}
+          groupedParams={groupedAdvancedParams}
+          config={motorConfig}
+          onChange={handleConfigChange}
+          onRefresh={handleReadParameter}
+          isLoading={isLoading}
+        />
       </VStack>
     </Box>
   )

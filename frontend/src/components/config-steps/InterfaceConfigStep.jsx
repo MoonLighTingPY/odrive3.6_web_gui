@@ -469,34 +469,18 @@ const InterfaceConfigStep = ({
 
         {/* Advanced Settings - Collapsible with grouping */}
         {totalAdvancedCount > 0 && (
-          <Card bg="gray.800" variant="elevated">
-            <CardHeader py={2}>
-              <HStack justify="space-between">
-                <Heading size="sm" color="white">Advanced Interface Settings</Heading>
-                <Button size="sm" variant="ghost" onClick={onAdvancedToggle}>
-                  {isAdvancedOpen ? 'Hide' : 'Show'} Advanced ({totalAdvancedCount} parameters)
-                </Button>
-              </HStack>
-            </CardHeader>
-            <Collapse in={isAdvancedOpen}>
-              <CardBody py={3}>
-                <VStack spacing={4} align="stretch">
-                  <AdvancedSettingsSection
-                    title="Advanced Interface Settings"
-                    isOpen={isAdvancedOpen}
-                    onToggle={onAdvancedToggle}
-                    paramCount={totalAdvancedCount}
-                    groupedParams={groupedAdvancedParams}
-                    config={interfaceConfig}
-                    onChange={handleConfigChange}
-                    onRefresh={handleRefresh}
-                    isLoading={isLoading}
-                  />
-                </VStack>
-              </CardBody>
-            </Collapse>
-          </Card>
-        )}
+          <AdvancedSettingsSection
+            title="Advanced Interface Settings"
+            isOpen={isAdvancedOpen}
+            onToggle={onAdvancedToggle}
+            paramCount={totalAdvancedCount}
+            groupedParams={groupedAdvancedParams}
+            config={interfaceConfig}
+            onChange={handleConfigChange}
+            onRefresh={handleRefresh}
+            isLoading={isLoading}
+          />
+)}
       </VStack>
     </Box>
   )
