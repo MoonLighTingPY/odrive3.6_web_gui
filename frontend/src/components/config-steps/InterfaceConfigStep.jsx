@@ -25,6 +25,7 @@ import { InfoIcon } from '@chakra-ui/icons'
 import ParameterInput from '../config-parameter-fields/ParameterInput'
 import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
 import ParameterSelect from '../config-parameter-fields/ParameterSelect'
+import AdvancedSettingsSection from '../config-parameter-fields/AdvancedSettingsSection'
 import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
 import {
   getGroupedAdvancedParameters,
@@ -54,12 +55,12 @@ const INTERFACE_PARAM_GROUPS = {
   enable_sensorless: { group: 'Safety', subgroup: 'Safety', importance: 'essential' },
 
   // Advanced parameters
-  enable_uart_c: { group: 'UART', subgroup: 'UART C', importance: 'advanced' },
-  uart_c_baudrate: { group: 'UART', subgroup: 'UART C', importance: 'advanced' },
-  uart2_protocol: { group: 'UART', subgroup: 'UART C', importance: 'advanced' },
+  enable_uart_c: { group: 'Interface', subgroup: 'Interface', importance: 'advanced' },
+  uart_c_baudrate: { group: 'Interface', subgroup: 'Interface', importance: 'advanced' },
+  uart2_protocol: { group: 'Interface', subgroup: 'Interface', importance: 'advanced' },
   
-  enable_can_a: { group: 'CAN', subgroup: 'Advanced', importance: 'advanced' },
-  enable_i2c_a: { group: 'I2C', subgroup: 'I2C', importance: 'advanced' },
+  enable_can_a: { group: 'Interface', subgroup: 'Interface', importance: 'advanced' },
+  enable_i2c_a: { group: 'Interface', subgroup: 'Interface', importance: 'advanced' },
   
   usb_cdc_protocol: { group: 'USB', subgroup: 'USB', importance: 'advanced' },
   
@@ -417,7 +418,7 @@ const InterfaceConfigStep = ({
             {/* Smart GPIO Configuration */}
             <Card bg="gray.800" variant="elevated">
               <CardHeader py={1}>
-                <Heading size="sm" color="white">Smart GPIO Configuration</Heading>
+                <Heading size="sm" color="white">GPIO Configuration</Heading>
               </CardHeader>
               <CardBody py={2}>
                 <Alert status="info" mb={3} py={2} fontSize="xs">
@@ -468,48 +469,19 @@ const InterfaceConfigStep = ({
 
         {/* Advanced Settings - Collapsible with grouping */}
         {totalAdvancedCount > 0 && (
-          <Card bg="gray.800" variant="elevated">
-            <CardHeader py={2}>
-              <HStack justify="space-between">
-                <Heading size="sm" color="white">Advanced Interface Settings</Heading>
-                <Button size="sm" variant="ghost" onClick={onAdvancedToggle}>
-                  {isAdvancedOpen ? 'Hide' : 'Show'} Advanced ({totalAdvancedCount} parameters)
-                </Button>
-              </HStack>
-            </CardHeader>
-            <Collapse in={isAdvancedOpen}>
-              <CardBody py={3}>
-                <VStack spacing={4} align="stretch">
-                  {Object.entries(groupedAdvancedParams).map(([groupName, subgroups]) => (
-                    <Box key={groupName}>
-                      <Text fontWeight="bold" color="blue.200" fontSize="sm" mb={3}>
-                        {groupName}
-                      </Text>
-                      <VStack spacing={3} align="stretch" pl={2}>
-                        {Object.entries(subgroups).map(([subgroupName, params]) => (
-                          <Box key={subgroupName}>
-                            <Text fontWeight="semibold" color="blue.300" fontSize="xs" mb={2}>
-                              {subgroupName}
-                            </Text>
-                            <ParameterFormGrid
-                              params={params}
-                              config={interfaceConfig}
-                              onChange={handleConfigChange}
-                              onRefresh={handleRefresh}
-                              isLoading={isLoading}
-                              layout="compact"
-                              showGrouping={false}
-                            />
-                          </Box>
-                        ))}
-                      </VStack>
-                    </Box>
-                  ))}
-                </VStack>
-              </CardBody>
-            </Collapse>
-          </Card>
-        )}
+          <AdvancedSettingsSection
+            title="Advanced Interface Settings"
+            isOpen={isAdvancedOpen}
+            onToggle={onAdvancedToggle}
+            paramCount={totalAdvancedCount}
+            groupedParams={groupedAdvancedParams}
+            filterParam={param => !['gpio3_analog_mapping', 'gpio4_analog_mapping'].includes(param.configKey)} // customize per step
+            config={interfaceConfig}
+            onChange={handleConfigChange}
+            onRefresh={handleRefresh}
+            isLoading={isLoading}
+          />
+)}
       </VStack>
     </Box>
   )

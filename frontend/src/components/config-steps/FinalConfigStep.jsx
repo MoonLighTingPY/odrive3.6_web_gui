@@ -237,9 +237,9 @@ const FinalConfigStep = () => {
   // Update the axis display text function
   const getAxisDisplayText = () => {
     if (applyToBothAxes) {
-      return 'Both Axes (Axis 0 & Axis 1)'
+      return 'both Axes (Axis 0 & Axis 1)'
     }
-    return `Axis ${selectedAxis} Only`
+    return `Axis ${selectedAxis}`
   }
 
   // Update the command count display
@@ -263,58 +263,50 @@ const FinalConfigStep = () => {
               <Box>
                 <VStack spacing={3} align="stretch">
                   
-                  {/* Changed Parameters Statistics - show only in dev mode */}
-                  {import.meta.env.DEV && changeStats.totalChanged > 0 &&  (
-                    <Box p={3} bg="blue.900" borderRadius="md">
-                      <HStack justify="space-between" align="center">
-                        <Text color="white" fontWeight="semibold" fontSize="sm">
-                          Configuration Changes Detected
-                        </Text>
-                        <Badge colorScheme="blue" fontSize="sm">
-                          {changeStats.totalChanged} parameter{changeStats.totalChanged !== 1 ? 's' : ''} changed
-                        </Badge>
-                      </HStack>
-                      
-                      <HStack spacing={2} mt={2} flexWrap="wrap">
-                        {Object.entries(changeStats.changesByCategory).map(([category, count]) => (
-                          count > 0 && (
-                            <Badge key={category} colorScheme="cyan" fontSize="xs">
-                              {category}: {count}
-                            </Badge>
-                          )
-                        ))}
-                      </HStack>
-                    </Box>
-                  )}
-                  <HStack justify="space-between" align="center">
-                    <HStack spacing={2}>
-                      <FormLabel htmlFor="only-changed-params" mb="0" color="gray.300" fontSize="sm">
+                </VStack>
+              </Box>
+
+              {/* Configuration Commands */}
+              <Box>
+                {(onlyChangedParams && changeStats.totalChanged === 0) ? (
+                  <Box py={16} textAlign="center">
+                    <Text color="gray.100" fontSize="3xl" fontWeight="bold">
+                      Nothing was configured, so no commands were generated.
+                    </Text>
+                  </Box>
+                ) : (
+                  <>
+                    {/* Controls only shown if there are commands */}
+                    <HStack spacing={2} mb={2}>
+                      <FormLabel htmlFor="only-changed-params" mb="0" color="gray.300" fontSize="sm" mr={0}>
                         Only changed parameters
                       </FormLabel>
-                      <Tooltip label={onlyChangedParams 
-                        ? "Generate commands only for parameters you've modified in the wizard"
-                        : "Generate commands for all configuration parameters (162 total)"
-                      }>
+                      <Checkbox
+                        id="only-changed-params"
+                        size="md"
+                        colorScheme="blue"
+                        isChecked={onlyChangedParams}
+                        onChange={(e) => setOnlyChangedParams(e.target.checked)}
+                      />
+                      <Tooltip label="Generate commands only for parameters you've modified in the wizard">
                         <Icon as={InfoIcon} color="gray.400" boxSize={3} />
                       </Tooltip>
-                    </HStack>
-                    <Switch
-                      id="only-changed-params"
-                      size="sm"
-                      colorScheme="odrive"
-                      isChecked={onlyChangedParams}
-                      onChange={(e) => setOnlyChangedParams(e.target.checked)}
-                    />
-                  </HStack>
-
-                  {/* Axis Selection */}
-                  <HStack justify="space-between" align="center">
-                    <FormControl display="flex" alignItems="center" w="auto">
-                      <HStack spacing={2}>
-                        <FormLabel htmlFor="apply-both-axes" mb="0" color="gray.300" fontSize="sm" mr={2}>
-                          Apply to both axes
-                        </FormLabel>
-                      </HStack>
+                      <FormLabel htmlFor="enable-editing" mb="0" color="gray.300" fontSize="sm" mr={0} ml={4}>
+                        Enable Editing
+                      </FormLabel>
+                      <Checkbox
+                        id="enable-editing"
+                        size="md"
+                        colorScheme="blue"
+                        isChecked={enableCommandEditing}
+                        onChange={(e) => setEnableCommandEditing(e.target.checked)}
+                      />
+                      <Tooltip label="Allow editing and disabling of generated commands before applying.">
+                        <Icon as={InfoIcon} color="gray.400" boxSize={3} />
+                      </Tooltip>
+                      <FormLabel htmlFor="apply-both-axes" mb="0" color="gray.300" fontSize="sm" mr={2} ml={4}>
+                        Apply to both axes
+                      </FormLabel>
                       <Checkbox
                         id="apply-both-axes"
                         size="md"
@@ -322,79 +314,57 @@ const FinalConfigStep = () => {
                         isChecked={applyToBothAxes}
                         onChange={(e) => setApplyToBothAxes(e.target.checked)}
                       />
-                    </FormControl>
-                  </HStack>
-                  
-                </VStack>
-              </Box>
-
-              {/* Configuration Commands */}
-              <Box>
-                <HStack justify="space-between" mb={3}>
-                  <VStack align="start" spacing={1}>
-                    <Text fontWeight="bold" color="white" fontSize="lg">
-                      Configuration Commands
-                    </Text>
-                    <HStack spacing={2}>
-                      <Badge colorScheme={onlyChangedParams ? "green" : "blue"} fontSize="xs">
-                        {onlyChangedParams ? "Changed only" : "All parameters"}
-                      </Badge>
-                      <Badge colorScheme="gray" fontSize="xs">
-                        {enabledCommandCount} commands for {getAxisDisplayText()}
-                      </Badge>
+                      <Tooltip label="Apply all generated commands to both Axis 0 and Axis 1">
+                        <Icon as={InfoIcon} color="gray.400" boxSize={3} />
+                      </Tooltip>
                     </HStack>
-                  </VStack>
-                  <HStack spacing={2} align="center">
-                    <FormLabel htmlFor="enable-editing" mb="0" color="gray.300" fontSize="sm">
-                      Enable Editing
-                    </FormLabel>
-                    <Switch
-                      id="enable-editing"
-                      size="sm"
-                      colorScheme="odrive"
-                      isChecked={enableCommandEditing}
-                      onChange={(e) => setEnableCommandEditing(e.target.checked)}
-                    />
-                  </HStack>
-                </HStack>
-
-                {/* Commands list */}
-                <Box
-                  bg="gray.900"
-                  p={4}
-                  borderRadius="md"
-                  maxH="500px"
-                  overflowY="auto"
-                  border="1px solid"
-                  borderColor="gray.600"
-                >
-                  <CommandList
-                    commands={baseGeneratedCommands}
-                    customCommands={customCommands}
-                    disabledCommands={disabledCommands}
-                    enableEditing={enableCommandEditing}
-                    onCustomCommandChange={handleCustomCommandChange}
-                    onCommandToggle={handleCommandToggle}
-                    onAddCustomCommand={handleAddCustomCommand}
-                  />
-                </Box>
+                    <HStack justify="space-between" mb={3}>
+                      <VStack align="start" spacing={1}>
+                        <Text fontWeight="bold" color="white" fontSize="lg">
+                          Configuration Commands
+                        </Text>
+                        <Text color="gray.400" fontSize="sm">
+                          {enabledCommandCount} commands for {getAxisDisplayText()}
+                        </Text>
+                      </VStack>
+                    </HStack>
+                    <Box
+                      bg="gray.900"
+                      p={4}
+                      borderRadius="md"
+                      maxH="500px"
+                      overflowY="auto"
+                      border="1px solid"
+                      borderColor="gray.600"
+                    >
+                      <CommandList
+                        commands={baseGeneratedCommands}
+                        customCommands={customCommands}
+                        disabledCommands={disabledCommands}
+                        enableEditing={enableCommandEditing}
+                        onCustomCommandChange={handleCustomCommandChange}
+                        onCommandToggle={handleCommandToggle}
+                        onAddCustomCommand={handleAddCustomCommand}
+                      />
+                    </Box>
+                    <VStack spacing={4} w="100%" maxW="400px" mx="auto">
+                      <Button
+                        colorScheme="blue"
+                        size="lg"
+                        w="100%"
+                        h="60px"
+                        onClick={() => handleAction('apply_and_save')}
+                        isDisabled={!isConnected}
+                        isLoading={isLoading && pendingAction === 'apply_and_save'}
+                        mt={4}
+                      >
+                        ⚙️💾 Apply & Save Configuration
+                      </Button>
+                    </VStack>
+                  </>
+                )}
               </Box>
 
-            </VStack>
-
-            <VStack spacing={4} w="100%" maxW="400px" mx="auto">
-              <Button
-                colorScheme="blue"
-                size="lg"
-                w="100%"
-                h="60px"
-                onClick={() => handleAction('apply_and_save')}
-                isDisabled={!isConnected}
-                isLoading={isLoading && pendingAction === 'apply_and_save'}
-                mt={4}
-              >
-                ⚙️💾 Apply & Save Configuration
-              </Button>
             </VStack>
           </CardBody>
         </Card>

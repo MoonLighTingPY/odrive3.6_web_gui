@@ -100,7 +100,6 @@ const configSlice = createSlice({
   reducers: {
     // New action to set initial configuration from device
     setInitialConfig: (state, action) => {
-      console.log('Setting initial configuration:', action.payload)
       state.initialConfig = {
         power: { ...action.payload.power || {} },
         motor: { ...action.payload.motor || {} },
@@ -108,7 +107,6 @@ const configSlice = createSlice({
         control: { ...action.payload.control || {} },
         interface: { ...action.payload.interface || {} }
       }
-      console.log('Initial configuration set:', state.initialConfig)
     },
     
     updateUiPreferences: (state, action) => {
@@ -164,6 +162,7 @@ const configSlice = createSlice({
       }
     },
     updateEncoderConfig: (state, action) => {
+      // Only update keys present in the payload
       Object.keys(action.payload).forEach(key => {
         const value = action.payload[key]
         if (typeof value === 'number' && !isNaN(value)) {
@@ -179,6 +178,10 @@ const configSlice = createSlice({
           }
         }
       })
+      // Remove encoder_type if not present in the payload
+      if (!('encoder_type' in action.payload) && 'encoder_type' in state.encoderConfig) {
+        delete state.encoderConfig.encoder_type
+      }
     },
     updateControlConfig: (state, action) => {
       Object.keys(action.payload).forEach(key => {

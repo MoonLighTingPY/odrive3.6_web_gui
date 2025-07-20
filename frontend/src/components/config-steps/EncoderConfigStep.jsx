@@ -22,7 +22,6 @@ import {
 } from '@chakra-ui/react'
 import { InfoIcon } from '@chakra-ui/icons'
 import ParameterInput from '../config-parameter-fields/ParameterInput'
-import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
 import ParameterSelect from '../config-parameter-fields/ParameterSelect'
 import { EncoderMode } from '../../utils/odriveEnums'
 import {
@@ -30,6 +29,7 @@ import {
 } from '../../utils/configParameterGrouping'
 import { useSelector } from 'react-redux'
 import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
+import AdvancedSettingsSection from '../config-parameter-fields/AdvancedSettingsSection'
 
 // Encoder parameter groups
 const ENCODER_PARAM_GROUPS = {
@@ -93,8 +93,19 @@ const EncoderConfigStep = ({
 
   // Get advanced parameters grouped by category
   const groupedAdvancedParams = getGroupedAdvancedParameters(encoderParams, ENCODER_PARAM_GROUPS)
-  const totalAdvancedCount = Object.values(groupedAdvancedParams)
-    .reduce((total, group) => total + Object.values(group).reduce((groupTotal, subgroup) => groupTotal + subgroup.length, 0), 0)
+
+  // Calculate filtered advanced parameter count
+  const filteredAdvancedCount = Object.values(groupedAdvancedParams)
+    .reduce((total, group) =>
+      total + Object.values(group).reduce(
+        (groupTotal, subgroup) =>
+          groupTotal + subgroup.filter(
+            p => !['use_index', 'pre_calibrated', 'enable_phase_interpolation'].includes(p.configKey)
+          ).length,
+        0
+      ),
+      0
+    )
 
   const { isOpen: isAdvancedOpen, onToggle: onAdvancedToggle } = useDisclosure()
 
@@ -292,49 +303,18 @@ const EncoderConfigStep = ({
         </Card>
 
         {/* Advanced Settings - Collapsible with grouping */}
-        {totalAdvancedCount > 0 && (
-          <Card bg="gray.800" variant="elevated">
-            <CardHeader py={2}>
-              <HStack justify="space-between">
-                <Heading size="sm" color="white">Advanced Settings</Heading>
-                <Button size="sm" variant="ghost" onClick={onAdvancedToggle}>
-                  {isAdvancedOpen ? 'Hide' : 'Show'} Advanced ({totalAdvancedCount} parameters)
-                </Button>
-              </HStack>
-            </CardHeader>
-            <Collapse in={isAdvancedOpen}>
-              <CardBody py={3}>
-                <VStack spacing={4} align="stretch">
-                  {Object.entries(groupedAdvancedParams).map(([groupName, subgroups]) => (
-                    <Box key={groupName}>
-                      <Text fontWeight="bold" color="blue.200" fontSize="sm" mb={3}>
-                        {groupName}
-                      </Text>
-                      <VStack spacing={3} align="stretch" pl={2}>
-                        {Object.entries(subgroups).map(([subgroupName, params]) => (
-                          <Box key={subgroupName}>
-                            <Text fontWeight="semibold" color="blue.300" fontSize="xs" mb={2}>
-                              {subgroupName}
-                            </Text>
-                            <ParameterFormGrid
-                              params={params}
-                              config={encoderConfig}
-                              onChange={handleConfigChange}
-                              onRefresh={handleRefresh}
-                              isLoading={isLoading}
-                              layout="compact"
-                              showGrouping={false}
-                            />
-                          </Box>
-                        ))}
-                      </VStack>
-                    </Box>
-                  ))}
-                </VStack>
-              </CardBody>
-            </Collapse>
-          </Card>
-        )}
+        <AdvancedSettingsSection
+          title="Advanced Settings" // or "Advanced Interface Settings"
+          isOpen={isAdvancedOpen}
+          onToggle={onAdvancedToggle}
+          paramCount={filteredAdvancedCount} // or filtered count
+          groupedParams={groupedAdvancedParams}
+          filterParam={param => !['use_index', 'pre_calibrated', 'enable_phase_interpolation'].includes(param.configKey)} // customize per step
+          config={encoderConfig} // or motorConfig, controlConfig, etc.
+          onChange={handleConfigChange}
+          onRefresh={handleRefresh}
+          isLoading={isLoading}
+        />
       </VStack>
     </Box>
   )

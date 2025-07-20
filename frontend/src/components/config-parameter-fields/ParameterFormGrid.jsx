@@ -1,5 +1,5 @@
 import React from 'react'
-import { VStack, FormControl, FormLabel, Icon, Tooltip, Text, SimpleGrid, Collapse, Button } from '@chakra-ui/react'
+import { VStack, FormControl, FormLabel, Icon, Tooltip, Text, SimpleGrid, Collapse, Button, HStack, Switch } from '@chakra-ui/react'
 import { InfoIcon } from '@chakra-ui/icons'
 import ParameterInput from './ParameterInput'
 import ParameterSwitch from './ParameterSwitch'
@@ -123,9 +123,40 @@ function GridParameterLayout({ grouped, config, onChange, onRefresh, isLoading, 
 }
 
 function ParameterField({ param, config, onChange, onRefresh, isLoading, inputWidth, compact = false }) {
-  // eslint-disable-next-line no-unused-vars
   const key = param.configKey
-  
+
+  // Special layout for boolean: tumbler left, label right
+  if (param.type === 'boolean') {
+    return (
+      <FormControl size={compact ? "sm" : "md"} display="flex" alignItems="center">
+        <HStack spacing={2}>
+          <ParameterSwitch
+            value={config[key]}
+            onChange={value => onChange(key, value)}
+            onRefresh={() => onRefresh(key, param.odriveCommand)}
+            isLoading={isLoading(key)}
+            size={compact ? "xs" : "sm"}
+          />
+          <FormLabel
+            color="white"
+            mb={0}
+            fontSize={compact ? "xs" : "sm"}
+            htmlFor={param.path}
+            cursor="pointer"
+          >
+            {param.name}
+            <Tooltip label={param.description} ml={2}>
+              <span>
+                <Icon as={InfoIcon} color="gray.400" ml={1} boxSize={compact ? 3 : 4} />
+              </span>
+            </Tooltip>
+          </FormLabel>
+        </HStack>
+      </FormControl>
+    )
+  }
+
+  // ...existing code for non-boolean...
   return (
     <FormControl size={compact ? "sm" : "md"}>
       <FormLabel 

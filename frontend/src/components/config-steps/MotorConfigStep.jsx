@@ -19,6 +19,7 @@ import {
 import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
 import ParameterInput from '../config-parameter-fields/ParameterInput'
 import ParameterSelect from '../config-parameter-fields/ParameterSelect'
+import AdvancedSettingsSection from '../config-parameter-fields/AdvancedSettingsSection'
 import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
 import {
   getParametersByImportance,
@@ -172,12 +173,75 @@ const MotorConfigStep = ({
                   precision={1}
                 />
               </FormControl>
+
+              <FormControl>
+                <FormLabel color="white" fontSize="sm">Calibration Current (A)</FormLabel>
+                <ParameterInput
+                  value={motorConfig.calibration_current}
+                  onChange={(value) => handleConfigChange('calibration_current', value)}
+                  onRefresh={() => handleReadParameter('calibration_current')}
+                  isLoading={isLoading('calibration_current')}
+                  unit="A"
+                  step={0.1}
+                  precision={2}
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel color="white" fontSize="sm">Phase Resistance (Ω)</FormLabel>
+                <ParameterInput
+                  value={motorConfig.phase_resistance}
+                  onChange={(value) => handleConfigChange('phase_resistance', value)}
+                  onRefresh={() => handleReadParameter('phase_resistance')}
+                  isLoading={isLoading('phase_resistance')}
+                  unit="Ω"
+                  step={0.001}
+                  precision={4}
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel color="white" fontSize="sm">Phase Inductance (H)</FormLabel>
+                <ParameterInput
+                  value={motorConfig.phase_inductance}
+                  onChange={(value) => handleConfigChange('phase_inductance', value)}
+                  onRefresh={() => handleReadParameter('phase_inductance')}
+                  isLoading={isLoading('phase_inductance')}
+                  unit="H"
+                  step={0.00001}
+                  precision={6}
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel color="white" fontSize="sm">Torque Limit (Nm)</FormLabel>
+                <ParameterInput
+                  value={motorConfig.torque_lim}
+                  onChange={(value) => handleConfigChange('torque_lim', value)}
+                  onRefresh={() => handleReadParameter('torque_lim')}
+                  isLoading={isLoading('torque_lim')}
+                  unit="Nm"
+                  step={0.1}
+                  precision={2}
+                />
+              </FormControl>
             </SimpleGrid>
 
             {/* Additional essential parameters in auto-generated grid */}
             <Box mt={6}>
               <ParameterFormGrid
-                params={essentialParams.filter(p => !['motor_type', 'pole_pairs', 'motor_kv', 'current_lim'].includes(p.configKey))}
+                params={essentialParams.filter(p =>
+                  ![
+                    'motor_type',
+                    'pole_pairs',
+                    'motor_kv',
+                    'current_lim',
+                    'calibration_current',
+                    'phase_resistance',
+                    'phase_inductance',
+                    'torque_lim'
+                  ].includes(p.configKey)
+                )}
                 config={motorConfig}
                 onChange={handleConfigChange}
                 onRefresh={handleReadParameter}
@@ -218,48 +282,17 @@ const MotorConfigStep = ({
           </CardBody>
         </Card>
 
-        {/* Advanced Settings - Collapsible with grouping */}
-        <Card bg="gray.800" variant="elevated">
-          <CardHeader py={2}>
-            <HStack justify="space-between">
-              <Heading size="sm" color="white">Advanced Settings</Heading>
-              <Button size="sm" variant="ghost" onClick={onAdvancedToggle}>
-                {isAdvancedOpen ? 'Hide' : 'Show'} Advanced ({totalAdvancedCount} parameters)
-              </Button>
-            </HStack>
-          </CardHeader>
-          <Collapse in={isAdvancedOpen}>
-            <CardBody py={3}>
-              <VStack spacing={4} align="stretch">
-                {Object.entries(groupedAdvancedParams).map(([groupName, subgroups]) => (
-                  <Box key={groupName}>
-                    <Text fontWeight="bold" color="blue.200" fontSize="sm" mb={3}>
-                      {groupName}
-                    </Text>
-                    <VStack spacing={3} align="stretch" pl={2}>
-                      {Object.entries(subgroups).map(([subgroupName, params]) => (
-                        <Box key={subgroupName}>
-                          <Text fontWeight="semibold" color="blue.300" fontSize="xs" mb={2}>
-                            {subgroupName}
-                          </Text>
-                          <ParameterFormGrid
-                            params={params}
-                            config={motorConfig}
-                            onChange={handleConfigChange}
-                            onRefresh={handleReadParameter}
-                            isLoading={isLoading}
-                            layout="compact"
-                            showGrouping={false}
-                          />
-                        </Box>
-                      ))}
-                    </VStack>
-                  </Box>
-                ))}
-              </VStack>
-            </CardBody>
-          </Collapse>
-        </Card>
+        <AdvancedSettingsSection
+          title="Advanced Settings"
+          isOpen={isAdvancedOpen}
+          onToggle={onAdvancedToggle}
+          paramCount={totalAdvancedCount}
+          groupedParams={groupedAdvancedParams}
+          config={motorConfig}
+          onChange={handleConfigChange}
+          onRefresh={handleReadParameter}
+          isLoading={isLoading}
+        />
       </VStack>
     </Box>
   )
