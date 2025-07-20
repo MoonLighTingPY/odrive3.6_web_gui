@@ -263,8 +263,8 @@ const FinalConfigStep = () => {
               <Box>
                 <VStack spacing={3} align="stretch">
                   
-                  {/* Changed Parameters Statistics */}
-                  {changeStats.totalChanged > 0 && (
+                  {/* Changed Parameters Statistics - show only in dev mode */}
+                  {import.meta.env.DEV && changeStats.totalChanged > 0 &&  (
                     <Box p={3} bg="blue.900" borderRadius="md">
                       <HStack justify="space-between" align="center">
                         <Text color="white" fontWeight="semibold" fontSize="sm">
@@ -286,8 +286,6 @@ const FinalConfigStep = () => {
                       </HStack>
                     </Box>
                   )}
-
-                  {/* Configuration Mode Toggle */}
                   <HStack justify="space-between" align="center">
                     <HStack spacing={2}>
                       <FormLabel htmlFor="only-changed-params" mb="0" color="gray.300" fontSize="sm">

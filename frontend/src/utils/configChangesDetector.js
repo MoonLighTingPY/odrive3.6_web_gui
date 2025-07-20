@@ -136,7 +136,6 @@ export const generateChangedCommands = (
 
   // If not applying to both axes, filter out commands for the other axis
   if (!applyToBothAxes && selectedAxis !== null && selectedAxis !== undefined) {
-    const axisPattern = new RegExp(`\\.axis${selectedAxis}\\.`, 'g');
     allCommands = allCommands.filter(cmd => {
       // Only filter out axis commands for the other axis, keep global and selected axis
       if (/\.axis\d+\./.test(cmd)) {
