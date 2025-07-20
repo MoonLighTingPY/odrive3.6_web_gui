@@ -172,12 +172,75 @@ const MotorConfigStep = ({
                   precision={1}
                 />
               </FormControl>
+
+              <FormControl>
+                <FormLabel color="white" fontSize="sm">Calibration Current (A)</FormLabel>
+                <ParameterInput
+                  value={motorConfig.calibration_current}
+                  onChange={(value) => handleConfigChange('calibration_current', value)}
+                  onRefresh={() => handleReadParameter('calibration_current')}
+                  isLoading={isLoading('calibration_current')}
+                  unit="A"
+                  step={0.1}
+                  precision={2}
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel color="white" fontSize="sm">Phase Resistance (Ω)</FormLabel>
+                <ParameterInput
+                  value={motorConfig.phase_resistance}
+                  onChange={(value) => handleConfigChange('phase_resistance', value)}
+                  onRefresh={() => handleReadParameter('phase_resistance')}
+                  isLoading={isLoading('phase_resistance')}
+                  unit="Ω"
+                  step={0.001}
+                  precision={4}
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel color="white" fontSize="sm">Phase Inductance (H)</FormLabel>
+                <ParameterInput
+                  value={motorConfig.phase_inductance}
+                  onChange={(value) => handleConfigChange('phase_inductance', value)}
+                  onRefresh={() => handleReadParameter('phase_inductance')}
+                  isLoading={isLoading('phase_inductance')}
+                  unit="H"
+                  step={0.00001}
+                  precision={6}
+                />
+              </FormControl>
+
+              <FormControl>
+                <FormLabel color="white" fontSize="sm">Torque Limit (Nm)</FormLabel>
+                <ParameterInput
+                  value={motorConfig.torque_lim}
+                  onChange={(value) => handleConfigChange('torque_lim', value)}
+                  onRefresh={() => handleReadParameter('torque_lim')}
+                  isLoading={isLoading('torque_lim')}
+                  unit="Nm"
+                  step={0.1}
+                  precision={2}
+                />
+              </FormControl>
             </SimpleGrid>
 
             {/* Additional essential parameters in auto-generated grid */}
             <Box mt={6}>
               <ParameterFormGrid
-                params={essentialParams.filter(p => !['motor_type', 'pole_pairs', 'motor_kv', 'current_lim'].includes(p.configKey))}
+                params={essentialParams.filter(p =>
+                  ![
+                    'motor_type',
+                    'pole_pairs',
+                    'motor_kv',
+                    'current_lim',
+                    'calibration_current',
+                    'phase_resistance',
+                    'phase_inductance',
+                    'torque_lim'
+                  ].includes(p.configKey)
+                )}
                 config={motorConfig}
                 onChange={handleConfigChange}
                 onRefresh={handleReadParameter}
