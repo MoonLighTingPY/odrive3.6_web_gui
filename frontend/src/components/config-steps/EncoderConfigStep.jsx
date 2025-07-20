@@ -93,8 +93,19 @@ const EncoderConfigStep = ({
 
   // Get advanced parameters grouped by category
   const groupedAdvancedParams = getGroupedAdvancedParameters(encoderParams, ENCODER_PARAM_GROUPS)
-  const totalAdvancedCount = Object.values(groupedAdvancedParams)
-    .reduce((total, group) => total + Object.values(group).reduce((groupTotal, subgroup) => groupTotal + subgroup.length, 0), 0)
+
+  // Calculate filtered advanced parameter count
+  const filteredAdvancedCount = Object.values(groupedAdvancedParams)
+    .reduce((total, group) =>
+      total + Object.values(group).reduce(
+        (groupTotal, subgroup) =>
+          groupTotal + subgroup.filter(
+            p => !['use_index', 'pre_calibrated', 'enable_phase_interpolation'].includes(p.configKey)
+          ).length,
+        0
+      ),
+      0
+    )
 
   const { isOpen: isAdvancedOpen, onToggle: onAdvancedToggle } = useDisclosure()
 
@@ -292,44 +303,56 @@ const EncoderConfigStep = ({
         </Card>
 
         {/* Advanced Settings - Collapsible with grouping */}
-        {totalAdvancedCount > 0 && (
+        {filteredAdvancedCount > 0 && (
           <Card bg="gray.800" variant="elevated">
             <CardHeader py={2}>
               <HStack justify="space-between">
                 <Heading size="sm" color="white">Advanced Settings</Heading>
                 <Button size="sm" variant="ghost" onClick={onAdvancedToggle}>
-                  {isAdvancedOpen ? 'Hide' : 'Show'} Advanced ({totalAdvancedCount} parameters)
+                  {isAdvancedOpen ? 'Hide' : 'Show'} Advanced ({filteredAdvancedCount} parameters)
                 </Button>
               </HStack>
             </CardHeader>
             <Collapse in={isAdvancedOpen}>
               <CardBody py={3}>
                 <VStack spacing={4} align="stretch">
-                  {Object.entries(groupedAdvancedParams).map(([groupName, subgroups]) => (
-                    <Box key={groupName}>
-                      <Text fontWeight="bold" color="blue.200" fontSize="sm" mb={3}>
-                        {groupName}
-                      </Text>
-                      <VStack spacing={3} align="stretch" pl={2}>
-                        {Object.entries(subgroups).map(([subgroupName, params]) => (
-                          <Box key={subgroupName}>
-                            <Text fontWeight="semibold" color="blue.300" fontSize="xs" mb={2}>
-                              {subgroupName}
-                            </Text>
-                            <ParameterFormGrid
-                              params={params}
-                              config={encoderConfig}
-                              onChange={handleConfigChange}
-                              onRefresh={handleRefresh}
-                              isLoading={isLoading}
-                              layout="compact"
-                              showGrouping={false}
-                            />
-                          </Box>
-                        ))}
-                      </VStack>
-                    </Box>
-                  ))}
+                  {Object.entries(groupedAdvancedParams).map(([groupName, subgroups]) => {
+                    // Filter subgroups to only those with visible params
+                    const visibleSubgroups = Object.entries(subgroups)
+                      .map(([subgroupName, params]) => ({
+                        subgroupName,
+                        params: params.filter(
+                          p => !['use_index', 'pre_calibrated', 'enable_phase_interpolation'].includes(p.configKey)
+                        )
+                      }))
+                      .filter(({ params }) => params.length > 0)
+                    if (visibleSubgroups.length === 0) return null
+                    return (
+                      <Box key={groupName}>
+                        <Text fontWeight="bold" color="blue.200" fontSize="sm" mb={3}>
+                          {groupName}
+                        </Text>
+                        <VStack spacing={3} align="stretch" pl={2}>
+                          {visibleSubgroups.map(({ subgroupName, params }) => (
+                            <Box key={subgroupName}>
+                              <Text fontWeight="semibold" color="blue.300" fontSize="xs" mb={2}>
+                                {subgroupName}
+                              </Text>
+                              <ParameterFormGrid
+                                params={params}
+                                config={encoderConfig}
+                                onChange={handleConfigChange}
+                                onRefresh={handleRefresh}
+                                isLoading={isLoading}
+                                layout="compact"
+                                showGrouping={false}
+                              />
+                            </Box>
+                          ))}
+                        </VStack>
+                      </Box>
+                    )
+                  })}
                 </VStack>
               </CardBody>
             </Collapse>
