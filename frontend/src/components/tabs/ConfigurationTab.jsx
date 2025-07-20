@@ -93,7 +93,22 @@ const ConfigurationTab = memo(() => {
       // Update device config with pulled values
       setDeviceConfig(allConfig)
 
-      // Update Redux store
+      // Store initial configuration in Redux for change detection
+      // Need to transform the structure to match Redux config
+      const reduxFormatConfig = {
+        power: allConfig.power || {},
+        motor: allConfig.motor || {},
+        encoder: allConfig.encoder || {},
+        control: allConfig.control || {},
+        interface: allConfig.interface || {}
+      }
+
+      dispatch({
+        type: 'config/setInitialConfig',
+        payload: reduxFormatConfig
+      })
+
+      // Update Redux store to match initial config structure
       Object.entries(allConfig).forEach(([category, config]) => {
         const actionMap = {
           power: 'config/updatePowerConfig',
@@ -104,7 +119,22 @@ const ConfigurationTab = memo(() => {
         }
 
         if (actionMap[category] && Object.keys(config).length > 0) {
-          dispatch({ type: actionMap[category], payload: config })
+          // For axis-specific categories, dispatch the axis data properly
+          if (category === 'motor' || category === 'encoder' || category === 'control') {
+            ['axis0', 'axis1'].forEach(axis => {
+              if (config[axis]) {
+                dispatch({ 
+                  type: actionMap[category], 
+                  payload: { 
+                    ...config[axis],
+                    axisNumber: parseInt(axis.slice(-1)) // Extract 0 or 1 from 'axis0'/'axis1'
+                  }
+                })
+              }
+            })
+          } else {
+            dispatch({ type: actionMap[category], payload: config })
+          }
         }
       })
 

@@ -6,6 +6,15 @@ const initialState = {
     useRpmUnits: true, // Global setting for RPM vs rad/s
   },
 
+  // Track initial configuration values pulled from device
+  initialConfig: {
+    power: {},
+    motor: {},
+    encoder: {},
+    control: {},
+    interface: {}
+  },
+
   // Power Configuration
   powerConfig: {
     dc_bus_overvoltage_trip_level: 56.0,
@@ -89,6 +98,19 @@ const configSlice = createSlice({
   name: 'config',
   initialState,
   reducers: {
+    // New action to set initial configuration from device
+    setInitialConfig: (state, action) => {
+      console.log('Setting initial configuration:', action.payload)
+      state.initialConfig = {
+        power: { ...action.payload.power || {} },
+        motor: { ...action.payload.motor || {} },
+        encoder: { ...action.payload.encoder || {} },
+        control: { ...action.payload.control || {} },
+        interface: { ...action.payload.interface || {} }
+      }
+      console.log('Initial configuration set:', state.initialConfig)
+    },
+    
     updateUiPreferences: (state, action) => {
       // Ensure uiPreferences exists
       if (!state.uiPreferences) {
@@ -114,8 +136,11 @@ const configSlice = createSlice({
       })
     },
     updateMotorConfig: (state, action) => {
-      Object.keys(action.payload).forEach(key => {
-        const value = action.payload[key]
+      const { axisNumber, ...config } = action.payload
+      
+      // Update flat properties for the current axis selection
+      Object.keys(config).forEach(key => {
+        const value = config[key]
         if (typeof value === 'number' && !isNaN(value)) {
           state.motorConfig[key] = value
         } else if (typeof value === 'boolean') {
@@ -129,6 +154,14 @@ const configSlice = createSlice({
           }
         }
       })
+      
+      // Also maintain axis-specific structure for comparison
+      if (axisNumber !== undefined) {
+        if (!state.motorConfig[`axis${axisNumber}`]) {
+          state.motorConfig[`axis${axisNumber}`] = {}
+        }
+        Object.assign(state.motorConfig[`axis${axisNumber}`], config)
+      }
     },
     updateEncoderConfig: (state, action) => {
       Object.keys(action.payload).forEach(key => {
@@ -188,6 +221,7 @@ const configSlice = createSlice({
 })
 
 export const {
+  setInitialConfig,
   updateUiPreferences,
   updatePowerConfig,
   updateMotorConfig,

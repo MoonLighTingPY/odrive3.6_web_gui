@@ -15,8 +15,12 @@ import {
   Switch,
   FormControl,
   FormLabel,
-  Checkbox
+  Checkbox,
+  Badge,
+  Tooltip,
+  Icon
 } from '@chakra-ui/react'
+import { InfoIcon } from '@chakra-ui/icons'
 
 // Import our components
 import CommandList from '../CommandList'
@@ -24,6 +28,7 @@ import ConfirmationModal from '../modals/ConfirmationModal'
 
 // Import shared utilities
 import { generateConfigCommands } from '../../utils/configCommandGenerator'
+import { generateChangedCommands, getChangeStatistics } from '../../utils/configChangesDetector'
 import { executeConfigAction, saveAndRebootWithReconnect } from '../../utils/configurationActions'
 import { useAxisStateGuard } from '../../hooks/useAxisStateGuard'
 
@@ -38,15 +43,16 @@ const FinalConfigStep = () => {
   const [disabledCommands, setDisabledCommands] = useState(new Set())
   const [enableCommandEditing, setEnableCommandEditing] = useState(false)
   const [applyToBothAxes, setApplyToBothAxes] = useState(false)
+  const [onlyChangedParams, setOnlyChangedParams] = useState(true) // New toggle, defaulted to true
   const { executeWithAxisCheck } = useAxisStateGuard()
 
-  const { powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig } = useSelector(state => state.config)
+  const { powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig, initialConfig } = useSelector(state => state.config)
   const { isConnected, connectedDevice } = useSelector(state => state.device)
   const { selectedAxis } = useSelector(state => state.ui)
 
-  // Update the command generation logic
-  const baseGeneratedCommands = useMemo(() => {
-    const deviceConfig = {
+  // Calculate change statistics
+  const changeStats = useMemo(() => {
+    const currentConfig = {
       power: powerConfig,
       motor: motorConfig,
       encoder: encoderConfig,
@@ -54,10 +60,29 @@ const FinalConfigStep = () => {
       interface: interfaceConfig
     }
     
-    // Pass null for both axes, or specific axis number for single axis
+    return getChangeStatistics(initialConfig, currentConfig)
+  }, [initialConfig, powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig])
+
+  // Update the command generation logic
+  const baseGeneratedCommands = useMemo(() => {
+    const currentConfig = {
+      power: powerConfig,
+      motor: motorConfig,
+      encoder: encoderConfig,
+      control: controlConfig,
+      interface: interfaceConfig
+    }
+    
     const targetAxis = applyToBothAxes ? null : selectedAxis
-    return generateConfigCommands(deviceConfig, targetAxis)
-  }, [powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig, selectedAxis, applyToBothAxes])
+    
+    if (onlyChangedParams) {
+      // Generate commands only for changed parameters
+      return generateChangedCommands(initialConfig, currentConfig, targetAxis, applyToBothAxes)
+    } else {
+      // Generate all commands (existing behavior)
+      return generateConfigCommands(currentConfig, targetAxis)
+    }
+  }, [powerConfig, motorConfig, encoderConfig, controlConfig, interfaceConfig, initialConfig, selectedAxis, applyToBothAxes, onlyChangedParams])
 
   // Final commands list with custom edits applied
   const finalCommands = useMemo(() => {
@@ -234,16 +259,61 @@ const FinalConfigStep = () => {
           <CardBody py={3}>
             <VStack spacing={4} align="stretch">
 
-              {/* Axis Selection Controls */}
+              {/* Configuration Mode and Statistics */}
               <Box>
                 <VStack spacing={3} align="stretch">
+                  
+                  {/* Changed Parameters Statistics - show only in dev mode */}
+                  {import.meta.env.DEV && changeStats.totalChanged > 0 &&  (
+                    <Box p={3} bg="blue.900" borderRadius="md">
+                      <HStack justify="space-between" align="center">
+                        <Text color="white" fontWeight="semibold" fontSize="sm">
+                          Configuration Changes Detected
+                        </Text>
+                        <Badge colorScheme="blue" fontSize="sm">
+                          {changeStats.totalChanged} parameter{changeStats.totalChanged !== 1 ? 's' : ''} changed
+                        </Badge>
+                      </HStack>
+                      
+                      <HStack spacing={2} mt={2} flexWrap="wrap">
+                        {Object.entries(changeStats.changesByCategory).map(([category, count]) => (
+                          count > 0 && (
+                            <Badge key={category} colorScheme="cyan" fontSize="xs">
+                              {category}: {count}
+                            </Badge>
+                          )
+                        ))}
+                      </HStack>
+                    </Box>
+                  )}
+                  <HStack justify="space-between" align="center">
+                    <HStack spacing={2}>
+                      <FormLabel htmlFor="only-changed-params" mb="0" color="gray.300" fontSize="sm">
+                        Only changed parameters
+                      </FormLabel>
+                      <Tooltip label={onlyChangedParams 
+                        ? "Generate commands only for parameters you've modified in the wizard"
+                        : "Generate commands for all configuration parameters (162 total)"
+                      }>
+                        <Icon as={InfoIcon} color="gray.400" boxSize={3} />
+                      </Tooltip>
+                    </HStack>
+                    <Switch
+                      id="only-changed-params"
+                      size="sm"
+                      colorScheme="odrive"
+                      isChecked={onlyChangedParams}
+                      onChange={(e) => setOnlyChangedParams(e.target.checked)}
+                    />
+                  </HStack>
+
+                  {/* Axis Selection */}
                   <HStack justify="space-between" align="center">
                     <FormControl display="flex" alignItems="center" w="auto">
                       <HStack spacing={2}>
-                        
-                      <FormLabel htmlFor="apply-both-axes" mb="0" color="gray.300" fontSize="sm" mr={2}>
-                        Apply to both axes
-                      </FormLabel>
+                        <FormLabel htmlFor="apply-both-axes" mb="0" color="gray.300" fontSize="sm" mr={2}>
+                          Apply to both axes
+                        </FormLabel>
                       </HStack>
                       <Checkbox
                         id="apply-both-axes"
@@ -261,11 +331,19 @@ const FinalConfigStep = () => {
               {/* Configuration Commands */}
               <Box>
                 <HStack justify="space-between" mb={3}>
-                  <Text fontWeight="bold" color="white" fontSize="lg">
-                    Configuration Commands: <Text as="span" color="gray.400" fontSize="md" fontWeight="normal">
-                      {enabledCommandCount} commands for {getAxisDisplayText()}
+                  <VStack align="start" spacing={1}>
+                    <Text fontWeight="bold" color="white" fontSize="lg">
+                      Configuration Commands
                     </Text>
-                  </Text>
+                    <HStack spacing={2}>
+                      <Badge colorScheme={onlyChangedParams ? "green" : "blue"} fontSize="xs">
+                        {onlyChangedParams ? "Changed only" : "All parameters"}
+                      </Badge>
+                      <Badge colorScheme="gray" fontSize="xs">
+                        {enabledCommandCount} commands for {getAxisDisplayText()}
+                      </Badge>
+                    </HStack>
+                  </VStack>
                   <HStack spacing={2} align="center">
                     <FormLabel htmlFor="enable-editing" mb="0" color="gray.300" fontSize="sm">
                       Enable Editing
