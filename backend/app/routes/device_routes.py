@@ -61,7 +61,8 @@ def scan_devices():
                 'recovery_attempted': True
             }), 500
         else:
-            return jsonify({'error': str(e)}), 500
+            msg = str(e) or "No ODrive devices found"
+            return jsonify({'error': msg}), 500
             
     finally:
         _scanning_lock = False

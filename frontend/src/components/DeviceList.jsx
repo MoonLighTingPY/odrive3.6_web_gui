@@ -319,7 +319,6 @@ const DeviceList = memo(() => {
         dispatch(setAvailableDevices(devices))
       } else {
         // Check for USB error
-        console.log('Scan failed:', devices.error)
         if (
           devices.error &&
           devices.error.includes('[UsbDiscoverer] Failed to open USB device:')
