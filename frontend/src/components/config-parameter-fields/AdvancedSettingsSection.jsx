@@ -61,18 +61,17 @@ const AdvancedSettingsSection = ({
                         <Box key={subgroupName}>
                           {/* Only show subgroup name if different from group name and not the only subgroup */}
                           {subgroupName !== groupName && !onlyOneSubgroup && (
-                            <Text fontWeight="semibold" color="blue.300" fontSize="xs" mb={2}>
+                            <Text fontWeight="semibold" color="blue.300" fontSize="xs" mb={1}>
                               {subgroupName}
                             </Text>
                           )}
+                          {/* Inputs always below the title */}
                           <ParameterFormGrid
                             params={filteredParams}
                             config={config}
                             onChange={onChange}
                             onRefresh={onRefresh}
                             isLoading={isLoading}
-                            layout="compact"
-                            showGrouping={false}
                           />
                         </Box>
                       );
