@@ -100,6 +100,7 @@ const configSlice = createSlice({
   reducers: {
     // New action to set initial configuration from device
     setInitialConfig: (state, action) => {
+      console.log('Setting initial configuration:', action.payload)
       state.initialConfig = {
         power: { ...action.payload.power || {} },
         motor: { ...action.payload.motor || {} },
@@ -107,6 +108,7 @@ const configSlice = createSlice({
         control: { ...action.payload.control || {} },
         interface: { ...action.payload.interface || {} }
       }
+      console.log('Initial configuration set:', state.initialConfig)
     },
     
     updateUiPreferences: (state, action) => {
@@ -134,8 +136,11 @@ const configSlice = createSlice({
       })
     },
     updateMotorConfig: (state, action) => {
-      Object.keys(action.payload).forEach(key => {
-        const value = action.payload[key]
+      const { axisNumber, ...config } = action.payload
+      
+      // Update flat properties for the current axis selection
+      Object.keys(config).forEach(key => {
+        const value = config[key]
         if (typeof value === 'number' && !isNaN(value)) {
           state.motorConfig[key] = value
         } else if (typeof value === 'boolean') {
@@ -149,6 +154,14 @@ const configSlice = createSlice({
           }
         }
       })
+      
+      // Also maintain axis-specific structure for comparison
+      if (axisNumber !== undefined) {
+        if (!state.motorConfig[`axis${axisNumber}`]) {
+          state.motorConfig[`axis${axisNumber}`] = {}
+        }
+        Object.assign(state.motorConfig[`axis${axisNumber}`], config)
+      }
     },
     updateEncoderConfig: (state, action) => {
       Object.keys(action.payload).forEach(key => {
