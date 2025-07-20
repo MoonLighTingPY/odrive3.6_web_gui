@@ -55,12 +55,12 @@ const INTERFACE_PARAM_GROUPS = {
   enable_sensorless: { group: 'Safety', subgroup: 'Safety', importance: 'essential' },
 
   // Advanced parameters
-  enable_uart_c: { group: 'UART', subgroup: 'UART C', importance: 'advanced' },
-  uart_c_baudrate: { group: 'UART', subgroup: 'UART C', importance: 'advanced' },
-  uart2_protocol: { group: 'UART', subgroup: 'UART C', importance: 'advanced' },
+  enable_uart_c: { group: 'Interface', subgroup: 'Interface', importance: 'advanced' },
+  uart_c_baudrate: { group: 'Interface', subgroup: 'Interface', importance: 'advanced' },
+  uart2_protocol: { group: 'Interface', subgroup: 'Interface', importance: 'advanced' },
   
-  enable_can_a: { group: 'CAN', subgroup: 'Advanced', importance: 'advanced' },
-  enable_i2c_a: { group: 'I2C', subgroup: 'I2C', importance: 'advanced' },
+  enable_can_a: { group: 'Interface', subgroup: 'Interface', importance: 'advanced' },
+  enable_i2c_a: { group: 'Interface', subgroup: 'Interface', importance: 'advanced' },
   
   usb_cdc_protocol: { group: 'USB', subgroup: 'USB', importance: 'advanced' },
   
