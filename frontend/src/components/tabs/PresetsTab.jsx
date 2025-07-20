@@ -675,7 +675,7 @@ const PresetsTab = memo(() => {
           </ModalContent>
         </Modal>
 
-        {AxisGuardModal && <AxisGuardModal />}
+        {AxisGuardModal && typeof AxisGuardModal === "function" && <AxisGuardModal />}
       </VStack>
     </Box>
   )

@@ -322,7 +322,7 @@ const FinalConfigStep = () => {
         </Card>
 
         {/* Render the axis guard modal if it exists */}
-        {AxisGuardModal && <AxisGuardModal />}
+        {AxisGuardModal && typeof AxisGuardModal === "function" && <AxisGuardModal />}
 
         <ConfirmationModal
           isOpen={isConfirmOpen}
