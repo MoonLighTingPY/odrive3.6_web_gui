@@ -93,6 +93,12 @@ const ConfigurationTab = memo(() => {
       // Update device config with pulled values
       setDeviceConfig(allConfig)
 
+      // NEW: Store initial configuration in Redux for change detection
+      dispatch({
+        type: 'config/setInitialConfig',
+        payload: allConfig
+      })
+
       // Update Redux store
       Object.entries(allConfig).forEach(([category, config]) => {
         const actionMap = {
