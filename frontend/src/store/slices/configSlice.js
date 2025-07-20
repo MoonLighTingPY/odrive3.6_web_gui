@@ -6,6 +6,15 @@ const initialState = {
     useRpmUnits: true, // Global setting for RPM vs rad/s
   },
 
+  // Track initial configuration values pulled from device
+  initialConfig: {
+    power: {},
+    motor: {},
+    encoder: {},
+    control: {},
+    interface: {}
+  },
+
   // Power Configuration
   powerConfig: {
     dc_bus_overvoltage_trip_level: 56.0,
@@ -89,6 +98,17 @@ const configSlice = createSlice({
   name: 'config',
   initialState,
   reducers: {
+    // New action to set initial configuration from device
+    setInitialConfig: (state, action) => {
+      state.initialConfig = {
+        power: { ...action.payload.power || {} },
+        motor: { ...action.payload.motor || {} },
+        encoder: { ...action.payload.encoder || {} },
+        control: { ...action.payload.control || {} },
+        interface: { ...action.payload.interface || {} }
+      }
+    },
+    
     updateUiPreferences: (state, action) => {
       // Ensure uiPreferences exists
       if (!state.uiPreferences) {
@@ -188,6 +208,7 @@ const configSlice = createSlice({
 })
 
 export const {
+  setInitialConfig,
   updateUiPreferences,
   updatePowerConfig,
   updateMotorConfig,
