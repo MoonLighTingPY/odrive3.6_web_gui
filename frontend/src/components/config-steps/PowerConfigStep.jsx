@@ -14,6 +14,7 @@ import {
   Text,
 } from '@chakra-ui/react'
 import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
+import AdvancedSettingsSection from '../config-parameter-fields/AdvancedSettingsSection'
 import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
 import { 
   getParameterGroup, 
@@ -140,31 +141,17 @@ const PowerConfigStep = ({
             <Collapse in={isAdvancedOpen}>
               <CardBody py={3}>
                 <VStack spacing={4} align="stretch">
-                  {Object.entries(groupedAdvancedParams).map(([groupName, subgroups]) => (
-                    <Box key={groupName}>
-                      <Text fontWeight="bold" color="blue.200" fontSize="sm" mb={3}>
-                        {groupName}
-                      </Text>
-                      <VStack spacing={3} align="stretch" pl={2}>
-                        {Object.entries(subgroups).map(([subgroupName, params]) => (
-                          <Box key={subgroupName}>
-                            <Text fontWeight="semibold" color="blue.300" fontSize="xs" mb={2}>
-                              {subgroupName}
-                            </Text>
-                            <ParameterFormGrid
-                              params={params}
-                              config={powerConfig}
-                              onChange={handleConfigChange}
-                              onRefresh={handleRefresh}
-                              isLoading={isLoading}
-                              layout="compact"
-                              showGrouping={false}
-                            />
-                          </Box>
-                        ))}
-                      </VStack>
-                    </Box>
-                  ))}
+                  <AdvancedSettingsSection
+                    title="Advanced Settings"
+                    isOpen={isAdvancedOpen}
+                    onToggle={onAdvancedToggle}
+                    paramCount={totalAdvancedCount}
+                    groupedParams={groupedAdvancedParams}
+                    config={powerConfig}
+                    onChange={handleConfigChange}
+                    onRefresh={handleRefresh}
+                    isLoading={isLoading}
+                  />
                 </VStack>
               </CardBody>
             </Collapse>
