@@ -475,6 +475,7 @@ const InterfaceConfigStep = ({
             onToggle={onAdvancedToggle}
             paramCount={totalAdvancedCount}
             groupedParams={groupedAdvancedParams}
+            filterParam={param => !['gpio3_analog_mapping', 'gpio4_analog_mapping'].includes(param.configKey)} // customize per step
             config={interfaceConfig}
             onChange={handleConfigChange}
             onRefresh={handleRefresh}

@@ -463,7 +463,7 @@ const ControlConfigStep = ({
             onToggle={onAdvancedToggle}
             paramCount={totalAdvancedCount}
             groupedParams={groupedAdvancedParams}
-            // No filterParam needed for control step
+            filterParam={param => !['requested_state'].includes(param.configKey)} // customize per step
             config={controlConfig}
             onChange={handleConfigChange}
             onRefresh={handleRefresh}
