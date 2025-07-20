@@ -22,7 +22,6 @@ import {
 } from '@chakra-ui/react'
 import { InfoIcon } from '@chakra-ui/icons'
 import ParameterInput from '../config-parameter-fields/ParameterInput'
-import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
 import ParameterSelect from '../config-parameter-fields/ParameterSelect'
 import { EncoderMode } from '../../utils/odriveEnums'
 import {

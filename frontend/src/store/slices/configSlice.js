@@ -164,6 +164,7 @@ const configSlice = createSlice({
       }
     },
     updateEncoderConfig: (state, action) => {
+      // Only update keys present in the payload
       Object.keys(action.payload).forEach(key => {
         const value = action.payload[key]
         if (typeof value === 'number' && !isNaN(value)) {
@@ -179,6 +180,10 @@ const configSlice = createSlice({
           }
         }
       })
+      // Remove encoder_type if not present in the payload
+      if (!('encoder_type' in action.payload) && 'encoder_type' in state.encoderConfig) {
+        delete state.encoderConfig.encoder_type
+      }
     },
     updateControlConfig: (state, action) => {
       Object.keys(action.payload).forEach(key => {
