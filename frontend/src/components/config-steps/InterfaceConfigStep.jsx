@@ -417,7 +417,7 @@ const InterfaceConfigStep = ({
             {/* Smart GPIO Configuration */}
             <Card bg="gray.800" variant="elevated">
               <CardHeader py={1}>
-                <Heading size="sm" color="white">Smart GPIO Configuration</Heading>
+                <Heading size="sm" color="white">GPIO Configuration</Heading>
               </CardHeader>
               <CardBody py={2}>
                 <Alert status="info" mb={3} py={2} fontSize="xs">
