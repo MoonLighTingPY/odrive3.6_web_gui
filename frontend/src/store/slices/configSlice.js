@@ -100,7 +100,6 @@ const configSlice = createSlice({
   reducers: {
     // New action to set initial configuration from device
     setInitialConfig: (state, action) => {
-      console.log('Setting initial configuration:', action.payload)
       state.initialConfig = {
         power: { ...action.payload.power || {} },
         motor: { ...action.payload.motor || {} },
@@ -108,7 +107,6 @@ const configSlice = createSlice({
         control: { ...action.payload.control || {} },
         interface: { ...action.payload.interface || {} }
       }
-      console.log('Initial configuration set:', state.initialConfig)
     },
     
     updateUiPreferences: (state, action) => {
