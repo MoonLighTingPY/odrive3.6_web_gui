@@ -1,10 +1,10 @@
-# 🚀 ODrive 0.5.6 Web GUI
+# 🚀 ODrive Web GUI (0.5.x up to 0.5.6) 
 
 A web-based GUI for configuring, monitoring, and controlling ODrive motor controllers running firmware v0.5.1 - v0.5.6
-**No Python or Node.js required for Windows users – just download and run!**
+  > **No Python or Node.js required for Windows users – just download and run!**
 
 [![Latest Release](https://img.shields.io/github/release/MoonLighTingPY/odrive3.6_web_gui.svg?logo=github)](https://github.com/MoonLighTingPY/odrive3.6_web_gui/releases)
-[![ODrive Firmware](https://img.shields.io/badge/ODrive-v3.6%20(v0.5.6)-blue.svg)](https://docs.odriverobotics.com/v/0.5.6/)
+[![ODrive Firmware](https://img.shields.io/badge/ODrive_firmware-%20(v0.5.x)-blue.svg)](https://docs.odriverobotics.com/v/0.5.6/)
 [![Python](https://img.shields.io/badge/Python-3.8.6-green.svg)](https://python.org)
 [![React](https://img.shields.io/badge/React-18+-61DAFB.svg)](https://reactjs.org)
 
@@ -17,7 +17,6 @@ A web-based GUI for configuring, monitoring, and controlling ODrive motor contro
 [**📥 Quick Start**](#-quick-start) • 
 [**🏗️ Building**](#️-building-from-source) • 
 [**📖 Documentation**](#-documentation) • 
-[**🔧 Architecture**](#-technical-architecture) • 
 [**🤝 Contributing**](#-contributing)
 
 </div>
