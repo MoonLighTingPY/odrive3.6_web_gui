@@ -25,7 +25,6 @@ A web-based GUI for configuring, monitoring, and controlling ODrive motor contro
 
 The official ODrive GUI only supports newer firmware versions, leaving v0.5.6 users without a modern interface. This project fills that gap with:
 
-- **Native v0.5.6 Support:** Built specifically for ODrive firmware v0.5.6 (v3.6)
 - **Full Feature Parity:** All functionality of the official GUI adapted for older firmware + new features!
 - **Standalone Deployment:** Windows executable doesn't require Python/Node.js installation
 - **Cross-Platform:** Works even on Linux, and macOS (only development mode for now)
