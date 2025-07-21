@@ -1,6 +1,6 @@
-# 🚀 ODrive 0.5.6 (v3.6) Web GUI
+# 🚀 ODrive 0.5.6 Web GUI
 
-A web-based GUI for configuring, monitoring, and controlling ODrive motor controllers running firmware v0.5.6 (v3.6).  
+A web-based GUI for configuring, monitoring, and controlling ODrive motor controllers running firmware v0.5.1 - v0.5.6
 **No Python or Node.js required for Windows users – just download and run!**
 
 [![Latest Release](https://img.shields.io/github/release/MoonLighTingPY/odrive3.6_web_gui.svg?logo=github)](https://github.com/MoonLighTingPY/odrive3.6_web_gui/releases)
