@@ -42,10 +42,9 @@ The official ODrive GUI only supports newer firmware versions, leaving v0.5.6 us
 | Live Charts         | ✅     | Chart any properties/settings in real time                  |
 | Dashboard         | ✅     | Quick control and telemetry manager                   |
 | Command Console            | ✅     | Categorized native protocol commands                |
-| Calibration (motor/encoder)           | 🛠️     | Finished, but no calib. state persistance after reboot yet                |
-| Multi-Device Support            | 🛠️     | Finished, but not tested enough yet                |
-| Multi-Axis Support            | ✅     | Configure/calibrate/tweak properties of any axis |
-
+| Calibration (motor/encoder)           | ✅     | Full working calibration                |
+| Multi-Axis Support            | ✅     | Configure/calibrate/inspect properties of any axis |
+| Multi-Device Support            | 🛠️     | Not tested enough yet               |
 
 ### Configuration
 - **6-Step Setup:** Power → Motor → Encoder → Control → Interfaces → Apply
