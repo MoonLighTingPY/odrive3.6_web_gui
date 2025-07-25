@@ -232,7 +232,7 @@ const PropertyTree = ({
         const value = getValueFromState(displayPath)
         
         sectionItems.push(
-          <LazyItem>
+          <LazyItem key={displayPath}>
             <PropertyItem
               key={displayPath} // STABLE KEY - no version suffix
               prop={prop}
@@ -392,7 +392,7 @@ const PropertyTree = ({
                         }
                       }
                       return (
-                        <LazyItem>
+                        <LazyItem key={path}>
                           <PropertyItem
                             key={path} // STABLE KEY - no version suffix
                             prop={prop}
