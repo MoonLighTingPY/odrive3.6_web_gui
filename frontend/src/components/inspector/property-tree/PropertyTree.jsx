@@ -229,7 +229,7 @@ const PropertyTree = ({
         
         sectionItems.push(
           <PropertyItem
-            key={displayPath}
+            key={displayPath + '-' + favouritesVersion} // <-- update key here
             prop={prop}
             value={value}
             displayPath={displayPath}
@@ -245,6 +245,8 @@ const PropertyTree = ({
             selectedProperties={selectedProperties}
             togglePropertyChart={togglePropertyChart}
             updateProperty={updateProperty}
+            onFavouriteChange={handleFavouriteChange}
+            favouritesVersion={favouritesVersion}
           />
         )
       })
@@ -384,7 +386,7 @@ const PropertyTree = ({
                       }
                       return (
                         <PropertyItem
-                          key={path}
+                          key={path + '-' + favouritesVersion} // <-- update key here
                           prop={prop}
                           value={prop ? getValueFromState(path) : undefined}
                           displayPath={path}
@@ -400,8 +402,8 @@ const PropertyTree = ({
                           selectedProperties={selectedProperties}
                           togglePropertyChart={togglePropertyChart}
                           updateProperty={updateProperty}
-                          // Pass a callback to PropertyItem so it can trigger re-render on favourite change
                           onFavouriteChange={handleFavouriteChange}
+                          favouritesVersion={favouritesVersion} // <-- add this line
                         />
                       )
                     })}

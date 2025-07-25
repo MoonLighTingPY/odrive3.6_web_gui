@@ -39,11 +39,12 @@ const PropertyItem = memo(({
   selectedProperties,
   togglePropertyChart,
   updateProperty,
-  onFavouriteChange
+  onFavouriteChange,
+  favouritesVersion // <-- add this prop
 }) => {
   const [sliderValue, setSliderValue] = useState(value || 0)
   const [favourite, setFavourite] = useState(isFavourite(displayPath))
-  
+
   // Sync slider value with actual value when it changes
   useEffect(() => {
     if (value !== undefined && value !== null) {
@@ -51,9 +52,10 @@ const PropertyItem = memo(({
     }
   }, [value])
 
+  // Sync favourite state when displayPath or favouritesVersion changes
   useEffect(() => {
     setFavourite(isFavourite(displayPath))
-  }, [displayPath])
+  }, [displayPath, favouritesVersion])
   
   if (!prop || typeof prop !== 'object') {
     return (
@@ -271,6 +273,7 @@ const PropertyItem = memo(({
       addFavourite(displayPath)
       setFavourite(true)
     }
+    // Always trigger parent update
     if (onFavouriteChange) onFavouriteChange()
   }
 
