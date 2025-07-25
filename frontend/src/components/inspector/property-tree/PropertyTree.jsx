@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, memo } from 'react'
+import React, { useState, useCallback, useEffect, memo, useMemo } from 'react'
 import {
   VStack,
   HStack,
@@ -206,7 +206,8 @@ const PropertyTree = ({
     return getFavourites().filter(path => filteredPaths.includes(path))
   }, [searchFilter])
 
-  const favouritePaths = getFilteredFavouritePaths()
+  // Memoize favourite paths to prevent unnecessary recalculations
+  const favouritePaths = useMemo(() => getFilteredFavouritePaths(), [getFilteredFavouritePaths, favouritesVersion])
 
   // Listen for changes to localStorage favourites and trigger re-render
   useEffect(() => {
@@ -215,7 +216,8 @@ const PropertyTree = ({
     return () => window.removeEventListener('storage', handler)
   }, [])
 
-  const handleFavouriteChange = () => setFavouritesVersion(v => v + 1)
+  // Optimized callback that doesn't change reference
+  const handleFavouriteChange = useCallback(() => setFavouritesVersion(v => v + 1), [])
 
   // Function to render a section recursively with collapsible subsections
   const renderSection = (section, sectionPath = '', depth = 0) => {
@@ -229,7 +231,7 @@ const PropertyTree = ({
         
         sectionItems.push(
           <PropertyItem
-            key={displayPath + '-' + favouritesVersion} // <-- update key here
+            key={displayPath} // STABLE KEY - no version suffix
             prop={prop}
             value={value}
             displayPath={displayPath}
@@ -246,7 +248,7 @@ const PropertyTree = ({
             togglePropertyChart={togglePropertyChart}
             updateProperty={updateProperty}
             onFavouriteChange={handleFavouriteChange}
-            favouritesVersion={favouritesVersion}
+            // REMOVE favouritesVersion prop - handle internally
           />
         )
       })
@@ -386,7 +388,7 @@ const PropertyTree = ({
                       }
                       return (
                         <PropertyItem
-                          key={path + '-' + favouritesVersion} // <-- update key here
+                          key={path} // STABLE KEY - no version suffix
                           prop={prop}
                           value={prop ? getValueFromState(path) : undefined}
                           displayPath={path}
@@ -403,7 +405,7 @@ const PropertyTree = ({
                           togglePropertyChart={togglePropertyChart}
                           updateProperty={updateProperty}
                           onFavouriteChange={handleFavouriteChange}
-                          favouritesVersion={favouritesVersion} // <-- add this line
+                          // REMOVE favouritesVersion prop
                         />
                       )
                     })}

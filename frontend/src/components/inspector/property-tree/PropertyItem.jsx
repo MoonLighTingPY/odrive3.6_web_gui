@@ -45,6 +45,17 @@ const PropertyItem = memo(({
   const [sliderValue, setSliderValue] = useState(value || 0)
   const [favourite, setFavourite] = useState(isFavourite(displayPath))
 
+  // Listen for favouriteChanged events for this path
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.detail?.path === displayPath) {
+        setFavourite(e.detail.isFavourite)
+      }
+    }
+    window.addEventListener('favouriteChanged', handler)
+    return () => window.removeEventListener('favouriteChanged', handler)
+  }, [displayPath])
+
   // Sync slider value with actual value when it changes
   useEffect(() => {
     if (value !== undefined && value !== null) {
@@ -266,14 +277,20 @@ const PropertyItem = memo(({
 
 
   const toggleFavourite = () => {
+    let newState
     if (isFavourite(displayPath)) {
       removeFavourite(displayPath)
       setFavourite(false)
+      newState = false
     } else {
       addFavourite(displayPath)
       setFavourite(true)
+      newState = true
     }
-    // Always trigger parent update
+    // Dispatch custom event for instant sync
+    window.dispatchEvent(new CustomEvent('favouriteChanged', {
+      detail: { path: displayPath, isFavourite: newState }
+    }))
     if (onFavouriteChange) onFavouriteChange()
   }
 
