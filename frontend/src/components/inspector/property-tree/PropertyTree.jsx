@@ -168,14 +168,45 @@ const PropertyTree = ({
 
   SectionHeader.displayName = 'SectionHeader'
 
-  // Helper to get valid favourites (property still exists or not)
-  const favouritePaths = getFavourites().filter(path => {
-    // Filter by search term if present
-    if (searchFilter && !path.toLowerCase().includes(searchFilter.toLowerCase())) {
-      return false
+  // Helper to get valid favourites using the same filter logic as usePropertyTreeFilter
+  const getFilteredFavouritePaths = useCallback(() => {
+    if (!searchFilter) return getFavourites()
+    // Use the same filterSection logic from usePropertyTreeFilter
+    const searchTerm = searchFilter.toLowerCase()
+    const filteredPaths = []
+    const filterSection = (section, sectionPath = '') => {
+      // Check direct properties
+      if (section.properties) {
+        Object.entries(section.properties).forEach(([propName, prop]) => {
+          const fullPath = sectionPath ? `${sectionPath}.${propName}` : propName
+          const propDisplayName = prop.name ? prop.name.toLowerCase() : propName.toLowerCase()
+          const propDescription = prop.description ? prop.description.toLowerCase() : ''
+          if (
+            propDisplayName.includes(searchTerm) ||
+            propDescription.includes(searchTerm) ||
+            propName.toLowerCase().includes(searchTerm) ||
+            fullPath.toLowerCase().includes(searchTerm)
+          ) {
+            filteredPaths.push(fullPath)
+          }
+        })
+      }
+      // Recursively check children
+      if (section.children) {
+        Object.entries(section.children).forEach(([childName, childSection]) => {
+          const childPath = sectionPath ? `${sectionPath}.${childName}` : childName
+          filterSection(childSection, childPath)
+        })
+      }
     }
-    return true
-  })
+    Object.entries(odrivePropertyTree).forEach(([sectionName, section]) => {
+      filterSection(section, sectionName)
+    })
+    // Only keep favourites that match the filter
+    return getFavourites().filter(path => filteredPaths.includes(path))
+  }, [searchFilter])
+
+  const favouritePaths = getFilteredFavouritePaths()
 
   // Listen for changes to localStorage favourites and trigger re-render
   useEffect(() => {
