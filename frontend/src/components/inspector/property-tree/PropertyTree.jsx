@@ -11,6 +11,7 @@ import {
   Box,
   Badge,
   Button,
+  Skeleton
 } from '@chakra-ui/react'
 import { SearchIcon } from '@chakra-ui/icons'
 import { odrivePropertyTree } from '../../../utils/odrivePropertyTree'
@@ -19,6 +20,7 @@ import { usePropertyEditor } from '../../../hooks/property-tree/usePropertyEdito
 import { usePropertyTreeFilter } from '../../../hooks/property-tree/usePropertyTreeFilter'
 import PropertyItem from './PropertyItem'
 import { getFavourites } from '../../../utils/propertyFavourites'
+import Observer from '@researchgate/react-intersection-observer'
 
 const PropertyTree = ({ 
   odriveState, 
@@ -230,26 +232,28 @@ const PropertyTree = ({
         const value = getValueFromState(displayPath)
         
         sectionItems.push(
-          <PropertyItem
-            key={displayPath} // STABLE KEY - no version suffix
-            prop={prop}
-            value={value}
-            displayPath={displayPath}
-            isEditing={editingProperty === displayPath}
-            editValue={editValue}
-            setEditValue={setEditValue}
-            startEditing={startEditing}
-            saveEdit={saveEdit}
-            cancelEdit={cancelEdit}
-            refreshProperty={refreshProperty}
-            isConnected={isConnected}
-            isRefreshing={refreshingProperties.has(displayPath)}
-            selectedProperties={selectedProperties}
-            togglePropertyChart={togglePropertyChart}
-            updateProperty={updateProperty}
-            onFavouriteChange={handleFavouriteChange}
-            // REMOVE favouritesVersion prop - handle internally
-          />
+          <LazyItem>
+            <PropertyItem
+              key={displayPath} // STABLE KEY - no version suffix
+              prop={prop}
+              value={value}
+              displayPath={displayPath}
+              isEditing={editingProperty === displayPath}
+              editValue={editValue}
+              setEditValue={setEditValue}
+              startEditing={startEditing}
+              saveEdit={saveEdit}
+              cancelEdit={cancelEdit}
+              refreshProperty={refreshProperty}
+              isConnected={isConnected}
+              isRefreshing={refreshingProperties.has(displayPath)}
+              selectedProperties={selectedProperties}
+              togglePropertyChart={togglePropertyChart}
+              updateProperty={updateProperty}
+              onFavouriteChange={handleFavouriteChange}
+              // REMOVE favouritesVersion prop - handle internally
+            />
+          </LazyItem>
         )
       })
     }
@@ -388,26 +392,28 @@ const PropertyTree = ({
                         }
                       }
                       return (
-                        <PropertyItem
-                          key={path} // STABLE KEY - no version suffix
-                          prop={prop}
-                          value={prop ? getValueFromState(path) : undefined}
-                          displayPath={path}
-                          isEditing={editingProperty === path}
-                          editValue={editValue}
-                          setEditValue={setEditValue}
-                          startEditing={startEditing}
-                          saveEdit={saveEdit}
-                          cancelEdit={cancelEdit}
-                          refreshProperty={refreshProperty}
-                          isConnected={isConnected}
-                          isRefreshing={refreshingProperties.has(path)}
-                          selectedProperties={selectedProperties}
-                          togglePropertyChart={togglePropertyChart}
-                          updateProperty={updateProperty}
-                          onFavouriteChange={handleFavouriteChange}
-                          // REMOVE favouritesVersion prop
-                        />
+                        <LazyItem>
+                          <PropertyItem
+                            key={path} // STABLE KEY - no version suffix
+                            prop={prop}
+                            value={prop ? getValueFromState(path) : undefined}
+                            displayPath={path}
+                            isEditing={editingProperty === path}
+                            editValue={editValue}
+                            setEditValue={setEditValue}
+                            startEditing={startEditing}
+                            saveEdit={saveEdit}
+                            cancelEdit={cancelEdit}
+                            refreshProperty={refreshProperty}
+                            isConnected={isConnected}
+                            isRefreshing={refreshingProperties.has(path)}
+                            selectedProperties={selectedProperties}
+                            togglePropertyChart={togglePropertyChart}
+                            updateProperty={updateProperty}
+                            onFavouriteChange={handleFavouriteChange}
+                            // REMOVE favouritesVersion prop
+                          />
+                        </LazyItem>
                       )
                     })}
                   </VStack>
@@ -433,6 +439,20 @@ const PropertyTree = ({
         </CardBody>
       </Card>
     </Box>
+  )
+}
+
+const LazyItem = ({ children }) => {
+  const [visible, setVisible] = useState(false)
+  const handleChange = ({ isIntersecting }) => {
+    if (isIntersecting) setVisible(true)
+  }
+  return (
+    <Observer onChange={handleChange} rootMargin="100px">
+      <Box minHeight="42px">
+        {visible ? children : <Skeleton height="38px" borderRadius="md" my={1} />}
+      </Box>
+    </Observer>
   )
 }
 
