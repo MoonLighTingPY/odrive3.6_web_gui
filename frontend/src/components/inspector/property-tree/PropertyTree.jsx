@@ -135,7 +135,7 @@ const PropertyTree = ({
   }
 
   // Create a simple SectionHeader component
-  const SectionHeader = memo(({ name, section, sectionPath }) => (
+  const SectionHeader = memo(({ name, section, sectionPath, count }) => (
     <Box
       bg="gray.700"
       borderRadius="md"
@@ -154,7 +154,7 @@ const PropertyTree = ({
             {collapsedSections.has(sectionPath) ? '▶' : '▼'} {name}
           </Text>
           <Badge colorScheme="purple" variant="outline" size="xs">
-            {collectAllProperties(section).length}
+            {count !== undefined ? count : collectAllProperties(section).length}
           </Badge>
         </HStack>
       </HStack>
@@ -363,6 +363,7 @@ const PropertyTree = ({
                   name="Favourites"
                   section={{ name: "Favourites", description: "Your favourite properties" }}
                   sectionPath="favourites"
+                  count={favouritePaths.length} // <-- add this prop
                 />
                 {!collapsedSections.has("favourites") && (
                   <VStack spacing={1} align="stretch" ml={2}>
