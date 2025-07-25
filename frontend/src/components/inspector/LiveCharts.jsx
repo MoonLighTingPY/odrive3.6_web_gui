@@ -16,6 +16,7 @@ import {
   SliderFilledTrack,
   SliderThumb,
   SliderMark,
+  SimpleGrid
 } from '@chakra-ui/react'
 import { CloseIcon } from '@chakra-ui/icons'
 import {
@@ -220,7 +221,7 @@ const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
     }
   }, [chartData, chartFilters, selectedProperties, timeWindow])
 
-  const renderChart = useCallback((property, index) => (
+  const renderChart = useCallback((property, index, isGrid = false) => (
     <Box 
       key={property} 
       p={3} 
@@ -241,9 +242,11 @@ const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
             >
               {getPropertyDisplayName(property)}
             </Text>
-            <Text fontSize="xs" color="gray.500" fontFamily="mono">
-              {property}
-            </Text>
+            {!isGrid && (
+              <Text fontSize="xs" color="gray.500" fontFamily="mono">
+                {property}
+              </Text>
+            )}
           </HStack>
           <HStack spacing={2}>
             /* Statistics Display */
@@ -318,7 +321,11 @@ const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
             </Tooltip>
           </HStack>
         </HStack>
-        
+        {isGrid && (
+          <Text fontSize="xs" color="gray.500" fontFamily="mono" mt={-2}>
+            {property}
+          </Text>
+        )}
         <Box flex="1" minH="200px">
           <ChartComponent 
             property={property} 
@@ -464,11 +471,19 @@ const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
               px={4}
               py={2}
             >
-              <VStack spacing={3} align="stretch">
-                {selectedProperties.map((property, index) => 
-                  renderChart(property, index)
-                )}
-              </VStack>
+              {selectedProperties.length > 2 ? (
+                <SimpleGrid columns={{ base: 1, md: 2 }} spacing={3}>
+                  {selectedProperties.map((property, index) => 
+                    renderChart(property, index, true)
+                  )}
+                </SimpleGrid>
+              ) : (
+                <VStack spacing={3} align="stretch">
+                  {selectedProperties.map((property, index) => 
+                    renderChart(property, index, false)
+                  )}
+                </VStack>
+              )}
             </Box>
           </CardBody>
         </Card>
