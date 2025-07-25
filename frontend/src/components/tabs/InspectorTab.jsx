@@ -78,7 +78,7 @@ const InspectorTab = memo(() => {
   }
 
   const shouldShowInspector = () => {
-    const isDevelopment = import.meta.env.DEV || import.meta.env.MODE === 'development'
+    const isDevelopment = true
     return isDevelopment || isConnected
   }
 

@@ -24,8 +24,8 @@ import Observer from '@researchgate/react-intersection-observer'
 
 const PropertyTree = ({ 
   odriveState, 
-  searchFilter, 
-  setSearchFilter, 
+  searchFilter: initialSearchFilter, 
+  setSearchFilter: setInitialSearchFilter, 
   updateProperty, 
   isConnected,
   selectedProperties = [],
@@ -34,6 +34,8 @@ const PropertyTree = ({
 }) => {
   const [collapsedSections, setCollapsedSections] = useState(new Set())
   const [favouritesVersion, setFavouritesVersion] = useState(0)
+  const [searchFilter, setSearchFilter] = useState(initialSearchFilter)
+  const [debouncedSearch, setDebouncedSearch] = useState(searchFilter)
 
   // Function to collect all properties recursively from the tree structure
   const collectAllProperties = useCallback((node, basePath = '') => {
@@ -75,7 +77,7 @@ const PropertyTree = ({
     cancelEdit
   } = usePropertyEditor(updateProperty, refreshProperty)
 
-  const { filteredTree } = usePropertyTreeFilter(odrivePropertyTree, searchFilter)
+  const { filteredTree } = usePropertyTreeFilter(odrivePropertyTree, debouncedSearch)
 
   // Refresh all properties when refreshTrigger changes
   useEffect(() => {
@@ -83,6 +85,14 @@ const PropertyTree = ({
       refreshAllProperties()
     }
   }, [refreshTrigger, isConnected, refreshAllProperties])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchFilter)
+    }, 300) // 300ms debounce
+
+    return () => clearTimeout(timer)
+  }, [searchFilter])
 
   const getValueFromState = useCallback((path) => {
     // First check if we have a refreshed value
@@ -170,43 +180,33 @@ const PropertyTree = ({
 
   SectionHeader.displayName = 'SectionHeader'
 
-  // Helper to get valid favourites using the same filter logic as usePropertyTreeFilter
+  // Helper to get valid favourites using the filteredTree
   const getFilteredFavouritePaths = useCallback(() => {
-    if (!searchFilter) return getFavourites()
-    // Use the same filterSection logic from usePropertyTreeFilter
-    const searchTerm = searchFilter.toLowerCase()
-    const filteredPaths = []
-    const filterSection = (section, sectionPath = '') => {
-      // Check direct properties
-      if (section.properties) {
-        Object.entries(section.properties).forEach(([propName, prop]) => {
-          const fullPath = sectionPath ? `${sectionPath}.${propName}` : propName
-          const propDisplayName = prop.name ? prop.name.toLowerCase() : propName.toLowerCase()
-          const propDescription = prop.description ? prop.description.toLowerCase() : ''
-          if (
-            propDisplayName.includes(searchTerm) ||
-            propDescription.includes(searchTerm) ||
-            propName.toLowerCase().includes(searchTerm) ||
-            fullPath.toLowerCase().includes(searchTerm)
-          ) {
-            filteredPaths.push(fullPath)
-          }
+    // Collect all property paths from filteredTree
+    const collectPaths = (node, basePath = '') => {
+      let paths = []
+      if (node.properties) {
+        Object.keys(node.properties).forEach(propName => {
+          const fullPath = basePath ? `${basePath}.${propName}` : propName
+          paths.push(fullPath)
         })
       }
-      // Recursively check children
-      if (section.children) {
-        Object.entries(section.children).forEach(([childName, childSection]) => {
-          const childPath = sectionPath ? `${sectionPath}.${childName}` : childName
-          filterSection(childSection, childPath)
+      if (node.children) {
+        Object.entries(node.children).forEach(([childName, childNode]) => {
+          const childPath = basePath ? `${basePath}.${childName}` : childName
+          paths = paths.concat(collectPaths(childNode, childPath))
         })
       }
+      return paths
     }
-    Object.entries(odrivePropertyTree).forEach(([sectionName, section]) => {
-      filterSection(section, sectionName)
+    // Get all filtered property paths
+    const filteredPaths = []
+    Object.entries(filteredTree).forEach(([sectionName, section]) => {
+      filteredPaths.push(...collectPaths(section, sectionName))
     })
-    // Only keep favourites that match the filter
+    // Only keep favourites that match the filtered property paths
     return getFavourites().filter(path => filteredPaths.includes(path))
-  }, [searchFilter])
+  }, [filteredTree])
 
   // Memoize favourite paths to prevent unnecessary recalculations
   const favouritePaths = useMemo(() => getFilteredFavouritePaths(), [getFilteredFavouritePaths, favouritesVersion])
