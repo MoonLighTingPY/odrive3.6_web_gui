@@ -20,7 +20,8 @@ import {
   Select,
   Tooltip
 } from '@chakra-ui/react'
-import { EditIcon, CheckIcon, CloseIcon, RepeatIcon } from '@chakra-ui/icons'
+import { EditIcon, CheckIcon, CloseIcon, RepeatIcon, StarIcon } from '@chakra-ui/icons'
+import { addFavourite, removeFavourite, isFavourite } from '../../../utils/propertyFavourites'
 
 const PropertyItem = memo(({
   prop,
@@ -37,16 +38,35 @@ const PropertyItem = memo(({
   isRefreshing,
   selectedProperties,
   togglePropertyChart,
-  updateProperty
+  updateProperty,
+  onFavouriteChange,
+  favouritesVersion // <-- add this prop
 }) => {
   const [sliderValue, setSliderValue] = useState(value || 0)
-  
+  const [favourite, setFavourite] = useState(isFavourite(displayPath))
+
+  // Listen for favouriteChanged events for this path
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.detail?.path === displayPath) {
+        setFavourite(e.detail.isFavourite)
+      }
+    }
+    window.addEventListener('favouriteChanged', handler)
+    return () => window.removeEventListener('favouriteChanged', handler)
+  }, [displayPath])
+
   // Sync slider value with actual value when it changes
   useEffect(() => {
     if (value !== undefined && value !== null) {
       setSliderValue(parseFloat(value) || 0)
     }
   }, [value])
+
+  // Sync favourite state when displayPath or favouritesVersion changes
+  useEffect(() => {
+    setFavourite(isFavourite(displayPath))
+  }, [displayPath, favouritesVersion])
   
   if (!prop || typeof prop !== 'object') {
     return (
@@ -252,8 +272,27 @@ const PropertyItem = memo(({
     }
   }
 
-
   const isValidInput = editValue ? validateInput(editValue) : true
+
+
+
+  const toggleFavourite = () => {
+    let newState
+    if (isFavourite(displayPath)) {
+      removeFavourite(displayPath)
+      setFavourite(false)
+      newState = false
+    } else {
+      addFavourite(displayPath)
+      setFavourite(true)
+      newState = true
+    }
+    // Dispatch custom event for instant sync
+    window.dispatchEvent(new CustomEvent('favouriteChanged', {
+      detail: { path: displayPath, isFavourite: newState }
+    }))
+    if (onFavouriteChange) onFavouriteChange()
+  }
 
   return (
     <Box
@@ -450,6 +489,14 @@ const PropertyItem = memo(({
                     }}
                   />
                 )}
+                <IconButton
+                  size="xs"
+                  variant={favourite ? "solid" : "ghost"}
+                  colorScheme={favourite ? "yellow" : "gray"}
+                  icon={<StarIcon />}
+                  aria-label={favourite ? "Remove from favourites" : "Add to favourites"}
+                  onClick={toggleFavourite}
+                />
               </>
             )}
           </HStack>

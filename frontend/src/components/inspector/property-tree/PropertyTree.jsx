@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect, memo } from 'react'
+import React, { useState, useCallback, useEffect, memo, useMemo } from 'react'
 import {
   VStack,
   HStack,
@@ -18,6 +18,7 @@ import { usePropertyRefresh } from '../../../hooks/property-tree/usePropertyRefr
 import { usePropertyEditor } from '../../../hooks/property-tree/usePropertyEditor'
 import { usePropertyTreeFilter } from '../../../hooks/property-tree/usePropertyTreeFilter'
 import PropertyItem from './PropertyItem'
+import { getFavourites } from '../../../utils/propertyFavourites'
 
 const PropertyTree = ({ 
   odriveState, 
@@ -30,6 +31,7 @@ const PropertyTree = ({
   refreshTrigger
 }) => {
   const [collapsedSections, setCollapsedSections] = useState(new Set())
+  const [favouritesVersion, setFavouritesVersion] = useState(0)
 
   // Function to collect all properties recursively from the tree structure
   const collectAllProperties = useCallback((node, basePath = '') => {
@@ -133,7 +135,7 @@ const PropertyTree = ({
   }
 
   // Create a simple SectionHeader component
-  const SectionHeader = memo(({ name, section, sectionPath }) => (
+  const SectionHeader = memo(({ name, section, sectionPath, count }) => (
     <Box
       bg="gray.700"
       borderRadius="md"
@@ -152,7 +154,7 @@ const PropertyTree = ({
             {collapsedSections.has(sectionPath) ? '▶' : '▼'} {name}
           </Text>
           <Badge colorScheme="purple" variant="outline" size="xs">
-            {collectAllProperties(section).length}
+            {count !== undefined ? count : collectAllProperties(section).length}
           </Badge>
         </HStack>
       </HStack>
@@ -166,6 +168,57 @@ const PropertyTree = ({
 
   SectionHeader.displayName = 'SectionHeader'
 
+  // Helper to get valid favourites using the same filter logic as usePropertyTreeFilter
+  const getFilteredFavouritePaths = useCallback(() => {
+    if (!searchFilter) return getFavourites()
+    // Use the same filterSection logic from usePropertyTreeFilter
+    const searchTerm = searchFilter.toLowerCase()
+    const filteredPaths = []
+    const filterSection = (section, sectionPath = '') => {
+      // Check direct properties
+      if (section.properties) {
+        Object.entries(section.properties).forEach(([propName, prop]) => {
+          const fullPath = sectionPath ? `${sectionPath}.${propName}` : propName
+          const propDisplayName = prop.name ? prop.name.toLowerCase() : propName.toLowerCase()
+          const propDescription = prop.description ? prop.description.toLowerCase() : ''
+          if (
+            propDisplayName.includes(searchTerm) ||
+            propDescription.includes(searchTerm) ||
+            propName.toLowerCase().includes(searchTerm) ||
+            fullPath.toLowerCase().includes(searchTerm)
+          ) {
+            filteredPaths.push(fullPath)
+          }
+        })
+      }
+      // Recursively check children
+      if (section.children) {
+        Object.entries(section.children).forEach(([childName, childSection]) => {
+          const childPath = sectionPath ? `${sectionPath}.${childName}` : childName
+          filterSection(childSection, childPath)
+        })
+      }
+    }
+    Object.entries(odrivePropertyTree).forEach(([sectionName, section]) => {
+      filterSection(section, sectionName)
+    })
+    // Only keep favourites that match the filter
+    return getFavourites().filter(path => filteredPaths.includes(path))
+  }, [searchFilter])
+
+  // Memoize favourite paths to prevent unnecessary recalculations
+  const favouritePaths = useMemo(() => getFilteredFavouritePaths(), [getFilteredFavouritePaths, favouritesVersion])
+
+  // Listen for changes to localStorage favourites and trigger re-render
+  useEffect(() => {
+    const handler = () => setFavouritesVersion(v => v + 1)
+    window.addEventListener('storage', handler)
+    return () => window.removeEventListener('storage', handler)
+  }, [])
+
+  // Optimized callback that doesn't change reference
+  const handleFavouriteChange = useCallback(() => setFavouritesVersion(v => v + 1), [])
+
   // Function to render a section recursively with collapsible subsections
   const renderSection = (section, sectionPath = '', depth = 0) => {
     const sectionItems = []
@@ -178,7 +231,7 @@ const PropertyTree = ({
         
         sectionItems.push(
           <PropertyItem
-            key={displayPath}
+            key={displayPath} // STABLE KEY - no version suffix
             prop={prop}
             value={value}
             displayPath={displayPath}
@@ -194,6 +247,8 @@ const PropertyTree = ({
             selectedProperties={selectedProperties}
             togglePropertyChart={togglePropertyChart}
             updateProperty={updateProperty}
+            onFavouriteChange={handleFavouriteChange}
+            // REMOVE favouritesVersion prop - handle internally
           />
         )
       })
@@ -302,11 +357,68 @@ const PropertyTree = ({
         <CardBody py={2} flex="1" minH="0" overflow="hidden" p={0}>
           <Box h="100%" overflowY="auto" px={4} py={2}>
             <VStack spacing={2} align="stretch">
+              {/* Favourites Section */}
+              <Box>
+                <SectionHeader
+                  name="Favourites"
+                  section={{ name: "Favourites", description: "Your favourite properties" }}
+                  sectionPath="favourites"
+                  count={favouritePaths.length} // <-- add this prop
+                />
+                {!collapsedSections.has("favourites") && (
+                  <VStack spacing={1} align="stretch" ml={2}>
+                    {favouritePaths.map(path => {
+                      // Find property node for display (search in odrivePropertyTree, not filteredTree)
+                      const parts = path.split('.')
+                      let node = odrivePropertyTree
+                      let prop = null
+                      // Traverse: first part is section, then properties/children
+                      for (let i = 0; i < parts.length; i++) {
+                        const part = parts[i]
+                        if (i === 0 && node[part]) {
+                          node = node[part]
+                        } else if (node.properties && node.properties[part]) {
+                          prop = node.properties[part]
+                          node = prop
+                        } else if (node.children && node.children[part]) {
+                          node = node.children[part]
+                        } else {
+                          prop = null
+                          break
+                        }
+                      }
+                      return (
+                        <PropertyItem
+                          key={path} // STABLE KEY - no version suffix
+                          prop={prop}
+                          value={prop ? getValueFromState(path) : undefined}
+                          displayPath={path}
+                          isEditing={editingProperty === path}
+                          editValue={editValue}
+                          setEditValue={setEditValue}
+                          startEditing={startEditing}
+                          saveEdit={saveEdit}
+                          cancelEdit={cancelEdit}
+                          refreshProperty={refreshProperty}
+                          isConnected={isConnected}
+                          isRefreshing={refreshingProperties.has(path)}
+                          selectedProperties={selectedProperties}
+                          togglePropertyChart={togglePropertyChart}
+                          updateProperty={updateProperty}
+                          onFavouriteChange={handleFavouriteChange}
+                          // REMOVE favouritesVersion prop
+                        />
+                      )
+                    })}
+                  </VStack>
+                )}
+              </Box>
+              {/* Render other sections */}
               {Object.entries(filteredTree).map(([sectionName, section]) => (
                 <Box key={sectionName}>
-                  <SectionHeader 
-                    name={sectionName} 
-                    section={section} 
+                  <SectionHeader
+                    name={sectionName}
+                    section={section}
                     sectionPath={sectionName}
                   />
                   {!collapsedSections.has(sectionName) && (
