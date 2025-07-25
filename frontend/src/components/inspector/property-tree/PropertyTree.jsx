@@ -11,6 +11,7 @@ import {
   Box,
   Badge,
   Button,
+  Skeleton
 } from '@chakra-ui/react'
 import { SearchIcon } from '@chakra-ui/icons'
 import { odrivePropertyTree } from '../../../utils/odrivePropertyTree'
@@ -19,11 +20,12 @@ import { usePropertyEditor } from '../../../hooks/property-tree/usePropertyEdito
 import { usePropertyTreeFilter } from '../../../hooks/property-tree/usePropertyTreeFilter'
 import PropertyItem from './PropertyItem'
 import { getFavourites } from '../../../utils/propertyFavourites'
+import Observer from '@researchgate/react-intersection-observer'
 
 const PropertyTree = ({ 
   odriveState, 
-  searchFilter, 
-  setSearchFilter, 
+  searchFilter: initialSearchFilter, 
+  setSearchFilter: setInitialSearchFilter, 
   updateProperty, 
   isConnected,
   selectedProperties = [],
@@ -32,6 +34,8 @@ const PropertyTree = ({
 }) => {
   const [collapsedSections, setCollapsedSections] = useState(new Set())
   const [favouritesVersion, setFavouritesVersion] = useState(0)
+  const [searchFilter, setSearchFilter] = useState(initialSearchFilter)
+  const [debouncedSearch, setDebouncedSearch] = useState(searchFilter)
 
   // Function to collect all properties recursively from the tree structure
   const collectAllProperties = useCallback((node, basePath = '') => {
@@ -73,7 +77,7 @@ const PropertyTree = ({
     cancelEdit
   } = usePropertyEditor(updateProperty, refreshProperty)
 
-  const { filteredTree } = usePropertyTreeFilter(odrivePropertyTree, searchFilter)
+  const { filteredTree } = usePropertyTreeFilter(odrivePropertyTree, debouncedSearch)
 
   // Refresh all properties when refreshTrigger changes
   useEffect(() => {
@@ -81,6 +85,14 @@ const PropertyTree = ({
       refreshAllProperties()
     }
   }, [refreshTrigger, isConnected, refreshAllProperties])
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchFilter)
+    }, 300) // 300ms debounce
+
+    return () => clearTimeout(timer)
+  }, [searchFilter])
 
   const getValueFromState = useCallback((path) => {
     // First check if we have a refreshed value
@@ -168,43 +180,33 @@ const PropertyTree = ({
 
   SectionHeader.displayName = 'SectionHeader'
 
-  // Helper to get valid favourites using the same filter logic as usePropertyTreeFilter
+  // Helper to get valid favourites using the filteredTree
   const getFilteredFavouritePaths = useCallback(() => {
-    if (!searchFilter) return getFavourites()
-    // Use the same filterSection logic from usePropertyTreeFilter
-    const searchTerm = searchFilter.toLowerCase()
-    const filteredPaths = []
-    const filterSection = (section, sectionPath = '') => {
-      // Check direct properties
-      if (section.properties) {
-        Object.entries(section.properties).forEach(([propName, prop]) => {
-          const fullPath = sectionPath ? `${sectionPath}.${propName}` : propName
-          const propDisplayName = prop.name ? prop.name.toLowerCase() : propName.toLowerCase()
-          const propDescription = prop.description ? prop.description.toLowerCase() : ''
-          if (
-            propDisplayName.includes(searchTerm) ||
-            propDescription.includes(searchTerm) ||
-            propName.toLowerCase().includes(searchTerm) ||
-            fullPath.toLowerCase().includes(searchTerm)
-          ) {
-            filteredPaths.push(fullPath)
-          }
+    // Collect all property paths from filteredTree
+    const collectPaths = (node, basePath = '') => {
+      let paths = []
+      if (node.properties) {
+        Object.keys(node.properties).forEach(propName => {
+          const fullPath = basePath ? `${basePath}.${propName}` : propName
+          paths.push(fullPath)
         })
       }
-      // Recursively check children
-      if (section.children) {
-        Object.entries(section.children).forEach(([childName, childSection]) => {
-          const childPath = sectionPath ? `${sectionPath}.${childName}` : childName
-          filterSection(childSection, childPath)
+      if (node.children) {
+        Object.entries(node.children).forEach(([childName, childNode]) => {
+          const childPath = basePath ? `${basePath}.${childName}` : childName
+          paths = paths.concat(collectPaths(childNode, childPath))
         })
       }
+      return paths
     }
-    Object.entries(odrivePropertyTree).forEach(([sectionName, section]) => {
-      filterSection(section, sectionName)
+    // Get all filtered property paths
+    const filteredPaths = []
+    Object.entries(filteredTree).forEach(([sectionName, section]) => {
+      filteredPaths.push(...collectPaths(section, sectionName))
     })
-    // Only keep favourites that match the filter
+    // Only keep favourites that match the filtered property paths
     return getFavourites().filter(path => filteredPaths.includes(path))
-  }, [searchFilter])
+  }, [filteredTree])
 
   // Memoize favourite paths to prevent unnecessary recalculations
   const favouritePaths = useMemo(() => getFilteredFavouritePaths(), [getFilteredFavouritePaths, favouritesVersion])
@@ -230,26 +232,28 @@ const PropertyTree = ({
         const value = getValueFromState(displayPath)
         
         sectionItems.push(
-          <PropertyItem
-            key={displayPath} // STABLE KEY - no version suffix
-            prop={prop}
-            value={value}
-            displayPath={displayPath}
-            isEditing={editingProperty === displayPath}
-            editValue={editValue}
-            setEditValue={setEditValue}
-            startEditing={startEditing}
-            saveEdit={saveEdit}
-            cancelEdit={cancelEdit}
-            refreshProperty={refreshProperty}
-            isConnected={isConnected}
-            isRefreshing={refreshingProperties.has(displayPath)}
-            selectedProperties={selectedProperties}
-            togglePropertyChart={togglePropertyChart}
-            updateProperty={updateProperty}
-            onFavouriteChange={handleFavouriteChange}
-            // REMOVE favouritesVersion prop - handle internally
-          />
+          <LazyItem>
+            <PropertyItem
+              key={displayPath} // STABLE KEY - no version suffix
+              prop={prop}
+              value={value}
+              displayPath={displayPath}
+              isEditing={editingProperty === displayPath}
+              editValue={editValue}
+              setEditValue={setEditValue}
+              startEditing={startEditing}
+              saveEdit={saveEdit}
+              cancelEdit={cancelEdit}
+              refreshProperty={refreshProperty}
+              isConnected={isConnected}
+              isRefreshing={refreshingProperties.has(displayPath)}
+              selectedProperties={selectedProperties}
+              togglePropertyChart={togglePropertyChart}
+              updateProperty={updateProperty}
+              onFavouriteChange={handleFavouriteChange}
+              // REMOVE favouritesVersion prop - handle internally
+            />
+          </LazyItem>
         )
       })
     }
@@ -388,26 +392,28 @@ const PropertyTree = ({
                         }
                       }
                       return (
-                        <PropertyItem
-                          key={path} // STABLE KEY - no version suffix
-                          prop={prop}
-                          value={prop ? getValueFromState(path) : undefined}
-                          displayPath={path}
-                          isEditing={editingProperty === path}
-                          editValue={editValue}
-                          setEditValue={setEditValue}
-                          startEditing={startEditing}
-                          saveEdit={saveEdit}
-                          cancelEdit={cancelEdit}
-                          refreshProperty={refreshProperty}
-                          isConnected={isConnected}
-                          isRefreshing={refreshingProperties.has(path)}
-                          selectedProperties={selectedProperties}
-                          togglePropertyChart={togglePropertyChart}
-                          updateProperty={updateProperty}
-                          onFavouriteChange={handleFavouriteChange}
-                          // REMOVE favouritesVersion prop
-                        />
+                        <LazyItem>
+                          <PropertyItem
+                            key={path} // STABLE KEY - no version suffix
+                            prop={prop}
+                            value={prop ? getValueFromState(path) : undefined}
+                            displayPath={path}
+                            isEditing={editingProperty === path}
+                            editValue={editValue}
+                            setEditValue={setEditValue}
+                            startEditing={startEditing}
+                            saveEdit={saveEdit}
+                            cancelEdit={cancelEdit}
+                            refreshProperty={refreshProperty}
+                            isConnected={isConnected}
+                            isRefreshing={refreshingProperties.has(path)}
+                            selectedProperties={selectedProperties}
+                            togglePropertyChart={togglePropertyChart}
+                            updateProperty={updateProperty}
+                            onFavouriteChange={handleFavouriteChange}
+                            // REMOVE favouritesVersion prop
+                          />
+                        </LazyItem>
                       )
                     })}
                   </VStack>
@@ -433,6 +439,20 @@ const PropertyTree = ({
         </CardBody>
       </Card>
     </Box>
+  )
+}
+
+const LazyItem = ({ children }) => {
+  const [visible, setVisible] = useState(false)
+  const handleChange = ({ isIntersecting }) => {
+    if (isIntersecting) setVisible(true)
+  }
+  return (
+    <Observer onChange={handleChange} rootMargin="100px">
+      <Box minHeight="42px">
+        {visible ? children : <Skeleton height="38px" borderRadius="md" my={1} />}
+      </Box>
+    </Observer>
   )
 }
 

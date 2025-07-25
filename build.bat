@@ -46,7 +46,7 @@ if %errorlevel% equ 0 (
 echo.
 echo [2/6] Installing frontend dependencies...
 cd frontend
-call npm install
+call npm install --legacy-peer-deps
 if %errorlevel% neq 0 (
     echo Error: Failed to install frontend dependencies!
     cd ..
