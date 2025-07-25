@@ -18,6 +18,7 @@ import { usePropertyRefresh } from '../../../hooks/property-tree/usePropertyRefr
 import { usePropertyEditor } from '../../../hooks/property-tree/usePropertyEditor'
 import { usePropertyTreeFilter } from '../../../hooks/property-tree/usePropertyTreeFilter'
 import PropertyItem from './PropertyItem'
+import { getFavourites } from '../../../utils/propertyFavourites'
 
 const PropertyTree = ({ 
   odriveState, 
@@ -30,6 +31,7 @@ const PropertyTree = ({
   refreshTrigger
 }) => {
   const [collapsedSections, setCollapsedSections] = useState(new Set())
+  const [favouritesVersion, setFavouritesVersion] = useState(0)
 
   // Function to collect all properties recursively from the tree structure
   const collectAllProperties = useCallback((node, basePath = '') => {
@@ -165,6 +167,24 @@ const PropertyTree = ({
   ))
 
   SectionHeader.displayName = 'SectionHeader'
+
+  // Helper to get valid favourites (property still exists or not)
+  const favouritePaths = getFavourites().filter(path => {
+    // Filter by search term if present
+    if (searchFilter && !path.toLowerCase().includes(searchFilter.toLowerCase())) {
+      return false
+    }
+    return true
+  })
+
+  // Listen for changes to localStorage favourites and trigger re-render
+  useEffect(() => {
+    const handler = () => setFavouritesVersion(v => v + 1)
+    window.addEventListener('storage', handler)
+    return () => window.removeEventListener('storage', handler)
+  }, [])
+
+  const handleFavouriteChange = () => setFavouritesVersion(v => v + 1)
 
   // Function to render a section recursively with collapsible subsections
   const renderSection = (section, sectionPath = '', depth = 0) => {
@@ -302,11 +322,65 @@ const PropertyTree = ({
         <CardBody py={2} flex="1" minH="0" overflow="hidden" p={0}>
           <Box h="100%" overflowY="auto" px={4} py={2}>
             <VStack spacing={2} align="stretch">
+              {/* Favourites Section */}
+              <Box>
+                <SectionHeader
+                  name="Favourites"
+                  section={{ name: "Favourites", description: "Your favourite properties" }}
+                  sectionPath="favourites"
+                />
+                <VStack spacing={1} align="stretch" ml={2}>
+                  {favouritePaths.map(path => {
+                    // Find property node for display (search in odrivePropertyTree, not filteredTree)
+                    const parts = path.split('.')
+                    let node = odrivePropertyTree
+                    let prop = null
+                    // Traverse: first part is section, then properties/children
+                    for (let i = 0; i < parts.length; i++) {
+                      const part = parts[i]
+                      if (i === 0 && node[part]) {
+                        node = node[part]
+                      } else if (node.properties && node.properties[part]) {
+                        prop = node.properties[part]
+                        node = prop
+                      } else if (node.children && node.children[part]) {
+                        node = node.children[part]
+                      } else {
+                        prop = null
+                        break
+                      }
+                    }
+                    return (
+                      <PropertyItem
+                        key={path}
+                        prop={prop}
+                        value={prop ? getValueFromState(path) : undefined}
+                        displayPath={path}
+                        isEditing={editingProperty === path}
+                        editValue={editValue}
+                        setEditValue={setEditValue}
+                        startEditing={startEditing}
+                        saveEdit={saveEdit}
+                        cancelEdit={cancelEdit}
+                        refreshProperty={refreshProperty}
+                        isConnected={isConnected}
+                        isRefreshing={refreshingProperties.has(path)}
+                        selectedProperties={selectedProperties}
+                        togglePropertyChart={togglePropertyChart}
+                        updateProperty={updateProperty}
+                        // Pass a callback to PropertyItem so it can trigger re-render on favourite change
+                        onFavouriteChange={handleFavouriteChange}
+                      />
+                    )
+                  })}
+                </VStack>
+              </Box>
+              {/* Render other sections */}
               {Object.entries(filteredTree).map(([sectionName, section]) => (
                 <Box key={sectionName}>
-                  <SectionHeader 
-                    name={sectionName} 
-                    section={section} 
+                  <SectionHeader
+                    name={sectionName}
+                    section={section}
                     sectionPath={sectionName}
                   />
                   {!collapsedSections.has(sectionName) && (

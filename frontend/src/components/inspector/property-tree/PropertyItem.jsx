@@ -20,7 +20,8 @@ import {
   Select,
   Tooltip
 } from '@chakra-ui/react'
-import { EditIcon, CheckIcon, CloseIcon, RepeatIcon } from '@chakra-ui/icons'
+import { EditIcon, CheckIcon, CloseIcon, RepeatIcon, StarIcon } from '@chakra-ui/icons'
+import { addFavourite, removeFavourite, isFavourite } from '../../../utils/propertyFavourites'
 
 const PropertyItem = memo(({
   prop,
@@ -37,9 +38,11 @@ const PropertyItem = memo(({
   isRefreshing,
   selectedProperties,
   togglePropertyChart,
-  updateProperty
+  updateProperty,
+  onFavouriteChange
 }) => {
   const [sliderValue, setSliderValue] = useState(value || 0)
+  const [favourite, setFavourite] = useState(isFavourite(displayPath))
   
   // Sync slider value with actual value when it changes
   useEffect(() => {
@@ -47,6 +50,10 @@ const PropertyItem = memo(({
       setSliderValue(parseFloat(value) || 0)
     }
   }, [value])
+
+  useEffect(() => {
+    setFavourite(isFavourite(displayPath))
+  }, [displayPath])
   
   if (!prop || typeof prop !== 'object') {
     return (
@@ -252,8 +259,20 @@ const PropertyItem = memo(({
     }
   }
 
-
   const isValidInput = editValue ? validateInput(editValue) : true
+
+
+
+  const toggleFavourite = () => {
+    if (isFavourite(displayPath)) {
+      removeFavourite(displayPath)
+      setFavourite(false)
+    } else {
+      addFavourite(displayPath)
+      setFavourite(true)
+    }
+    if (onFavouriteChange) onFavouriteChange()
+  }
 
   return (
     <Box
@@ -450,6 +469,14 @@ const PropertyItem = memo(({
                     }}
                   />
                 )}
+                <IconButton
+                  size="xs"
+                  variant={favourite ? "solid" : "ghost"}
+                  colorScheme={favourite ? "yellow" : "gray"}
+                  icon={<StarIcon />}
+                  aria-label={favourite ? "Remove from favourites" : "Add to favourites"}
+                  onClick={toggleFavourite}
+                />
               </>
             )}
           </HStack>
