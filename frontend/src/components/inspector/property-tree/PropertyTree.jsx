@@ -329,51 +329,53 @@ const PropertyTree = ({
                   section={{ name: "Favourites", description: "Your favourite properties" }}
                   sectionPath="favourites"
                 />
-                <VStack spacing={1} align="stretch" ml={2}>
-                  {favouritePaths.map(path => {
-                    // Find property node for display (search in odrivePropertyTree, not filteredTree)
-                    const parts = path.split('.')
-                    let node = odrivePropertyTree
-                    let prop = null
-                    // Traverse: first part is section, then properties/children
-                    for (let i = 0; i < parts.length; i++) {
-                      const part = parts[i]
-                      if (i === 0 && node[part]) {
-                        node = node[part]
-                      } else if (node.properties && node.properties[part]) {
-                        prop = node.properties[part]
-                        node = prop
-                      } else if (node.children && node.children[part]) {
-                        node = node.children[part]
-                      } else {
-                        prop = null
-                        break
+                {!collapsedSections.has("favourites") && (
+                  <VStack spacing={1} align="stretch" ml={2}>
+                    {favouritePaths.map(path => {
+                      // Find property node for display (search in odrivePropertyTree, not filteredTree)
+                      const parts = path.split('.')
+                      let node = odrivePropertyTree
+                      let prop = null
+                      // Traverse: first part is section, then properties/children
+                      for (let i = 0; i < parts.length; i++) {
+                        const part = parts[i]
+                        if (i === 0 && node[part]) {
+                          node = node[part]
+                        } else if (node.properties && node.properties[part]) {
+                          prop = node.properties[part]
+                          node = prop
+                        } else if (node.children && node.children[part]) {
+                          node = node.children[part]
+                        } else {
+                          prop = null
+                          break
+                        }
                       }
-                    }
-                    return (
-                      <PropertyItem
-                        key={path}
-                        prop={prop}
-                        value={prop ? getValueFromState(path) : undefined}
-                        displayPath={path}
-                        isEditing={editingProperty === path}
-                        editValue={editValue}
-                        setEditValue={setEditValue}
-                        startEditing={startEditing}
-                        saveEdit={saveEdit}
-                        cancelEdit={cancelEdit}
-                        refreshProperty={refreshProperty}
-                        isConnected={isConnected}
-                        isRefreshing={refreshingProperties.has(path)}
-                        selectedProperties={selectedProperties}
-                        togglePropertyChart={togglePropertyChart}
-                        updateProperty={updateProperty}
-                        // Pass a callback to PropertyItem so it can trigger re-render on favourite change
-                        onFavouriteChange={handleFavouriteChange}
-                      />
-                    )
-                  })}
-                </VStack>
+                      return (
+                        <PropertyItem
+                          key={path}
+                          prop={prop}
+                          value={prop ? getValueFromState(path) : undefined}
+                          displayPath={path}
+                          isEditing={editingProperty === path}
+                          editValue={editValue}
+                          setEditValue={setEditValue}
+                          startEditing={startEditing}
+                          saveEdit={saveEdit}
+                          cancelEdit={cancelEdit}
+                          refreshProperty={refreshProperty}
+                          isConnected={isConnected}
+                          isRefreshing={refreshingProperties.has(path)}
+                          selectedProperties={selectedProperties}
+                          togglePropertyChart={togglePropertyChart}
+                          updateProperty={updateProperty}
+                          // Pass a callback to PropertyItem so it can trigger re-render on favourite change
+                          onFavouriteChange={handleFavouriteChange}
+                        />
+                      )
+                    })}
+                  </VStack>
+                )}
               </Box>
               {/* Render other sections */}
               {Object.entries(filteredTree).map(([sectionName, section]) => (
