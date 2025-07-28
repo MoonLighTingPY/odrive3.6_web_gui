@@ -195,7 +195,7 @@ const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
 
   // Memoize chart configurations
   const chartConfig = useMemo(() => ({
-    margin: { top: 5, right: 5, left: 20, bottom: 5 },
+    margin: { top: 5, right: 5, left: -40, bottom: 5 },
     isAnimationActive: false
   }), [])
 
@@ -363,11 +363,11 @@ const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
   const formatTimeLabel = useCallback((value) => {
     // For any integer value, format appropriately
     if (value < 60) {
-      return `${value}s`
+      return `${value}sec`
     } else if (value < 3600) {
       const minutes = Math.floor(value / 60)
       const seconds = value % 60
-      return seconds === 0 ? `${minutes}m` : `${minutes}m${seconds}s`
+      return seconds === 0 ? `${minutes}mins.` : `${minutes}min.${seconds}sec`
     } else {
       const hours = Math.floor(value / 3600)
       const remainingMinutes = Math.floor((value % 3600) / 60)
@@ -407,16 +407,6 @@ const LiveCharts = memo(({ selectedProperties, togglePropertyChart }) => {
         <Card bg="gray.800" variant="elevated" h="100%" display="flex" flexDirection="column">
           <CardHeader py={3} flexShrink={0}>
             <VStack spacing={3} align="stretch">
-              <HStack justify="space-between">
-                <Heading size="md" color="white">
-                  Live Charts
-                </Heading>
-                <HStack spacing={2}>
-                  <Badge colorScheme="blue" variant="outline">
-                    {selectedProperties.length} chart{selectedProperties.length !== 1 ? 's' : ''}
-                  </Badge>
-                </HStack>
-              </HStack>
               
               {/* Time Window Slider */}
               <Box>
