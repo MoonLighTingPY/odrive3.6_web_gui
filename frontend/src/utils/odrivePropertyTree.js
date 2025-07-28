@@ -145,8 +145,8 @@ export const odrivePropertyTree = {
         ]
       },
       max_regen_current: { name: 'Max Regen Current', description: 'Bus current allowed to flow back to power supply before brake resistor starts shunting (A)', writable: true, type: 'number', min: 0, max: 60, step: 0.1, decimals: 1, hasSlider: true, valueType: 'Float32Property' },
-      brake_resistance: { name: 'Brake Resistance', description: 'Value of the brake resistor connected to the ODrive (Ω)', writable: true, type: 'number', min: 0.1, max: 100, step: 0.1, decimals: 2, hasSlider: true, valueType: 'Float32Property' },
       enable_brake_resistor: { name: 'Enable Brake Resistor', description: 'Enable/disable the use of a brake resistor', writable: true, type: 'boolean', valueType: 'BoolProperty' },
+      brake_resistance: { name: 'Brake Resistance', description: 'Value of the brake resistor connected to the ODrive (Ω)', writable: true, type: 'number', min: 0.1, max: 100, step: 0.1, decimals: 2, hasSlider: true, valueType: 'Float32Property' },
       dc_bus_undervoltage_trip_level: { name: 'DC Bus Undervoltage Trip', description: 'Minimum voltage below which the motor stops operating (V)', writable: true, type: 'number', min: 8, max: 30, step: 0.1, decimals: 1, hasSlider: true, valueType: 'Float32Property' },
       dc_bus_overvoltage_trip_level: { name: 'DC Bus Overvoltage Trip', description: 'Maximum voltage above which the motor stops operating (V)', writable: true, type: 'number', min: 12, max: 60, step: 0.1, decimals: 1, hasSlider: true, valueType: 'Float32Property' },
       enable_dc_bus_overvoltage_ramp: { name: 'Enable DC Bus Overvoltage Ramp', description: 'Enable DC bus overvoltage ramp feature', writable: true, type: 'boolean', valueType: 'BoolProperty' },
