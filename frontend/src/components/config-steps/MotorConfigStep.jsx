@@ -40,13 +40,13 @@ const MOTOR_PARAM_GROUPS = {
   torque_lim: { group: 'Limits & Calibration', subgroup: 'Limits', importance: 'essential' },
 
   // Advanced - Motor Properties
-  resistance_calib_max_voltage: { group: 'Motor Configuration', subgroup: 'Electrical', importance: 'advanced' },
-  current_control_bandwidth: { group: 'Motor Configuration', subgroup: 'Control', importance: 'advanced' },
-  requested_current_range: { group: 'Motor Configuration', subgroup: 'Control', importance: 'advanced' },
+  resistance_calib_max_voltage: { group: 'Motor Configuration', subgroup: 'Calibration', importance: 'advanced' },
+  current_control_bandwidth: { group: 'Motor Configuration', subgroup: 'Current', importance: 'advanced' },
+  requested_current_range: { group: 'Motor Configuration', subgroup: 'Current', importance: 'advanced' },
   pre_calibrated: { group: 'Motor Configuration', subgroup: 'Calibration', importance: 'advanced' },
-  current_lim_margin: { group: 'Motor Configuration', subgroup: 'Limits', importance: 'advanced' },
-  inverter_temp_limit_lower: { group: 'Motor Configuration', subgroup: 'Temperature', importance: 'advanced' },
-  inverter_temp_limit_upper: { group: 'Motor Configuration', subgroup: 'Temperature', importance: 'advanced' },
+  current_lim_margin: { group: 'Motor Configuration', subgroup: 'Current', importance: 'advanced' },
+  inverter_temp_limit_lower: { group: 'Motor Configuration', subgroup: 'Inverter Temperature', importance: 'advanced' },
+  inverter_temp_limit_upper: { group: 'Motor Configuration', subgroup: 'Inverter Temperature', importance: 'advanced' },
 
   // Advanced - Thermistor
   motor_thermistor_enabled: { group: 'Thermistor', subgroup: 'Motor Thermistor', importance: 'advanced' },
