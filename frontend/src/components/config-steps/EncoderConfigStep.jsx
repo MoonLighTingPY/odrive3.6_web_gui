@@ -43,24 +43,22 @@ const ENCODER_PARAM_GROUPS = {
   calib_scan_omega: { group: 'Calibration', subgroup: 'Settings', importance: 'essential' },
   
   // Advanced parameters
-  pre_calibrated: { group: 'Calibration', subgroup: 'Advanced', importance: 'advanced' },
+  pre_calibrated: { group: 'Calibration', subgroup: 'Calibration', importance: 'advanced' },
   use_index: { group: 'Index', subgroup: 'Index', importance: 'advanced' },
   use_index_offset: { group: 'Index', subgroup: 'Index', importance: 'advanced' },
   find_idx_on_lockin_only: { group: 'Index', subgroup: 'Index', importance: 'advanced' },
   enable_phase_interpolation: { group: 'Encoder', subgroup: 'Advanced', importance: 'advanced' },
   
   // Hall-specific
-  hall_polarity: { group: 'Hall', subgroup: 'Hall', importance: 'advanced' },
-  hall_polarity_calibrated: { group: 'Hall', subgroup: 'Hall', importance: 'advanced' },
+  hall_polarity: { group: 'Calibration', subgroup: 'Calibration', importance: 'advanced' },
+  hall_polarity_calibrated: { group: 'Calibration', subgroup: 'Calibration', importance: 'advanced' },
   ignore_illegal_hall_state: { group: 'Hall', subgroup: 'Hall', importance: 'advanced' },
   
-  // SPI-specific
-  abs_spi_cs_gpio_pin: { group: 'SPI', subgroup: 'SPI', importance: 'advanced' },
-  
-  // SinCos-specific
-  sincos_gpio_pin_sin: { group: 'SinCos', subgroup: 'SinCos', importance: 'advanced' },
-  sincos_gpio_pin_cos: { group: 'SinCos', subgroup: 'SinCos', importance: 'advanced' },
-  
+  // GPIO group for all GPIO-related advanced settings
+  abs_spi_cs_gpio_pin: { group: 'GPIO', subgroup: 'SPI', importance: 'advanced' },
+  sincos_gpio_pin_sin: { group: 'GPIO', subgroup: 'Sin/Cos', importance: 'advanced' },
+  sincos_gpio_pin_cos: { group: 'GPIO', subgroup: 'Sin/Cos', importance: 'advanced' },
+
   // Other advanced parameters
   index_offset: { group: 'Index', subgroup: 'Index', importance: 'advanced' },
   phase_offset: { group: 'Encoder', subgroup: 'Advanced', importance: 'advanced' },
@@ -273,19 +271,6 @@ const EncoderConfigStep = ({
 
                   <HStack spacing={2}>
                     <Switch
-                      isChecked={encoderConfig.pre_calibrated}
-                      onChange={(e) => handleConfigChange('pre_calibrated', e.target.checked)}
-                      colorScheme="odrive"
-                      size="sm"
-                    />
-                    <FormLabel color="white" mb={0} fontSize="xs">Pre-calibrated</FormLabel>
-                    <Tooltip label="Mark encoder as already calibrated to skip calibration on startup.">
-                      <Icon as={InfoIcon} color="gray.400" boxSize={3} />
-                    </Tooltip>
-                  </HStack>
-
-                  <HStack spacing={2}>
-                    <Switch
                       isChecked={encoderConfig.enable_phase_interpolation}
                       onChange={(e) => handleConfigChange('enable_phase_interpolation', e.target.checked)}
                       colorScheme="odrive"
@@ -293,6 +278,19 @@ const EncoderConfigStep = ({
                     />
                     <FormLabel color="white" mb={0} fontSize="xs">Phase Interpolation</FormLabel>
                     <Tooltip label="Improve encoder resolution using motor phase information.">
+                      <Icon as={InfoIcon} color="gray.400" boxSize={3} />
+                    </Tooltip>
+                  </HStack>
+
+                  <HStack spacing={2}>
+                    <Switch
+                      isChecked={encoderConfig.ignore_illegal_hall_state}
+                      onChange={(e) => handleConfigChange('ignore_illegal_hall_state', e.target.checked)}
+                      colorScheme="odrive"
+                      size="sm"
+                    />
+                    <FormLabel color="white" mb={0} fontSize="xs">Ignore Illegal Hall State</FormLabel>
+                    <Tooltip label="Ignore illegal Hall sensor states.">
                       <Icon as={InfoIcon} color="gray.400" boxSize={3} />
                     </Tooltip>
                   </HStack>
@@ -309,7 +307,7 @@ const EncoderConfigStep = ({
           onToggle={onAdvancedToggle}
           paramCount={filteredAdvancedCount} // or filtered count
           groupedParams={groupedAdvancedParams}
-          filterParam={param => !['use_index', 'pre_calibrated', 'enable_phase_interpolation'].includes(param.configKey)} // customize per step
+          filterParam={param => !['use_index', 'enable_phase_interpolation', 'ignore_illegal_hall_state'].includes(param.configKey)} // customize per step
           config={encoderConfig} // or motorConfig, controlConfig, etc.
           onChange={handleConfigChange}
           onRefresh={handleRefresh}

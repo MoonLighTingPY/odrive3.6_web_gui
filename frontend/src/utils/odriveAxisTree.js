@@ -293,13 +293,6 @@ export const generateAxisTree = (axisNumber) => ({
             ignore_illegal_hall_state: { name: 'Ignore Illegal Hall State', description: 'Ignore illegal Hall sensor states', writable: true, type: 'boolean', valueType: 'BoolProperty' },
             sincos_gpio_pin_sin: { name: 'Sin/Cos GPIO Pin Sin', description: 'GPIO pin for sine signal', writable: true, type: 'number', valueType: 'Uint16Property' },
             sincos_gpio_pin_cos: { name: 'Sin/Cos GPIO Pin Cos', description: 'GPIO pin for cosine signal', writable: true, type: 'number', valueType: 'Uint16Property' },
-            hall_polarity: {
-              name: 'Hall Polarity',
-              description: 'Hall sensor polarity',
-              writable: true,
-              type: 'number',
-              valueType: 'Uint8Property'
-            },
             hall_polarity_calibrated: { name: 'Hall Polarity Calibrated', description: 'Hall sensor polarity calibration status', writable: true, type: 'boolean', valueType: 'BoolProperty' },
             direction: {
               name: 'Direction',
@@ -311,6 +304,13 @@ export const generateAxisTree = (axisNumber) => ({
                 { value: 1, label: 'Forward (1)' },
                 { value: -1, label: 'Reverse (-1)' }
               ]
+            },
+            hall_polarity: {
+              name: 'Hall Polarity',
+              description: 'Hall sensor polarity',
+              writable: true,
+              type: 'number',
+              valueType: 'Uint8Property'
             },
             use_index_offset: { name: 'Use Index Offset', description: 'Use encoder index offset', writable: true, type: 'boolean', valueType: 'BoolProperty' },
             index_offset: { name: 'Index Offset', description: 'Encoder index offset', writable: true, type: 'number', decimals: 6, valueType: 'Float32Property' },
