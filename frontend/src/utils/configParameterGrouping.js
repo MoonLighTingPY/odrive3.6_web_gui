@@ -3,9 +3,12 @@ export function getParameterGroup(param, groupMap) {
   if (groupMap[param.configKey]) return groupMap[param.configKey].group;
   // Fallbacks for special cases
   if (param.path && param.path.includes('fet_thermistor')) return 'FET Thermistor';
-  if (param.path && param.path.includes('brake')) return 'Current Limits & Brake Resistor';
+  if (param.path && param.path.includes('brake')) return 'Brake Resistor';
   if (param.path && param.path.includes('overvoltage_ramp')) return 'DC Bus Voltage Protection';
   if (param.path && param.path.includes('voltage')) return 'DC Bus Voltage Protection';
+  if (param.path && param.path.includes('lockin')) return 'Lock-in Configuration';
+  if (param.path && param.path.includes('sensorless')) return 'Sensorless Ramp';
+  if (param.path && param.path.includes('thermistor')) return 'Thermistor';
   return 'System'; // No more "Miscellaneous"
 }
 
@@ -17,6 +20,9 @@ export function getParameterSubgroup(param, groupMap) {
   if (param.path && param.path.includes('brake')) return 'Brake Resistor';
   if (param.path && param.path.includes('overvoltage_ramp')) return 'Ramp';
   if (param.path && param.path.includes('voltage')) return 'Trip Levels';
+  if (param.path && param.path.includes('lockin')) return 'Lock-in';
+  if (param.path && param.path.includes('sensorless')) return 'Sensorless Ramp';
+  if (param.path && param.path.includes('thermistor')) return 'Motor Thermistor';
   return 'Other';
 }
 
