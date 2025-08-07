@@ -1,0 +1,888 @@
+CHANGELOG
+[0.6.11] - 2025-04-14
+Added
+
+    Support for fully featured odrivetool-over-CAN and GUI-over-CAN usage
+
+        CANSimple: support for serving the embedded endpoint descriptor JSON file, read/write SDOs with more than 4 bytes payload, sequence numbers and Connection_ID in SDOs and Address message (not yet documented, currently only for use by odrivetool/GUI)
+
+        CANSimple: confirmation messages for write SDO messages. This may require changes to client applications that use Arbitrary Parameter Access if a write confirmation was previously not expected. See changes in example script.
+
+    CAN: Automatic baudrate detection, see Baudrate & Autobaud.
+
+    Add support for Harmonic Compensation. This significantly improves smoothness of velocity control when a magnet encoder is used with a slightly misaligned magnet.
+
+    De-skewing for magnetic encoders when the magnet is mounted off-axis by design. (For small misalignments, use Harmonic Compensation instead.)
+
+    Add identify_once(). This allows the GUI to blink the LED once when clicking on the device.
+
+    Add support for more thermistor types, particularly PT1000, KTY83/122 and KTY84/130. See Motor Thermistor Configuration.
+
+    Add experimental support for non-zero multiturn bit count on BISS-C encoders (spi_encoder0.config.biss_c_multiturn_bits).
+
+    Add experimental support for Novohall RSC-2800 encoder
+
+    Fixed ACIM torque constant scaling according to rotor flux
+
+    Fixed numerical integration issue in InputMode.POS_FILTER that slightly degraded its performance. Users of InputMode.POS_FILTER should verify their chosen controller.config.input_filter_bandwidth still results in acceptable performance
+
+    Added feedforward of controller.input_torque to the torque_setpoint for InputMode.VEL_RAMP, InputMode.POS_FILTER, and InputMode.TRAP_TRAJ. This lets the external controller add any (non)linear torque feedforward necessary, facilitating e.g. gravity compensation
+
+    Added <inc_encoder>.config.filter to allow configuring for faster incremental encoder signals. The default matches the hardcoded setting of previous firmware.
+
+    Support for recording variables at native control loop rate
+
+    Added current controller inductance current slew rate feedforward: dI_dt_FF_enable in <axis>.config.motor.
+
+    Added <axis>.detailed_disarm_reason. Currently only implemented for MISSING_ESTIMATE.
+
+Fixed
+
+    Fixed a bug where, when using hall encoders, the motor could stall while the velocity estimate was stuck at reporting a high velocity. This has been observed primarily on rapid deceleration.
+
+    The output for the UART ASCII protocol command r serial_number is no longer clipped. Previously, the output was clipped to 9 digits.
+
+    Fixed current_slew_rate_limit not observed by feedforward terms. During step changes of the torque setpoints, this could lead to momentary spikes in the motor current (and torque) that did not honor the configured slew rate limit.
+
+    rs485_encoder_group0.status now correctly reports ComponentStatus.PARITY_MISMATCH and ComponentStatus.INVALID_RESPONSE_LENGTH. Previously, it would report ComponentStatus.NO_RESPONSE in all those cases.
+
+    Fixed incorrect ENCODER_OFFSET_CALIBRATION result when odrv0.axis0.config.calib_scan_vel was 5.0 or higher. This could result in SPINOUT_DETECTED errors. The default value of this config is 2.0, so this fix only has an effect for users who tried to manually set a fast calibration velocity.
+
+    axis0.procedure_result is now reported as ProcedureResult.BUSY during AxisState.CLOSED_LOOP_CONTROL. This makes it consistent with other states. Previously, it was left unchanged when entering AxisState.CLOSED_LOOP_CONTROL and would therefore report the result of the previous state, unless clear_errors() was called.
+
+    Fixed small discontinuities in FET and motor thermistor measurements. For example on ODrive Micro, when the measured temperature was rising from 25°C to 26°C, it would move smoothly to 25.4°C and then make a step from 25.4°C to 25.7°C due to a numerical inaccuracy. Jumps happened around 25°C, 45°C, 66°C, 91°C and 120°C (ODrive Micro). With this fix, the temperature response is continuous throughout the full range. No real world issues are known that were caused by this.
+
+    [ODrive S1] brake_resistor0.was_saturated used to switch to true when the duty cycle was sitting at 0%. Now it correctly only reports clamping at the upper bound.
+
+Changed
+
+    Enabling/disabling incremental encoder (e.g. inc_encoder0.config.enabled) and changing CPR no longer requires a reboot
+
+Changes to odrivetool and Python package
+
+    support for Python <3.7 removed
+
+    support for manylinux_2_28_armv7l removed (System Requirements)
+
+    removed utils:
+
+        previously documented: BulkCapture and MachineConfig/AxisConfig/related
+
+        previously undocumented: step_and_plot(), oscilloscope_dump(), get_user_name(), benchmark(), devices() and possibly more
+
+    cleaned up global namespace in interactive odrivetool
+
+    changed signature of start_liveplotter()
+
+    improved performance
+
+    ability to connect to selected ODrives only and use unconnected ODrives in other programs
+
+    --name argument to define custom names for the interactive odrivetool shell
+
+    cleaner ways to discover devices in scripts (Discovery Use Cases)
+
+    optional seamless async usage with example script (or mixed sync/async usage)
+
+    fixed spurious warning when ODrive is rebooted
+
+[0.6.10] - 2024-08-27
+Added
+
+    Experimental support for dual RS485 encoders, see RS-485 Encoders.
+
+    Added OA1 thermistor support, see Motor Thermistor Configuration.
+
+    Added axis0.config.init_pos, init_vel, init_torque. Upon entering closed loop control, these values will be used to initialize axis0.controller.input_pos/input_vel/input_torque. An init_pos of NaN will initialize input_pos with the current motor position.
+
+    Added experimental support for sending and receiving CAN-FD frames (see can.config.data_baud_rate and tx_brs). This does not yet include any protocol changes to utilize the larger payload.
+
+    Configurable scales for Vel_FF and Torque_FF in CAN message Set_Input_Pos (<axis>.config.can.input_vel_scale and <axis>.config.can.input_torque_scale).
+
+Fixed
+
+    Fixed occasional sub-millisecond gap in responses sent by the ASCII protocol over UART.
+
+    Fixed issue in experimental sensorless mode that could cause occasional ODriveError.SYSTEM_LEVEL immediately after ramp-up.
+
+    Fixed reporting of high values in odrv.onboard_encoder0.get_field_strength(): Field strengths above 60mT used to be reported as NaN. With this fix, field strengths up to ~116mT are reported as numerical values, and infinity is returned for out-of-range values.
+
+    Fixed fw_version_unreleased (was 1 in previous releases, but reports correctly as 0 in this release)
+
+    Prevent side effects when requesting AxisState.CLOSED_LOOP_CONTROL while already in closed loop control. Side effects may have included brief “clicks” in the motor and inadvertent clearing of errors.
+
+    Fixed missing new-line character in UART ASCII protocol responses when using checksums. This was a regression since firmware version 0.5.2.
+
+    [ODrive Pro] Fixed firmware checksum calculation. This only applies to the new DFU system. The firmware update could sometimes fail with Failed to launch application: 6 and the ODrive would stay in DFU mode (even after power cycling). Previously, a full erase was required as a workaround. This is no longer needed with this firmware version.
+
+Changed
+
+    If ASCII protocol responses run into congestion (responses requested faster than they can be sent on UART), they are no longer buffered (best-effort) but discarded. This prevents partial responses in case of buffer overruns.
+
+    When using the ASCII protocol in checksum mode, the multiline responses for h (help) and i (info) get only one checksum at the end of the last line of the response. Previously, each line got its own checksum.
+
+    Feedforward terms are now also applied in lockin spin mode, according to user configuration.
+
+API migration notes
+
+This update contains no breaking API changes.
+Known Issues
+
+    On ODrive S1, the onboard encoder (onboard_encoder0.raw) always returns 0 when RS485 is enabled (rs485_encoder_group0). As a workaround, upgrade to devel firmware and use rs485_encoder_group1 instead of rs485_encoder_group0.
+
+[0.6.9-1] - 2024-02-08
+Fixed
+
+    Fixed issue in boot sequence that could leave the ODrive stuck with an orange LED on power-up. This was only observed on one production batch of ODrive S1 but might have affected other boards/batches as well.
+
+[0.6.9] - 2024-01-31
+
+Note
+
+The ODrive will no longer send CAN heartbeat messages in unconfigured state. A node ID must be set explicitly. See Discovery & Addressing.
+Added
+
+    Added <odrv>.axis0.observed_encoder_scale_factor for debugging POLE_PAIR_CPR_MISMATCH errors
+
+    Separate commutation encoder bandwidth <axis>.config.commutation_encoder_bandwidth
+
+    axis.controller.use_load_encoder_for_commutation_vel
+
+    Added support for receiving CAN broadcast messages using node ID 0x3f
+
+    Added support for CAN discovery & addressing scenarios that enable USB-free bootstrapping (see Address message)
+
+    Added new Action field to Reboot CAN message. This adds the ability to call save_configuration and erase_configuration via CAN.
+
+    Added Identify field to Clear_Errors CAN message.
+
+    Added Get_Powers CAN message.
+
+    Added axis0.motor.loss_power.
+
+    Added filtering for reported power and torque estimates.
+
+    Added active DC power and current limiting via <axis>.config.I_bus_soft_min, I_bus_soft_max, p_bus_soft_min and p_bus_soft_max.
+
+    Exposed <axis>.motor.dc_calib for diagnostics.
+
+    Exposed <odrv>.config.inverter0.mod_magn_max for diagnostics.
+
+    Exposed <axis>.<mapper>.working_offset and n_index_events for diagnostics.
+
+    Exposed hall encoder edge calibration as <odrv>.hall_encoder0.config.edge0,1... and edges_calibrated.
+
+    Added general purpose user storage (config.user_config_0...7)
+
+    Added enable pin functionality (see Error/Enable).
+
+    Support for ODrive Micro Engineering Sample
+
+    [odrivetool] odrivetool new-dfu and odrivetool install-bootloader: support for new DFU system
+
+Fixed
+
+    input_pos = NaN, input_vel = NaN and input_torque = NaN is now handled correctly in input modes InputMode.VEL_RAMP, TORQUE_RAMP, POS_FILTER and TRAP_TRAJ. Since 0.6.7 this was handled correctly in InputMode.PASSTHROUGH but not in other modes. This prevents for example an issue where the absence of a PWM input could cause the axis to spin at the maximum negative velocity.
+
+    The CAN message TxSdo (response to RxSdo) now returns the correct endpoint ID. Previously the field was 0.
+
+    axis0.motor.torque_estimate was inverted when axis0.motor.config.direction was negative.
+
+    axis0.motor.mechanical_power was off by a factor of pole_pairs ^ 2.
+
+    Fixes the result of axis0.config.motor.direction when running ENCODER_OFFSET_CALIBRATION in reverse direction (calib_scan_vel and calib_scan_distance negative). Previously, the sign of axis0.config.motor.direction came out flipped when running a reverse calibration.
+
+    Fixes an edge case in current sensor handling that could result in the motor disarming under specific circumstances. More specifically, disarm_reason = ODriveError.INITIALIZING could occur when high output modulation coincided with very low velocity, for instance a gimbal motor being stalled while applying high torque.
+
+    When changing firmware, in some cases (primarily on firmware downgrade), the non-volatile user configuration would be loaded despite the format being incompatible, causing undefined behavior. Stricter version checks have been added to prevent loading configuration from different firmware versions.
+
+    Fixes a regression in 0.6.8 whereby running offset calibration twice in a row on a system with negative motor direction would result in a broken calibration. More specifically, commutation_mapper.config.scale ended up positive (instead of negative). Enabling the motor afterwards could cause spinout errors.
+
+    [odrivetool] Avoid creating empty files in firmware cache when download fails
+
+Changed
+
+    The absolute position can now be set by writing to axis0.pos_estimate instead of calling axis0.set_abs_pos().
+
+    All CAN configuration changes now take effect immediately with out reboot
+
+    Changes to <axis>.controller.config.absolute_setpoints now take effect immediately, even when the axis is actively doing position control. Earlier, the changes would only apply when the axis is in IDLE. When changing this value, the setpoints are shifted accordingly avoid unexpected axis motion.
+
+    Changes to <axis>.config.encoder_bandwidth now take effect immediately
+
+    Of the CAN messages, only setpoint messages (Set_Input_Pos, Set_Input_Vel, Set_Input_Torque) feed the watchdog timer. The watchdog timer is also reset when entering CLOSED_LOOP_CONTROL through Set_Axis_State. Previously, all CAN messages fed the watchdog timer unconditionally.
+
+    The UART ASCII protocol command e (set encoder estimate) no longer feeds the watchdog timer.
+
+    The default CAN node_id changed from 0x00 to 0x3f (unaddressed state). Consequently, the ODrive will no longer send heartbeat and feedback messages with the default configuration.
+
+    Enter_DFU_Mode message deprecated. Use Reboot message with Action=3 instead.
+
+    When entering InputMode.VEL_RAMP (from IDLE or from another control/input mode), the ramp state is now initialized to the velocity estimate instead of 0.0. This allows for smoothly entering VEL_RAMP mode while the motor is spinning.
+
+    Passive index search now disables on the first index event.
+
+    Force short re-initialization period whenever the effective gain of the current sensors changes (e.g. by changing axis0.config.motor.current_hard_max).
+
+    Thermistor low pass filter now operates in voltage space instead of temperature space and its timeconstant was lowered from 100ms to 20ms
+
+    Added <odrv>.thermistor0 and <odrv>.thermistor1 representing the raw onboard thermistor values. On ODrive Pro/S1 these are currently equivalent to axis0.motor.fet_thermistor.temperature and axis0.brake_resistor0.chopper_temp. On ODrive Micro, axis0.motor.fet_thermistor.temperature is based on a thermal model and is usually higher than <odrv>.thermistor0.
+
+    [odrivetool] Added odrivetool legacy-dfu as alias for odrivetool dfu
+
+    [odrivetool] Flattened JSON format of odrivetool backup-config/restore-config
+
+    [odrivetool] removed legacy command odrivetool drv-status. Use dump_errors(odrv0) instead.
+
+API migration notes
+
+    <odrv>.config.enable_can_a removed. The CAN interface is implicitly disabled if <odrv>.config.can.protocol is Protocol.NONE and enabled if it is set to any other value. By default the CAN interface is enabled with Protocol.SIMPLE.
+
+    <axis>.config.can.is_extended removed. Use bit 31 of <axis>.config.can.node_id instead.
+
+    <odrv>.brake_resistor0.is_saturated renamed to was_saturated.
+
+    <axis>.min_endstop.endstop_state renamed to <axis>.min_endstop.state, same with max_endstop.
+
+    <mapper>.config.index_search_always_on replaced by <mapper>.config.passive_index_search
+
+Known Issues
+
+    On ODrive S1, the onboard encoder (onboard_encoder0.raw) always returns 0 when RS485 is enabled (rs485_encoder_group0). As a workaround, upgrade to devel firmware and use rs485_encoder_group1 instead of rs485_encoder_group0.
+
+[0.6.8] - 2023-09-12
+Added
+
+    Added support for 18-bit BiSS-C encoders on ODrive Pro and experimental support for other numbers of bits.
+
+    Added support for ODrive OA1 encoder over RS485
+
+    Added <odrv>.axis0.observed_encoder_scale_factor for debugging POLE_PAIR_CPR_MISMATCH errors
+
+    [odrivetool] Experimental ODrive Micro support
+
+Fixed
+
+    Fixed imprecise DC calibration of current measurements. This could cause a spurious torque excitation stepping back and forth slowly when the controller was requesting close to zero torque, especially on ODrive S1. Depending on the motor’s torque constant and axis load, this could translate to spurious motion of the motor.
+
+    Fixed bad response of some ASCII procotol commands (e.g. r axis0.active_errors returned 0d instead of 0).
+
+    Providing a negative value to <odrv>.axis0.config.general_lockin.accel (and other lockin spin configurations) no longer causes unbounded acceleration. The sign of accel is now ignored and the direction of the lockin spin is, like before, defined by the sign of vel.
+
+    [odrivetool] Fixed libfibre-linux-aarch64.so: wrong ELF class: ELFCLASS64 when running Python in 32-bit mode on 64-bit Linux
+
+Changed
+
+    Default for <odrv>.axis0.controller.config.vel_ramp_rate changed from 1 to 10.
+
+    Default for <odrv>.axis0.controller.config.input_filter_bandwidth changed from 2 to 20.
+
+    CAN message Get_Encoder_Estimates (0x09) now reports NAN instead of 0.0 when controller.config.absolute_setpoints is True but the absolute position is not yet known (axis not homed and approx_init_pos not configured).
+
+    Anticogging calibration now runs in both directions.
+
+    S1: Internal current limit is now dependent on config.dc_bus_overvoltage_trip_level to better reflect the device’s capability. Compared to firmware v0.6.7, which had an internal limit of 50A, the effective limit will be raised for dc_bus_overvoltage_trip_level < 47.25, and lowered for dc_bus_overvoltage_trip_level > 47.25. See S1 datasheet for details.
+
+API migration notes
+
+    <odrv>.amt21_encoder_group0 replaced by <odrv>.rs485_encoder_group0. Instead of <odrv>.amt21_encoder_group0.config.enable and <odrv>.amt21_encoder_group0.config.event_driven_mode, set <odrv>.rs485_encoder_group0.config.mode to Rs485EncoderMode.AMT21_POLLING or Rs485EncoderMode.AMT21_EVENT_DRIVEN.
+
+[0.6.7] - 2023-07-13
+
+Note
+
+ODrive S1: reduced <odrv>.config.inverter0.current_soft_max to 50A and <odrv>.config.inverter0.current_hard_max to 80A based on new long-term test results.
+Added
+
+    Internal watchdog to monitor the main control loop
+
+    <axis>.pos_vel_mapper.approx_init_pos to optionally allow for homing-free startup when absolute linear setpoints are used
+
+    Experimental field weakening (documentation pending)
+
+    New variable <odrv>.bootloader_version helps detect if the (upcoming) custom ODrive bootloader is installed
+
+Fixed
+
+    Fixed a bug related to endstop rising edge detection
+
+    Fixed a bug related to endstop debounce time
+
+    Fixed the homing sequence not driving towards the endstop
+
+    Fixed the homing sequence not going to the correct offset position
+
+    Reduced CPU load of SPI encoders. This increases the internal timing margins when using two SPI encoders simultaneously.
+
+    Corrected an issue with trapezoidal planner which could result in instability when given very different accel_limit and decel_limit
+
+        Known Issue: Trapezoidal planner uses accel_limit instead of decel_limit when performing initial deceleration in an “overshoot” move.
+
+    Fixed occasional spikes in the velocity estimate when using an AMT21xB-V-OD encoder (position reading could be shifted by 125µs).
+
+    Disarm when input_vel or input_torque is NaN (e.g. when fed from PWM input signal and the signal disappears).
+
+    Fixed undefined behavior when writing to min_endstop.config and max_endstop.config. There are no known real world impacts of this bug in previous firmware releases, except that .config.debounce_ms required a reboot to take effect.
+
+    Fixed ODrive not responding to CAN message Get_Torques (0x01x)
+
+    Fixed “usb.core.USBError: [Errno 75] Overflow” when entering DFU from firmware (regression in 0.6.5)
+
+    If resistance_calib_max_voltage is unfeasible (larger than what can be produced at the given DC voltage), the motor calibration now exits with disarm_reason = CALIBRATION_ERROR and procedure_result = PHASE_INDUCTANCE_OUT_OF_RANGE, thereby pointing the user to the relevant error documentation.
+
+    ODrive S1: indicate in axis0.active_errors when brake resistor is enabled but disarmed
+
+    ODrive S1: Make brake_resistor0.is_saturated writable (this variable does not auto-clear once true).
+
+    ODrive S1: reduced <odrv>.config.inverter0.current_soft_max to 50A and <odrv>.config.inverter0.current_hard_max to 80A based on new long-term test results.
+
+    [odrivetool] Fixed dump_errors() decoding and related minor compatibility issues in Python 3.11 (caused by changes in enum module).
+
+    [odrivetool] Tell user to use DFU switch in cases where DFU is known to fail otherwise.
+
+Changed
+
+    Reduced jitter of the sampling point timing of various inputs sources (SPI encoders, onboard encoders and more)
+
+    Report pos_vel_mapper.pos_abs and commutation_mapper.pos_abs as NAN when uninitialized
+
+[0.6.6] - 2023-04-12
+Added
+
+    [odrivetool] Show firmware version when a device connects
+
+    [CAN] Added Get_Torques_Msg at 0x01C which reports controller.effective_torque_setpoint (final torque target from controller) and motor.torque_estimate
+
+    Ability to customize SPI baudrate and error threshold via <spi_encoder>.config.baudrate and <spi_encoder>.config.max_error_rate
+
+    Ability to get a rough estimate of field strength at the onboard encoder.
+
+    Experimental support for TLE5012B encoder.
+
+    ODriveError.THERMISTOR_DISCONNECTED if the motor thermistor is enabled but disconnected.
+
+    Experimental anticogging
+
+Fixed
+
+    Fixed encoder/motor direction finding at slow velocity. This fixes SPINOUT_DETECTED after ENCODER_OFFSET_CALIBRATION with default settings on high pole pair motors (around 21 pole pairs or more).
+
+    Fixed race condition between TX and RX sides of UART. This might have caused sporadic hangs of the UART’s TX side while the ODrive still appeared to receive commands on the RX side.
+
+    Fixed swapped L_d, L_q in the feedforward component omega * L * I
+
+    Fixed last_drv_fault showing as zero for some cases of DRV_FAULT.
+
+Changed
+
+    <axis>.motor.motor_thermistor.temperature reported as NAN when the thermistor is disabled or configured to an invalid GPIO.
+
+    RC PWM input falls back to NAN if no edge is detected for >100ms. This will disarm the motor when connected to input_pos or similar.
+
+    All parameters in <odrv>.config.inverter0 changed to read-only unless in developer mode.
+
+    <odrv>.config.dc_bus_undervoltage_trip_level and <odrv>.config.dc_bus_overvoltage_trip_level limited according to the board’s voltage range
+
+    Relax brake resistor inverter limits on S1 revisions X6 and higher (max DC voltage limit removed, max current raised from 20A to 60A, max duty cycle raised from 80% to 90%).
+
+API migration notes
+
+    motor.fet_thermistor.config removed. The FET thermistor is now always enabled. The limits can be viewed in <odrv>.config.inverter0.temp_limit_lower and temp_limit_upper.
+
+[0.6.5] - 2023-01-25
+Added
+
+    Reinclude Mapper.set_abs_pos() for spinout testing, users are encouraged to use <axis>.set_abs_pos() instead.
+
+    Compatibility with upcoming ODrive DFU-over-CAN bootloader (firmware manifest embedded in binary, <odrv>.enter_dfu_mode2() and corresponding CANSimple message 0x1f)
+
+    <odrv>.identify to flash the status LED
+
+    Position input values are now reset to the current position when changing from a different control mode to position control
+
+    Added motor.torque_estimate to API
+
+    Added motor.electrical_power and motor.mechanical_power to API
+
+    Step count now rebased to the equivalent position when changing circular_setpoint_range or steps_per_circular_range
+
+    Various CAN Simple protocol updates
+
+        Added Get_Version_Msg at cmdId 0x000, which returns CAN Simple version, Hw Version, and Fw Version
+
+        Made all Get_ messages available as cyclic broadcasts - see <axis>.config.can
+
+        Added units and enum names to all signals in .dbc
+
+    Added initial_pos to lock-in-spin config.
+
+    [odrivetool] Added --no-erase-all flag
+
+    [odrivetool] Presumably fixed slow resource leak on Windows that could slow down odrivetool after several hours.
+
+Fixed
+
+    Fix SpiEncoderMode.MA732. Before, the MSB was dropped due to a superfluous transition on SCLK, so the position reading would read two turns while only one physical turn was made.
+
+    Error GPIO (was sending an 8kHz signal rather than the error state) and default setting for axis0.config.error_gpio_pin on ODrive Pro
+
+    When running motor calibration with an infeasible resistance_calib_max_voltage (too high w.r.t. vbus_voltage), it would fail with ODriveError.SYSTEM_LEVEL. Now it fails with ProcedureResult.PHASE_RESISTANCE_OUT_OF_RANGE instead, guiding the user to the correct solution.
+
+    Reset mapper configuration when modifying <axis>.config.commutation_encoder or <axis>.config.load_encoder. This fixes for instance POLE_PAIR_CPR_MISMATCH when changing the load encoder from hall encoders to incremental encoders without erasing configuration.
+
+    Fixed incorrect reporting of disarm reason DRV_FAULT (was wrongly reported as INITIALIZING)
+
+    Fixed behavior of the wait-for-ready grace period on startup:
+
+        The wait-for-ready tolerance was longer than configured. Now startup_max_wait_for_ready is correctly taken into account.
+
+        The delay was executed even when no startup actions were enabled. During this time the axis reported current_state as AxisState.STARTUP_SEQUENCE. Now the axis directly goes to AxisState.IDLE if no startup actions are enabled.
+
+        Writes to requested_state were ignored during the startup delay. In combination with the above, this could mean that when a calibration/closed-loop-control state was requested shortly after startup, the axis would proceed to IDLE without correctly reporting errors such as INITIALIZING or DC_BUS_UNDER_VOLTAGE.
+
+    Fixed issue where input_pos would always be locked to [0, 1) instead of the circular_setpoint_range. This also affected step/dir with setpoint range different from 1.
+
+    Fixed an internal issue with reducing SVM modulation magnitude when the amplifier settling time is long
+
+    FULL_CALIBRATION_SEQUENCE now correctly skips MOTOR_CALIBRATION for gimbal motors
+
+    Fixed active_errors: ODriveError.MISSING_INPUT when using PWM input mode. This was a regression in 0.6.2.
+
+    Clamped gain scheduling multiplier to 1.0
+
+    Ensure safe behavior when changing <axis>.controller.config.control_mode during closed loop control.
+
+        Init input_pos to the current encoder estimate when switching to ControlMode.POSITION_CONTROL.
+
+        Init input_vel to 0 when switching to ControlMode.VELOCITY_CONTROL.
+
+        Init input_torque to 0 when switching to ControlMode.TORQUE_CONTROL.
+
+        Reset vel_integrator_torque whenever the velocity controller goes from inactive to active (e.g. switching from ControlMode.TORQUE_CONTROL to ControlMode.POSITION_CONTROL).
+
+    Init input_vel and input_torque to zero when entering closed loop control (if the selected ControlMode uses the respective value).
+
+    [odrivetool] Silence warning “protocol failed with 3 - propagating error to application”. This warning was harmless and therefore distracting.
+
+    [odrivetool] Fix occasional error Transfer on EP XX still in progress. This is gonna be messy., sometimes followed by a segmentation fault, when disconnecting an ODrive.
+
+Changed
+
+    dc_bus_overvoltage_ramp renamed to dc_bus_voltage_feedback
+
+    Remove anticogging and axis mirroring from the API.
+
+    Rename mechanical_power to spinout_mechanical_power and electrical_power to spinout_electrical_power in controller.
+
+    Adjusted default overvoltage trip level and voltage feedback points.
+
+    Removed autotuning pos/vel/torque phase. TUNING mode instead enforces the correct phase of each
+
+    Lowered the default odrv_fan and motor_fan temperature thresholds.
+
+    Simplified thermistor setup by adding config variables r_ref, t_ref and beta to motor_thermistor.config.
+
+    Input mode TUNING now cycles position from 0 to 2*pos_amplitude.
+
+API migration notes
+
+    set_motor_thermistor_coeffs() no longer works on this firmware version. Configure motor_thermistor.config.r_ref, t_ref and beta instead.
+
+    <axis>.controller.mechanical_power renamed to spinout_mechanical_power. For general mechanical power reporting use <axis>.motor.mechanical_power
+
+    <axis>.controller.electrical_power renamed to spinout_electrical_power. For general electrical power reporting use <axis>.motor.electrical_power
+
+    <odrv>.config.brake_resistor0.enable_dc_bus_overvoltage_ramp renamed to enable_dc_bus_voltage_feedback
+
+    <odrv>.config.brake_resistor0.dc_bus_overvoltage_ramp_start renamed to dc_bus_voltage_feedback_ramp_start
+
+    <odrv>.config.brake_resistor0.dc_bus_overvoltage_ramp_end renamed to dc_bus_voltage_feedback_ramp_end
+
+    <axis>.config.can.heartbeat_rate_ms renamed to heartbeat_msg_rate_ms
+
+    <axis>.config.can.encoder_rate_ms renamed to encoder_msg_rate_ms
+
+[0.6.4-1] - 2022-12-12
+Fixed
+
+    Reduced maximum modulation depth of ODrive S1 to 78%. This addresses current measurements becoming unreliable at higher modulation depths. Future hardware revisions will have this limit raised back to 100%.
+
+[0.6.4] - 2022-10-31
+Fixed
+
+    [ODrive S1] Event driven AMT21 mode (amt21_encoder_group0.config.event_driven_mode = True) was not working (amt21_encoder_group0.raw was always 0). Now it works as expected.
+
+    [ODrive Pro] Fixed motor thermistor pin. Before this, odrv0.axis0.motor.motor_thermistor.config.gpio_pin needed to be set to 2 (which also was the default) for the thermistor to work even though the thermistor is actually on pin 3.
+
+    Better CPU usage optimization. This fixes ODriveError.TIMING_ERROR when using two SPI encoders.
+
+    Fix WinUSB compatibility descriptors. This fixes “Could not open USB device: -5” in odrivetool and “claimInterface() failed with type 6” in the web GUI.
+
+    Fix ProcedureResult.TIMEOUT when running AxisState.ENCODER_OFFSET_CALIBRATION with motor_type = MotorType.GIMBAL.
+
+    [odrivetool] System level errors on legacy hardware will now be parsed correctly
+
+Changed
+
+    Increased analog and PWM polling rate to 1kHz
+
+    Tuned propagation delay compensation for event driven AMT21 mode from 19.5us to 21.8us
+
+    Improved can_generate_dbc.py script and resultant .dbc file. Now supports up to 8 ODrives (0..7) natively
+
+    Removed old 0.4.12 CONTROL_MODE_TRAJECTORY_CONTROL enum which was no longer supported
+
+    Encoder calibration current automatically clipped to motor.current_soft_max
+
+[0.6.3] - 2022-08-19
+Added
+
+    Support for AMT21 self-sending mode (amt21_encoder_group0.config.event_driven_mode). This fixes aliasing problems that occurred due to different internal update frequencies between the AMT21 and ODrive. AMT21 firmware needs to be updated to use this mode.
+
+Fixed
+
+    Fix voltage feedforward terms (omega*L and backEMF). They were too low by a factor of 2*pi. This only has an effect if wL_FF_enable or bEMF_FF_enable in <axis>.config.motor was true. Fixes a regression in 0.6.0.
+
+    Fixed bug in input modes InputMode.POS_FILTER and InputMode.TRAP_TRAJ whereby the axis would snap to position 0 as soon as entering CLOSED_LOOP_CONTROL, and then move back to the position at which it was armed. With this fix, the axis does not move when armed. Fixes a regression in 0.5.2.
+
+    Fixed lockin spin (used for encoder offset calibration and other calibration states) for MotorType.GIMBAL. Previously the motor would not move when trying to do a lockin spin in gimbal motor mode. Fixes a regression in 0.6.1.
+
+    [ODrive S1] improved accuracy of motor calibration
+
+    Fixed an issue where the motor would spin slower when attempting to drive the motor faster than possible without field weakening (priority mod-d clamping).
+
+Changed
+
+    All motor modes now include the feed forward term V_dq += I_dq * phase_resistance where I_dq is the current setpoint.
+
+        Gimbal motor mode no longer reinterprets current as voltage, but requires that phase_resistance and phase_resistance_valid are set. Set phase_resistance = 1 to emulate old behavior.
+
+    Reboot no longer needed to enabled/reconfigure AMT21
+
+API Migration Guide
+
+    <axis>.config.motor.phase_resistance_inductance_valid replaced by phase_resistance_valid and phase_inductance_valid
+
+    <axis>.config.motor.R_wL_FF_enable renamed to wL_FF_enable because R is always fed forward
+
+[0.6.2] - 2022-08-09
+Added
+
+    <axis>.controller.effective_torque_setpoint to monitor effective torque commanded by controller
+
+    <axis>.config.motor.current_slew_rate_limit. Increase to get faster torque response, reduce to improve current controller stability. Anti-windup connection to pos/vel controller not yet implemented, be careful of using very slow rates.
+
+    Calculated brake resistor current at <odrv>.brake_resistor0.current
+
+    inc_encoder0.raw, inc_encoder1.raw and ams21_encoder_group0.raw for better debugging insight
+
+    <axis>.config.startup_max_wait_for_ready (defaults to 3 seconds)
+
+    <spi_encoder>.n_errors for better diagnostics
+
+    [odrivetool] Add --version option to odrivetool dfu
+
+Fixed
+
+    reboot on erase_configuration() even if NVM was already clean to ensure reset of in-RAM config
+
+    Apply modulation limit also for voltage-only control. This fixes occasional ODriveError.SYSTEM_LEVEL if gimbal motor mode was used.
+
+    Clear <odrv>.procedure_result on <odrv>.clear_errors()
+
+    Update <odrv>.ibus and check for violations of dc_max_positive_current and dc_max_negative_current also when brake resistor is unavailable or disabled (fixes a regression in 0.6.1)
+
+    Fix Trapezoidal Trajectory mode not working (fixes a regression in 0.6.0)
+
+    Fix startup actions not working (e.g. <axis>.config.startup_motor_calibration). When these flags were enabled, the device started with a ODriveError.DRV_FAULT instead of doing the startup action.
+
+    Autoclear error flag on AMS encoders. Before, as soon as the AMS encoder detected any transfer error (such as bad parity), the ODrive would stop accepting values from it until the encoder was power cycled. With this fix, the ODrive will still drop out of closed loop control if the error flag is set, but it can re-enter closed loop control right after that.
+
+    Increase current limit factor during motor resistance calibration from 1.5 to 2.0 (times <axis>.config.motor.calibration_current). This reduces the likelihood of ODriveError.CURRENT_LIMIT_VIOLATION during motor calibration (especially if there’s a twitch motion of the motor).
+
+    Fix scaling of hall and sensorless mode, reported speed / position was too high by a factor of motor.pole_pairs
+
+        Note: Due to this fix, position control may drift over time in hall mode (sensorless does not support position control mode)
+
+    Report missing pos_setpoint / vel_setpoint / torque_setpoint in <axis>.active_errors as ODriveError.MISSING_INPUT. This allows for error-free startup if PWM input becomes available later than the ODrive’s initialization time.
+
+    [odrivetool] fix enum decoding compatibility with firmware 0.5.4
+
+    [odrivetool] Added back missing old-style enum names (such as ENCODER_MODE_HALL, used in some versions of the docs and corresponding to EncoderMode.HALL)
+
+    [odrivetool] Compatibility with Python 3.6
+
+    [odrivetool] Added missing enum value ODriveError.CALIBRATION_ERROR (fixes UNKNOWN ERROR: 0x40000000)
+
+    [odrivetool] Fix corruption of Python interpreter. When __pycache__ was clear (e.g. on first load of the odrive module), on ODrive discovery the backend would overwrite Python’s b'\0' buffer with something non-zero, resulting in subsequent unexpected behavior such as print(b'\0') => ':'.
+
+Changed
+
+    set_abs_pos moved from mapper to axis level and now compensates input_pos and pos_setpoint when changing the absolute position reference.
+
+    Changes to <axis>.controller.config.absolute_setpoints takes effect without reboot (in IDLE)
+
+    CANSimple message Set Linear Count that took integer counts changed to Set Absolute Position that takes a float.
+
+    Changed CAN heartbeat from reporting active_errors to reporting active_errors | disarm_reason
+
+    Changed current_status size in CAN heartbeat from 32 bit to 8 bit
+
+    Added disarm_reason to CAN message MSG_GET_ERROR (0x003)
+
+API Migration Guide
+
+    <axis>.pos_vel_mapper.set_abs_pos() moved to <axis>.set_abs_pos().
+
+    <axis>.controller.config.enable_current_mode_vel_limit moved back to <axis>.controller.config.enable_torque_mode_vel_limit (fixes a regression in 0.6.0).
+
+Known Issues
+
+    Whenever entering AxisState.CLOSED_LOOP_CONTROL with an input mode of InputMode.TRAP_TRAJ or InputMode.POS_FILTER, the axis snaps to position 0 and then moves back to the position at which it was armed. Using trapezoidal trajectory or input position filter mode is therefore discouraged on this firmware version.
+
+    Position control may drift over time in hall mode
+
+    Lockin spin (used for encoder offset calibration and other calibration states) with motor_type = MotorType.GIMBAL tries to use current control instead of open loop voltage control. This means depending on configuration, lockin spin either exits with a configuration error or just doesn’t move the motor. As a workaround, in <axis>.config.motor set phase_inductance = 1, phase_resistance_inductance_valid = True and current_control_bandwidth = 0.
+
+[0.6.1] - 2022-06-03
+Fixed
+
+    Improved error reporting
+
+    Encoder calibration no longer uses <axis>.config.motor.calibration_current as current but rather <axis>.config.calibration_lockin.current
+
+    Fixed unknown command on first ASCII protocol command after startup caused by a spurious byte in the RX buffer
+
+    Possibly fixed occasional UART TX hang that would occur during closed loop control
+
+    Fixed winusb.sys not automatically loading
+
+    Fixed various USB enumeration errors (string descriptors showing as ‘Љ’, ‘(error)’ or in wrong places and errors like “could not read langid”, “couldn’t open device” and “not available”)
+
+    Restored ability to disable CAN Simple messages by setting the interval to 0 (regression in 0.6.0)
+
+    Fixed wrong velocity used during second half of hall polarity calibration
+
+    Fixed homing getting stuck in ProcedureResult.BUSY
+
+    Fixed AxisState.FULL_CALIBRATION_SEQUENCE when using onboard encoder
+
+    Fixed FET temperature readings on ODrive Pro. The reported temperature was higher than the actual temperature:
+
+        reported 100°C => actual 103°C
+
+        reported 40°C => actual 29°C
+
+        actual = old_reported * 0.92 - 7.79
+
+    Fixed CAN bug where the ODrive would stop handling incoming messages after a large number of incoming messages.
+
+    Fixed PWM input on ODrive Pro
+
+    Increased default velocity limit from 2 turns/s to 10 turns/s. This also increases the default absolute velocity margin, leading to less overspeed errors on first use.
+
+    Decreased cutoff frequency of incremental encoder input filters
+
+Added
+
+    Landing page popup when ODrive is plugged in while Chrome browser is open
+
+    <axis>.config.index_search_at_target_vel_only option to make index search sensitive straight away or if it needs to get to target speed first.
+
+    SpiEncoder.delay to compensate for slow SPI encoders
+
+    Exposed more hall effect sensor state at HallEncoder.raw_hall_state, HallEncoder.Config.hall_polarity and HallEncoder.Config.hall_polarity_calibrated
+
+    Diagnostics variable <odrv>.can.n_restarts (a CAN restart isn’t necessarily an error - if the device is not on any bus the CAN interface will restart continuously)
+
+    Id,q feedforward terms <axis>.motor.input_id, <axis>.motor.input_iq
+
+    More tweak options in <axis>.config.motor: ff_pm_flux_linkage, torque_model_l_d, torque_model_l_q (see API reference for details)
+
+    Add timeout for calibration functions (e.g. when target current can’t be reached because it’s above the current limit)
+
+    CAN Simple protocol command MSG_GET_TEMPERATURE
+
+    CAN RX count (for debugging): <odrv>.can.n_rx
+
+Changed
+
+    Increased maximum modulation depth from 80% to 100% (that means more max velocity for the same DC voltage).
+
+    Most variables in axis.config.motor require the axis to be in idle state to take effect.
+
+    Motor calibration is persistent by default on next save_configuration() (previously it required setting pre_calibrated)
+
+    At startup, the axis previously waited in UNDEFINED state for 2 seconds to wait for initialization to complete. Now it goes into IDLE state immediately. Use (axis.active_errors & ODriveError.INITIALIZING) == 0 to check for readiness.
+
+    Requesting an unknown state drops to IDLE without setting any error
+
+    <axis>.acim_estimator units changed
+
+    New LED behavior: NOT READY: Blue, READY: Cyan, RUNNING: Green, ERROR: Red
+
+    Removed CAN message MSG_GET_SENSORLESS_ERROR (0x005)
+
+    Changed CAN message 0x003 from MSG_GET_MOTOR_ERROR to MSG_GET_ERROR
+
+API Migration Guide
+
+    <odrv>.error removed. Use <axis>.active_errors and <axis>.disarm_reason instead.
+
+    <odrv>.n_issues removed. use <odrv>.issues.length instead.
+
+    <odrv>.config.error_gpio_pin moved to <axis>.config.error_gpio_pin
+
+    <axis>.motor.config moved to <axis>.config.motor
+
+    <axis>.motor.config.current_lim moved to <axis>.config.motor.current_soft_max and <odrv>.config.inverter0.current_soft_max.
+
+    <axis>.motor.config.current_lim_margin removed. Use <axis>.config.motor.current_hard_max and instead. A separate limit for the inverter was added under <odrv>.config.inverter0.current_hard_max and should usually not be modified.
+
+    <axis>.motor.config.pre_calibrated and <axis>.motor.is_calibrated replaced by <axis>.config.motor.phase_resistance_inductance_valid. This new variable goes to True automatically after successful motor calibration.
+
+    <axis>.motor.config.torque_lim replaced by <axis>.config.torque_soft_min and <axis>.config.torque_soft_max.
+
+    <axis>.motor.config.requested_current_range removed. It now gets internally set to 1.1 * min(<odrv>.config.inverter0.current_hard_max, <axis>.config.motor.current_hard_max).
+
+    <axis>.motor.current_control moved to <axis>.foc
+
+    <axis>.motor.is_armed moved to <axis>.is_armed
+
+    <axis>.motor.I_bus_hard_min and <axis>.motor.I_bus_hard_max moved to <axis>.I_bus_hard_min and <axis>.I_bus_hard_max
+
+    <axis>.motor.dc_calib_tau removed
+
+    <axis>.motor.last_error_time removed. Use <axis>.disarm_time instead.
+
+    <axis>.sensorless_estimator.config.observer_gain moved to <axis>.config.motor.sensorless_observer_gain
+
+    <axis>.sensorless_estimator.config.pll_bandwidth moved to <axis>.config.motor.sensorless_pll_bandwidth
+
+    <axis>.sensorless_estimator.config.pm_flux_linkage moved to <axis>.config.motor.sensorless_pm_flux_linkage and made optional by <axis>.config.motor.sensorless_pm_flux_linkage_valid (by default implied by <axis>.config.motor.pole_pairs and <axis>.config.motor.torque_constant)
+
+    Reorganized brake resistor API. On ODrive S1 all brake-resistor related variables got grouped together. On ODrive Pro (which supports no brake resistor) they got removed.
+
+        <odrv>.brake_resistor_armed moved to <odrv>.brake_resistor0.is_armed or removed
+
+        <odrv>.brake_resistor_saturated moved to <odrv>.brake_resistor0.is_saturated or removed
+
+        <odrv>.config.enable_brake_resistor moved to <odrv>.config.brake_resistor0.enable or removed
+
+        <odrv>.config.brake_resistance moved to <odrv>.config.brake_resistor0.resistance or removed
+
+        <odrv>.config.enable_dc_bus_overvoltage_ramp moved to <odrv>.config.brake_resistor0.enable_dc_bus_overvoltage_ramp or removed
+
+        <odrv>.config.dc_bus_overvoltage_ramp_start moved to <odrv>.config.brake_resistor0.dc_bus_overvoltage_ramp_start or removed
+
+        <odrv>.config.dc_bus_overvoltage_ramp_end moved to <odrv>.config.brake_resistor0.dc_bus_overvoltage_ramp_end or removed
+
+    <axis>.controller.status, <axis>.motor.error and <axis>.error removed. Replaced by axis.active_errors and axis.disarm_reason.
+
+[0.6.0] - 2022-02-21
+Fixed
+
+    Fixed CAN command MSG_GET_IQ to return Iq setpoint and Iq measurement as documented
+
+    Fixed SPI hang during high CPU load
+
+    Make current limit active in lockin spin
+
+    Fixed violation of velocity ramp limit when increasing the velocity limit in InputMode.VEL_RAMP mode while input_vel is higher than the old velocity limit
+
+Added
+
+    Added support for ODrive Pro
+
+    Added motor.resistance_calibration_I_beta for debugging of MOTOR_UNBALANCED_PHASES error
+
+    Added bursty sine stimulus (InputMode.TUNING)
+
+    issues count n_issues to indicated unexpected issues (probably bugs)
+
+    Added controller.config.use_commutation_vel
+
+    Added 8kHz logging (“oscilloscope”) of arbitrary memory locations (internal use only)
+
+    Added firmware commit hash hex(<odrv>.commit_hash)
+
+    Make DRV config parameters configurable (internal use only)
+
+    odrivetool: Added experimental machine-centric configuration system. See example_config, status(example_config), apply(example_config) and calibrate(example_config).
+
+Changed
+
+    Changing the CAN node ID now requires a reboot to take effect.
+
+    Reboot on hard fault (n_issues will init to 1 after reboot)
+
+    Anticogging temporarily not available
+
+    Encoder object split into multiple objects (hardware-dependent components, estimator, interpolator, commutation mapper and load mapper). See API Migration Notes below.
+
+    Hall effect innovation residual size can be non-uniform
+
+    when an illegal hall state is encountered, rather than using the last hall state to derive a measurement residual, the measurement residual is returned as 0
+
+    Hall calibration runs in both directions
+
+    On transient SPI errors, the encoder estimator is left in prediction mode rather than correcting towards the last known measurement
+
+    SPI error rate low pass filter gain increased from 1 to 50 so the error clears faster (~100ms) when the encoder is connected
+
+    Snap-to-zero-velocity is no longer supported for SPI encoders because it was not sensible for most SPI encoders and it saves the user from specifying CPR for SPI encoders.
+
+    Interpolator is not limited to equisized steps
+
+    Encoder offset calibration only checks at the end if the index was found, so offset calibration and index search can happen in one.
+
+    Encoder offset calibration uses least squares line fit
+
+    When absolute setpoints are used (controller.config.absolute_setpoints), position control is not allowed before homing.
+
+    The CAN messages MSG_GET_ENCODER_ERROR (0x004), MSG_GET_ENCODER_COUNT (0x00a) and MSG_GET_SENSORLESS_ESTIMATES (0x015) got removed
+
+    Allow responses on CAN Simple if DLC == 0
+
+    odrivetool: Changed enum naming convention from AXIS_STATE_CLOSED_LOOP_CONTROL to AxisState.CLOSED_LOOP_CONTROL
+
+API Migration Notes
+
+    <axis>.encoder was removed
+
+        Instead of <axis>.encoder.config.mode use <axis>.config.load_encoder and <axis>.config.commutation_encoder. To set the SPI encoder type, use <odrv>.spi_encoderX.config.mode.
+
+        Instead of <axis>.encoder.pos_estimate/<axis>.encoder.pos_circular use <axis>.load_mapper.pos_rel or <axis>.load_mapper.pos_abs and make sure <axis>.controller.config.circular_setpoints is set correctly.
+
+        Instead of <axis>.encoder.vel_estimate use <axis>.load_mapper.vel.
+
+        Instead of <axis>.encoder.set_linear_count() use <axis>.load_mapper.set_abs_pos().
+
+        Instead of <axis>.encoder.config.bandwidth use <axis>.config.encoder_bandwidth.
+
+        Encoder type specific variables and config can be accessed via <odrv>.inc_encoder0, <odrv>.inc_encoder1, <odrv>.spi_encoder0, <odrv>.spi_encoder1, <odrv>.hall_encoder0, <odrv>.hall_encoder1.
+
+        <axis>.encoder.config.calib_range moved to <axis>.config.calib_range
+
+        <axis>.encoder.config.calib_scan_distance moved to <axis>.config.calib_scan_distance
+
+        <axis>.encoder.config.calib_scan_omega replaced by <axis>.config.calib_scan_vel (changed units)
+
+        Instead of <axis>.encoder.error use <odrv>.spi_encoder0.status (or similar) for runtime (active) errors and <axis>.procedure_result after calibration for calibration errors.
+
+    <axis>.config.general_lockin.finish_on_enc_idx was removed without replacement.
+
+    Motor error codes that can only occur during motor calibration were removed. Inspect <axis>.procedure_result instead.
+
+    <axis>.controller.error was replaced by <axis>.controller.status which has a different type
+
+    <axis>.controller.anticogging_valid was removed without replacement.
+
+    <axis>.controller.load_encoder_axis was removed. Use <axis>.config.load_encoder instead.
+
+    <axis>.controller.last_error_time was removed. Use <axis>.disarm_time instead.
+
+    <axis>.sensorless_estimator.vel_estimate was removed. Use <axis>.sensorless_estimator.phase_vel instead (different unit).
+
+    <axis>.controller.config.enable_torque_mode_vel_limit moved to <axis>.controller.config.enable_current_mode_vel_limit (regression - reverted in 0.6.2).
+
