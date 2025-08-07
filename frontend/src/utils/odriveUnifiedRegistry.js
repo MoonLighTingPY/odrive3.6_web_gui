@@ -5,12 +5,13 @@
  * generates all other data structures (commands, batch paths, mappings, etc.)
  */
 
-import { odrivePropertyTree } from './odrivePropertyTree'
+import { generateOdrivePropertyTree } from './odrivePropertyTree'
 import { convertKvToTorqueConstant } from './valueHelpers'
 
 class ODriveUnifiedRegistry {
-  constructor() {
-    this.propertyTree = odrivePropertyTree
+  constructor(firmwareVersion = "0.5.6") {
+    this.firmwareVersion = firmwareVersion
+    this.propertyTree = generateOdrivePropertyTree(firmwareVersion)
     this.configCategories = this._generateConfigCategories()
     this.batchPaths = this._generateBatchPaths()
     this.propertyMappings = this._generatePropertyMappings()
@@ -18,6 +19,7 @@ class ODriveUnifiedRegistry {
     this.commands = this._generateCommands() // Add this line
 
     console.log('ODrive Unified Registry initialized:', {
+      firmwareVersion: this.firmwareVersion,
       categories: Object.keys(this.configCategories),
       totalParams: Object.values(this.configCategories).reduce((sum, params) => sum + params.length, 0),
       batchPathsCount: this.batchPaths.length,
@@ -777,7 +779,8 @@ class ODriveUnifiedRegistry {
   }
 }
 
-const odriveRegistry = new ODriveUnifiedRegistry()
+const odriveRegistry = new ODriveUnifiedRegistry() // Default 0.5.6 instance
+export const createRegistryForVersion = (firmwareVersion) => new ODriveUnifiedRegistry(firmwareVersion)
 
 export const getBatchPaths = () => odriveRegistry.getBatchPaths()
 export const getPropertyMappings = (category) => odriveRegistry.getPropertyMappings(category)
