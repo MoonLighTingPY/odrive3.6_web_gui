@@ -122,11 +122,12 @@ If you see that the description of any file here is not complete or wrong, pleas
 
 ## Copilot Instructions
 
-fyi, i use powershell only in my terminal.
+fyi, i use powershell only in my terminal, so dont use linux commands and syntax, use powershell commands and syntax.
 if the change is code is not big - just show me the relevant part, and what i need to edit in the corresponding files.
 
 There is local docs for odrive 0.5.6 at "odrive_docs_local\odrive_local\docs.odriverobotics.com\v\0.5.6"
 
 also, there is an api reference for 0.5.6 and 0.6.11 at "odrive_docs_local\api_references\API ODrive Reference — ODrive Documentation 0.5.6 documentation.txt" and "odrive_docs_local\api_references\API ODrive Reference — ODrive Documentation 0.6.11 documentation.txt"
 
-Current task - add 0.6.11 support to the project, so it will be able to work with both 0.5.x and 0.6.x odrives. always check the changelog and api reference for the changes in the new version, and how it affects the current code.
+Current task - add 0.6.11 support to the project, so it will be able to work with both 0.5.x and 0.6.x odrives. always check the changelog and api reference for the changes in the new version, and how it affects the current code. there is a comparison document at 
+- **`odrive_docs_local\ODrive_API_Comparison_0.5.6_to_0.6.11.md`** that lists all changes between 0.5.6 and 0.6.11.
