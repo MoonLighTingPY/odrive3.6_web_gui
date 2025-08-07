@@ -1,0 +1,3435 @@
+ODrive API Reference 0.6.11
+
+class ODrive
+
+    Toplevel interface of your ODrive.
+
+    The odrv0, odrv1, … objects that appear in odrivetool implement this toplevel interface.
+
+    test_function(delta) → int
+
+        Parameters:
+
+            delta (int) –
+
+    get_adc_voltage(gpio) → float
+
+        Reads the ADC voltage of the specified GPIO. The GPIO should be in GpioMode.ANALOG_IN.
+
+        Parameters:
+
+            gpio (int) –
+
+    save_configuration() → bool
+
+    erase_configuration()
+
+        Resets all config variables to their default values and reboots the controller
+
+    reboot()
+
+        Reboots the controller without saving the current configuration
+
+        The request is ignored if the axis is not in IDLE.
+
+    enter_dfu_mode()
+
+        Enters the Device Firmware Update mode provided by the MCU manufacturer (DFU-over-USB)
+
+    enter_dfu_mode2() → bool
+
+        Experimental
+
+        Enters the ODrive Device Firmware Update mode (DFU-over-CAN).
+
+        The bootloader, when first started, will set itself as the primary startup target and write-protect its own flash sectors.
+
+        Therefore, after calling this function, older firmware (0.6.4 and older) can no longer be installed / booted on the device. This can be reversed by calling disable_bootloader().
+
+        Returns false if the ODrive bootloader is not installed.
+
+    disable_bootloader() → bool
+
+        Experimental
+
+        Disables the bootloader.
+
+        This unprotects the flash sectors containing the bootloader and causes the device to start the main firmware (rather than the bootloader) on startup.
+
+        The bootloader can be re-activated by calling enter_dfu_mode2().
+
+        Calling this function is necessary before downgrading to an older firmware version that was not yet compatible with the bootloader.
+
+    identify_once()
+
+        Blinks the LED once.
+
+        Similar to identify, but instead of continuously blinking the LED this just blinks it once. Does not affect the state of identify.
+
+    get_interrupt_status(irqn) → int
+
+        Returns information about the specified interrupt number.
+
+        Parameters:
+
+            irqn (int) – -12…-1: processor interrupts, 0…239: NVIC interrupts
+
+    get_dma_status(stream_num) → int
+
+        Returns information about the specified DMA stream.
+
+        Parameters:
+
+            stream_num (int) – 0…7: DMA1 streams, 8…15: DMA2 streams
+
+    get_gpio_states() → int
+
+        Returns the logic states of all GPIOs. Bit i represents the state of GPIOi.
+
+    set_gpio(num, status) → bool
+
+        Experimental
+
+        Sets the state of the specified GPIO.
+
+        Parameters:
+
+                num (int) –
+
+                status (bool) –
+
+    get_drv_fault() → int
+
+    clear_errors()
+
+        Clears disarm_reason and procedure_result and re-arms the brake resistor if applicable
+
+    get_raw_8(address) → int
+
+        Experimental
+
+        Parameters:
+
+            address (int) –
+
+    get_raw(address) → int
+
+        Parameters:
+
+            address (int) –
+
+    get_raw_32(address) → int
+
+        Experimental
+
+        Parameters:
+
+            address (int) –
+
+    get_raw_256(address) → tuple[int, int, int, int]
+
+        Experimental
+
+        Parameters:
+
+            address (int) –
+
+    vbus_voltage: [Volt] - Float32Property
+
+        Voltage on the DC bus as measured by the ODrive.
+
+    ibus: [Amp] - Float32Property
+
+        Current on the DC bus as calculated by the ODrive.
+
+        A positive value means that the ODrive is consuming power from the power supply, a negative value means that the ODrive is sourcing power to the power supply.
+
+        This value is equal to the sum of the motor currents and the brake resistor currents. The motor currents are measured, the brake resistor current is calculated based on config.brake_resistor0.resistance.
+
+    ibus_report_filter_k: Float32Property
+
+        Filter gain for the reported ibus. Set to a value below 1.0 to get a smoother line when plotting ibus. Set to 1.0 to disable. This filter is only applied to the reported value and not for internal calculations.
+
+        This will create a first-order filter with a -3dB frequency of 
+
+rad/s (e.g. Hz), where
+
+        is ibus_report_filter_k.
+
+    control_loop_hz: [Hz] - Uint32Property
+
+    serial_number: Uint64Property
+
+        Integer representation of the serial number of the device
+
+        The actual serial number as shown by most tools (GUI, odrivetool, etc) is the 12-digit hexadecimal representation of this number.
+
+        For example in Python / odrivetool, it can be obtained with:
+
+        f"{odrv0.serial_number:12X}"
+
+    hw_version_major: Uint8Property
+
+    hw_version_minor: Uint8Property
+
+    hw_version_variant: Uint8Property
+
+    hw_version_revision: Uint8Property
+
+    fw_version_major: Uint8Property
+
+    fw_version_minor: Uint8Property
+
+    fw_version_revision: Uint8Property
+
+    commit_hash: Uint32Property
+
+    fw_version_unreleased: Uint8Property
+
+        0 for official releases, 1 otherwise
+
+    bootloader_version: Uint32Property
+
+        ODrive bootloader version.
+
+        The version is represented as (major << 24) | (minor << 16) | (patch << 8). For example 0x01020300 means version 1.2.3.
+
+        If the ODrive bootloader is not installed, this returns 0.
+
+    n_evt_sampling: Uint32Property
+
+        Number of input sampling events since startup (modulo 2^32)
+
+    n_evt_control_loop: Uint32Property
+
+        Number of control loop iterations since startup (modulo 2^32). Wraps around after 6.2 days (assuming 8kHz control loop frequency).
+
+    task_timers_armed: BoolProperty
+
+        Set by a profiling application to trigger sampling of a single control iteration. Cleared by the device as soon as the sampling is complete.
+
+    task_times: ODrive.TaskTimes
+
+    system_stats: ODrive.SystemStats
+
+    user_config_loaded: Uint32Property
+
+    misconfigured: BoolProperty
+
+        If this property is true, something is bad in the configuration. The ODrive can still be used in this state but the user should investigate which setting is problematic. This variable does not cover all misconfigurations.
+
+        Possible causes:
+
+                A GPIO was set to a mode that it doesn’t support
+
+                A GPIO was set to a mode for which the corresponding feature was not enabled. Example: GpioMode.UART_A was used without enabling config.enable_uart_a.
+
+                A feature was enabled which is not supported on this hardware. Example: config.enable_uart_c set to true on ODrive v3.x.
+
+                A GPIO was used as an interrupt input for two internal components or two GPIOs that are mutually exclusive in their interrupt capability were both used as interrupt input. Example: config.step_gpio_pin of both axes were set to the same GPIO.
+
+    oscilloscope: ODrive.Oscilloscope
+
+    debug: ODrive.Debug
+
+        Diagnostics features. Not intended for use by end users.
+
+    can: ODrive.Can
+
+    test_property: Uint32Property
+
+    identify: BoolProperty
+
+        Flashes the status LED when enabled.
+
+        This is intended to help identify a particular ODrive in a setup with multiple devices.
+
+    reboot_required: BoolProperty
+
+        Can be used by support software to indicate that a reboot is required.
+
+    issues: ODrive.Issues
+
+        Experimental
+
+    auth: ODrive.Auth
+
+class ODrive.TaskTimes
+
+    sampling: ODrive.TaskTimer
+
+    encoder_update: ODrive.TaskTimer
+
+    control_loop_misc: ODrive.TaskTimer
+
+    control_loop_checks: ODrive.TaskTimer
+
+    current_sense_wait: ODrive.TaskTimer
+
+    dc_calib_wait: ODrive.TaskTimer
+
+class ODrive.SystemStats
+
+    uptime: Uint32Property
+
+    min_heap_space: Uint32Property
+
+    max_stack_usage_axis: Uint32Property
+
+    max_stack_usage_comms: Uint32Property
+
+    max_stack_usage_uart: Uint32Property
+
+    max_stack_usage_startup: Uint32Property
+
+    stack_size_axis: Uint32Property
+
+    stack_size_comms: Uint32Property
+
+    stack_size_uart: Uint32Property
+
+    stack_size_startup: Uint32Property
+
+    prio_axis: Int32Property
+
+    prio_comms: Int32Property
+
+    prio_uart: Int32Property
+
+    prio_startup: Int32Property
+
+    usb: ODrive.SystemStats.Usb
+
+    i2c: ODrive.SystemStats.I2C
+
+class ODrive.Issues
+
+    get(index) → tuple[int, int, int, int]
+
+        Parameters:
+
+            index (int) –
+
+    length: Uint32Property
+
+class ODrive.Auth
+
+    get_pub_key1() → tuple[int, int, int, int, int, int, int, int]
+
+    get_cert1(part) → tuple[int, int, int, int]
+
+        Parameters:
+
+            part (int) –
+
+    auth1(p0, p1, p2, p3) → tuple[int, int, int, int, int, int, int, int]
+
+        Parameters:
+
+                p0 (int) –
+
+                p1 (int) –
+
+                p2 (int) –
+
+                p3 (int) –
+
+class ODrive.HistogramLogger
+
+    swap()
+
+    get_stats() → tuple[int, float, float]
+
+    get_sum(begin, end) → int
+
+        Parameters:
+
+                begin (int) –
+
+                end (int) –
+
+    get_vals8(index) → tuple[int, int, int, int, int, int, int, int]
+
+        Parameters:
+
+            index (int) –
+
+class ODrive.CircularLog
+
+    get_vals8(index) → tuple[int, int, int, int, int, int, int, int]
+
+        Parameters:
+
+            index (int) –
+
+    size: Uint32Property
+
+class ODrive.Config
+
+    enable_uart_a: BoolProperty
+
+        Enables/disables UART_A.
+
+        You also need to set the corresponding GPIOs to GpioMode.UART_A. Refer to the UART Interface page to see which pins support UART_A. Changing this requires a reboot.
+
+    uart_a_baudrate: [baud/s] - Uint32Property
+
+        Defines the baudrate used on the UART interface.
+
+        Some baudrates will have a small timing error due to hardware limitations.
+
+        Here’s an (incomplete) list of baudrates for ODrive v3.x:
+
+        Configured
+        	
+
+        Actual
+        	
+
+        Error [%]
+
+        1.2 KBps
+        	
+
+        1.2 KBps
+        	
+
+        0
+
+        2.4 KBps
+        	
+
+        2.4 KBps
+        	
+
+        0
+
+        9.6 KBps
+        	
+
+        9.6 KBps
+        	
+
+        0
+
+        19.2 KBps
+        	
+
+        19.195 KBps
+        	
+
+        0.02
+
+        38.4 KBps
+        	
+
+        38.391 KBps
+        	
+
+        0.02
+
+        57.6 KBps
+        	
+
+        57.613 KBps
+        	
+
+        0.02
+
+        115.2 KBps
+        	
+
+        115.068 KBps
+        	
+
+        0.11
+
+        230.4 KBps
+        	
+
+        230.769 KBps
+        	
+
+        0.16
+
+        460.8 KBps
+        	
+
+        461.538 KBps
+        	
+
+        0.16
+
+        921.6 KBps
+        	
+
+        913.043 KBps
+        	
+
+        0.93
+
+        1.792 MBps
+        	
+
+        1.826 MBps
+        	
+
+        1.9
+
+        1.8432 MBps
+        	
+
+        1.826 MBps
+        	
+
+        0.93
+
+        For more information refer to Section 30.3.4 and Table 142 (the column with f_PCLK = 42 MHz) in the STM datasheet.
+
+    usb_cdc_protocol: Property[ODrive.StreamProtocolType]
+
+        The protocol that’s being run on the device’s virtual COM port on USB. Note that the ODrive has two independent interfaces on USB: One is the virtual COM port (affected by this option) and the other one is a vendor specific interface which always runs Fibre. So changing this option does not affect the working of odrivetool.
+
+    uart0_protocol: Property[ODrive.StreamProtocolType]
+
+    max_regen_current: [Amp] - Float32Property
+
+        The bus current allowed to flow back to the power supply before the brake resistor module will start shunting current.
+
+    dc_bus_undervoltage_trip_level: [Volt] - Float32Property
+
+        Minimum voltage below which the motor stops operating.
+
+        This parameter defaults and is limited to the board’s minimum operating voltage.
+
+        More info: Trip Levels
+
+    dc_bus_overvoltage_trip_level: [Volt] - Float32Property
+
+        Maximum DC bus voltage above which the motor stops operating.
+
+        This protects against cases in which the power supply fails to dissipate the brake power if the brake resistor is disabled.
+
+        This parameter defaults and is limited to the board’s maximum operating voltage.
+
+        On the ODrive S1, this parameter also influences the internal motor current limit, see ODrive S1 Datasheet.
+
+        On some revisions of ODrive S1, the board’s maximum operating voltage depends on config.brake_resistor0.enable. Refer to the specifications of your device for details.
+
+        More info: Trip Levels
+
+    dc_max_positive_current: [Amp] - Float32Property
+
+        Max current the power supply can source.
+
+        More info: Trip Levels
+
+    dc_max_negative_current: [Amp] - Float32Property
+
+        Max current the power supply can sink.
+
+        This is the amount of current allowed to flow back into the power supply. The convention is that it is negative. By default, it is set to a conservative value of 10mA. If you are using a brake resistor and getting DC_BUS_OVER_REGEN_CURRENT errors, raise it slightly. If you are not using a brake resistor and you intend to send braking current back to the power supply, set this to a safe level for your power source. Note that in that case, it should be higher than your motor current limit + current limit margin.
+
+        Set to -INFINITY to disable.
+
+        More info: Trip Levels
+
+    user_config_0: Uint32Property
+
+        General purpose user storage
+
+        See User Storage.
+
+    user_config_1: Uint32Property
+
+        General purpose user storage
+
+        See User Storage.
+
+    user_config_2: Uint32Property
+
+        General purpose user storage
+
+        See User Storage.
+
+    user_config_3: Uint32Property
+
+        General purpose user storage
+
+        See User Storage.
+
+    user_config_4: Uint32Property
+
+        General purpose user storage
+
+        See User Storage.
+
+    user_config_5: Uint32Property
+
+        General purpose user storage
+
+        See User Storage.
+
+    user_config_6: Uint32Property
+
+        General purpose user storage
+
+        See User Storage.
+
+    user_config_7: Uint32Property
+
+        General purpose user storage
+
+        See User Storage.
+
+class ODrive.Can
+
+    error: Property[ODrive.Can.Error]
+
+    n_restarts: Uint32Property
+
+        Counter for how many times the CAN interface was restarted
+
+        Such restarts are usually caused by “bus-off” conditions, see also Bus-off handling.
+
+        If the ODrive is the only device on the bus, this counter can increment at a fairly high rate. Specifically, this happens when the ODrive is in addressed state, autobaud is disabled and cyclic messages such as heartbeats are enabled. If the ODrive is on a well-behaved CAN bus, it should not increment.
+
+    n_rx: Uint32Property
+
+    effective_baudrate: Uint32Property
+
+        Shows the effective baudrate in use after autobaud detection
+
+        0 while autobaud is in progress or if the CAN interface is disabled.
+
+    config: ODrive.Can.Config
+
+class ODrive.Endpoint
+
+    endpoint: EndpointRefProperty
+
+    min: Float32Property
+
+    max: Float32Property
+
+class ODrive.Axis
+
+    watchdog_feed()
+
+        Feed the watchdog to prevent watchdog timeouts.
+
+    set_abs_pos(pos) → float
+
+        Set the absolute position of the axis.
+
+        DEPRECATED: write to pos_estimate instead.
+
+        Returns the distance by which the reference was shifted. Add this to the previous position on any off-board controllers to effect an impulse free change of reference.
+
+        Parameters:
+
+            pos (float) –
+
+    active_errors: Property[ODrive.Error]
+
+        Indicates the current error condition(s) of the axis. Each error flag clears automatically when the error condition goes away. If an attempt is made to activate the axis while an error is present, the axis immediately disarms and disarm_reason is updated accordingly.
+
+    disarm_reason: Property[ODrive.Error]
+
+        This value is updated every time the axis disarms and indicates the reason why the axis was disarmed. It can be cleared using clear_errors(). This variable is used for reporting only. It affects the status LED and the ERROR pin output but it does not prevent the axis from getting re-armed upon user request.
+
+    detailed_disarm_reason: Uint32Property
+
+        Adds more detail to disarm_reason. Not yet implemented for all error types.
+
+    step_dir_active: BoolProperty
+
+    last_drv_fault: Uint32Property
+
+    steps: Int64Property
+
+        The current commanded position, in steps, while in step_dir mode
+
+    current_state: Property[ODrive.Axis.AxisState]
+
+        The current state of the axis
+
+    requested_state: Property[ODrive.Axis.AxisState]
+
+        The user’s commanded axis state
+
+        This is used to command the axis to change state or perform certain routines. Values input here will be “consumed” and queued by the state machine handler. Thus, reading this value back will usually show AxisState.UNDEFINED (0).
+
+    pos_estimate: Float32Property
+
+        Position estimate of the axis
+
+        This estimate is based on the configured load encoder.
+
+        All position setpoints are interpreted with respect to this position estimate.
+
+        With the default configuration, the origin (the position 0.0) corresponds to the physical startup position. For other options, see Position Reference Frame.
+
+        The scale is equal to the load encoder scale, so when the load encoder moves by one turn, this estimate moves by 1.0.
+
+        A value of NaN indicates that the encoder is not yet configured, not readable, or, when using an absolute reference frame, that the reference frame has not yet been initialized (e.g. axis is not yet homed).
+
+        The position estimate can be shifted by writing to this variable (see Custom User Reference Frame). Writing to this variable will set absolute_setpoints to true and shift input_pos and pos_setpoint accordingly, such that there is no impulse on the physical axis.
+
+    vel_estimate: Float32Property
+
+        Velocity estimate of the axis
+
+        By default, this estimate is based on the configured load encoder.
+
+        All velocity setpoints are interpreted with respect to this velocity estimate.
+
+        In some cases (for example in a dual-encoder setup where the load encoder sits behind a gearbox with backlash) it is more suitable to use the commutation encoder for velocity estimation. To do this, set use_commutation_vel to True and configure commutation_vel_scale.
+
+    is_homed: BoolProperty
+
+        Whether or not the axis has been successfully homed.
+
+    config: ODrive.Axis.Config
+
+    controller: ODrive.Controller
+
+    trap_traj: ODrive.TrapezoidalTrajectory
+
+    min_endstop: ODrive.SwitchInput
+
+    max_endstop: ODrive.SwitchInput
+
+    enable_pin: ODrive.SwitchInput
+
+    mechanical_brake: ODrive.MechanicalBrake
+
+    pos_vel_mapper: ODrive.Mapper
+
+    commutation_mapper: ODrive.Mapper
+
+    interpolator: ODrive.Interpolator
+
+    task_times: ODrive.Axis.TaskTimes
+
+    procedure_result: Property[ODrive.ProcedureResult]
+
+    disarm_time: Float32Property
+
+    is_armed: BoolProperty
+
+    observed_encoder_scale_factor: Float32Property
+
+        Ratio between the encoder-to-motor scale observed during AxisState.ENCODER_OFFSET_CALIBRATION and the configured encoder-to-motor scale.
+
+        This value is updated at the end of AxisState.ENCODER_OFFSET_CALIBRATION if the result is either SUCCESS or POLE_PAIR_CPR_MISMATCH. This can be useful to debug configuration problems.
+
+        The value is approximately:
+
+            When using an incremental encoder for commutation:
+
+            observed_encoder_scale_factor = true_pole_pairs / true_cpr * inc_encoder.config.cpr / config.motor.pole_pairs
+
+            When using any other encoder for commutation.
+
+            observed_encoder_scale_factor = true_pole_pairs / config.motor.pole_pairs
+
+        When correctly configured, the value is close to 1.0.
+
+        Therefore:
+
+            Assuming config.motor.pole_pairs is incorrectly configured and inc_encoder.config.cpr, if applicable, is correctly configured (equal to true_cpr):
+
+            true_pole_pairs ≈ config.motor.pole_pairs * observed_encoder_scale_factor
+
+            Assuming inc_encoder.config.cpr is incorrectly configured and config.motor.pole_pairs is correctly configured (equal to true_pole_pairs):
+
+            true_cpr ≈ inc_encoder.config.cpr / observed_encoder_scale_factor
+
+        The measurement is not exact, so always consult the Motor/Encoder specs before applying the observed result.
+
+class ODrive.BuiltinMotorAxis
+
+    motor: ODrive.BuiltinMotor
+
+class ODrive.ExternalMotorAxis
+
+    motor: ODrive.ExternalMotor
+
+class ODrive.AnticoggingConfig
+
+    The variables prefixed with calib_ affect only the calibration procedure. Changes to those variables take effect on the next start of AxisState.ANTICOGGING_CALIBRATION (if a calibration is already ongoing, it is not affected by such changes).
+
+    Changes to all other variables take effect immediately (regardless of axis state).
+
+    set_map(idx, val)
+
+        Parameters:
+
+                idx (int) –
+
+                val (float) –
+
+    get_map(idx) → float
+
+        Parameters:
+
+            idx (int) –
+
+    enabled: BoolProperty
+
+        Enables/disables the anticogging feedforward term.
+
+        If AxisState.ANTICOGGING_CALIBRATION has not been run yet, enabling this has no effect. This variable does not affect AxisState.ANTICOGGING_CALIBRATION. Changes to this variable take effect immediately.
+
+    max_torque: [Nm] - Float32Property
+
+        Maximum torque action that anticogging is allowed to exert.
+
+        This limit is honored during both AxisState.ANTICOGGING_CALIBRATION and normal operation. Changes to this variable take effect immediately, however if this value was too low during calibration, then the calibration must be repeated.
+
+    calib_start_vel: [rev/s] - Float32Property
+
+        Start velocity of AxisState.ANTICOGGING_CALIBRATION.
+
+        Lower values usually yield better calibration accuracy, however the value must be high enough that the motor doesn’t ever come to a stop, even momentarily. This is to avoid any static friction. Furthermore if this value is too high you may get a CONTROL_DEADLINE_MISSED error.
+
+    calib_end_vel: [rev/s] - Float32Property
+
+        End velocity of AxisState.ANTICOGGING_CALIBRATION.
+
+        Lower values usually yield better calibration accuracy, however the value must be high enough that the motor doesn’t ever come to a stop, even momentarily. This is to avoid any static friction.
+
+    calib_coarse_tuning_duration: [s] - Float32Property
+
+        Duration of the coarse tuning (ramp down) phase.
+
+    calib_fine_tuning_duration: [s] - Float32Property
+
+        Duration of the fine tuning phase.
+
+    calib_fine_dist_scale: Float32Property
+
+    calib_coarse_integrator_gain: [(Nm/s)/(rev/s)] - Float32Property
+
+        Integrator gain at the start of anticogging calibration.
+
+    calib_bidirectional: BoolProperty
+
+        Whether to run the calibration in both directions
+
+        When true (default), the calibration runs in both directions. When false, the calibration only runs in the direction specified by the sign of calib_start_vel and calib_end_vel. When the motor is known to move in a single direction only during operation, running the calibration in that direction only can yield better results.
+
+class ODrive.HarmonicCompensation
+
+    Parameters for harmonic compensation
+
+    More info: Harmonic Compensation
+
+    calib_vel: [rev/s] - Float32Property
+
+        Motor velocity at which to spin during harmonic calibration
+
+    calib_settling_delay: [s] - Float32Property
+
+        Time to wait after spinup until data is used for calibration
+
+    calib_turns: Uint32Property
+
+        Number encoder turns to spin during harmonic calibration
+
+    cosx_coef: Float32Property
+
+    sinx_coef: Float32Property
+
+    cos2x_coef: Float32Property
+
+    sin2x_coef: Float32Property
+
+class ODrive.BrakeResistor
+
+    current_meas: Float32Property
+
+    current_meas_status: Uint32Property
+
+    duty: Float32Property
+
+    additional_duty: Float32Property
+
+        Experimental
+
+        Additional duty cycle to add, on top of the value that is based on motor current and DC voltage.
+
+    current: [Amp] - Float32Property
+
+        Calculated current dumped into the brake resistor.
+
+        This value is not measured but calculated based the configured brake resistance. It is therefore only reliable if the actual brake resistance matches the configured brake resistance.
+
+        In the future this might take into account feedback from current_meas.
+
+    chopper_temp: Float32Property
+
+        Estimate of the brake resistor chopper temperature.
+
+    is_armed: BoolProperty
+
+    was_saturated: BoolProperty
+
+        Indicates if the brake resistor reached saturation. This flag is latching and needs to be reset by the client before it can indicate another saturation event.
+
+class ODrive.BrakeResistorConfig
+
+    enable: BoolProperty
+
+        Enable/disable the use of a brake resistor.
+
+        Setting this to False even though a brake resistor is connected is harmless. Setting this to True even though no brake resistor is connected can break the power supply. Changes to this value require a reboot to take effect.
+
+        Setting this to true reduces the maximum value for config.dc_bus_overvoltage_trip_level on some revisions of ODrive S1. Refer to the specifications of your device for details.
+
+    resistance: [Ohm] - Float32Property
+
+        Value of the brake resistor connected to the ODrive.
+
+        Note that there may be some extra resistance in your wiring and in the screw terminals, so if you are getting issues while braking you may want to increase this parameter by around 0.05 ohm.
+
+        If you set this to a lower value than the true brake resistance then the ODrive will not meed the max_regen_current constraint during braking, that is it will sink more than max_regen_current into the power supply. Some power supplies don’t like this. If you set this to a higher value than the true brake resistance then the ODrive will unnecessarily burn more power than required during braking.
+
+    enable_dc_bus_voltage_feedback: BoolProperty
+
+        Enables the DC bus voltage feedback brake resistor feature.
+
+        If enabled, if the measured DC voltage exceeds dc_bus_voltage_feedback_ramp_start, the ODrive will sink additional power into the the brake resistor to bring or hold the voltage down.
+
+        The brake duty cycle is increased by the following amount:
+
+                ODrive.vbus_voltage == dc_bus_voltage_feedback_ramp_start, => brake_duty_cycle += 0%
+
+                ODrive.vbus_voltage == dc_bus_voltage_feedback_ramp_end, => brake_duty_cycle += 100%
+
+        Remarks:
+
+                This feature is active even when all motors are disarmed.
+
+                This feature is disabled if resistance is not a positive value.
+
+    dc_bus_voltage_feedback_ramp_start: Float32Property
+
+        See enable_dc_bus_voltage_feedback.
+
+        Do not set this lower than your usual ODrive.vbus_voltage,
+
+    dc_bus_voltage_feedback_ramp_end: Float32Property
+
+        See enable_dc_bus_voltage_feedback.
+
+        Must be larger than dc_bus_voltage_feedback_ramp_start, otherwise the ramp feature is disabled.
+
+class ODrive.Motor
+
+    alpha_beta_controller: ODrive.AlphaBetaFrameController
+
+    foc: ODrive.FieldOrientedController
+
+    fet_thermistor: ODrive.OnboardThermalCurrentLimiter
+
+    acim_estimator: ODrive.AcimEstimator
+
+    sensorless_estimator: ODrive.SensorlessEstimator
+
+    torque_estimate: [Nm] - Float32Property
+
+        Motor torque from measured current and config.motor.torque_constant. This value is filtered using <axis>.config.motor.power_torque_report_filter_bandwidth.
+
+    mechanical_power: [W] - Float32Property
+
+        Motor mechanical power (torque * speed)
+
+        This value is filtered using <axis>.config.motor.power_torque_report_filter_bandwidth.
+
+    electrical_power: [W] - Float32Property
+
+        Motor electrical power (modulation * voltage * current)
+
+        This value is filtered using <axis>.config.motor.power_torque_report_filter_bandwidth.
+
+    loss_power: [W] - Float32Property
+
+        Estimated power loss in the inverter and motor
+
+        Equal to electrical_power - mechanical_power. This value is filtered using <axis>.config.motor.power_torque_report_filter_bandwidth.
+
+    effective_current_lim: [Amp] - Float32Property
+
+        This value is the internally-limited value of phase current allowed according and is the minimum of the following:
+
+                config.motor.current_soft_max, optionally derated based on motor temperature.
+
+                config.inverter0.current_soft_max, optionally derated based on ODrive power stage temperature.
+
+                Maximum measurable current range
+
+    resistance_calibration_I_beta: Float32Property
+
+    input_id: [Amp] - Float32Property
+
+        Feedforward term for d-axis current. If ACIM autoflux is enabled, this parameter has no effect.
+
+    input_iq: [Amp] - Float32Property
+
+        Feedforward term for q-axis current.
+
+    dc_calib: ODrive.Motor.DcCalib
+
+        Inverter DC calibration diagnostics
+
+        This is for diagnostics only and not for end user use.
+
+class ODrive.BuiltinMotor
+
+    motor_thermistor: ODrive.BuiltinThermalCurrentLimiter
+
+class ODrive.ExternalMotor
+
+    motor_thermistor: ODrive.OffboardThermistorCurrentLimiter
+
+class ODrive.Mapper
+
+    set_abs_pos(pos) → float
+
+        Sets the absolute position of the Mapper.
+
+        This is a low level function for testing purposes. The controller setpoints are not shifted accordingly. To safely override the position estimate of the the axis, write to pos_estimate instead.
+
+        Parameters:
+
+            pos (float) –
+
+    status: Property[ODrive.ComponentStatus]
+
+    pos_rel: Float32Property
+
+        Relative position since startup in turns. On the commutation_mapper this wraps around such that it’s always in [0, 1). On the pos_vel_mapper this wraps around if and only if <axis>.controller.config.circular_setpoints is set.
+
+    pos_abs: Float32Property
+
+        Absolute position. On pos_vel_mapper this is only available if the axis is homed.
+
+    vel: Float32Property
+
+    working_offset: Float32Property
+
+        For diagnostics only
+
+    n_index_events: Uint32Property
+
+        Counter for the number of index events or set_abs_pos() calls
+
+        Can be reset by the application by writing 0.
+
+    config: ODrive.Mapper.Config
+
+class ODrive.OnboardEncoder
+
+    get_field_strength() → float
+
+        The measurement is a very rough estimate, discretized into 9 values:
+
+        <26mT (indicated as 0), 30mT, 45mT, 60mT, 74mT, 88mT, 102mT, 116mT, >120mT (indicated as inf)
+
+        Position readings on this encoder will be stopped for roughly 100ms when this function is called.
+
+        This is intended for development / end-of-line testing / diagnostics only. The function uses five NVM write cycles on the encoder, which is rated for only 1000 write cycles. Therefore this should not be used during regular operation.
+
+        Gives a rough estimate on the magnetic field strength at the encoder in Tesla.
+
+    status: Property[ODrive.ComponentStatus]
+
+    raw: Float32Property
+
+class ODrive.Rs485Encoder
+
+    status: Property[ODrive.ComponentStatus]
+
+    raw: Float32Property
+
+    raw32: Uint32Property
+
+        Raw encoder angle with unrolled turn count in a 16.16 fixed point format.
+
+    config: ODrive.Rs485Encoder.Config
+
+class ODrive.IncrementalEncoder
+
+    status: Property[ODrive.ComponentStatus]
+
+    pos_min: Float32Property
+
+    pos_max: Float32Property
+
+    pos_residual: Float32Property
+
+    raw: Uint16Property
+
+    raw_wrapped: Int32Property
+
+    config: ODrive.IncrementalEncoder.Config
+
+class ODrive.HallEncoder
+
+    status: Property[ODrive.ComponentStatus]
+
+    hall_cnt: Uint8Property
+
+    raw_hall_state: Uint8Property
+
+    abs_pos_min: Float32Property
+
+    abs_pos_max: Float32Property
+
+    config: ODrive.HallEncoder.Config
+
+class ODrive.SpiEncoder
+
+    get_field_strength() → float
+
+        The unit depends on the encoder mode.
+
+        SpiEncoderMode.TLE: scale from 0…1023. This is a copy of the value MAG from the D_MAG register. See TLE5012B user manual for reference. Returns NAN in case of a communication error (e.g. encoder disconnected).
+
+        All other encoders: Not implemented. Returns NAN.
+
+        Gives a rough estimate on the magnetic field strength at the encoder.
+
+    status: Property[ODrive.ComponentStatus]
+
+    raw: Float32Property
+
+    warning: BoolProperty
+
+        Warning state of this encoder.
+
+        Currently only valid for BiSS-C encoders. Contains warning bit from last BiSS-C transfer.
+
+    n_errors: Uint32Property
+
+        Number of error events of this encoder.
+
+        Wraps around to zero at 2^32-1.
+
+        Possible error events:
+
+                Transfer took too long.
+
+                Encoder reported an error (currently only applicable to SpiEncoderMode.AMS).
+
+    inject_errors: BoolProperty
+
+        Deliberately injects occasional communication errors. For testing only.
+
+    config: ODrive.SpiEncoder.Config
+
+class ODrive.EncoderEstimator
+
+    status: Property[ODrive.ComponentStatus]
+
+    pos_estimate: Float32Property
+
+    vel_estimate: Float32Property
+
+class ODrive.Interpolator
+
+    status: Property[ODrive.ComponentStatus]
+
+    interpolation: Float32Property
+
+    config: ODrive.Interpolator.Config
+
+class ODrive.OnboardThermalCurrentLimiter
+
+    See Temperature Regulation for details.
+
+    temperature: [Celsius] - Float32Property
+
+class ODrive.BuiltinThermalCurrentLimiter
+
+    See Temperature Regulation for details.
+
+    temperature: [Celsius] - Float32Property
+
+    config: ODrive.BuiltinThermalCurrentLimiter.Config
+
+class ODrive.OffboardThermistorCurrentLimiter
+
+    See Temperature Regulation for details.
+
+    temperature: [Celsius] - Float32Property
+
+    config: ODrive.OffboardThermistorCurrentLimiter.Config
+
+class ODrive.AlphaBetaFrameController
+
+    current_meas_phA: Float32Property
+
+    current_meas_phB: Float32Property
+
+    current_meas_phC: Float32Property
+
+    current_meas_status_phA: Uint32Property
+
+    current_meas_status_phB: Uint32Property
+
+    current_meas_status_phC: Uint32Property
+
+    I_bus: [Amp] - Float32Property
+
+        The current in the ODrive DC bus. This is also the current seen by the power supply in most systems.
+
+    Ialpha_measured: Float32Property
+
+    Ibeta_measured: Float32Property
+
+    max_measurable_current: [Amp] - Float32Property
+
+        Indicates the maximum current that can be measured by the current sensors in the current hardware configuration. This value depends on <axis>.config.motor.current_hard_max and config.inverterN.current_hard_max.
+
+    power: [Watt] - Float32Property
+
+        DEPRECATED: Use <axis>.motor.electrical_power. The electrical power being delivered to the motor.
+
+    n_evt_current_measurement: Uint32Property
+
+        Number of current measurement events since startup (modulo 2^32)
+
+    n_evt_pwm_update: Uint32Property
+
+        Number of PWM update events since startup (modulo 2^32)
+
+class ODrive.FieldOrientedController
+
+    p_gain: Float32Property
+
+    i_gain: Float32Property
+
+    I_measured_report_filter_k: Float32Property
+
+        Filter gain for the reported Id_measured and Iq_measured. Set to 1.0 to disable. This filter is only applied to the reported value and not for internal calculations.
+
+        This will create a first-order filter with a -3dB frequency of 
+
+rad/s (e.g. Hz), where
+
+        is I_measured_report_filter_k.
+
+    Id_setpoint: Float32Property
+
+    Iq_setpoint: Float32Property
+
+    Vd_setpoint: Float32Property
+
+    Vq_setpoint: Float32Property
+
+    phase: Float32Property
+
+    phase_vel: Float32Property
+
+    Id_measured: [Amp] - Float32Property
+
+        The phase current measured along the “d” axis in the FOC control loop.
+
+        This should be close to 0 for typical surface permanent magnet motors.
+
+    Iq_measured: [Amp] - Float32Property
+
+        The phase current measured along the “q” axis in the FOC control loop.
+
+        This is the torque-generating current, so motor torque is approx. torque_constant * Iq_measured
+
+    v_current_control_integral_d: Float32Property
+
+    v_current_control_integral_q: Float32Property
+
+    mod_d: Float32Property
+
+    mod_q: Float32Property
+
+    mod_magn_sqr: Float32Property
+
+    final_v_alpha: Float32Property
+
+    final_v_beta: Float32Property
+
+    Ierr_d: Float32Property
+
+    Ierr_q: Float32Property
+
+    Ierr_magn_sqr: Float32Property
+
+class ODrive.Oscilloscope
+
+    config(addr0, addr1, addr2, addr3, addr4, addr5, addr6, addr7, addr8)
+
+        Parameters:
+
+                addr0 (int) –
+
+                addr1 (int) –
+
+                addr2 (int) –
+
+                addr3 (int) –
+
+                addr4 (int) –
+
+                addr5 (int) –
+
+                addr6 (int) –
+
+                addr7 (int) –
+
+                addr8 (int) –
+
+    trigger(trigger_point)
+
+        Parameters:
+
+            trigger_point (float) –
+
+    trigger_high_res()
+
+        Experimental
+
+    get_raw(offset) → tuple[int, int, int, int]
+
+        Parameters:
+
+            offset (int) –
+
+    size: Uint32Property
+
+    pos: Uint32Property
+
+    rollover: BoolProperty
+
+    recording: BoolProperty
+
+    trigger_pos: Uint32Property
+
+    triggered_at: Uint32Property
+
+class ODrive.Debug
+
+    block(us)
+
+        Parameters:
+
+            us (int) –
+
+    factory_data_start() → bool
+
+    factory_data_write(val)
+
+        Parameters:
+
+            val (int) –
+
+    factory_data_end(length) → bool
+
+        Parameters:
+
+            length (int) –
+
+    hal_ticks: Uint32Property
+
+    adc_slot_0_raw: Uint32Property
+
+    adc_slot_1_raw: Uint32Property
+
+    adc_slot_2_raw: Uint32Property
+
+    adc_slot_3_raw: Uint32Property
+
+    adc_slot_4_raw: Uint32Property
+
+    adc_slot_10_raw: Uint32Property
+
+    vref: Float32Property
+
+    mcu_temperature: Float32Property
+
+    factory_data_loaded: BoolProperty
+
+class ODrive.AcimEstimator
+
+    rotor_flux: [Amp] - Float32Property
+
+        estimated magnitude of the rotor flux
+
+    slip_vel: [Hz] - Float32Property
+
+        estimated slip between physical and electrical angular velocity}
+
+    phase_offset: [cycles] - Float32Property
+
+        estimate offset between physical and electrical angular position}
+
+    stator_phase_vel: [Hz] - Float32Property
+
+        calculated setpoint for the electrical velocity}
+
+    stator_phase: [cycles] - Float32Property
+
+        calculated setpoint for the electrical phase}
+
+class ODrive.Controller
+
+    move_incremental(displacement, from_input_pos)
+
+        Moves the axes’ goal point by a specified increment.
+
+        Parameters:
+
+                displacement (float) – The desired position change.
+
+                from_input_pos (bool) – If true, the increment is applied relative to input_pos. If false, the increment is applied relative to pos_setpoint, which usually corresponds roughly to the current position of the axis.
+
+    input_pos: [rev] - Float32Property
+
+        Set the desired position of the axis. Only valid in ControlMode.POSITION_CONTROL. In InputMode.TUNING, this acts as a DC offset for the position sine wave.
+
+    input_vel: [rev/s] - Float32Property
+
+        In ControlMode.VELOCITY_CONTROL, sets the desired velocity of the axis. In ControlMode.POSITION_CONTROL, sets the feed-forward velocity of the velocity controller In InputMode.TUNING, this acts as a DC offset for the velocity sine wave.
+
+    input_torque: [Nm] - Float32Property
+
+        In ControlMode.TORQUE_CONTROL, sets the desired output torque of the axis. In ControlMode.VELOCITY_CONTROL and ControlMode.POSITION_CONTROL, sets the feed-forward torque of the torque controller in InputMode.VEL_RAMP, InputMode.POS_FILTER, InputMode.TRAP_TRAJ, and InputMode.TUNING
+
+    pos_setpoint: [rev] - Float32Property
+
+        The position reference actually being used by the position controller. This is the same as input_pos in InputMode.PASSTHROUGH, but may vary according to InputMode.
+
+    vel_setpoint: [rev/s] - Float32Property
+
+        The velocity reference actually being used by the velocity controller. This is the same as input_vel in InputMode.PASSTHROUGH, but may vary according to InputMode.
+
+    torque_setpoint: [Nm] - Float32Property
+
+        The torque reference actually being used by the torque controller. This is the same as input_torque in InputMode.PASSTHROUGH, but may vary according to InputMode.
+
+    effective_torque_setpoint: [Nm] - Float32Property
+
+        The torque output generated by the controller and fed to the motor model.
+
+    trajectory_done: BoolProperty
+
+        Indicates the last commanded Trapezoidal Trajectory movement is complete.
+
+    vel_integrator_torque: [Nm] - Float32Property
+
+        The accumulated value of the velocity loop integrator
+
+    autotuning_phase: [rad] - Float32Property
+
+        The current phase angle of the InputMode.TUNING sine wave generator
+
+    config: ODrive.Controller.Config
+
+    autotuning: ODrive.Controller.Autotuning
+
+    spinout_mechanical_power: [Watt] - Float32Property
+
+        Mechanical power estimate. Torque * velocity
+
+    spinout_electrical_power: [Watt] - Float32Property
+
+        Electrical power estimate. Vdq*Idq
+
+class ODrive.SensorlessEstimator
+
+    phase: [rad] - Float32Property
+
+    pll_pos: [rad] - Float32Property
+
+    phase_vel: [rad/s] - Float32Property
+
+class ODrive.TrapezoidalTrajectory
+
+    config: ODrive.TrapezoidalTrajectory.Config
+
+class ODrive.SwitchInput
+
+    state: BoolProperty
+
+    config: ODrive.SwitchInput.Config
+
+        All configuration changes in this class take effect immediately without reboot, regardless of axis state.
+
+class ODrive.MechanicalBrake
+
+    engage()
+
+        This function engages the mechanical brake if one is present and enabled.
+
+    release()
+
+        This function releases the mechanical brake if one is present and enabled.
+
+    config: ODrive.MechanicalBrake.Config
+
+class ODrive.TaskTimer
+
+    start_time: Uint32Property
+
+    end_time: Uint32Property
+
+    length: Uint32Property
+
+    max_length: Uint32Property
+
+class ODrive.InverterConfig
+
+    current_soft_max: [Amp] - Float32Property
+
+        Maximum commanded current allowed for this inverter. See also motor.current_soft_max.
+
+        Writes to this parameter are ignored unless in developer mode.
+
+    current_hard_max: [Amp] - Float32Property
+
+        Maximum measured current allowed for this inverter. Any measurement above current_hard_max will throw a CURRENT_LIMIT_VIOLATION error. See also motor.current_hard_max.
+
+        Writes to this parameter are ignored unless in developer mode.
+
+    temp_limit_lower: Float32Property
+
+        The lower limit when the controller starts limiting current. Writes to this parameter are ignored unless in developer mode.
+
+    temp_limit_upper: Float32Property
+
+        The upper limit when current limit reaches 0 Amps and an over temperature error is triggered. Writes to this parameter are ignored unless in developer mode.
+
+    mod_magn_max: Float32Property
+
+        Maximum modulation depth
+
+        sqrt(3)/2 corresponds to an ideal inverter. Writes to this parameter are ignored unless in developer mode.
+
+    shunt_conductance: Float32Property
+
+        Set this to 1.0 / R_shunt if you have modified the shunt resistors. Writes to this parameter are ignored unless in developer mode.
+
+    drv_config: Uint64Property
+
+        Do not modify unless you know what you’re doing. Writes to this parameter are ignored unless in developer mode.
+
+class ODrive.GpioMode
+
+    DIGITAL = 0 (0x0)
+
+        The pin can be used for one or more of these functions: Step, dir, enable, encoder index, hall effect encoder, SPI encoder nCS (this one is exclusive).
+
+    DIGITAL_PULL_UP = 1 (0x1)
+
+        Same as DIGITAL but with the internal pull-up resistor enabled.
+
+    DIGITAL_PULL_DOWN = 2 (0x2)
+
+        Same as DIGITAL but with the internal pull-down resistor enabled.
+
+    ANALOG_IN = 3 (0x3)
+
+        The pin can be used for one or more of these functions: Sin/cos encoders, analog input, get_adc_voltage().
+
+    UART_A = 4 (0x4)
+
+        See config.enable_uart_a.
+
+    UART_B = 5 (0x5)
+
+        This mode is not supported on ODrive v3.x.
+
+    UART_C = 6 (0x6)
+
+        This mode is not supported on ODrive v3.x.
+
+    CAN_A = 7 (0x7)
+
+        See config.enable_can_a.
+
+    I2C_A = 8 (0x8)
+
+        See config.enable_i2c_a.
+
+    SPI_A = 9 (0x9)
+
+        Note that the SPI pins on ODrive v3.x are hardwired so they cannot be configured through software. Consequently
+
+    PWM = 10 (0xA)
+
+        See PWM input.
+
+    ENC0 = 11 (0xB)
+
+        The pin is used by quadrature encoder 0.
+
+    ENC1 = 12 (0xC)
+
+        The pin is used by quadrature encoder 1.
+
+    ENC2 = 13 (0xD)
+
+        This mode is not supported on ODrive v3.x.
+
+    MECH_BRAKE = 14 (0xE)
+
+        This is to support external mechanical brakes.
+
+    STATUS = 15 (0xF)
+
+        The pin is used for status output (see axis.config.error_gpio_pin)
+
+    BRAKE_RES = 16 (0x10)
+
+        The pin is used to control a brake resistor board.
+
+    AUTO = 17 (0x11)
+
+        Let the ODrive decide how to use the pin. If multiple components try to use the same pin only one of them will be initialized and the other one will have a status of kBadConfig.
+
+class ODrive.StreamProtocolType
+
+    FIBRE = 0 (0x0)
+
+        Deprecated. For machine-to-machine communication it is recommended to use CAN bus instead.
+
+    ASCII = 1 (0x1)
+
+        Human readable protocol designed for easy implementation for cases where the use of libfibre is not desired or feasible. Refer to this page ` for details.
+
+    STDOUT = 2 (0x2)
+
+        Output of printf(). Only intended for developers who modify ODrive firmware.
+
+    ASCII_AND_STDOUT = 3 (0x3)
+
+        Combination of Ascii and Stdout.
+
+    OTHER = 4 (0x4)
+
+        Reserved.
+
+class ODrive.ComponentStatus
+
+    NOMINAL = 0 (0x0)
+
+    NO_RESPONSE = 1 (0x1)
+
+    INVALID_RESPONSE_LENGTH = 2 (0x2)
+
+    PARITY_MISMATCH = 3 (0x3)
+
+    ILLEGAL_HALL_STATE = 4 (0x4)
+
+    POLARITY_NOT_CALIBRATED = 5 (0x5)
+
+    PHASES_NOT_CALIBRATED = 6 (0x6)
+
+    NUMERICAL_ERROR = 7 (0x7)
+
+    MISSING_INPUT = 8 (0x8)
+
+    RELATIVE_MODE = 9 (0x9)
+
+    UNCONFIGURED = 10 (0xA)
+
+    OVERSPEED = 11 (0xB)
+
+    INDEX_NOT_FOUND = 12 (0xC)
+
+    BAD_CONFIG = 13 (0xD)
+
+    NOT_ENABLED = 14 (0xE)
+
+    SPINOUT_DETECTED = 15 (0xF)
+
+class ODrive.Error
+
+    INITIALIZING = 1 (0x1)
+
+        The system is initializing or reconfiguring.
+
+    SYSTEM_LEVEL = 2 (0x2)
+
+        Unexpected system error such as memory corruption, stack overflow, frozen thread, assert fail etc. This error is indicates firmware bug.
+
+    TIMING_ERROR = 4 (0x4)
+
+        An internal hard timing requirement was violated. This usually means that the device is computationally overloaded, either due to a specific user configuration or due to a firmware bug. This error should not occur during normal operation and can be considered similar to SYSTEM_ERROR.
+
+    MISSING_ESTIMATE = 8 (0x8)
+
+        The position estimate, velocity estimate or phase estimate was needed but invalid. This can mean:
+
+                The encoder has not been calibrated. Consult the documentation to see how to calibrate various encoder types.
+
+                Absolute position control was used before the axis was homed.
+
+                One of the active encoders is misbehaving or disconnected. Check the error information of all enabled encoders to see if this is the case.
+
+    BAD_CONFIG = 16 (0x10)
+
+        The ODrive configuration is invalid or incomplete. If you configured the ODrive through the GUI, this indicates a bug in the GUI.
+
+        Please verify the following:
+
+                axis.config.motor.direction is -1 or +1
+
+                axis.config.torque_soft_min <= axis.config.torque_soft_max
+
+                config.enable_brake_resistor = False or config.brake_resistor0.resistance > 0
+
+                axis.config.motor.phase_resistance and axis.config.motor.phase_inductance are valid, axis.config.motor.phase_resistance_valid = True and, axis.config.motor.phase_inductance_valid = True
+
+    DRV_FAULT = 32 (0x20)
+
+        The gate driver chip reported an error.
+
+        If this keeps occurring during normal operation within the device’s specified operating conditions this can indicate hardware damage.
+
+    MISSING_INPUT = 64 (0x40)
+
+        No value was provided for input_pos, input_vel or input_torque.
+
+        This typically happens when using RC PWM as input and entering AxisState.CLOSED_LOOP_CONTROL before any pulse was registered. Make sure the PWM input is configured and connected correctly.
+
+    DC_BUS_OVER_VOLTAGE = 256 (0x100)
+
+        The DC voltage exceeded the limit configured in config.dc_bus_overvoltage_trip_level.
+
+        Confirm that you have a brake resistor of the correct value connected securely and that config.brake_resistor0.resistance is set to the value of your brake resistor.
+
+        You can monitor your PSU voltage using liveplotter in odrivetool by entering start_liveplotter(lambda: [odrv0.vbus_voltage]). If during a move you see the voltage rise above your PSU’s nominal set voltage then you have your brake resistance set too low. This may happen if you are using long wires or small gauge wires to connect your brake resistor to your odrive which will added extra resistance. This extra resistance needs to be accounted for to prevent this voltage spike. If you have checked all your connections you can also try increasing your brake resistance by ~ 0.01 ohm at a time to a maximum of 0.05 greater than your brake resistor value.
+
+    DC_BUS_UNDER_VOLTAGE = 512 (0x200)
+
+        The DC voltage fell below the limit configured in config.dc_bus_undervoltage_trip_level.
+
+        Confirm that your power leads are connected securely. For initial testing a 12V PSU which can supply a couple of amps should be sufficient while the use of low current ‘wall wart’ plug packs may lead to inconsistent behaviour and is not recommended.
+
+        You can monitor your PSU voltage using liveplotter in odrivetool by entering start_liveplotter(lambda: [odrv0.vbus_voltage]). If you see your votlage drop below config.dc_bus_undervoltage_trip_level (default: ~ 8V) then you will trip this error. Even a relatively small motor can draw multiple kW momentary and so unless you have a very large PSU or are running of a battery you may encounter this error when executing high speed movements with a high current limit. To limit your PSU power draw you can limit your motor current and/or velocity limit <axis>.controller.config.vel_limit and <axis>.config.motor.current_soft_max.
+
+    DC_BUS_OVER_CURRENT = 1024 (0x400)
+
+        Too much DC current was pulled, either at the motor level or at the board level (these two are identical for boards that don’t support a brake resistor).
+
+                At the motor level: <axis>.motor.alpha_beta_frame_controller.I_bus exceeded <axis>.config.I_bus_hard_max
+
+                At the board level: <odrv>.ibus exceeded config.dc_max_positive_current.
+
+    DC_BUS_OVER_REGEN_CURRENT = 2048 (0x800)
+
+        Too much DC current was regenerated, either at the motor level or at the board level (these two are identical for boards that don’t support a brake resistor).
+
+                At the motor level: <axis>.motor.alpha_beta_frame_controller.I_bus exceeded (was more negative than) <axis>.config.I_bus_hard_min
+
+                At the board level: <odrv>.ibus exceeded (was more negative than) config.dc_max_negative_current.
+
+        This can happen if your brake resistor is unable to handle the braking current. Check that (V_power_supply / brake_resistance) > <axis>.config.motor.current_hard_max.
+
+    CURRENT_LIMIT_VIOLATION = 4096 (0x1000)
+
+        The motor current exceeded <axis>.config.motor.current_hard_max. or config.inverterN.current_hard_max.
+
+        The current controller tries not to exceed <axis>.config.motor.current_soft_max, however a bit of overshoot is normal. Therefore, if you get this error, try to increase the margin between the soft and hard current limits.
+
+        If you have to increase the margin to more than 40% then something else might be wrong, for instance the motor could be damaged or the current controller might be unstable.
+
+        The current controller is a PI controller and its PI gains are automatically calculated based on config.motor.current_control_bandwidth and the motor resistance and inductance (pole placement). If you suspect an unstable current controller, make sure to review these variables.
+
+    MOTOR_OVER_TEMP = 8192 (0x2000)
+
+        The motor thermistor measured a temperature above motor.motor_thermistor.config.temp_limit_upper
+
+    INVERTER_OVER_TEMP = 16384 (0x4000)
+
+        The inverter thermistor measured a temperature above motor.fet_thermistor.config.temp_limit_upper
+
+    VELOCITY_LIMIT_VIOLATION = 32768 (0x8000)
+
+        The estimated velocity exceeds vel_limit_tolerance * vel_limit
+
+    POSITION_LIMIT_VIOLATION = 65536 (0x10000)
+
+    WATCHDOG_TIMER_EXPIRED = 16777216 (0x1000000)
+
+        The axis watchdog timer expired.
+
+        An amount of time greater than config.watchdog_timeout passed without the watchdog being fed.
+
+    ESTOP_REQUESTED = 33554432 (0x2000000)
+
+        An estop was requested from an external source. This can mean:
+
+                The estop message was received on CAN
+
+                An endstop was pressed
+
+    SPINOUT_DETECTED = 67108864 (0x4000000)
+
+        A discrepancy between electrical power and mechanical power has been detected, indicating a spinout situation. See Spinout Detection for details.
+
+    BRAKE_RESISTOR_DISARMED = 134217728 (0x8000000)
+
+        Another component (axis or brake resistor) on the ODrive failed. Most commonly this error indicates that the brake resistor was disarmed (e.g. during an undervoltage condition) and can be rectified by fixing the root cause (e.g. undervoltage condition) and then clearing errors.
+
+    THERMISTOR_DISCONNECTED = 268435456 (0x10000000)
+
+        The motor thermistor is enabled but disconnected. This is determined by the analog voltage lying too close to 0V or 3.3V.
+
+    CALIBRATION_ERROR = 1073741824 (0x40000000)
+
+        A calibration procedure failed. See procedure_result for details.
+
+class ODrive.ProcedureResult
+
+    SUCCESS = 0 (0x0)
+
+        The procedure finished without any faults.
+
+    BUSY = 1 (0x1)
+
+        The procedure has not yet finished.
+
+    CANCELLED = 2 (0x2)
+
+        The last procedure was cancelled by the user.
+
+    DISARMED = 3 (0x3)
+
+        A fault was encountered and the axis has been disarmed. See disarm_reason for more info.
+
+    NO_RESPONSE = 4 (0x4)
+
+        The procedure component did not respond as expected
+
+        Most likely due to an improperly connected/configured encoder.
+
+            Verify the encoder configuration matches the hardware
+
+            Check that the encoder is powered and all signals are connected correctly
+
+    POLE_PAIR_CPR_MISMATCH = 5 (0x5)
+
+        The values of config.motor.pole_pairs and/or inc_encoder0.config.cpr do not corroborate the measured rotations. Please verify these settings match the hardware.
+
+        For details, see observed_encoder_scale_factor.
+
+        Note
+
+        If not using an incremental encoder the cpr value is not used and can be ignored
+
+    PHASE_RESISTANCE_OUT_OF_RANGE = 6 (0x6)
+
+        The measured motor phase resistance is outside of the plausible range or bad calibration parameters were used.
+
+        During calibration the motor resistance and inductance is measured. If the measured motor resistance or inductance falls outside a predefined range, either PHASE_RESISTANCE_OUT_OF_RANGE or PHASE_INDUCTANCE_OUT_OF_RANGE will be returned. Check that all motor leads are connected securely.
+
+        These errors can also indicate that resistance_calib_max_voltage is outside of the feasible range (see below).
+
+        The measured values can be viewed using odrivetool as is shown below:
+
+        In [2]: odrv0.axis0.config.motor.phase_inductance
+        Out[2]: 1.408751450071577e-05
+        In [3]: odrv0.axis0.config.motor.phase_resistance
+        Out[3]: 0.029788672924041748
+
+        Some motors will have a considerably different phase resistance and inductance than this. For example, gimbal motors, some small motors (e.g. < 10A peak current). If you think this applies to you try increasing config.motor.resistance_calib_max_voltage from its default value of 1 and repeat the motor calibration process. Increasing this value beyond the feasible range (around half of DC voltage) has no effect. Therefore, if you maxed out config.motor.resistance_calib_max_voltage and still get calibration errors, try reducing config.motor.calibration_current.
+
+        If your motor has a small peak current rating (e.g. < 20A) you should also decrease config.motor.calibration_current from its default value of 10A.
+
+        In general, you need:
+
+            config.motor.resistance_calib_max_voltage > calibration_current * phase_resistance
+
+            config.motor.resistance_calib_max_voltage < 0.5 * vbus_voltage
+
+    PHASE_INDUCTANCE_OUT_OF_RANGE = 7 (0x7)
+
+        The measured motor phase inductance is outside of the plausible range or bad calibration parameters were used.
+
+        See PHASE_RESISTANCE_OUT_OF_RANGE for details.
+
+    UNBALANCED_PHASES = 8 (0x8)
+
+        The motor phase resistances are not balanced. Please check your connections.
+
+    INVALID_MOTOR_TYPE = 9 (0x9)
+
+        The value of ...config.motor.motor_type is not defined in the MotorType enum.
+
+    ILLEGAL_HALL_STATE = 10 (0xA)
+
+        During hall encoder calibration the ODrive detected too many bad hall states. Make sure your encoder is wired correctly and produces a clean signal.
+
+    TIMEOUT = 11 (0xB)
+
+    HOMING_WITHOUT_ENDSTOP = 12 (0xC)
+
+        Homing was requested without enabling the endstop. Make sure <axis>.min_endstop.config.enabled <ODrive.Endstop.Config>enabled is True.
+
+    INVALID_STATE = 13 (0xD)
+
+        The requested state must be a valid AxisState.
+
+    NOT_CALIBRATED = 14 (0xE)
+
+        The requested state could not be entered because the axis is not calibrated.
+
+        The required calibrations depend on the axis configuration, the requested state and the requested control mode.
+
+        The most common cause for this error is requesting AxisState.CLOSED_LOOP_CONTROL before first running AxisState.MOTOR_CALIBRATION and AxisState.ENCODER_OFFSET_CALIBRATION.
+
+    NOT_CONVERGING = 15 (0xF)
+
+        The calibration did not converge.
+
+        The measurements made during a calibration task did not reach sufficient statistical significance.
+
+        For instance during AxisState.ENCODER_OFFSET_CALIBRATION the encoder did not move sufficiently to determine the direction between encoder and motor.
+
+        Try changing the calibration parameters.
+
+class ODrive.EncoderId
+
+    NONE = 0 (0x0)
+
+    INC_ENCODER0 = 1 (0x1)
+
+    INC_ENCODER1 = 2 (0x2)
+
+    INC_ENCODER2 = 3 (0x3)
+
+    SENSORLESS_ESTIMATOR = 4 (0x4)
+
+    SPI_ENCODER0 = 5 (0x5)
+
+    SPI_ENCODER1 = 6 (0x6)
+
+    SPI_ENCODER2 = 7 (0x7)
+
+    HALL_ENCODER0 = 8 (0x8)
+
+    HALL_ENCODER1 = 9 (0x9)
+
+    RS485_ENCODER0 = 10 (0xA)
+
+    RS485_ENCODER1 = 11 (0xB)
+
+    RS485_ENCODER2 = 12 (0xC)
+
+    ONBOARD_ENCODER0 = 13 (0xD)
+
+    ONBOARD_ENCODER1 = 14 (0xE)
+
+class ODrive.SpiEncoderMode
+
+    DISABLED = 0 (0x0)
+
+        Disable this encoder instance
+
+    RLS = 1 (0x1)
+
+        Experimental
+
+        Compatible encoders:
+
+                RLS Orbis
+
+    AMS = 2 (0x2)
+
+        Compatible encoders:
+
+                AMS AS5047p
+
+                AMS AS5048A
+
+    CUI = 3 (0x3)
+
+        Compatible encoders:
+
+                CUI AMT23
+
+    AEAT = 4 (0x4)
+
+        Experimental
+
+        Compatible encoders:
+
+                Broadcom AEAT 9922
+
+    MA732 = 5 (0x5)
+
+        Compatible encoders:
+
+                MagAlpha MA702
+
+                MagAlpha MA732
+
+    TLE = 6 (0x6)
+
+        Experimental
+
+        Compatible encoders:
+
+                Infineon TLE5012B
+
+    BISSC = 7 (0x7)
+
+        Experimental
+
+        Compatible encoders:
+
+                Renishaw RESOLUTE (18-bit only)
+
+    NOVOHALL = 8 (0x8)
+
+        Experimental
+
+        Compatible encoders:
+
+                Novohall RSC-2800
+
+class ODrive.IncrementalEncoderFilter
+
+    SPEED_10M = 0 (0x0)
+
+        A/B inputs support a frequency of up to 2.5MHz (10M counts/s)
+
+    SPEED_20M = 1 (0x1)
+
+        A/B inputs support a frequency of up to 5MHz (20M counts/s)
+
+class ODrive.Rs485EncoderMode
+
+    DISABLED = 0 (0x0)
+
+        Disable this encoder instance
+
+    AMT21_POLLING = 1 (0x1)
+
+        Standard CUI AMT21 protocol
+
+        Compatible encoders:
+
+                CUI AMT21 series purchased from channels other than the ODrive shop
+
+        Not compatible with AMT21xB-V-OD sold on the ODrive shop (see AMT21_EVENT_DRIVEN instead).
+
+        The standard AMT21 variants are not recommended for high-RPM applications due to aliasing issues.
+
+    AMT21_EVENT_DRIVEN = 2 (0x2)
+
+        ODrive customized AMT21 protocol
+
+        Only compatible with AMT21 encoder variants sold through ODrive.
+
+        ODrive variants of the AMT21 use a customized protocol to avoid aliasing issues that can occur at high RPM and could otherwise cause the current controller to go unstable and lead to current limit violation faults.
+
+        Compatible encoders:
+
+                CUI AMT21xB-V-OD
+
+    MBS = 3 (0x3)
+
+    ODRIVE_OA1 = 4 (0x4)
+
+        Compatible encoders:
+
+                ODrive OA1
+
+class ODrive.MotorType
+
+    PMSM_CURRENT_CONTROL = 0 (0x0)
+
+        Standard 3-phase motor current control.
+
+        Used for Permanant Magnet AC (PMAC), Brushless DC (BLDC) and Permanent Magnet Synchronous Motors (PMSM). Most 3 phase motors are of this type (if not explicitly called steppers or ACIM).
+
+        If the motor’s nominal current is less than 5% of the current rating of the ODrive you’re using, consider using PMSM_VOLTAGE_CONTROL instead.
+
+        Note: Assumes sinusoidal back-EMF. Trapezoidal back-EMF may have reduced controllability.
+
+    PMSM_VOLTAGE_CONTROL = 2 (0x2)
+
+        Disables closed loop current control.
+
+        Similar to PMSM_CURRENT_CONTROL, but bypasses the closed loop current controller, using the feedforward term V=IR only.
+
+        This can be useful when the motor is used with a nominal current significantly below the ODrive’s current rating. This is the case for instance with high-phase-resistance motors (> 1 ohm), which are typically sold as “Gimbal” motors, when used with ODrive Pro or ODrive S1. In such cases, closed loop current control gives a worse result than open loop control across the motor resistance.
+
+        On ODrive Micro, it is almost always recommended to use PMSM_CURRENT_CONTROL instead, even with high-phase-resistance (“Gimbal”) motors.
+
+        phase_resistance must be configured correctly, otherwise the actual torque will not match the commanded torque.
+
+    ACIM = 3 (0x3)
+
+        Experimental
+
+        Used for FOC control of AC Induction Motors (ACIM), aka Asynchronous motors,
+
+class ODrive.ThermistorMode
+
+    NTC = 1 (0x1)
+
+        NTC thermistor
+
+        Uses the model:
+
+    r_ref, t_ref and beta must be configured by the user.
+
+QUADRATIC = 2 (0x2)
+
+    Can be used for any thermistor that can be expressed as a quadratic function.
+
+    Uses the model:
+
+        where t is in °C.
+
+        r_ref, a and b must be configured by the user.
+
+    PT1000 = 3 (0x3)
+
+        PT1000 thermistor
+
+    KTY84 = 4 (0x4)
+
+        Experimental
+
+        KTY84/130 or KTY84/150 thermistor
+
+        See also datasheet.
+
+    KTY83_122 = 5 (0x5)
+
+        Experimental
+
+        KTY83/122 thermistor
+
+        See also datasheet.
+
+class ODrive.SystemStats.Usb
+
+    rx_cnt: Uint32Property
+
+    tx_cnt: Uint32Property
+
+    tx_overrun_cnt: Uint32Property
+
+class ODrive.SystemStats.I2C
+
+    addr: Uint8Property
+
+    addr_match_cnt: Uint32Property
+
+    rx_cnt: Uint32Property
+
+    error_cnt: Uint32Property
+
+class ODrive.Can.Error
+
+    DUPLICATE_CAN_IDS = 1 (0x1)
+
+    BUS_OFF = 2 (0x2)
+
+    LOW_LEVEL = 4 (0x4)
+
+    PROTOCOL_INIT = 8 (0x8)
+
+class ODrive.Can.Config
+
+    baud_rate: Uint32Property
+
+        The baudrate of the CAN bus. Only compatible baudrates are accepted.
+
+        By default, this is set to the special value 0, which enables automatic baudrate detection.
+
+        Otherwise, if the baudrate is set explicitly:
+
+            The baudrate must be an integer divisor of 10M.
+
+            The baudrate must not exceed 1Mbps (limitation of CAN classic).
+
+        Supported baudrates are for example: 10k, 40k, 125k, 250k, 500k, 1M.
+
+        For CAN-FD frames, this is the baudrate of the arbitration phase while data_baud_rate is the baudrate of the data phase.
+
+        Changes take effect immediately.
+
+    data_baud_rate: Uint32Property
+
+        Experimental
+
+        The baudrate of the data phase of CAN-FD messages.
+
+        This value is only relevant for:
+
+            incoming CAN-FD (as opposed to CAN Classic) messages that have the BRS (Bit Rate Switch) flag set.
+
+            outgoing CAN messages if tx_brs is set to True.
+
+        If both of these cases don’t occur in your application, you can ignore this parameter.
+
+        Only compatible baudrates are accepted.
+
+            The data baudrate must be an integer divisor of 10M.
+
+            The data baudrate must not exceed the hardware specs in the datasheet (Pro, S1, Micro).
+
+        Supported data baudrates are for example: 1M, 2.5M, 5M, 10M (ODrive Pro only).
+
+        Changes take effect immediately.
+
+    tx_brs: Uint32Property
+
+        Experimental
+
+        If true, the ODrive sends all CAN messages as CAN-FD frames with the BRS (Bit Rate Switch) flag set and using data_baud_rate in the data phase. If false, CAN messages are sent as CAN Classic frames.
+
+        Changes take effect immediately.
+
+    protocol: Property[ODrive.Can.Protocol]
+
+        Specifies which protocol is running on the CAN interface. If no protocol is enabled, the CAN interface is disabled.
+
+        Changes take effect immediately.
+
+class ODrive.Can.Protocol
+
+    SIMPLE = 1 (0x1)
+
+class ODrive.Axis.Config
+
+    startup_max_wait_for_ready: [sec] - Float32Property
+
+        Maximum time to wait for active_errors_ to go clear before trying to start any of the startup actions. Default 3 seconds.
+
+    startup_motor_calibration: BoolProperty
+
+        Run motor calibration at startup, skip otherwise
+
+    startup_encoder_index_search: BoolProperty
+
+        Run encoder index search after startup, skip otherwise this only has an effect if commutation_mapper.config.use_index_gpio is also true
+
+    startup_encoder_offset_calibration: BoolProperty
+
+        Run encoder offset calibration after startup, skip otherwise
+
+    startup_closed_loop_control: BoolProperty
+
+        Enable closed loop control after calibration/startup
+
+    startup_homing: BoolProperty
+
+        Enable homing after calibration/startup
+
+    init_torque: [Nm] - Float32Property
+
+        Initial torque setpoint (or feed-forward) that will be applied when axis is put into closed loop control
+
+    init_vel: [rev/s] - Float32Property
+
+        Initial velocity setpoint (or feed-forward) that will be applied when axis is put into closed loop control
+
+    init_pos: [rev] - Float32Property
+
+        Initial position setpoint that will be applied when axis is put into closed loop control. NaN to use current position estimate as initialization value of position setpoint.
+
+    enable_step_dir: BoolProperty
+
+        Enable step/dir input after calibration. Make sure to set the corresponding GPIO’s mode to GpioMode.DIGITAL.
+
+    step_dir_always_on: BoolProperty
+
+        Keep step/dir enabled while the motor is disabled. This is ignored if enable_step_dir is false. This setting only takes effect on a state transition into idle or out of closed loop control.
+
+    calib_range: Float32Property
+
+        Maximum allowable error during AxisState.ENCODER_OFFSET_CALIBRATION
+
+        Any difference between estimated and actual encoder CPR/movement distance greater than calib_range * calib_scan_distance will trigger a POLE_PAIR_CPR_MISMATCH error.
+
+        calib_range is 0.02 (2%) by default. It is strongly recommended not to change this value.
+
+    calib_scan_distance: [erev] - Float32Property
+
+        Sets the distance the motor will move during AxisState.ENCODER_OFFSET_CALIBRATION
+
+        This value is specified in electrical revolutions, meaning that it must be divided by the number of motor pole pairs to get the distance in motor turns.
+
+        To reverse the scan direction, set calib_scan_vel and calib_scan_distance to a negative value.
+
+    calib_scan_vel: [erev/s] - Float32Property
+
+        Sets the velocity for AxisState.ENCODER_OFFSET_CALIBRATION
+
+        This value is specified with respect to electrical revolutions, meaning that it must be divided by the number of motor pole pairs to get the velocity with respect to motor turns.
+
+        To reverse the scan direction, set calib_scan_vel and calib_scan_distance to a negative value.
+
+    index_search_at_target_vel_only: BoolProperty
+
+    watchdog_timeout: [sec] - Float32Property
+
+    enable_watchdog: BoolProperty
+
+        Enables the watchdog for this axis.
+
+        When the watchdog expires (after config.watchdog_timeout), the axis is put into AxisState.IDLE. The watchdog can be reset by the function axis.watchdog_feed(), by certain UART commands (see ASCII Protocol) or by CAN messages (see Watchdog).
+
+    step_gpio_pin: Uint16Property
+
+    dir_gpio_pin: Uint16Property
+
+    error_gpio_pin: Uint16Property
+
+    enable_error_gpio: BoolProperty
+
+    calibration_lockin: ODrive.Axis.Config.CalibrationLockin
+
+        Open-loop lock-in parameters used for encoder offset calibration, hall calibration, and index search.
+
+    sensorless_ramp: ODrive.Axis.LockinConfig
+
+        Open-loop lock-in parameters used for sensorless ramp-up.
+
+    general_lockin: ODrive.Axis.LockinConfig
+
+        Open-loop lock-in parameters used for LOCKIN_SPIN.
+
+    can: ODrive.Axis.CanConfig
+
+        All CAN configuration settings take effect immediately.
+
+    load_encoder: Property[ODrive.EncoderId]
+
+        Specifies which encoder will be used as the load encoder
+
+        The load encoder is what determines pos_estimate and by default also vel_estimate.
+
+        Changing the value of this property resets pos_vel_mapper.config.index_gpio, offset, offset_valid and scale.
+
+    commutation_encoder: Property[ODrive.EncoderId]
+
+        Specifies which encoder will be used as the commutation encoder
+
+        The commutation encoder is what determines how the magnetic field will be oriented in the motor.
+
+        Changing the value of this property resets all configuration in commutation_mapper.config.
+
+    encoder_bandwidth: [1/s] - Float32Property
+
+        Bandwidth of the axis (primary) encoder state estimator
+
+        Sets the bandwidth of the load encoder estimator and by default also the commutation encoder estimator.
+
+        See also commutation_encoder_bandwidth.
+
+        Changes take effect immediately.
+
+    commutation_encoder_bandwidth: [1/s] - Float32Property
+
+        Bandwidth of the commutation encoder state estimator
+
+        Sets the bandwidth of the commutation encoder.
+
+        If NAN or only one encoder is used (load_encoder and commutation_encoder are equal), this value is ignored and encoder_bandwidth is used to define the commutation estimator bandwidth.
+
+        Changes take effect immediately.
+
+    I_bus_hard_min: [Amp] - Float32Property
+
+        If the controller fails to keep this motor’s DC current (axis.motor.alpha_beta_frame_controller.I_bus) above this value the motor gets disarmed immediately. Most likely you want a negative value here. Set to -inf to disable. Take noise into account when choosing a value.
+
+    I_bus_hard_max: [Amp] - Float32Property
+
+        If the controller fails to keep this motor’s DC current (axis.motor.alpha_beta_frame_controller.I_bus) below this value the motor gets disarmed immediately. Usually this is set in conjunction with I_bus_hard_min. Set to inf to disable. Take noise into account when choosing a value.
+
+    I_bus_soft_min: [Amp] - Float32Property
+
+        Negative limit of the DC current allowed to regenerate into the power supply
+
+        This limit is relevant while braking (as opposed to motoring). When this limit is reached, the ODrive reduces the torque with which it is braking to stay within the DC current limit.
+
+        Note: DC current is different from the motor current.
+
+        Must be negative. Set to -INFINITY to disable this limit. Changes take effect immediately.
+
+    I_bus_soft_max: [Amp] - Float32Property
+
+        Positive limit of the DC current allowed to be pulled from the power supply
+
+        This limit is relevant while motoring (as opposed to braking). When this limit is reached, the ODrive reduces the torque with which it is motoring to stay within the DC current limit.
+
+        Note: DC current is different from the motor current.
+
+        Must be positive. Set to INFINITY to disable. Changes take effect immediately.
+
+    P_bus_soft_min: [W] - Float32Property
+
+        Negative limit of the DC power allowed to regenerate into the power supply
+
+        This limit is relevant while braking (as opposed to motoring). When this limit is reached, the ODrive reduces the torque with which it is braking to stay within the DC power limit.
+
+        Must be negative. Set to -INFINITY to disable this limit. Changes take effect immediately.
+
+    P_bus_soft_max: [W] - Float32Property
+
+        Positive limit of the DC power allowed to be pulled from the power supply
+
+        This limit is relevant while motoring (as opposed to braking). When this limit is reached, the ODrive reduces the torque with which it is motoring to stay within the DC power limit.
+
+        Must be positive. Set to INFINITY to disable. Changes take effect immediately.
+
+    torque_soft_min: [Nm] - Float32Property
+
+        Minimum negative commanded torque allowed in the torque loop. This is usually a negative number.
+
+    torque_soft_max: [Nm] - Float32Property
+
+        Maximum positive commanded torque allowed in the torque loop. If you set this, in all likelihood you also want to set torque_soft_min.
+
+    motor: ODrive.Axis.Config.Motor
+
+    anticogging: ODrive.AnticoggingConfig
+
+    off_axis_k: Float32Property
+
+        Skew parameter for off-axis mounting of magnetic encoders.
+
+        When using magnetic encoders that are mounted off to the side of a magnet (off-axis), the angle reading gets skewed. This can be described with a parameter k, which can be determined using tools such as https://sensors.monolithicpower.com/.
+
+        By configuring off_axis_k, the ODrive can compensate for this effect.
+
+        A value of 1.0 (default) disables this compensation.
+
+        On dual encoders setups, this pertains to the load encoder only.
+
+    off_axis_k_commutation: Float32Property
+
+        Skew parameter for off-axis mounting of magnetic encoders.
+
+        See off_axis_k.
+
+        On single encoder setups, this parameter is ignored. On dual encoder setups, this pertains to the commutation encoder only.
+
+    harmonic_compensation: ODrive.HarmonicCompensation
+
+        Calibration parameters and coefficients for harmonic compensation.
+
+        On dual encoder setups, this pertains to the load encoder only.
+
+        More info: Harmonic Compensation
+
+    harmonic_compensation_commutation: ODrive.HarmonicCompensation
+
+        Calibration parameters and coefficients for harmonic compensation of the commutation encoder.
+
+        On single encoder setups, this parameter group is unused. On dual encoder setups, this pertains to the commutation encoder only.
+
+        More info: Harmonic Compensation
+
+class ODrive.Axis.TaskTimes
+
+    thermistor_update: ODrive.TaskTimer
+
+    sensorless_estimator_update: ODrive.TaskTimer
+
+    endstop_update: ODrive.TaskTimer
+
+    can_heartbeat: ODrive.TaskTimer
+
+    controller_update: ODrive.TaskTimer
+
+    open_loop_vector_generator_update: ODrive.TaskTimer
+
+    acim_estimator_update: ODrive.TaskTimer
+
+    motor_update: ODrive.TaskTimer
+
+    current_controller_update: ODrive.TaskTimer
+
+    current_sense: ODrive.TaskTimer
+
+    pwm_update: ODrive.TaskTimer
+
+class ODrive.Axis.LockinConfig
+
+    initial_pos: [erev] - Float32Property
+
+        Sets the electrical angle at which the lockin spin starts. In most cases this can be left at zero.
+
+    current: [Amp] - Float32Property
+
+    ramp_time: [sec] - Float32Property
+
+    ramp_distance: [erev] - Float32Property
+
+    accel: [erev/s^2] - Float32Property
+
+    vel: [erev/s] - Float32Property
+
+    finish_distance: [erev] - Float32Property
+
+    finish_on_vel: BoolProperty
+
+    finish_on_distance: BoolProperty
+
+class ODrive.Axis.CanConfig
+
+    node_id: Uint32Property
+
+        CAN node ID of the ODrive
+
+        See also: CAN Protocol Overview.
+
+        Allowed IDs are 0 … 63, where 63 (0x3f) serves as a special broadcast/unaddressed value. See Broadcast and Discovery & Addressing for details. Defaults to 0x3f.
+
+        Bit 31 of node_id specifies the ID type:
+
+                If bit 31 is 0, the ODrive listens for 11-bit standard message IDs.
+
+                If bit 31 is 1, the ODrive listens for 29-bit extended message IDs.
+
+        Changes to this config take effect immediately.
+
+    version_msg_rate_ms: Uint32Property
+
+    heartbeat_msg_rate_ms: Uint32Property
+
+    encoder_msg_rate_ms: Uint32Property
+
+    iq_msg_rate_ms: Uint32Property
+
+    error_msg_rate_ms: Uint32Property
+
+    temperature_msg_rate_ms: Uint32Property
+
+    bus_voltage_msg_rate_ms: Uint32Property
+
+    torques_msg_rate_ms: Uint32Property
+
+    powers_msg_rate_ms: Uint32Property
+
+    input_vel_scale: [counts/(rev/s)] - Uint32Property
+
+        Scale of the Vel_FF field in Set_Input_Pos.
+
+        Defaults to 1000.
+
+    input_torque_scale: [counts/Nm] - Uint32Property
+
+        Scale of the Torque_FF field in Set_Input_Pos.
+
+        Defaults to 1000.
+
+class ODrive.Axis.AxisState
+
+    UNDEFINED = 0 (0x0)
+
+        will fall through to idle
+
+    IDLE = 1 (0x1)
+
+        Disable motor PWM and do nothing.
+
+    STARTUP_SEQUENCE = 2 (0x2)
+
+        Run the startup procedure.
+
+        the actual sequence is defined by the config.startup… flags
+
+    FULL_CALIBRATION_SEQUENCE = 3 (0x3)
+
+        Run all essential calibration procedures for the current ODrive configuration
+
+        For the most common configurations, this runs MOTOR_CALIBRATION followed by ENCODER_OFFSET_CALIBRATION.
+
+        General sequence:
+
+            MOTOR_CALIBRATION, unless the motor type is MotorType.PMSM_VOLTAGE_CONTROL.
+
+            If using hall encoders: ENCODER_HALL_POLARITY_CALIBRATION and then ENCODER_HALL_PHASE_CALIBRATION.
+
+            If using an index signal: ENCODER_INDEX_SEARCH.
+
+            If commutation encoder is not a hall encoder: ENCODER_OFFSET_CALIBRATION. If commutation encoder is a hall encoder: ENCODER_DIR_FIND.
+
+    MOTOR_CALIBRATION = 4 (0x4)
+
+        Measure phase resistance and phase inductance of the motor.
+
+            To store the results save the configuration (save_configuration()). After that you don’t have to run the motor calibration on the next start up.
+
+            This modifies the variables config.motor.phase_resistance and config.motor.phase_inductance.
+
+    ENCODER_INDEX_SEARCH = 6 (0x6)
+
+        Turn the motor in one direction until the encoder index is traversed.
+
+        This state can only be entered if commutation.config.use_index_gpio is True).
+
+    ENCODER_OFFSET_CALIBRATION = 7 (0x7)
+
+        Turn the motor in one direction for a few seconds and then back to measure the offset between the encoder position and the electrical phase.
+
+        Can only be entered if the motor is calibrated:
+
+            config.motor.phase_resistance_valid
+
+            config.motor.phase_inductance_valid
+
+    CLOSED_LOOP_CONTROL = 8 (0x8)
+
+        Run closed loop control.
+
+            The action depends on the controller.config.control_mode.
+
+        Can only be entered if the motor is calibrated:
+
+            config.motor.phase_resistance_valid
+
+            config.motor.phase_inductance_valid
+
+    LOCKIN_SPIN = 9 (0x9)
+
+        Run lockin spin.
+
+        Can only be entered if the motor is calibrated:
+
+                config.motor.phase_resistance_valid
+
+                config.motor.phase_inductance_valid
+
+    ENCODER_DIR_FIND = 10 (0xA)
+
+        Run encoder direction search.
+
+        Can only be entered if the motor is calibrated:
+
+                config.motor.phase_resistance_valid
+
+                config.motor.phase_inductance_valid
+
+    HOMING = 11 (0xB)
+
+        Run axis homing function.
+
+        Endstops must be enabled to use this feature.
+
+    ENCODER_HALL_POLARITY_CALIBRATION = 12 (0xC)
+
+        Rotate the motor in lockin and calibrate hall polarity
+
+        ODrive assumes 120 degree electrical hall spacing. This routine determines if that is the case and sets the polarity if the halls are on 60 degree electrical spacing
+
+    ENCODER_HALL_PHASE_CALIBRATION = 13 (0xD)
+
+        Rotate the motor for 30s to calibrate hall sensor edge offsets
+
+        The phase offset is not calibrated at this time, so the map is only relative
+
+    ANTICOGGING_CALIBRATION = 14 (0xE)
+
+        Calibrate the anticogging algorithm.
+
+        This spins the motor for a duration of calib_coarse_tuning_duration + calib_fine_tuning_duration + 1 seconds to learn the cogging map of the motor.
+
+        The previous cogging map is cleared as soon as a new anticogging calibration is started. If the calibration is cancelled or fails, the cogging map is left in a half-calibrated state.
+
+        To keep the cogging map across reboots, the configuration must be saved.
+
+    HARMONIC_CALIBRATION = 15 (0xF)
+
+        Experimental
+
+        Calibrate harmonic compensation.
+
+        Spins the motor briefly to determine 1st and 2nd harmonic distortion coefficients of the encoder. If separate load and commutation encoders are used, this calibrates the load encoder only.
+
+        The calibration parameters can be changed in harmonic_compensation (calib_). The result, if successful, is assigned to harmonic_compensation (cosx_coef, sinx_coef, cos2x_coef, sin2x_coef).
+
+        More info: Harmonic Compensation
+
+    HARMONIC_CALIBRATION_COMMUTATION = 16 (0x10)
+
+        Experimental
+
+        Calibrate harmonic compensation for commutation encoder.
+
+        Spins the motor briefly to determine 1st and 2nd harmonic distortion coefficients of the commutation encoder. This is only useful if separate load and commutation encoders are used. Otherwise, use HARMONIC_CALIBRATION.
+
+        The calibration parameters and calibration result are stored in harmonic_compensation_commutation.
+
+        More info: Harmonic Compensation
+
+class ODrive.Axis.Config.CalibrationLockin
+
+    current: [Amp] - Float32Property
+
+    ramp_time: Float32Property
+
+        UNUSED
+
+    ramp_distance: Float32Property
+
+        UNUSED
+
+    accel: [erev/s^2] - Float32Property
+
+    vel: [erev/s] - Float32Property
+
+        Overridden by calib_scan_vel during encoder offset calibration.
+
+class ODrive.Axis.Config.Motor
+
+    motor_type: Property[ODrive.MotorType]
+
+    pole_pairs: Uint32Property
+
+        Number of magnet pole pairs in the motor’s rotor.
+
+        This is the number of magnet poles in the rotor, divided by two. This is not the same as the number of coils in the stator.
+
+        To find this, you can simply count the number of permanent magnets in the rotor, if you can see them.
+
+        Otherwise a good way to find the number of pole pairs is with a current limited power supply. Connect any two of the three phases to a power supply outputting around 2A, spin the motor by hand, and count the number of detents. This will be the number of pole pairs. If you can’t distinguish the detents from the normal cogging present when the motor is disconnected, increase the current.
+
+        Another way is sliding a loose magnet in your hand around the rotor, and counting how many times it stops. This will be the number of pole pairs. If you use a ferrous piece of metal instead of a magnet, you will get the number of magnet poles.
+
+    phase_resistance: [Ohm] - Float32Property
+
+        Phase resistance of the motor.
+
+        Line-to-neutral resistance of one motor phase, assuming a wye-wound motor. Equivalent to the line-to-line resistance divided by two.
+
+        When using MotorType.PMSM_CURRENT_CONTROL, this is measured automatically during AxisState.MOTOR_CALIBRATION and used to derive the gains and feedforward terms for the current controller.
+
+        When using MotorType.PMSM_VOLTAGE_CONTROL, this must be set manually based on the motor’s datasheet or external measurements. In this case it is the main parameter that facilitates control of current and must be set accurately to ensure precise resulting current.
+
+    phase_inductance: [Henry] - Float32Property
+
+        Phase inductance of the motor.
+
+        Line-to-neutral inductance of one motor phase, assuming a wye-wound motor. Equivalent to the line-to-line inductance divided by two.
+
+        Used to derive the gains and feedforward terms for the current controller.
+
+        When using MotorType.PMSM_CURRENT_CONTROL, this is measured automatically during AxisState.MOTOR_CALIBRATION.
+
+        When using MotorType.PMSM_VOLTAGE_CONTROL, this is optional and only used in certain configurations (see wL_FF_enable, dI_dt_FF_enable, fw_enable and motor_model_l_dq_valid). In this case it can be set manually based on the motor’s datasheet or external measurements.
+
+    phase_resistance_valid: BoolProperty
+
+        Indicates whether phase_resistance is valid. This flag is automatically set to true after successful motor calibration. It can also be set manually if phase_resistance is set manually. The motor will not spin unless this is true.
+
+    phase_inductance_valid: BoolProperty
+
+        Indicates whether phase_inductance is valid. This flag is automatically set to true after successful motor calibration. It can also be set manually if phase_inductance is set manually. Depending on the configuration, the motor will not spin unless this is true (see phase_inductance for details).
+
+    torque_constant: [Nm / A] - Float32Property
+
+        Torque constant of the motor.
+
+        This is the ratio of torque produced by the motor per Amp of current delivered to the motor. This should be set to 8.27 / (motor KV).
+
+        If you decide that you would rather command torque in units of Amps, you could simply set the torque constant to 1.
+
+        if you are using position or velocity control and tuning the gains manually, then a ballpark value is sufficient, as error can be absorbed into the gain.
+
+    direction: Float32Property
+
+        Direction of the motor (+1 or -1) with respect to the axis position space. This affects the spin direction of calibration procedures.
+
+    current_control_bandwidth: [1/s] - Float32Property
+
+        Sets the PI gains of the Q and D axis FOC control according to phase_resistance and phase_inductance to create a critically-damped controller with a -3dB bandwidth at this frequency.
+
+    wL_FF_enable: BoolProperty
+
+        Enables automatic feedforward of the R and omega*L term in the current controller.
+
+    bEMF_FF_enable: BoolProperty
+
+        Enables automatic feedforward of the bEMF term in the current controller.
+
+    dI_dt_FF_enable: BoolProperty
+
+        Enables automatic feedforward of the dI/dt term in the current controller.
+
+    ff_pm_flux_linkage: Float32Property
+
+        Flux linkage of the motor, used by the motor model.
+
+        Commonly called “lambda” in literature.
+
+        By default the back-EMF feedforward term assumes a flux linkage of: flux_linkage = 2/3 * torque_constant / pole_pairs which is equivalent to flux_linkage = 5.51328895422 / (pole_pairs * motor_kv)
+
+        This default can be overriden by specifying this parametter and setting (ff_pm_flux_linkage_valid = True).
+
+    ff_pm_flux_linkage_valid: BoolProperty
+
+    motor_model_l_d: [Henry] - Float32Property
+
+        d-axis phase inductance of the motor, used by the motor model
+
+        If specified (motor_model_l_dq_valid = True), overrides the d-axis phase inductance used by the motor model (feedforward and field weakening). This does not affect the current controller gains. If left empty (motor_model_l_dq_valid = False) phase_inductance is used instead.
+
+    motor_model_l_q: [Henry] - Float32Property
+
+        q-axis phase inductance of the motor, used by the motor model
+
+        If specified (motor_model_l_dq_valid = True), overrides the q-axis phase inductance used by the motor model (feedforward and field weakening). This does not affect the current controller gains. If left empty (motor_model_l_dq_valid = False) phase_inductance is used instead.
+
+    motor_model_l_dq_valid: BoolProperty
+
+        If true, the motor model uses motor_model_l_d and motor_model_l_q for feedforward terms and field weakening. If false, phase_inductance is used instead.
+
+    calibration_current: Float32Property
+
+        The current used to measure resistance during AxisState.MOTOR_CALIBRATION.
+
+    resistance_calib_max_voltage: Float32Property
+
+        The maximum voltage allowed during AxisState.MOTOR_CALIBRATION.
+
+        This should be set to less than (0.5 * vbus_voltage), but high enough to satisfy V=IR during motor calibration, where I is config.calibration_current and R is config.phase_resistance
+
+    current_soft_max: [Amp] - Float32Property
+
+        Maximum commanded current allowed for this motor. There is a separate limit current_soft_max that pertains to the ODrive’s power stage.
+
+    current_hard_max: [Amp] - Float32Property
+
+        Maximum measured current allowed. Any measurement above current_hard_max will throw a CURRENT_LIMIT_VIOLATION error. Changing this variable can lead to reconfiguration of low level hardware at the next opportunity (when the axis is in IDLE). This will incur a 0.7s delay until the axis can be activated again. There is a separate limit current_hard_max that pertains to the ODrive’s power stage.
+
+    current_slew_rate_limit: [Amp/s] - Float32Property
+
+        Maximum slew rate for the current setpoint.
+
+        Must be strictly positive.
+
+    fw_enable: BoolProperty
+
+    fw_mod_setpoint: Float32Property
+
+    fw_fb_bandwidth: Float32Property
+
+    acim_gain_min_flux: Float32Property
+
+    acim_autoflux_enable: BoolProperty
+
+    acim_autoflux_min_Id: Float32Property
+
+    acim_autoflux_attack_gain: Float32Property
+
+    acim_autoflux_decay_gain: Float32Property
+
+    acim_nominal_slip_vel: [Hz] - Float32Property
+
+        1/(2*pi*rotor_tau), where rotor_tau is time constant of the rotor (L_r/R_r)
+
+    sensorless_observer_gain: [1/s] - Float32Property
+
+    sensorless_pll_bandwidth: [1/s] - Float32Property
+
+    sensorless_pm_flux_linkage: Float32Property
+
+        Flux linkage of the motor, used by the sensorless estimator.
+
+        By default the sensorless estimator derives the motor flux linkage as: flux_linkage = 2/3 * torque_constant / pole_pairs which is equivalent to flux_linkage = 5.51328895422 / (pole_pairs * motor_kv)
+
+        This default can be overriden by specifying this parameter and setting (sensorless_pm_flux_linkage_valid = True).
+
+    sensorless_pm_flux_linkage_valid: BoolProperty
+
+    power_torque_report_filter_bandwidth: Float32Property
+
+        Filter bandwidth for reported torque and power estimates
+
+        Torque and power estimates can be filtered so they can be sampled at a lower rate.
+
+        This applies to torque_estimate, mechanical_power, electrical_power and loss_power.
+
+        Set to control_loop_hz (default) to disable the filter.
+
+class ODrive.Motor.DcCalib
+
+    a_0: Float32Property
+
+    b_0: Float32Property
+
+    c_0: Float32Property
+
+    a_1: Float32Property
+
+    b_1: Float32Property
+
+    c_1: Float32Property
+
+    a_2: Float32Property
+
+    b_2: Float32Property
+
+    c_2: Float32Property
+
+class ODrive.Mapper.Config
+
+    circular: BoolProperty
+
+    circular_output_range: Float32Property
+
+    scale: Float32Property
+
+    offset_valid: BoolProperty
+
+    offset: Float32Property
+
+    approx_init_pos_valid: BoolProperty
+
+        Forces pos_abs to initialize to approx_init_pos +- scale/2 on every startup.
+
+        By setting this to true, the user promises that the axis will always start up within +-0.5 encoder turns of approx_init_pos, in terms of the user’s reference frame. This can be used on axes that have a mechanically limited range of less than 360° or in other situations where the user can guarantee bounds on the startup position.
+
+        If absolute linear setpoints are used with an absolute encoder, this allows the axis to disambiguate its turn count on startup and thereby eliminates the need for homing.
+
+        Note that the +-0.5 turns tolerance refers to input space (encoder space), not user space.
+
+    approx_init_pos: Float32Property
+
+        The guaranteed approximate startup position (in the user reference frame). See approx_init_pos_valid for details.
+
+    index_offset_valid: BoolProperty
+
+    index_offset: Float32Property
+
+    use_index_gpio: BoolProperty
+
+    passive_index_search: BoolProperty
+
+        Listen for index pulses even when not explicitly running index search and even when the motor is disarmed. In case the index pulse is fairly wide (low resolution encoders or hall effect sensors), care must be taken as to which direction the motor is spun to register the index. Once the index is found (either by manually moving the motor or by running ENCODER_INDEX_SEARCH), the search is disabled.
+
+        Requires a reboot to take effect.
+
+    index_gpio: Uint8Property
+
+    use_endstop: BoolProperty
+
+class ODrive.Rs485Encoder.Config
+
+    mode: Property[ODrive.Rs485EncoderMode]
+
+        Changes take effect when in IDLE
+
+class ODrive.IncrementalEncoder.Config
+
+    enabled: BoolProperty
+
+        Enables or disables this encoder input
+
+        To use this encoder input for control, it must additionally be assigned to load_encoder and/or commutation_encoder.
+
+        Changes take effect when axis is in IDLE.
+
+    filter: Property[ODrive.IncrementalEncoderFilter]
+
+        Configures the input filter on the A/B inputs
+
+        The default setting of 10M is appropriate for most applications. If you have very high speed or high CPR encoder, you may need to increase the filter speed. This may slightly increase susceptibility to EMI.
+
+        Changes take effect when axis is in IDLE.
+
+    cpr: Uint32Property
+
+        Counts per revolution of the encoder
+
+        This is 4x the Pulse Per Revolution (PPR) value. Usually this is indicated in the datasheet of your encoder.
+
+        Changes take effect when axis is in IDLE.
+
+class ODrive.HallEncoder.Config
+
+    enabled: BoolProperty
+
+    hall_polarity: Uint8Property
+
+    hall_polarity_calibrated: BoolProperty
+
+    ignore_illegal_hall_state: BoolProperty
+
+    edges_calibrated: BoolProperty
+
+    edge0: Float32Property
+
+    edge1: Float32Property
+
+    edge2: Float32Property
+
+    edge3: Float32Property
+
+    edge4: Float32Property
+
+    edge5: Float32Property
+
+class ODrive.SpiEncoder.Config
+
+    ncs_gpio: Uint8Property
+
+    mode: Property[ODrive.SpiEncoderMode]
+
+    delay: [sec] - Float32Property
+
+        Delay of the position reading of the encoder. The position reading is forward-projected based on the velocity estimate and this value.
+
+    max_error_rate: Float32Property
+
+        Maximum packet error rate
+
+        Increasing this value allows the motor to continue operating even if some SPI responses are corrupted (e.g. error bit, bad parity/CRC). However it also leads to slower reaction in case the encoder is disconnected.
+
+        0.005 (0.5%) by default, low-pass filtered with a 160ms time constant.
+
+    baudrate: [Hz] - Uint32Property
+
+        Experimental
+
+        Maximum SCLK frequency
+
+        The actual selected baudrate will usually be lower than this and depend on the nearest clock prescaler setting.
+
+        It is recommended to leave this value at its default.
+
+        Setting this value too low can lead to missed control deadline errors because the transfer takes too long. Setting this value too high can lead to bad signal integrity, especially on long wires with high capacitance.
+
+        Requires a reboot to take effect.
+
+    biss_c_bits: Uint8Property
+
+        Experimental
+
+        Number of bits in singleturn section of BiSS-C packet
+
+    biss_c_multiturn_bits: Uint8Property
+
+        Experimental
+
+        Number of bits in multiturn section of BiSS-C packet
+
+        The multiturn count is currently not used by the ODrive. However it must still be configured because it influences the packet format.
+
+class ODrive.Interpolator.Config
+
+    dynamic: BoolProperty
+
+class ODrive.BuiltinThermalCurrentLimiter.Config
+
+    temp_limit_lower: [Celcius] - Float32Property
+
+        The lower limit when the controller starts limiting current.
+
+    temp_limit_upper: [Celcius] - Float32Property
+
+        The upper limit when current limit reaches 0 Amps and an over temperature error is triggered.
+
+class ODrive.OffboardThermistorCurrentLimiter.Config
+
+    gpio_pin: Uint16Property
+
+        GPIO on which the thermistor is connected.
+
+        By default, this points to the GPIO that is designated “THERMISTOR+” in the pinout.
+
+        The special value 0x0100 (256) is used to refer to the OA1’s dedicated thermistor port. In this case, rs485_encoder_group0.config.mode must be set to ODRIVE_OA1, otherwise the temperature will read as NAN and the thermistor treated as disconnected.
+
+    mode: Property[ODrive.ThermistorMode]
+
+        Thermistor type
+
+        Default: NTC. For more info see Motor Thermistor Configuration.
+
+    r_ref: [Ohm] - Float32Property
+
+        Resistance of the thermistor at the reference temperature. Usually denoted R_25 in the thermistor’s datasheet.
+
+        Only used when mode is ThermistorMode.NTC or ThermistorMode.QUADRATIC.
+
+    t_ref: [Celcius] - Float32Property
+
+        Reference temperature corresponding to r_ref, in °C. Usually this is equal to 25°C and denoted T_25 in the thermistor’s datasheet.
+
+        Only used when mode is ThermistorMode.NTC.
+
+    beta: [Kelvin] - Float32Property
+
+        Beta (or B) value of the thermistor. Can be found in the thermistor’s datasheet. Only used when mode is ThermistorMode.NTC.
+
+    a: Float32Property
+
+        Linear coefficient for ThermistorMode.QUADRATIC
+
+        Not used in any other thermistor mode.
+
+    b: Float32Property
+
+        Quadratic coefficient for ThermistorMode.QUADRATIC
+
+        Not used in any other thermistor mode.
+
+    temp_limit_lower: [Celcius] - Float32Property
+
+        The lower limit when the controller starts limiting current.
+
+    temp_limit_upper: [Celcius] - Float32Property
+
+        The upper limit when current limit reaches 0 Amps and an over temperature error is triggered.
+
+    enabled: BoolProperty
+
+        Whether this thermistor is enabled.
+
+class ODrive.Controller.Config
+
+    enable_vel_limit: BoolProperty
+
+    enable_torque_mode_vel_limit: BoolProperty
+
+        Enable velocity limit in torque control mode (requires a valid velocity estimator).
+
+    enable_gain_scheduling: BoolProperty
+
+        Enable the experimental “gain scheduling” module, which reduces the pos_gain, vel_gain, and vel_integrator_gain according to the position error. Also known as “anti-hunt”
+
+    gain_scheduling_width: [turn] - Float32Property
+
+        Distance over which the gain scheduling operates.
+
+    enable_overspeed_error: BoolProperty
+
+        Enables the velocity controller’s overspeed error
+
+    control_mode: Property[ODrive.Controller.ControlMode]
+
+    input_mode: Property[ODrive.Controller.InputMode]
+
+    pos_gain: [(rev/s) / rev] - Float32Property
+
+    vel_gain: [Nm / (rev/s)] - Float32Property
+
+    vel_integrator_gain: [(Nm/s) / (rev/s)] - Float32Property
+
+    vel_integrator_limit: [Nm] - Float32Property
+
+        Limit the integrator output (independent of proportional gain output). Set to infinity to disable.
+
+    vel_limit: [rev/s] - Float32Property
+
+        Infinity to disable.
+
+    vel_limit_tolerance: Float32Property
+
+        Ratio to vel_limit. Infinity to disable. Must be larger than 1.
+
+    vel_ramp_rate: [rev/s^2] - Float32Property
+
+    torque_ramp_rate: [Nm/s] - Float32Property
+
+    circular_setpoints: BoolProperty
+
+    circular_setpoint_range: Float32Property
+
+        circular range in [turns] for position setpoints when circular_setpoints is True
+
+    absolute_setpoints: BoolProperty
+
+        False: Position setpoints are relative to the startup position.
+
+        True: Position setpoints are with respect to an absolute reference frame of some sort. See Position Reference Frame for available options. Attempts to enter position control will be rejected until the reference frame has been initialized (e.g. by completing a homing procedure).
+
+        Changes take effect immediately. The position setpoint is shifted when changing this value, to avoid unexpected axis motion.
+
+    use_commutation_vel: BoolProperty
+
+        Experimental
+
+        When using two separate encoders for position control and commutation, this selects which of the two encoders is used for velocity control. If false, the position encoder is used, else the commutation encoder is used. commutation_vel_scale must be set accordingly.
+
+    use_load_encoder_for_commutation_vel: BoolProperty
+
+        Experimental
+
+        When using two separate encoders for position control and commutation, this selects which of the two encoders is used for commutation (i.e. for estimating the phase velocity).
+
+            False (default): The commutation velocity is based on the commutation encoder.
+
+            True: The commutation velocity is based on the load encoder. commutation_vel_scale must be set accordingly.
+
+        Not supported in sensorless mode.
+
+    commutation_vel_scale: Float32Property
+
+        Experimental
+
+        Defines the scale between load encoder and commutation encoder. Must be configured if use_commutation_vel or use_load_encoder_for_commutation_vel is true.
+
+        If the position encoder is mounted after a gearbox with a reduction ratio N:1, this variable must be set to 1/(pole_pairs*N) (positive or negative, depending on the setup).
+
+    steps_per_circular_range: Int32Property
+
+        Number of steps within the circular setpoint range. Set this and the circular setpoint range to powers of 2 for the best results.
+
+    homing_speed: [rev/s] - Float32Property
+
+        The speed at which the axis moves towards the min_endstop during AxisState.HOMING
+
+    inertia: [Nm / (rev/s^2)] - Float32Property
+
+    input_filter_bandwidth: [1/s] - Float32Property
+
+        The desired bandwidth for InputMode.POS_FILTER.
+
+        Sets the position filter’s P and I gains to emulate a critically-damped 2nd order mass-spring-damper motion.
+
+    spinout_mechanical_power_bandwidth: [1/s] - Float32Property
+
+        Bandwidth for mechanical power estimate. Used for spinout detection
+
+    spinout_electrical_power_bandwidth: [1/s] - Float32Property
+
+        Bandwidth for electrical power estimate. Used for spinout detection. Dot product of Vdq and Idq
+
+    spinout_mechanical_power_threshold: [Watt] - Float32Property
+
+        Mechanical power threshold for spinout detection. This should be a negative value
+
+    spinout_electrical_power_threshold: [Watt] - Float32Property
+
+        Electrical power threshold for spinout detection. This should be a positive value
+
+class ODrive.Controller.Autotuning
+
+    frequency: [Hz] - Float32Property
+
+    pos_amplitude: [rev] - Float32Property
+
+    vel_amplitude: [rev/s] - Float32Property
+
+    torque_amplitude: [Nm] - Float32Property
+
+    vel_burst_factor: Uint8Property
+
+class ODrive.Controller.ControlMode
+
+    VOLTAGE_CONTROL = 0 (0x0)
+
+        Note: This mode is not used internally. For voltage-only FOC, use MotorType.PMSM_VOLTAGE_CONTROL
+
+    TORQUE_CONTROL = 1 (0x1)
+
+        Uses only the inner torque control loop. Use input_torque to command desired torque. Note the setting config.motor.torque_constant. Note the setting enable_torque_mode_vel_limit.
+
+    VELOCITY_CONTROL = 2 (0x2)
+
+        Uses both the inner torque control loop and the velocity control loop. Use input_vel to command desired velocity, and input_torque.
+
+    POSITION_CONTROL = 3 (0x3)
+
+        Uses the inner torque loop, the velocity control loop, and the outer position control loop. Use input_pos to command desired position, input_vel to command velocity feed-forward, and input_torque for torque feed-forward.
+
+class ODrive.Controller.InputMode
+
+    INACTIVE = 0 (0x0)
+
+        Disable inputs. Setpoints retain their last value.
+
+    PASSTHROUGH = 1 (0x1)
+
+        Pass input_xxx through to xxx_setpoint directly.
+
+        Valid Inputs
+
+            input_pos
+
+            input_vel
+
+            input_torque
+
+        Valid Control Modes
+
+            ControlMode.VOLTAGE_CONTROL
+
+            ControlMode.TORQUE_CONTROL
+
+            ControlMode.VELOCITY_CONTROL
+
+            ControlMode.POSITION_CONTROL
+
+    VEL_RAMP = 2 (0x2)
+
+        Ramps a velocity command from the current value to the target value.
+
+        Configuration Values
+
+            config.vel_ramp_rate [rev/s]
+
+            config.inertia [Nm/(rev/s^2))]
+
+        Valid Inputs
+
+            input_vel
+
+        Valid Control Modes
+
+            ControlMode.VELOCITY_CONTROL
+
+    POS_FILTER = 3 (0x3)
+
+        Implements a 2nd order position tracking filter.
+
+        Intended for use with step/dir interface, but can also be used with position-only commands.
+        Trapezoidal Planner Response
+
+        Result of a step command from 1000 to 0
+
+        Configuration Values
+
+            config.input_filter_bandwidth
+
+            config.inertia
+
+        Valid Inputs
+
+            input_pos
+
+        Valid Control Modes
+
+            ControlMode.POSITION_CONTROL
+
+    MIX_CHANNELS = 4 (0x4)
+
+        Not Implemented.
+
+    TRAP_TRAJ = 5 (0x5)
+
+        Implementes an online trapezoidal trajectory planner.
+        Trapezoidal Planner Response
+
+        Configuration Values
+
+            trap_traj.config.vel_limit
+
+            trap_traj.config.accel_limit
+
+            trap_traj.config.decel_limit
+
+            config.inertia
+
+        Valid Inputs
+
+            input_pos
+
+        Valid Control Modes
+
+            ControlMode.POSITION_CONTROL
+
+    TORQUE_RAMP = 6 (0x6)
+
+        Ramp a torque command from the current value to the target value.
+
+        Configuration Values
+
+            config.torque_ramp_rate
+
+        Valid Inputs
+
+            input_torque
+
+        Valid Control Modes
+
+            ControlMode.TORQUE_CONTROL
+
+    MIRROR = 7 (0x7)
+
+        Implements “electronic mirroring”.
+
+        not supported on ODrive Pro/S1
+
+        This is like electronic camming, but you can only mirror exactly the movements of the other motor, according to a fixed ratio.
+
+        Configuration Values
+
+            config.axis_to_mirror
+
+            config.mirror_ratio
+
+        Valid Inputs
+
+            None. Inputs are taken directly from the other axis encoder estimates
+
+        Valid Control Modes
+
+            ControlMode.POSITION_CONTROL
+
+    TUNING = 8 (0x8)
+
+        Implements a tuning mode
+
+        Used for tuning your odrive, this mode allows the user to set different frequencies. Set control_mode for the loop you want to tune, then set the frequency desired. The ODrive will send a 1 turn amplitude sine wave to the controller with the given frequency and phase.
+
+class ODrive.TrapezoidalTrajectory.Config
+
+    vel_limit: [rev/s] - Float32Property
+
+    accel_limit: [rev/s^2] - Float32Property
+
+    decel_limit: [rev/s^2] - Float32Property
+
+class ODrive.SwitchInput.Config
+
+    gpio_num: Uint16Property
+
+        The GPIO pin number, as labeled in the “Logic Pins” section of your ODrive’s datasheet.
+
+        The corresponding pin must be set to GpioMode.DIGITAL, GpioMode.DIGITAL_PULL_UP, or GpioMode.DIGITAL_PULL_DOWN.
+
+        The GPIO pin you use must support input mode. Make sure to check the “GPIO Properties” section of your ODrive’s datasheet.
+
+    enabled: BoolProperty
+
+        Enables/disables a switch (or endstop) input. If disabled, any input on this switch or endstop will be ignored.
+
+    offset: [rev] - Float32Property
+
+        Position of the endstop relative to the zero position of the axis.
+
+        Upon successfully completing homing, the axis absolute position will be set to offset. Only used for endstops.
+
+    is_active_high: BoolProperty
+
+        The polarity of the switch. True if the switch or endstop being pressed/activated results in a logic high, False otherwise.
+
+        Flipping this configuration is not considered as an edge. (e.g. flipping enable_pin.config.is_active_high does not lead to the ODrive inadvertently being enabled.)
+
+    debounce_ms: [ms] - Uint32Property
+
+        Ignore high/low inputs that last less than this duration.
+
+        When mechanical switches are activated, the output can fluctate for a few milliseconds. The ODrive will only accept the level change when the new level has been applied for longer than debounce_ms.
+
+class ODrive.MechanicalBrake.Config
+
+    gpio_num: Uint16Property
+
+    is_active_low: BoolProperty
+
