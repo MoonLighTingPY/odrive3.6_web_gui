@@ -120,6 +120,8 @@ If you see that the description of any file here is not complete or wrong, pleas
 - **Axis-Aware**: All operations respect the selected axis (0 or 1)
 - **State Management**: Redux for global state, local state for component-specific data
 
+## Copilot Instructions
+
 fyi, i use powershell only in my terminal.
 if the change is code is not big - just show me the relevant part, and what i need to edit in the corresponding files.
 
@@ -127,3 +129,4 @@ There is local docs for odrive 0.5.6 at "odrive_docs_local\odrive_local\docs.odr
 
 also, there is an api reference for 0.5.6 and 0.6.11 at "odrive_docs_local\api_references\API ODrive Reference — ODrive Documentation 0.5.6 documentation.txt" and "odrive_docs_local\api_references\API ODrive Reference — ODrive Documentation 0.6.11 documentation.txt"
 
+Current task - add 0.6.11 support to the project, so it will be able to work with both 0.5.x and 0.6.x odrives. always check the changelog and api reference for the changes in the new version, and how it affects the current code.
