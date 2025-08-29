@@ -44,14 +44,16 @@ export const generateAxisTree = (axisNumber, firmwareVersion = "0.5.6") => {
     name: `Axis ${axisNumber}`,
     description: `Motor axis ${axisNumber} configuration and status`,
     properties: {
-      // Common properties (both 0.5.x and 0.6.x)
-      error: { name: 'Axis Error', description: 'Current axis error flags', writable: false, type: 'number', valueType: 'Property[ODrive.Axis.Error]' },
-      // In 0.6.x this is called active_errors
+      // Version-specific error properties
       ...(isV06x ? {
+        // 0.6.x uses active_errors instead of error
         active_errors: { name: 'Active Errors', description: 'Current active error flags', writable: false, type: 'number', valueType: 'Property[ODrive.Error]' },
         disarm_reason: { name: 'Disarm Reason', description: 'Reason why axis was last disarmed', writable: false, type: 'number', valueType: 'Property[ODrive.Error]' },
         detailed_disarm_reason: { name: 'Detailed Disarm Reason', description: 'Detailed disarm reason code', writable: false, type: 'number', valueType: 'Uint32Property' },
-      } : {}),
+      } : {
+        // 0.5.x uses error 
+        error: { name: 'Axis Error', description: 'Current axis error flags', writable: false, type: 'number', valueType: 'Property[ODrive.Axis.Error]' },
+      }),
       current_state: { 
         name: 'Current State', 
         description: 'Current axis state', 
@@ -716,8 +718,14 @@ export const generateAxisTree = (axisNumber, firmwareVersion = "0.5.6") => {
       name: 'Controller',
       description: 'Control loop parameters and settings',
       properties: {
-        error: { name: 'Controller Error', description: 'Current controller error flags', writable: false, type: 'number', valueType: 'Property[ODrive.Controller.Error]' },
-        last_error_time: { name: 'Last Error Time', description: 'Time of last controller error', writable: false, type: 'number', valueType: 'Float32Property' },
+        // Version-specific error properties
+        ...(!isV06x ? {
+          // 0.5.x has individual controller errors
+          error: { name: 'Controller Error', description: 'Current controller error flags', writable: false, type: 'number', valueType: 'Property[ODrive.Controller.Error]' },
+          last_error_time: { name: 'Last Error Time', description: 'Time of last controller error', writable: false, type: 'number', valueType: 'Float32Property' },
+        } : {}),
+        
+        // Common properties for both versions
         input_pos: { name: 'Position Input', description: 'Position command input (turns)', writable: true, type: 'number', decimals: 3, min: -100, max: 100, step: 0.1, isSetpoint: true, hasSlider: true, valueType: 'Float32Property' },
         input_vel: { name: 'Velocity Input', description: 'Velocity command input (turns/s)', writable: true, type: 'number', decimals: 3, min: -100, max: 100, step: 0.5, isSetpoint: true, hasSlider: true, valueType: 'Float32Property' },
         input_torque: { name: 'Torque Input', description: 'Torque command input (Nm)', writable: true, type: 'number', decimals: 3, min: -10, max: 10, step: 0.1, isSetpoint: true, hasSlider: true, valueType: 'Float32Property' },

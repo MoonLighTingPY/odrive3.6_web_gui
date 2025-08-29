@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { resolveToPropertyPath } from '../../utils/odrivePathResolver'
+import { resolveToPropertyPath, isPropertySupported } from '../../utils/odrivePathResolver'
 
 export const usePropertyRefresh = (odrivePropertyTree, collectAllProperties, isConnected) => {
   const [refreshingProperties, setRefreshingProperties] = useState(new Set())
@@ -21,15 +21,30 @@ export const usePropertyRefresh = (odrivePropertyTree, collectAllProperties, isC
       return
     }
 
-    // Set all as refreshing
-    setRefreshingProperties(new Set(allPaths))
+    // Filter out properties that are known to be unsupported in the current firmware version
+    const supportedPaths = allPaths.filter(path => {
+      try {
+        return isPropertySupported ? isPropertySupported(path) : true
+      } catch (error) {
+        // If property support check fails, include the path anyway
+        return true
+      }
+    })
+    
+    const unsupportedCount = allPaths.length - supportedPaths.length
+    if (unsupportedCount > 0) {
+      console.log(`Filtered out ${unsupportedCount} unsupported properties for current firmware version`)
+    }
+
+    // Set supported paths as refreshing
+    setRefreshingProperties(new Set(supportedPaths))
 
     // Convert display paths to device paths for batch request using dynamic path resolver
     const devicePaths = []
     const resolvedPaths = []
     const failedPaths = []
 
-    allPaths.forEach(displayPath => {
+    supportedPaths.forEach(displayPath => {
       try {
         // Use path resolver to convert logical paths to property paths
         const propertyPath = resolveToPropertyPath(displayPath)
@@ -65,7 +80,7 @@ export const usePropertyRefresh = (odrivePropertyTree, collectAllProperties, isC
 
     try {
       // Make single batch request for all properties
-      console.log(`Refreshing ${allPaths.length} properties in batch request...`)
+      console.log(`Refreshing ${supportedPaths.length} supported properties in batch request...`)
       
       const response = await fetch('/api/odrive/property', {
         method: 'POST',
@@ -87,7 +102,7 @@ export const usePropertyRefresh = (odrivePropertyTree, collectAllProperties, isC
             const nullPaths = []
             
             // Map device paths back to display paths and handle values
-            allPaths.forEach((displayPath, index) => {
+            supportedPaths.forEach((displayPath, index) => {
               const devicePath = devicePaths[index]
               let value = data.results[devicePath]
               
@@ -125,7 +140,7 @@ export const usePropertyRefresh = (odrivePropertyTree, collectAllProperties, isC
           console.error('Failed to parse batch response:', cleanupError)
           // Fallback: set all to parse error
           const fallbackValues = {}
-          allPaths.forEach(path => {
+          supportedPaths.forEach(path => {
             fallbackValues[path] = 'Parse Error'
           })
           setPropertyValues(fallbackValues)
@@ -134,7 +149,7 @@ export const usePropertyRefresh = (odrivePropertyTree, collectAllProperties, isC
         console.error('Batch property request failed:', response.status)
         // Fallback: set all to error
         const errorValues = {}
-        allPaths.forEach(path => {
+        supportedPaths.forEach(path => {
           errorValues[path] = 'Request Failed'
         })
         setPropertyValues(errorValues)
@@ -143,7 +158,7 @@ export const usePropertyRefresh = (odrivePropertyTree, collectAllProperties, isC
       console.error('Batch property refresh failed:', error)
       // Fallback: set all to error
       const errorValues = {}
-      allPaths.forEach(path => {
+      supportedPaths.forEach(path => {
         errorValues[path] = 'Network Error'
       })
       setPropertyValues(errorValues)
@@ -155,14 +170,16 @@ export const usePropertyRefresh = (odrivePropertyTree, collectAllProperties, isC
     // Log completion status
     setTimeout(() => {
       setPropertyValues(currentValues => {
-        const nullProperties = allPaths.filter(path => {
+        const nullProperties = supportedPaths.filter(path => {
           const value = currentValues[path]
           return value === null || value === undefined
         })
         
         if (nullProperties.length > 0) {
-          // Print full list so developer can see all paths (no "... and N more")
-          console.log(`Properties with null/undefined values after batch refresh: ${nullProperties.length}/${allPaths.length}`, nullProperties)
+          console.log(`🔍 Null/undefined values found for ${nullProperties.length} properties:`, nullProperties.slice(0, 10))
+          if (nullProperties.length > 10) {
+            console.log(`... and ${nullProperties.length - 10} more properties`)
+          }
         } else {
           console.log('All properties loaded successfully in batch! 🚀')
         }
