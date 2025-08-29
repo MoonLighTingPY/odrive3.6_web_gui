@@ -13,7 +13,7 @@ export const useDashboardTelemetry = () => {
   // for dev mode, update every 5000ms
   // for prod mode, update every 50ms
   if (import.meta.env.DEV) {
-    updateRate = 5000
+    updateRate = 500
   } else {
     updateRate = 50
   }

@@ -5,6 +5,8 @@ export const usePropertyRefresh = (odrivePropertyTree, collectAllProperties, isC
   const [propertyValues, setPropertyValues] = useState({})
 
   const refreshAllProperties = useCallback(async () => {
+    if (!isConnected) return
+
     const allPaths = []
     
     // Collect all property paths from the tree recursively
@@ -12,6 +14,11 @@ export const usePropertyRefresh = (odrivePropertyTree, collectAllProperties, isC
       const sectionProperties = collectAllProperties(section, sectionName)
       allPaths.push(...sectionProperties.map(p => p.path))
     })
+
+    if (allPaths.length === 0) {
+      setRefreshingProperties(new Set())
+      return
+    }
 
     // Set all as refreshing
     setRefreshingProperties(new Set(allPaths))
@@ -50,7 +57,6 @@ export const usePropertyRefresh = (odrivePropertyTree, collectAllProperties, isC
           
           if (data.results) {
             const newPropertyValues = {}
-            
             // Map device paths back to display paths and handle values
             allPaths.forEach((displayPath, index) => {
               const devicePath = devicePaths[index]
@@ -118,7 +124,7 @@ export const usePropertyRefresh = (odrivePropertyTree, collectAllProperties, isC
       })
     }, 100)
 
-  }, [collectAllProperties, odrivePropertyTree])
+  }, [collectAllProperties, odrivePropertyTree, isConnected])
 
   // Refresh a single property (keep existing single-property logic for individual refreshes)
   const refreshProperty = async (displayPath) => {

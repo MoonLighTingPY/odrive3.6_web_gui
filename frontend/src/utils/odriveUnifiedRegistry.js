@@ -779,24 +779,56 @@ class ODriveUnifiedRegistry {
   }
 }
 
-const odriveRegistry = new ODriveUnifiedRegistry() // Default 0.5.6 instance
-export const createRegistryForVersion = (firmwareVersion) => new ODriveUnifiedRegistry(firmwareVersion)
 
-export const getBatchPaths = () => odriveRegistry.getBatchPaths()
-export const getPropertyMappings = (category) => odriveRegistry.getPropertyMappings(category)
-export const generateCommands = (category, config) => odriveRegistry.generateCommands(category, config)
-export const generateAllCommands = (deviceConfig) => odriveRegistry.generateAllCommands(deviceConfig)
-export const findParameter = (identifier) => odriveRegistry.findParameter(identifier)
-export const getCategoryParameters = (category) => odriveRegistry.getCategoryParameters(category)
-export const getParameterMetadata = (category, configKey) => odriveRegistry.getParameterMetadata(category, configKey)
-export const validateConfig = (category, config) => odriveRegistry.validateConfig(category, config)
-export const getDebugInfo = () => odriveRegistry.getDebugInfo()
+const createRegistryForVersion = (firmwareVersion) => new ODriveUnifiedRegistry(firmwareVersion)
 
-// Add the missing export that the components expect
-export const ODrivePropertyMappings = odriveRegistry.getPropertyMappings()
+// --- ADD START: version-aware active registry and setter ---
+const registryV56 = new ODriveUnifiedRegistry("0.5.6")
+const registryV611 = new ODriveUnifiedRegistry("0.6.11") // instantiate 0.6.11 registry (extend property tree if needed)
 
-export { odriveRegistry }
-export const ODriveUnifiedCommands = odriveRegistry.configCategories
-export const ODriveUnifiedMappings = odriveRegistry.propertyMappings
+let activeRegistry = registryV56
 
-export const ODriveCommands = odriveRegistry.getCommands()
+export const setActiveOdriveFirmwareVersion = (fw) => {
+  // Accept string like "0.6.10" or object { fw_version_major, fw_version_minor }
+  let major = null
+  let minor = null
+
+  if (typeof fw === 'string') {
+    const m = fw.match(/(\d+)\.(\d+)/)
+    if (m) {
+      major = parseInt(m[1], 10)
+      minor = parseInt(m[2], 10)
+    }
+  } else if (fw && typeof fw === 'object') {
+    major = fw.fw_version_major ?? fw.major ?? null
+    minor = fw.fw_version_minor ?? fw.minor ?? null
+  }
+
+  if (major === 0 && typeof minor === 'number' && minor >= 6) {
+    activeRegistry = registryV611
+  } else {
+    activeRegistry = registryV56
+  }
+}
+// --- ADD END ---
+
+// Replace direct references to odriveRegistry with activeRegistry so callers get version-aware data
+export const getBatchPaths = () => activeRegistry.getBatchPaths()
+export const getPropertyMappings = (category) => activeRegistry.getPropertyMappings(category)
+export const generateCommands = (category, config) => activeRegistry.generateCommands(category, config)
+export const generateAllCommands = (deviceConfig) => activeRegistry.generateAllCommands(deviceConfig)
+export const findParameter = (identifier) => activeRegistry.findParameter(identifier)
+export const getCategoryParameters = (category) => activeRegistry.getCategoryParameters(category)
+export const getParameterMetadata = (category, configKey) => activeRegistry.getParameterMetadata(category, configKey)
+export const validateConfig = (category, config) => activeRegistry.validateConfig(category, config)
+export const getDebugInfo = () => activeRegistry.getDebugInfo()
+
+// Provide lazy-access mappings for components expecting these objects.
+// Consumers should prefer helper functions above, but keep these for compatibility.
+export const ODrivePropertyMappings = () => activeRegistry.getPropertyMappings()
+export const ODriveUnifiedCommands = () => activeRegistry.getConfigCategories()
+export const ODriveUnifiedMappings = () => activeRegistry.propertyMappings
+export const ODriveCommands = () => activeRegistry.getCommands()
+
+// Keep a reference to the default instance for rare direct use (backwards compat)
+export { registryV56 as odriveRegistry, createRegistryForVersion }
