@@ -25,7 +25,7 @@ import Observer from '@researchgate/react-intersection-observer'
 const PropertyTree = ({ 
   odriveState, 
   searchFilter: initialSearchFilter, 
-  setSearchFilter: setInitialSearchFilter, 
+  // setSearchFilter: setInitialSearchFilter,  // Removed unused parameter
   updateProperty, 
   isConnected,
   selectedProperties = [],

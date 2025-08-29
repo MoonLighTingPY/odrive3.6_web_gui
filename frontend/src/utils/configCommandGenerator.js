@@ -9,13 +9,8 @@
 
 import { 
   generateCategoryCommands,
-  generateAllCategoryCommands, 
-  generateSystemCommands,
-  generateCalibrationCommands,
-  generateSaveAndRebootCommands,
-  generateSingleCommand,
-  previewAllCommands,
-  validateConfigurationSupport
+  generateAllCategoryCommands,
+  previewAllCommands
 } from './dynamicCommandGenerator'
 
 import { getCurrentRegistry } from './odriveUnifiedRegistry'
@@ -80,4 +75,8 @@ export const validateConfiguration = (category, config) => {
 export const getCategoryParameters = (category) => {
   const registry = getCurrentRegistry()
   return registry.getCategoryParameters(category)
+}
+export const generateConfigCommands = (deviceConfig) => {
+  const registry = getCurrentRegistry()
+  return registry.generateAllCommands(deviceConfig)
 }

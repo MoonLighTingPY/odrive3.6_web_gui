@@ -5,7 +5,6 @@
 
 import { FACTORY_PRESET_BASES, getFactoryPreset, generateFullConfig } from './factoryPresets'
 import { 
-  getCategoryParameters,
   getParameterMetadata,
   getConfigCategories
 } from './registryManager'

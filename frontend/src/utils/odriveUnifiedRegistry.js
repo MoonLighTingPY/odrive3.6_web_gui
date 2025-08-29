@@ -385,7 +385,7 @@ class ODriveUnifiedRegistry {
           const param = {
             path,
             property,
-            odriveCommand: this._pathToODriveCommand(path),
+            odriveCommand: this.pathResolver.resolveToApiPath(path).replace(`${this.deviceName}.`, ''),
             configKey: this._pathToConfigKey(path),
             name: property.name,
             description: property.description,
