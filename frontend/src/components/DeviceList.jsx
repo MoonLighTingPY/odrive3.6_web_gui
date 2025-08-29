@@ -293,6 +293,7 @@ const DeviceList = memo(() => {
     connectedDevice,
     isConnected,
     odriveState,
+    firmwareVersion,
   } = useSelector(state => state.device)
 
   // Helper function to get current error codes from both sources
@@ -496,7 +497,16 @@ const DeviceList = memo(() => {
             <Text fontSize="lg" fontWeight="bold" color="white">
               ODrive Devices
             </Text>
-            {isConnected && <AxisSelector size="xs" />}
+            {isConnected && (
+              <HStack spacing={3}>
+                <AxisSelector size="xs" />
+                {firmwareVersion && (
+                  <Badge colorScheme="blue" size="sm" variant="subtle">
+                    FW: {firmwareVersion}
+                  </Badge>
+                )}
+              </HStack>
+            )}
           </VStack>
           <Button
             size="sm"
