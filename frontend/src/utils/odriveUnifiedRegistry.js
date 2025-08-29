@@ -31,7 +31,7 @@ class ODriveUnifiedRegistry {
     this.commandGenerators = this._generateCommandGenerators()
     this.commands = this._generateCommands()
 
-    console.log('ODrive Unified Registry initialized:', {
+    console.log('🏗️ ODrive Unified Registry initialized:', {
       firmwareVersion: this.firmwareVersion,
       deviceName: this.deviceName,
       defaultAxis: this.defaultAxis,

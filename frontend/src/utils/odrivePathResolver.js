@@ -229,9 +229,10 @@ class ODrivePathResolver {
     }
 
     if (this.config.is06x) {
-      // Properties that were removed in 0.6.x
+      // Properties that were removed in 0.6.x or moved to different locations
       const removedProps = [
-        'config.enable_can_a', 'can.config.is_extended', 'amt21_encoder_group0'
+        'config.enable_can_a', 'can.config.is_extended', 'amt21_encoder_group0',
+        'system.brake_resistor_armed', 'system.brake_resistor_saturated', 'system.brake_resistor_current'
       ]
       
       if (removedProps.some(prop => logicalPath === prop)) {
