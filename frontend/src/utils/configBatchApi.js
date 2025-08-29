@@ -1,107 +1,84 @@
 /**
- * Configuration Batch API - Now powered by Unified Registry
- * 
- * This file now uses the unified registry as the single source of truth
- * for all batch loading paths and categorization logic.
+ * Configuration Batch API
+ * Unified batch loading system using centralized API handling
  */
 
-import { 
-  getBatchPaths,
-  findParameter,
-  getCategoryParameters 
-} from './registryManager'
+import { getBatchPaths, findParameter, getCategoryParameters } from './registryManager'
 import { convertTorqueConstantToKv } from './valueHelpers'
+import { makeApiRequest } from './apiResponseHandler'
 
+/**
+ * Load configuration paths in batch
+ * @param {Array<string>} configPaths - Array of configuration paths to load
+ * @returns {Promise<Object>} Batch results
+ */
 export const loadConfigurationBatch = async (configPaths) => {
   try {
-    const response = await fetch('/api/odrive/config/batch', {
+    const data = await makeApiRequest('/api/odrive/config/batch', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ paths: configPaths })
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Batch API error response:', errorText);
-      throw new Error(`HTTP error! status: ${response.status} - ${errorText}`);
-    }
-
-    // Check if response is actually JSON
-    const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      const responseText = await response.text();
-      console.error('Non-JSON response received:', responseText);
-      throw new Error(`Expected JSON response but got: ${contentType || 'unknown'}. Response: ${responseText.substring(0, 200)}`);
-    }
-
-    const data = await response.json();
+      body: { paths: configPaths }
+    }, {
+      expectJson: true,
+      handleInfinity: true
+    })
 
     // Validate response structure
     if (!data || typeof data !== 'object' || !data.results) {
-      console.error('Invalid response structure:', data);
-      throw new Error('Invalid response structure: missing results field');
+      console.error('Invalid response structure:', data)
+      throw new Error('Invalid response structure: missing results field')
     }
 
     // Clean the data to handle null/undefined values with reasonable defaults
-    const cleanedResults = {};
+    const cleanedResults = {}
     Object.entries(data.results).forEach(([path, value]) => {
       if (value === null || value === undefined) {
         // Use parameter metadata to set appropriate defaults
         const param = findParameter(path)
-        if (param) {
-          if (param.property.type === 'boolean') {
-            cleanedResults[path] = false
-          } else if (param.property.type === 'number') {
-            cleanedResults[path] = param.property.min || 0
-          } else {
-            cleanedResults[path] = 0
-          }
-        } else {
-          // Fallback to old logic for unknown parameters
-          if (path.includes('enable_') || path.includes('pre_calibrated') || path.includes('use_')) {
-            cleanedResults[path] = false;
-          } else if (path.includes('current') || path.includes('voltage') || path.includes('resistance') ||
-            path.includes('gain') || path.includes('limit') || path.includes('constant')) {
-            cleanedResults[path] = 0.0;
-          } else if (path.includes('mode') || path.includes('type') || path.includes('pairs') ||
-            path.includes('cpr') || path.includes('node_id')) {
-            cleanedResults[path] = 0;
-          } else if (path.includes('bandwidth') || path.includes('timeout') || path.includes('rate')) {
-            cleanedResults[path] = 1000;
-          } else {
-            cleanedResults[path] = 0;
-          }
-        }
+        cleanedResults[path] = getDefaultValue(param)
       } else {
-        cleanedResults[path] = value;
+        cleanedResults[path] = value
       }
-    });
+    })
 
-    return cleanedResults;
+    return cleanedResults
 
   } catch (error) {
-    console.error('Batch configuration load failed:', error);
+    console.error('Batch configuration load failed:', error)
 
     if (error.message.includes('JSON')) {
-      throw new Error('Backend returned invalid JSON response. Check if ODrive is connected and backend is running properly.');
+      throw new Error('Backend returned invalid JSON response. Check if ODrive is connected and backend is running properly.')
     }
-    throw error;
+    throw error
   }
-};
+}
 
 /**
- * Load ALL ODrive v0.5.6 configuration parameters in a single batch request
- * Now uses unified registry for automatic path generation
+ * Get default value for parameter based on metadata
+ * @param {Object} param - Parameter metadata
+ * @returns {*} Default value
+ */
+const getDefaultValue = (param) => {
+  if (!param) return null
+  
+  if (param.property && param.property.type === 'boolean') return false
+  if (param.property && param.property.type === 'number') return param.property.min || 0
+  if (param.property && param.property.type === 'string') return ''
+  
+  return null
+}
+
+/**
+ * Load ALL configuration parameters in a single batch request
  * @returns {Promise<Object>} All configuration parameters organized by category
  */
 export const loadAllConfigurationBatch = async () => {
-  // Get all batch paths from unified registry
+  // Get all batch paths from registry
   const allPaths = getBatchPaths()
 
   console.log(`Loading ${allPaths.length} configuration parameters from unified registry...`)
 
   // Load all parameters in one batch request
-  const allResults = await loadConfigurationBatch(allPaths);
+  const allResults = await loadConfigurationBatch(allPaths)
 
   // Organize results by category AND axis
   const categorizedResults = {
@@ -110,53 +87,40 @@ export const loadAllConfigurationBatch = async () => {
     encoder: { axis0: {}, axis1: {} },
     control: { axis0: {}, axis1: {} },
     interface: {}
-  };
+  }
 
-  // Use unified registry to categorize results
+  // Process each result and categorize it
   Object.entries(allResults).forEach(([path, value]) => {
-    // Skip error responses
-    if (value && typeof value === 'object' && value.error) {
-      console.warn(`Error reading ${path}:`, value.error);
-      return;
-    }
+    const param = findParameter(path)
+    if (param) {
+      let processedValue = value
+      
+      // Special value processing for torque constant
+      if (param.configKey === 'motor_kv' && param.path.includes('torque_constant')) {
+        processedValue = convertTorqueConstantToKv(value)
+      }
+      
+      // Categorize by axis if applicable
+      const axisMatch = param.path.match(/axis(\d)/)
+      const axisNumber = axisMatch ? parseInt(axisMatch[1]) : null
 
-    if (value !== undefined && value !== null) {
-      // Remove 'device.' prefix to get the property path
-      const propertyPath = path.replace(/^device\./, '')
-
-      // Find the parameter in the registry
-      const param = findParameter(propertyPath)
-
-      if (param && param.category) {
-        let processedValue = value
-
-        // Handle special value conversions
-        if (param.configKey === 'motor_kv' && param.path.includes('torque_constant')) {
-          processedValue = convertTorqueConstantToKv(value)
-        }
-
-        // Determine axis number from path
-        const axisMatch = propertyPath.match(/axis(\d+)/)
-        const axisNumber = axisMatch ? parseInt(axisMatch[1]) : null
-
-        if (param.category === 'motor' || param.category === 'encoder' || param.category === 'control') {
-          if (axisNumber !== null) {
-            if (!categorizedResults[param.category][`axis${axisNumber}`]) {
-              categorizedResults[param.category][`axis${axisNumber}`] = {}
-            }
-            categorizedResults[param.category][`axis${axisNumber}`][param.configKey] = processedValue
+      if (param.category === 'motor' || param.category === 'encoder' || param.category === 'control') {
+        if (axisNumber !== null) {
+          if (!categorizedResults[param.category][`axis${axisNumber}`]) {
+            categorizedResults[param.category][`axis${axisNumber}`] = {}
           }
-        } else {
-          // Power and interface are global
-          categorizedResults[param.category][param.configKey] = processedValue
+          categorizedResults[param.category][`axis${axisNumber}`][param.configKey] = processedValue
         }
+      } else {
+        // Power and interface are global
+        categorizedResults[param.category][param.configKey] = processedValue
       }
     }
-  });
+  })
 
   console.log('Categorized configuration:', categorizedResults)
-  return categorizedResults;
-};
+  return categorizedResults
+}
 
 /**
  * Get batch paths for a specific category
@@ -165,34 +129,15 @@ export const loadAllConfigurationBatch = async () => {
  */
 export const getCategoryBatchPaths = (category) => {
   const categoryParams = getCategoryParameters(category)
-  return categoryParams.map(param => `device.${param.odriveCommand}`)
+  return categoryParams.map(param => param.batchPath).filter(Boolean)
 }
 
 /**
- * Load configuration for a specific category only
+ * Load configuration for specific category
  * @param {string} category - Configuration category to load
- * @returns {Promise<Object>} Configuration for the specified category
+ * @returns {Promise<Object>} Category configuration data
  */
-export const loadCategoryConfigurationBatch = async (category) => {
-  const categoryPaths = getCategoryBatchPaths(category)
-  const results = await loadConfigurationBatch(categoryPaths)
-
-  const categoryConfig = {}
-  const categoryParams = getCategoryParameters(category)
-
-  categoryParams.forEach(param => {
-    const path = `device.${param.odriveCommand}`
-    if (results[path] !== undefined) {
-      let value = results[path]
-
-      // Handle special conversions
-      if (param.configKey === 'motor_kv' && param.path.includes('torque_constant')) {
-        value = convertTorqueConstantToKv(value)
-      }
-
-      categoryConfig[param.configKey] = value
-    }
-  })
-
-  return categoryConfig
+export const loadCategoryConfiguration = async (category) => {
+  const paths = getCategoryBatchPaths(category)
+  return await loadConfigurationBatch(paths)
 }
