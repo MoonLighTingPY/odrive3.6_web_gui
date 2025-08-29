@@ -81,3 +81,7 @@ export const getCategoryParameters = (category) => {
   const registry = getCurrentRegistry()
   return registry.getCategoryParameters(category)
 }
+export const generateConfigCommands = (deviceConfig) => {
+  const registry = getCurrentRegistry()
+  return registry.generateAllCommands(deviceConfig)
+}
