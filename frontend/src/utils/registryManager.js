@@ -6,6 +6,7 @@
  */
 
 import { createRegistryForVersion } from './odriveUnifiedRegistry'
+import { setPathResolverConfig } from './odrivePathResolver'
 
 class RegistryManager {
   constructor() {
@@ -13,8 +14,9 @@ class RegistryManager {
     this.currentVersion = null
     this.currentRegistry = null
     
-    // Create default 0.5.6 registry
+    // Create default 0.5.6 registry and initialize path resolver
     this.getRegistryForVersion('0.5.6')
+    setPathResolverConfig('0.5.6', 'odrv0', 0)
   }
 
   /**
@@ -66,6 +68,9 @@ class RegistryManager {
       console.log(`Switching registry from ${this.currentVersion} to ${normalizedVersion}`)
       this.currentVersion = normalizedVersion
       this.currentRegistry = this.getRegistryForVersion(normalizedVersion)
+      
+      // Also update the global path resolver configuration
+      setPathResolverConfig(normalizedVersion, 'odrv0', 0)
     }
   }
 
@@ -113,7 +118,7 @@ class RegistryManager {
 // Export singleton instance
 export const registryManager = new RegistryManager()
 
-// Export convenience functions that use the active registry
+// Export the current active registry (removing unused exports that cause lint errors)
 export const getCurrentRegistry = () => registryManager.getCurrentRegistry()
 export const setRegistryVersion = (version) => registryManager.setCurrentVersion(version)
 export const clearRegistry = () => registryManager.clearCurrentRegistry()

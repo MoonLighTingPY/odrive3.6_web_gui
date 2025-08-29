@@ -6,7 +6,6 @@
  */
 
 import { 
-  getCurrentRegistry, 
   getBatchPaths,
   findParameter,
   getCategoryParameters 
