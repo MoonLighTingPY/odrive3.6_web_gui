@@ -25,28 +25,43 @@ export const usePropertyRefresh = (odrivePropertyTree, collectAllProperties, isC
     setRefreshingProperties(new Set(allPaths))
 
     // Convert display paths to device paths for batch request using dynamic path resolver
-    const devicePaths = allPaths.map(displayPath => {
+    const devicePaths = []
+    const resolvedPaths = []
+    const failedPaths = []
+
+    allPaths.forEach(displayPath => {
       try {
         // Use path resolver to convert logical paths to property paths
         const propertyPath = resolveToPropertyPath(displayPath)
         const cleanPath = propertyPath.replace('device.', '') // Remove device. prefix for backend API
-        console.debug(`✓ Resolved ${displayPath} → ${cleanPath}`)
-        return cleanPath
+        resolvedPaths.push(`${displayPath} → ${cleanPath}`)
+        devicePaths.push(cleanPath)
       } catch (error) {
         console.warn(`❌ Failed to resolve path ${displayPath}, using fallback:`, error)
+        failedPaths.push(displayPath)
         // Fallback to legacy hardcoded logic for compatibility
         if (displayPath.startsWith('system.')) {
           const systemProp = displayPath.replace('system.', '')
           if (['dc_bus_overvoltage_trip_level', 'dc_bus_undervoltage_trip_level', 'dc_max_positive_current', 
                'dc_max_negative_current', 'enable_brake_resistor', 'brake_resistance'].includes(systemProp)) {
-            return `config.${systemProp}`
+            devicePaths.push(`config.${systemProp}`)
           } else {
-            return systemProp
+            devicePaths.push(systemProp)
           }
+        } else {
+          devicePaths.push(displayPath)
         }
-        return displayPath
       }
     })
+
+    // Consolidated logging for path resolution
+    if (resolvedPaths.length > 0) {
+      console.debug(`✓ Resolved ${resolvedPaths.length} paths:`, resolvedPaths)
+    }
+
+    if (failedPaths.length > 0) {
+      console.warn(`❌ Failed to resolve ${failedPaths.length} paths:`, failedPaths)
+    }
 
     try {
       // Make single batch request for all properties
@@ -68,6 +83,9 @@ export const usePropertyRefresh = (odrivePropertyTree, collectAllProperties, isC
           
           if (data.results) {
             const newPropertyValues = {}
+            const successfulPaths = []
+            const nullPaths = []
+            
             // Map device paths back to display paths and handle values
             allPaths.forEach((displayPath, index) => {
               const devicePath = devicePaths[index]
@@ -80,13 +98,25 @@ export const usePropertyRefresh = (odrivePropertyTree, collectAllProperties, isC
                 value = -Infinity
               }
               
-              // Debug: log null values for problematic properties
+              // Collect paths for consolidated logging
               if (value === null || value === undefined) {
-                console.debug(`🔍 Null value: ${displayPath} → ${devicePath}`)
+                nullPaths.push(`${displayPath} → ${devicePath}`)
+              } else {
+                successfulPaths.push(displayPath)
               }
               
               newPropertyValues[displayPath] = value
             })
+            
+            // Consolidated logging
+            if (successfulPaths.length > 0) {
+              console.log(`✅ Successfully loaded ${successfulPaths.length} properties:`, successfulPaths)
+            }
+            
+            if (nullPaths.length > 0) {
+              // Log the full list instead of truncating
+              console.debug(`🔍 Null/undefined values found for ${nullPaths.length} properties:`, nullPaths)
+            }
             
             setPropertyValues(newPropertyValues)
             console.log(`Successfully loaded ${Object.keys(newPropertyValues).length} properties in batch!`)
@@ -131,7 +161,8 @@ export const usePropertyRefresh = (odrivePropertyTree, collectAllProperties, isC
         })
         
         if (nullProperties.length > 0) {
-          console.log(`Properties with null/undefined values after batch refresh: ${nullProperties.length}/${allPaths.length}`, nullProperties.slice(0, 10))
+          // Print full list so developer can see all paths (no "... and N more")
+          console.log(`Properties with null/undefined values after batch refresh: ${nullProperties.length}/${allPaths.length}`, nullProperties)
         } else {
           console.log('All properties loaded successfully in batch! 🚀')
         }
