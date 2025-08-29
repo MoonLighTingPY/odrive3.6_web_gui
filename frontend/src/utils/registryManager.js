@@ -65,12 +65,22 @@ class RegistryManager {
     const normalizedVersion = this.parseVersion(versionString)
     
     if (this.currentVersion !== normalizedVersion) {
-      console.log(`Switching registry from ${this.currentVersion} to ${normalizedVersion}`)
+      console.log(`🔄 Registry Manager: Switching registry from ${this.currentVersion || 'none'} to ${normalizedVersion}`)
       this.currentVersion = normalizedVersion
       this.currentRegistry = this.getRegistryForVersion(normalizedVersion)
       
       // Also update the global path resolver configuration
       setPathResolverConfig(normalizedVersion, 'odrv0', 0)
+      
+      // Log registry details for debugging
+      console.log(`📊 New registry stats:`, {
+        firmwareVersion: normalizedVersion,
+        totalParams: Object.values(this.currentRegistry.configCategories).reduce((sum, params) => sum + params.length, 0),
+        batchPathsCount: this.currentRegistry.batchPaths.length,
+        commandsCount: Object.values(this.currentRegistry.commands || {}).reduce((sum, cmds) => sum + cmds.length, 0)
+      })
+    } else {
+      console.log(`✅ Registry Manager: Already using version ${normalizedVersion}`)
     }
   }
 

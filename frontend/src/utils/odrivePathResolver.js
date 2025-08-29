@@ -199,7 +199,10 @@ class ODrivePathResolver {
       'motor', 'encoder', 'controller', 'trap_traj', 'sensorless_estimator',
       'endstop', 'mechanical_brake', 'pos_vel_mapper', 'commutation_mapper',
       'interpolator', 'enable_pin', 'requested_state', 'current_state',
-      'pos_estimate', 'vel_estimate', 'is_calibrated'
+      'pos_estimate', 'vel_estimate', 'is_calibrated', 'load_mapper',
+      'harmonic_compensation', 'thermal_current_limiter', 'motor_thermistor_current_limiter',
+      'detailed_disarm_reason', 'active_errors', 'disarm_reason',
+      'procedure_result', 'observed_encoder_scale_factor'
     ]
     
     return axisKeywords.some(keyword => logicalPath.includes(keyword))
@@ -220,7 +223,12 @@ class ODrivePathResolver {
         'interpolator', 'mechanical_brake', 'user_config_0', 'user_config_1',
         'user_config_2', 'user_config_3', 'user_config_4', 'user_config_5',
         'user_config_6', 'user_config_7', 'dc_max_positive_current',
-        'dc_max_negative_current'
+        'dc_max_negative_current', 'load_mapper', 'harmonic_compensation',
+        'thermal_current_limiter', 'motor_thermistor_current_limiter',
+        'detailed_disarm_reason', 'active_errors', 'init_pos', 'init_vel',
+        'init_torque', 'observed_encoder_scale_factor', 'brake_resistor0',
+        'effective_baudrate', 'n_restarts', 'n_rx', 'identify_once',
+        'test_function', 'get_adc_voltage', 'enter_dfu_mode2', 'disable_bootloader'
       ]
       
       if (v06xOnlyProps.some(prop => logicalPath.includes(prop))) {
@@ -229,9 +237,10 @@ class ODrivePathResolver {
     }
 
     if (this.config.is06x) {
-      // Properties that were removed in 0.6.x
+      // Properties that were removed in 0.6.x or moved to different locations
       const removedProps = [
-        'config.enable_can_a', 'can.config.is_extended', 'amt21_encoder_group0'
+        'config.enable_can_a', 'can.config.is_extended', 'amt21_encoder_group0',
+        'system.brake_resistor_armed', 'system.brake_resistor_saturated', 'system.brake_resistor_current'
       ]
       
       if (removedProps.some(prop => logicalPath === prop)) {

@@ -366,33 +366,40 @@ const DeviceList = memo(() => {
       })
 
       if (response.ok) {
-        dispatch(setConnectedDevice(device))
+        console.log('🔌 Device connected, detecting firmware version...')
         
-        // Detect and set firmware version after successful connection
+        // Detect and set firmware version BEFORE setting connected device
+        // This ensures the registry is switched before any auto-loading happens
         try {
           const versionResponse = await fetch('/api/odrive/firmware_version')
           if (versionResponse.ok) {
             const versionData = await versionResponse.json()
             const firmwareVersion = versionData.version || 'v0.5.6'
             
-            console.log(`Detected firmware version: ${firmwareVersion}`)
+            console.log(`🔍 Detected firmware version: ${firmwareVersion}`)
             
-            // Update Redux state with firmware version
+            // Update Redux state with firmware version FIRST
             dispatch(setFirmwareVersion(firmwareVersion))
             
-            // Switch registry to appropriate version
+            // Switch registry to appropriate version BEFORE setting device as connected
             setRegistryVersion(firmwareVersion)
+            console.log('🔄 Registry switched, now setting device as connected...')
             
           } else {
-            console.warn('Failed to detect firmware version, using default 0.5.6')
+            console.warn('⚠️ Failed to detect firmware version, using default 0.5.6')
             dispatch(setFirmwareVersion('v0.5.6'))
             setRegistryVersion('v0.5.6')
           }
         } catch (versionError) {
-          console.warn('Error detecting firmware version:', versionError)
+          console.warn('❌ Error detecting firmware version:', versionError)
           dispatch(setFirmwareVersion('v0.5.6'))
           setRegistryVersion('v0.5.6')
         }
+
+        // NOW set the device as connected - this will trigger auto-loading with correct registry
+        // Add a small delay to ensure registry switch has propagated
+        await new Promise(resolve => setTimeout(resolve, 100))
+        dispatch(setConnectedDevice(device))
 
         toast({
           title: 'Connected',

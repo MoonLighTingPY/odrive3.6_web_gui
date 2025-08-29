@@ -31,7 +31,7 @@ class ODriveUnifiedRegistry {
     this.commandGenerators = this._generateCommandGenerators()
     this.commands = this._generateCommands()
 
-    console.log('ODrive Unified Registry initialized:', {
+    console.log('🏗️ ODrive Unified Registry initialized:', {
       firmwareVersion: this.firmwareVersion,
       deviceName: this.deviceName,
       defaultAxis: this.defaultAxis,
@@ -424,14 +424,20 @@ class ODriveUnifiedRegistry {
       path.includes('phase_inductance') ||
       path.includes('phase_resistance') ||
       path.includes('torque_lim') ||
-      path.includes('torque_constant')) {
+      path.includes('torque_constant') ||
+      path.includes('thermal_current_limiter') ||
+      path.includes('motor_thermistor_current_limiter')) {
       return 'motor'
     }
 
     if (path.includes('encoder.config') ||
       path.includes('enable_phase_interpolation') ||
       path.includes('ignore_illegal_hall_state') ||
-      path.includes('hall_polarity')) {
+      path.includes('hall_polarity') ||
+      path.includes('load_mapper.config') ||
+      path.includes('commutation_mapper.config') ||
+      path.includes('pos_vel_mapper.config') ||
+      path.includes('harmonic_compensation.config')) {
       return 'encoder'
     }
 
@@ -441,7 +447,10 @@ class ODriveUnifiedRegistry {
       path.includes('enable_overspeed_error') ||
       path.includes('spinout_') ||
       path.includes('anticogging.calib_pos_threshold') ||
-      path.includes('anticogging.calib_vel_threshold')) {
+      path.includes('anticogging.calib_vel_threshold') ||
+      path.includes('init_pos') ||
+      path.includes('init_vel') ||
+      path.includes('init_torque')) {
       return 'control'
     }
 
@@ -474,7 +483,8 @@ class ODriveUnifiedRegistry {
       path.includes('config.enable_dc_bus_') ||
       path.includes('config.test_') ||
       path.includes('config.usb_') ||
-      path.includes('fet_thermistor')) {
+      path.includes('fet_thermistor') ||
+      path.includes('brake_resistor0.config')) {
       return 'power'
     }
 
@@ -547,6 +557,26 @@ class ODriveUnifiedRegistry {
       'baud_rate': 'can_baudrate',
       'enable_brake_resistor': 'brake_resistor_enabled',
       'current': path.includes('calibration_lockin') ? 'lock_in_spin_current' : 'current',
+      
+      // 0.6.x specific config key mappings
+      'init_pos': 'init_pos',
+      'init_vel': 'init_vel', 
+      'init_torque': 'init_torque',
+      'observed_encoder_scale_factor': 'observed_encoder_scale_factor',
+      
+      // Mapper-specific config keys
+      'use_index': path.includes('load_mapper') ? 'load_encoder_use_index' : 'use_index',
+      'cpr': path.includes('load_mapper') ? 'load_encoder_cpr' : 
+             path.includes('commutation_mapper') ? 'commutation_encoder_cpr' : 'cpr',
+      'scale': path.includes('load_mapper') ? 'load_encoder_scale' :
+               path.includes('commutation_mapper') ? 'commutation_encoder_scale' : 'scale',
+      'bandwidth': path.includes('pos_vel_mapper') ? 'pos_vel_bandwidth' :
+                   path.includes('encoder') ? 'encoder_bandwidth' : 'bandwidth',
+      
+      // Harmonic compensation config keys
+      'calib_vel': path.includes('harmonic_compensation') ? 'harmonic_calib_vel' : 'calib_vel',
+      'calib_turns': path.includes('harmonic_compensation') ? 'harmonic_calib_turns' : 'calib_turns',
+      'calib_settling_delay': path.includes('harmonic_compensation') ? 'harmonic_calib_settling_delay' : 'calib_settling_delay',
     }
     return specialMappings[lastPart] || lastPart
   }
@@ -567,7 +597,15 @@ class ODriveUnifiedRegistry {
       'input_pos', 'input_vel', 'input_torque', 'pos_setpoint',
       'vel_setpoint', 'torque_setpoint', 'trajectory_done',
       'vel_integrator_torque', 'anticogging_valid', 'autotuning_phase',
-      'mechanical_power', 'electrical_power', 'endstop_state'
+      'mechanical_power', 'electrical_power', 'endstop_state',
+      
+      // 0.6.x read-only properties
+      'detailed_disarm_reason', 'active_errors', 'disarm_reason', 
+      'procedure_result', 'disarm_time', 'observed_encoder_scale_factor',
+      'pos_rel', 'working_offset', 'n_index_events', 'phase', 'phase_vel',
+      'cosx_coef', 'sinx_coef', 'cos2x_coef', 'sin2x_coef',
+      'current_lim', 'current_meas_status', 'was_saturated',
+      'n_restarts', 'n_rx', 'effective_baudrate'
     ]
     const lastPart = path.split('.').pop()
     return !nonConfigNames.includes(lastPart)

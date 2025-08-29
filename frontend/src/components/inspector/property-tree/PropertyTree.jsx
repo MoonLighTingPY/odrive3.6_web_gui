@@ -14,13 +14,14 @@ import {
   Skeleton
 } from '@chakra-ui/react'
 import { SearchIcon } from '@chakra-ui/icons'
-import { odrivePropertyTree } from '../../../utils/odrivePropertyTree'
+import { generateOdrivePropertyTree } from '../../../utils/odrivePropertyTree'
 import { usePropertyRefresh } from '../../../hooks/property-tree/usePropertyRefresh'
 import { usePropertyEditor } from '../../../hooks/property-tree/usePropertyEditor'
 import { usePropertyTreeFilter } from '../../../hooks/property-tree/usePropertyTreeFilter'
 import PropertyItem from './PropertyItem'
 import { getFavourites } from '../../../utils/propertyFavourites'
 import Observer from '@researchgate/react-intersection-observer'
+import { useSelector } from 'react-redux'
 
 const PropertyTree = ({ 
   odriveState, 
@@ -36,6 +37,16 @@ const PropertyTree = ({
   const [favouritesVersion, setFavouritesVersion] = useState(0)
   const [searchFilter, setSearchFilter] = useState(initialSearchFilter)
   const [debouncedSearch, setDebouncedSearch] = useState(searchFilter)
+
+  // Get current firmware version from Redux store
+  const firmwareVersion = useSelector((state) => state.device.firmwareVersion)
+  
+  // Generate property tree based on current firmware version
+  const odrivePropertyTree = useMemo(() => {
+    const version = firmwareVersion || '0.5.6'
+    console.log(`🌳 Generating property tree for firmware version: ${version}`)
+    return generateOdrivePropertyTree(version)
+  }, [firmwareVersion])
 
   // Function to collect all properties recursively from the tree structure
   const collectAllProperties = useCallback((node, basePath = '') => {

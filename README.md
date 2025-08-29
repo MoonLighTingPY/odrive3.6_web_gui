@@ -1,10 +1,10 @@
-# 🚀 ODrive Web GUI (0.5.x up to 0.5.6) 
+# 🚀 ODrive Web GUI (v0.5.x & v0.6.x) 
 
-A web-based GUI for configuring, monitoring, and controlling ODrive motor controllers running firmware v0.5.1 - v0.5.6
+A web-based GUI for configuring, monitoring, and controlling ODrive motor controllers running firmware v0.5.1 - v0.5.6 and v0.6.x (up to v0.6.11)
   > **No Python or Node.js required for Windows users – just download and run!**
 
 [![Latest Release](https://img.shields.io/github/release/MoonLighTingPY/odrive3.6_web_gui.svg?logo=github)](https://github.com/MoonLighTingPY/odrive3.6_web_gui/releases)
-[![ODrive Firmware](https://img.shields.io/badge/ODrive_firmware-%20(v0.5.x)-blue.svg)](https://docs.odriverobotics.com/v/0.5.6/)
+[![ODrive Firmware](https://img.shields.io/badge/ODrive_firmware-v0.5.x%20%7C%20v0.6.x-blue.svg)](https://docs.odriverobotics.com/)
 [![Python](https://img.shields.io/badge/Python-3.8.6-green.svg)](https://python.org)
 [![React](https://img.shields.io/badge/React-18+-61DAFB.svg)](https://reactjs.org)
 
@@ -23,11 +23,13 @@ A web-based GUI for configuring, monitoring, and controlling ODrive motor contro
 
 ## ✨ Why This GUI?
 
-The official ODrive GUI only supports newer firmware versions, leaving v0.5.6 users without a modern interface. This project fills that gap with:
+The official ODrive GUI supports newer firmware versions but has limited support for older versions. This project provides comprehensive support for both legacy and current firmware with:
 
-- **Full Feature Parity:** All functionality of the official GUI adapted for older firmware + new features!
+- **Full Version Support:** Complete compatibility with both 0.5.x and 0.6.x firmware versions
+- **Automatic Detection:** Seamlessly switches between firmware versions based on connected device  
+- **Feature Parity:** All functionality of the official GUI adapted for multiple firmware versions + new features!
 - **Standalone Deployment:** Windows executable doesn't require Python/Node.js installation
-- **Cross-Platform:** Works even on Linux, and macOS (only development mode for now)
+- **Cross-Platform:** Works on Linux, macOS, and Windows (executable available for Windows)
 
 
 ## 🎯 Key Features
@@ -44,10 +46,23 @@ The official ODrive GUI only supports newer firmware versions, leaving v0.5.6 us
 | Multi-Axis Support            | ✅     | Configure/calibrate/inspect properties of any axis |
 | Multi-Device Support            | 🛠️     | Not tested enough yet               |
 
+### 🆕 ODrive 0.6.x Features (NEW!)
+
+| Feature                | Status | Notes                                 |
+|------------------------|--------|---------------------------------------|
+| **New Encoder Architecture** | ✅ | Load Mapper, Commutation Mapper, Position/Velocity Mapper |
+| **Harmonic Compensation** | ✅ | Encoder distortion correction for smoother operation |
+| **Thermal Current Limiting** | ✅ | Temperature-based current limiting for enhanced safety |
+| **Enhanced Diagnostics** | ✅ | Detailed error codes, system statistics, diagnostic methods |
+| **Advanced Initialization** | ✅ | init_pos, init_vel, init_torque startup parameters |
+| **Improved CAN Features** | ✅ | Enhanced CAN diagnostics and configuration |
+| **New System Methods** | ✅ | identify_once(), test_function(), enhanced debugging |
+
 ### Configuration
 - **6-Step Setup:** Power → Motor → Encoder → Control → Interfaces → Apply
-- **Live Command Preview:** See exact ODrive commands before execution
+- **Live Command Preview:** See exact ODrive commands before execution  
 - **Preset Management:** Save/load/share motor configuration presets
+- **Version-Aware Properties:** Automatically adapts to firmware version (0.5.x vs 0.6.x)
 
 ### Inspector & Debugging
 - **Property Tree:** Browse and edit all ODrive parameters
@@ -61,8 +76,9 @@ The official ODrive GUI only supports newer firmware versions, leaving v0.5.6 us
 
 ### Device Management
 - **Auto-Discovery:** Automatic USB device scanning
-- **Multi-Device Support:** Manage multiple ODrive units
-- **Connection Monitoring:** Connection recovery
+- **Multi-Version Support:** Works with both 0.5.x and 0.6.x firmware  
+- **Automatic Version Detection:** Seamlessly adapts to connected firmware version
+- **Connection Monitoring:** Connection recovery and status tracking
 
 ---
 
@@ -136,6 +152,7 @@ npm run dev
 
 ## 📖 Documentation
 
+- **0.6.11 Support Guide:** [ODrive 0.6.11 Support Documentation](ODrive_0611_Support_Documentation.md)
 - **Online Docs:** [ODrive v0.5.6 Official Docs](https://docs.odriverobotics.com/v/0.5.6/getting-started.html)
 - **API Reference:** [ODrive v0.5.6 API](https://docs.odriverobotics.com/v/0.5.6/fibre_types/com_odriverobotics_ODrive.html)
 
@@ -157,6 +174,6 @@ Contributions are welcome! Whether it's bug fixes, new features, or general impr
 
 ---
 
-**⚡ Made for ODrive v0.5.6 users who need a modern GUI solution**
+**⚡ Made for ODrive users who need support for both legacy (v0.5.x) and modern (v0.6.x) firmware versions**
 
 *If you find this project helpful, please consider giving it a ⭐ on GitHub!*
