@@ -44,7 +44,7 @@ def get_telemetry():
         for path in paths:
             try:
                 value = get_property_value(odrv, path)
-                results[path] = value
+                results[path] = sanitize_for_json(value)
             except Exception as e:
                 logger.debug(f"Failed to get {path}: {e}")
                 results[path] = None
