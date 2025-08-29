@@ -6,8 +6,8 @@ import { updateTelemetry, setTelemetryConnectionHealth } from '../store/slices/t
 
 
 export const useDashboardTelemetry = () => {
-  const { isConnected, connectedDevice } = useSelector(state => state.device)
-  const selectedAxis = useSelector(state => state.ui.selectedAxis) // ADD THIS
+  const { isConnected, connectedDevice, firmwareVersion } = useSelector(state => state.device)
+  const selectedAxis = useSelector(state => state.ui.selectedAxis)
   const dispatch = useDispatch()
   let updateRate
   // for dev mode, update every 5000ms
@@ -18,6 +18,16 @@ export const useDashboardTelemetry = () => {
     updateRate = 50
   }
   const lastSerialRef = useRef(null)
+
+  // Determine firmware family
+  const is06x = (() => {
+    if (typeof firmwareVersion !== 'string') return false
+    const m = firmwareVersion.match(/(\d+)\.(\d+)/)
+    if (!m) return false
+    const major = parseInt(m[1], 10) || 0
+    const minor = parseInt(m[2], 10) || 5
+    return major === 0 && minor >= 6
+  })()
 
   // Track last connected serial
   useEffect(() => {
@@ -46,22 +56,37 @@ export const useDashboardTelemetry = () => {
       return
     }
 
-    // Dynamic telemetry paths based on selected axis
-    const telemetryPaths = [
-      'vbus_voltage',
-      `axis${selectedAxis}.motor.current_control.Iq_measured`,
-      `axis${selectedAxis}.encoder.pos_estimate`,
-      `axis${selectedAxis}.encoder.vel_estimate`,
-      `axis${selectedAxis}.motor.motor_thermistor.temperature`,
-      `axis${selectedAxis}.motor.fet_thermistor.temperature`,
-      `axis${selectedAxis}.current_state`,
-      // Add error codes to telemetry for real-time error detection
-      `axis${selectedAxis}.error`,
-      `axis${selectedAxis}.motor.error`,
-      `axis${selectedAxis}.encoder.error`,
-      `axis${selectedAxis}.controller.error`,
-      `axis${selectedAxis}.sensorless_estimator.error`
-    ]
+    // Version-aware telemetry paths
+    const axis = selectedAxis
+    const telemetryPaths = is06x
+      ? [
+          'vbus_voltage',
+          `axis${axis}.foc.Iq_measured`,
+          `axis${axis}.load_mapper.pos_rel`,
+          `axis${axis}.load_mapper.vel`,
+          `axis${axis}.motor.motor_thermistor.temperature`,
+          `axis${axis}.motor.fet_thermistor.temperature`,
+          `axis${axis}.current_state`,
+          // Errors/status (0.6.x)
+          `axis${axis}.active_errors`,
+          `axis${axis}.controller.status`,
+          // Keep sensorless for 0.5.x only
+        ]
+      : [
+          'vbus_voltage',
+          `axis${axis}.motor.current_control.Iq_measured`,
+          `axis${axis}.encoder.pos_estimate`,
+          `axis${axis}.encoder.vel_estimate`,
+          `axis${axis}.motor.motor_thermistor.temperature`,
+          `axis${axis}.motor.fet_thermistor.temperature`,
+          `axis${axis}.current_state`,
+          // Errors (0.5.x)
+          `axis${axis}.error`,
+          `axis${axis}.motor.error`,
+          `axis${axis}.encoder.error`,
+          `axis${axis}.controller.error`,
+          `axis${axis}.sensorless_estimator.error`
+        ]
 
     const fetchTelemetry = async () => {
       try {
@@ -72,7 +97,24 @@ export const useDashboardTelemetry = () => {
         })
 
         if (response.ok) {
-          const data = await response.json()
+          // Robust JSON parsing with fallback for special numbers
+          const responseText = await response.text()
+          let data
+          try {
+            data = JSON.parse(responseText)
+          // eslint-disable-next-line no-unused-vars
+          } catch (e) {
+            // eslint-disable-next-line no-useless-catch
+            try {
+              const cleaned = responseText
+                .replace(/:NaN/g, ':null')
+                .replace(/:Infinity/g, ':10000000000')
+                .replace(/:-Infinity/g, ':-10000000000')
+            data = JSON.parse(cleaned)
+            } catch (e2) {
+              throw e2
+            }
+          }
 
           // Heartbeat: check connection status from backend
           if (data.connected === false) {
@@ -81,28 +123,38 @@ export const useDashboardTelemetry = () => {
             return
           }
 
-          // Fix: The telemetry API returns data directly, not nested in data.data
-          // Check if we have the expected structure
           if (data && typeof data === 'object') {
-            // Dynamic mapping based on selected axis
-            const mapping = {
-              vbus_voltage: 'vbus_voltage',
-              motor_current: `axis${selectedAxis}.motor.current_control.Iq_measured`,
-              encoder_pos: `axis${selectedAxis}.encoder.pos_estimate`,
-              encoder_vel: `axis${selectedAxis}.encoder.vel_estimate`,
-              motor_temp: `axis${selectedAxis}.motor.motor_thermistor.temperature`,
-              fet_temp: `axis${selectedAxis}.motor.fet_thermistor.temperature`,
-              axis_state: `axis${selectedAxis}.current_state`,
-              axis_error: `axis${selectedAxis}.error`,
-              motor_error: `axis${selectedAxis}.motor.error`,
-              encoder_error: `axis${selectedAxis}.encoder.error`,
-              controller_error: `axis${selectedAxis}.controller.error`,
-              sensorless_error: `axis${selectedAxis}.sensorless_estimator.error`,
-            }
+            // Version-aware mapping
+            const mapping = is06x
+              ? {
+                  vbus_voltage: 'vbus_voltage',
+                  motor_current: `axis${axis}.foc.Iq_measured`,
+                  encoder_pos: `axis${axis}.load_mapper.pos_rel`,
+                  encoder_vel: `axis${axis}.load_mapper.vel`,
+                  motor_temp: `axis${axis}.motor.motor_thermistor.temperature`,
+                  fet_temp: `axis${axis}.motor.fet_thermistor.temperature`,
+                  axis_state: `axis${axis}.current_state`,
+                  axis_error: `axis${axis}.active_errors`,
+                  controller_status: `axis${axis}.controller.status`,
+                }
+              : {
+                  vbus_voltage: 'vbus_voltage',
+                  motor_current: `axis${axis}.motor.current_control.Iq_measured`,
+                  encoder_pos: `axis${axis}.encoder.pos_estimate`,
+                  encoder_vel: `axis${axis}.encoder.vel_estimate`,
+                  motor_temp: `axis${axis}.motor.motor_thermistor.temperature`,
+                  fet_temp: `axis${axis}.motor.fet_thermistor.temperature`,
+                  axis_state: `axis${axis}.current_state`,
+                  axis_error: `axis${axis}.error`,
+                  motor_error: `axis${axis}.motor.error`,
+                  encoder_error: `axis${axis}.encoder.error`,
+                  controller_error: `axis${axis}.controller.error`,
+                  sensorless_error: `axis${axis}.sensorless_estimator.error`,
+                }
 
             const telemetryData = {}
             Object.entries(mapping).forEach(([key, path]) => {
-              const val = data[path]  // Changed from data.data[path] to data[path]
+              const val = data[path]
               if (val !== undefined) {
                 telemetryData[key] = val
               }
@@ -111,13 +163,14 @@ export const useDashboardTelemetry = () => {
             // Dispatch to telemetry slice for immediate updates
             dispatch(updateTelemetry(telemetryData))
 
-            // Debounced update to main device state (for compatibility and error codes)
+            // Compose dashboard device state (keep structure stable)
             const dashboardData = {
               device: {
                 vbus_voltage: telemetryData.vbus_voltage,
-                [`axis${selectedAxis}`]: {
+                [`axis${axis}`]: {
                   current_state: telemetryData.axis_state,
-                  error: data[`axis${selectedAxis}.error`] || 0,  // Changed from data.data to data
+                  // Errors
+                  error: is06x ? (data[`axis${axis}.active_errors`] || 0) : (data[`axis${axis}.error`] || 0),
                   motor: {
                     current_control: {
                       Iq_measured: telemetryData.motor_current
@@ -128,19 +181,25 @@ export const useDashboardTelemetry = () => {
                     fet_thermistor: {
                       temperature: telemetryData.fet_temp
                     },
-                    error: data[`axis${selectedAxis}.motor.error`] || 0  // Changed from data.data to data
+                    error: is06x ? 0 : (data[`axis${axis}.motor.error`] || 0)
                   },
-                  encoder: {
-                    pos_estimate: telemetryData.encoder_pos,
-                    vel_estimate: telemetryData.encoder_vel,
-                    error: data[`axis${selectedAxis}.encoder.error`] || 0  // Changed from data.data to data
-                  },
-                  controller: {
-                    error: data[`axis${selectedAxis}.controller.error`] || 0  // Changed from data.data to data
-                  },
-                  sensorless_estimator: {
-                    error: data[`axis${selectedAxis}.sensorless_estimator.error`] || 0  // Changed from data.data to data
-                  }
+                  encoder: is06x
+                    ? {
+                        pos_estimate: telemetryData.encoder_pos,
+                        vel_estimate: telemetryData.encoder_vel,
+                        error: 0,
+                      }
+                    : {
+                        pos_estimate: telemetryData.encoder_pos,
+                        vel_estimate: telemetryData.encoder_vel,
+                        error: data[`axis${axis}.encoder.error`] || 0,
+                      },
+                  controller: is06x
+                    ? { status: data[`axis${axis}.controller.status`] || 0 }
+                    : { error: data[`axis${axis}.controller.error`] || 0 },
+                  sensorless_estimator: is06x
+                    ? {}
+                    : { error: data[`axis${axis}.sensorless_estimator.error`] || 0 }
                 }
               },
               timestamp: Date.now()  // Generate timestamp if not provided
@@ -174,5 +233,5 @@ export const useDashboardTelemetry = () => {
     return () => {
       clearInterval(interval)
     }
-  }, [isConnected, selectedAxis, dispatch, updateRate, debouncedDeviceDispatch]) // ADD selectedAxis to dependencies
+  }, [isConnected, selectedAxis, dispatch, updateRate, debouncedDeviceDispatch, firmwareVersion, is06x])
 }
