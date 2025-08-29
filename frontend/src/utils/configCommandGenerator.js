@@ -9,7 +9,13 @@
  * @returns {Array<string>} Array of ODrive commands
  */
 
-import { odriveRegistry } from './odriveUnifiedRegistry'
+import { 
+  generateCommands,
+  generateAllCommands,
+  getParameterMetadata,
+  validateConfig,
+  getCategoryParameters
+} from './registryManager'
 
 export const generatePowerCommands = (powerConfig = {}) => {
   const commands = []
@@ -438,7 +444,7 @@ export const generateInterfaceCommands = (interfaceConfig = {}) => {
  */
 export const generateConfigCommands = (config = {}, axisNumber = 0) => {
   // Use the unified registry to generate all commands with axis support
-  const allCommands = odriveRegistry.generateAllCommands(config, axisNumber)
+  const allCommands = generateAllCommands(config, axisNumber)
   
   // If axisNumber is null, return all commands (both axes)
   if (axisNumber === null) {
@@ -485,8 +491,8 @@ export const generateSaveAndRebootCommands = () => {
  * @param {string} configKey - Configuration key
  * @returns {Object|null} Parameter metadata or null if not found
  */
-export const getParameterMetadata = (category, configKey) => {
-  return odriveRegistry.getParameterMetadata(category, configKey)
+export const getConfigParameterMetadata = (category, configKey) => {
+  return getParameterMetadata(category, configKey)
 }
 
 /**
@@ -496,7 +502,7 @@ export const getParameterMetadata = (category, configKey) => {
  * @returns {Array<string>} Array of validation error messages
  */
 export const validateConfiguration = (category, config) => {
-  return odriveRegistry.validateConfig(category, config)
+  return validateConfig(category, config)
 }
 
 /**
@@ -504,8 +510,8 @@ export const validateConfiguration = (category, config) => {
  * @param {string} category - Configuration category
  * @returns {Array<Object>} Array of parameter objects with metadata
  */
-export const getCategoryParameters = (category) => {
-  return odriveRegistry.getCategoryParameters(category)
+export const getConfigCategoryParameters = (category) => {
+  return getCategoryParameters(category)
 }
 
 /**

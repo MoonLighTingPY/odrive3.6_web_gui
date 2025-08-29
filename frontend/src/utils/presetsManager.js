@@ -4,7 +4,11 @@
  */
 
 import { FACTORY_PRESET_BASES, getFactoryPreset, generateFullConfig } from './factoryPresets'
-import { odriveRegistry } from './odriveUnifiedRegistry'
+import { 
+  getCategoryParameters,
+  getParameterMetadata,
+  getConfigCategories
+} from './registryManager'
 
 /**
  * Save current device configuration as a preset with all writable parameters
@@ -422,7 +426,7 @@ export const getPresetCoverage = (presetName) => {
     return { total: 0, covered: 0, percentage: 0, missing: [] }
   }
 
-  const categories = odriveRegistry.getConfigCategories()
+  const categories = getConfigCategories()
   let totalParams = 0
   let coveredParams = 0
   const missing = []
@@ -431,7 +435,7 @@ export const getPresetCoverage = (presetName) => {
     const presetCategory = preset.config[category] || {}
 
     parameters.forEach(param => {
-      const metadata = odriveRegistry.getParameterMetadata(category, param.configKey)
+      const metadata = getParameterMetadata(category, param.configKey)
 
       if (metadata && metadata.writable) {
         totalParams++

@@ -1,4 +1,7 @@
-import { odriveRegistry } from './odriveUnifiedRegistry'
+import { 
+  getConfigCategories,
+  getParameterMetadata
+} from './registryManager'
 
 /**
  * Generate a complete preset configuration using all available parameters.
@@ -16,13 +19,13 @@ export const generateFullConfig = (baseConfig = {}) => {
   }
 
   // Get all categories and their parameters from the unified registry
-  const categories = odriveRegistry.getConfigCategories()
+  const categories = getConfigCategories()
 
   Object.entries(categories).forEach(([category, parameters]) => {
     parameters.forEach(param => {
       // Always use the configKey from the registry
       const configKey = param.configKey
-      const metadata = odriveRegistry.getParameterMetadata(category, configKey)
+      const metadata = getParameterMetadata(category, configKey)
       const categoryConfig = baseConfig[category] || {}
 
       // Prefer baseConfig value if present, otherwise use default
@@ -332,7 +335,7 @@ export const FACTORY_PRESET_BASES = {
 
 // Map legacy baseConfig keys to unified registry config keys
 function mapBaseConfigKeys(baseConfig) {
-  const categories = odriveRegistry.getConfigCategories();
+  const categories = getConfigCategories();
   const mappedConfig = {};
 
   Object.entries(baseConfig).forEach(([category, values]) => {

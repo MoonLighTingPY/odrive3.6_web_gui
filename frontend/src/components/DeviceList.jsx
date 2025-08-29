@@ -7,8 +7,10 @@ import {
   setConnectedDevice,
   setConnectionError,
   clearDeviceState,
+  setFirmwareVersion,
 } from '../store/slices/deviceSlice'
 import { clearErrors } from '../utils/configurationActions'
+import { setRegistryVersion, clearRegistry } from '../utils/registryManager'
 import {
   Box,
   VStack,
@@ -364,6 +366,33 @@ const DeviceList = memo(() => {
 
       if (response.ok) {
         dispatch(setConnectedDevice(device))
+        
+        // Detect and set firmware version after successful connection
+        try {
+          const versionResponse = await fetch('/api/odrive/firmware_version')
+          if (versionResponse.ok) {
+            const versionData = await versionResponse.json()
+            const firmwareVersion = versionData.version || 'v0.5.6'
+            
+            console.log(`Detected firmware version: ${firmwareVersion}`)
+            
+            // Update Redux state with firmware version
+            dispatch(setFirmwareVersion(firmwareVersion))
+            
+            // Switch registry to appropriate version
+            setRegistryVersion(firmwareVersion)
+            
+          } else {
+            console.warn('Failed to detect firmware version, using default 0.5.6')
+            dispatch(setFirmwareVersion('v0.5.6'))
+            setRegistryVersion('v0.5.6')
+          }
+        } catch (versionError) {
+          console.warn('Error detecting firmware version:', versionError)
+          dispatch(setFirmwareVersion('v0.5.6'))
+          setRegistryVersion('v0.5.6')
+        }
+
         toast({
           title: 'Connected',
           description: `Connected to ${device.path}`,
@@ -395,6 +424,10 @@ const DeviceList = memo(() => {
 
       if (response.ok) {
         dispatch(clearDeviceState())
+        
+        // Clear registry version on disconnect
+        clearRegistry()
+        
         toast({
           title: 'Disconnected',
           description: 'Disconnected from ODrive',

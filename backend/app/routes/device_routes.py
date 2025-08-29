@@ -153,6 +153,58 @@ def set_property():
 
 
 
+@device_bp.route('/firmware_version', methods=['GET'])
+def get_firmware_version():
+    """Get firmware version of currently connected device"""
+    try:
+        if not odrive_manager.is_connected():
+            return jsonify({"error": "No ODrive connected"}), 404
+        
+        odrv = odrive_manager.current_device
+        
+        # Try to get version components
+        try:
+            major = getattr(odrv, 'fw_version_major', None)
+            minor = getattr(odrv, 'fw_version_minor', None)
+            revision = getattr(odrv, 'fw_version_revision', None)
+            
+            if major is not None and minor is not None and revision is not None:
+                version_string = f"v{major}.{minor}.{revision}"
+                return jsonify({
+                    'success': True,
+                    'version': version_string,
+                    'major': major,
+                    'minor': minor,
+                    'revision': revision
+                })
+            else:
+                # Fallback to default if we can't read version
+                return jsonify({
+                    'success': True,
+                    'version': 'v0.5.6',
+                    'major': 0,
+                    'minor': 5,
+                    'revision': 6,
+                    'fallback': True
+                })
+                
+        except Exception as e:
+            logger.warning(f"Error reading firmware version: {e}")
+            # Return fallback version
+            return jsonify({
+                'success': True,
+                'version': 'v0.5.6',
+                'major': 0,
+                'minor': 5,
+                'revision': 6,
+                'fallback': True,
+                'error': str(e)
+            })
+            
+    except Exception as e:
+        logger.error(f"Error in get_firmware_version: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @device_bp.route('/property', methods=['POST'])
 def get_single_property():
     """Get single property value or batch of properties"""

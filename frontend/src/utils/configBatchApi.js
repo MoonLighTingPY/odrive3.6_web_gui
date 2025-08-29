@@ -5,7 +5,12 @@
  * for all batch loading paths and categorization logic.
  */
 
-import { odriveRegistry, getBatchPaths } from './odriveUnifiedRegistry'
+import { 
+  getCurrentRegistry, 
+  getBatchPaths,
+  findParameter,
+  getCategoryParameters 
+} from './registryManager'
 import { convertTorqueConstantToKv } from './valueHelpers'
 
 export const loadConfigurationBatch = async (configPaths) => {
@@ -43,7 +48,7 @@ export const loadConfigurationBatch = async (configPaths) => {
     Object.entries(data.results).forEach(([path, value]) => {
       if (value === null || value === undefined) {
         // Use parameter metadata to set appropriate defaults
-        const param = odriveRegistry.findParameter(path)
+        const param = findParameter(path)
         if (param) {
           if (param.property.type === 'boolean') {
             cleanedResults[path] = false
@@ -121,7 +126,7 @@ export const loadAllConfigurationBatch = async () => {
       const propertyPath = path.replace(/^device\./, '')
 
       // Find the parameter in the registry
-      const param = odriveRegistry.findParameter(propertyPath)
+      const param = findParameter(propertyPath)
 
       if (param && param.category) {
         let processedValue = value
@@ -160,7 +165,7 @@ export const loadAllConfigurationBatch = async () => {
  * @returns {Array<string>} Array of batch paths for the category
  */
 export const getCategoryBatchPaths = (category) => {
-  const categoryParams = odriveRegistry.getCategoryParameters(category)
+  const categoryParams = getCategoryParameters(category)
   return categoryParams.map(param => `device.${param.odriveCommand}`)
 }
 
@@ -174,7 +179,7 @@ export const loadCategoryConfigurationBatch = async (category) => {
   const results = await loadConfigurationBatch(categoryPaths)
 
   const categoryConfig = {}
-  const categoryParams = odriveRegistry.getCategoryParameters(category)
+  const categoryParams = getCategoryParameters(category)
 
   categoryParams.forEach(param => {
     const path = `device.${param.odriveCommand}`

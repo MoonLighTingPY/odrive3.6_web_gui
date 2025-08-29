@@ -11,6 +11,7 @@ const initialState = {
   lastUpdateTime: 0,
   telemetryEnabled: true,
   telemetryRate: 10, // Hz
+  firmwareVersion: null, // Current device firmware version
 }
 
 const deviceSlice = createSlice({
@@ -28,18 +29,24 @@ const deviceSlice = createSlice({
         state.connectedDevice = action.payload
         state.isConnected = true
         state.connectionError = null
+        // Extract firmware version from device info if available
+        if (action.payload.fw_version) {
+          state.firmwareVersion = action.payload.fw_version
+        }
       } else {
         // Clear all device state on disconnect
         state.connectedDevice = null
         state.isConnected = false
         state.odriveState = {}
         state.connectionError = null
+        state.firmwareVersion = null
       }
     },
     setConnectionError: (state, action) => {
       state.connectionError = action.payload
       state.isConnected = false
       state.connectedDevice = null
+      state.firmwareVersion = null
     },
     // New: Single action to update all connection status from backend
     setConnectionStatus: (state, action) => {
@@ -52,6 +59,7 @@ const deviceSlice = createSlice({
         state.connectionError = null
       } else {
         state.connectedDevice = null
+        state.firmwareVersion = null
       }
     },
     updateOdriveState: (state, action) => {
@@ -87,6 +95,10 @@ const deviceSlice = createSlice({
       state.connectedDevice = null
       state.isConnected = false
       state.connectionError = null
+      state.firmwareVersion = null
+    },
+    setFirmwareVersion: (state, action) => {
+      state.firmwareVersion = action.payload
     },
   },
 })
@@ -102,6 +114,7 @@ export const {
   setTelemetryEnabled,
   setTelemetryRate,
   clearDeviceState,
+  setFirmwareVersion,
 } = deviceSlice.actions
 
 export default deviceSlice.reducer

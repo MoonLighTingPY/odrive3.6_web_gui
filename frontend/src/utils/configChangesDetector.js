@@ -2,7 +2,7 @@
  * Utility to detect configuration changes between initial and current values
  */
 
-import { odriveRegistry } from './odriveUnifiedRegistry'
+import { generateCommands } from './registryManager'
 
 /**
  * Compare two values with tolerance for floating point numbers
@@ -127,7 +127,7 @@ export const generateChangedCommands = (
   Object.entries(changedParams).forEach(([category, params]) => {
     if (!params || Object.keys(params).length === 0) return;
     try {
-      const commands = odriveRegistry.generateCommands(category, params);
+      const commands = generateCommands(category, params);
       allCommands.push(...commands);
     } catch (err) {
       console.error(`Error generating commands for ${category}:`, err);
