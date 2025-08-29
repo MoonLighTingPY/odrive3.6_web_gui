@@ -10,13 +10,8 @@ import { setPathResolverConfig } from './odrivePathResolver'
 
 class RegistryManager {
   constructor() {
-    this.registries = new Map() // Cache registries by version
     this.currentVersion = null
     this.currentRegistry = null
-    
-    // Create default 0.5.6 registry and initialize path resolver
-    this.getRegistryForVersion('0.5.6')
-    setPathResolverConfig('0.5.6', 'odrv0', 0)
   }
 
   /**
@@ -43,19 +38,9 @@ class RegistryManager {
     return '0.5.6'
   }
 
-  /**
-   * Get or create registry for specific version
-   */
-  getRegistryForVersion(versionString) {
-    const normalizedVersion = this.parseVersion(versionString)
-    
-    if (!this.registries.has(normalizedVersion)) {
-      console.log(`Creating new registry for version ${normalizedVersion}`)
-      const registry = createRegistryForVersion(normalizedVersion)
-      this.registries.set(normalizedVersion, registry)
-    }
-    
-    return this.registries.get(normalizedVersion)
+  getRegistryForVersion(normalizedVersion) {
+    // Create a registry for the exact version to keep 0.6.10 vs 0.6.11 differences minimal
+    return createRegistryForVersion(normalizedVersion)
   }
 
   /**
@@ -63,65 +48,29 @@ class RegistryManager {
    */
   setCurrentVersion(versionString) {
     const normalizedVersion = this.parseVersion(versionString)
-    
     if (this.currentVersion !== normalizedVersion) {
       console.log(`🔄 Registry Manager: Switching registry from ${this.currentVersion || 'none'} to ${normalizedVersion}`)
       this.currentVersion = normalizedVersion
       this.currentRegistry = this.getRegistryForVersion(normalizedVersion)
-      
+
       // Also update the global path resolver configuration
       setPathResolverConfig(normalizedVersion, 'odrv0', 0)
-      
-      // Log registry details for debugging
+
       console.log(`📊 New registry stats:`, {
         firmwareVersion: normalizedVersion,
         totalParams: Object.values(this.currentRegistry.configCategories).reduce((sum, params) => sum + params.length, 0),
         batchPathsCount: this.currentRegistry.batchPaths.length,
-        commandsCount: Object.values(this.currentRegistry.commands || {}).reduce((sum, cmds) => sum + cmds.length, 0)
       })
-    } else {
-      console.log(`✅ Registry Manager: Already using version ${normalizedVersion}`)
     }
   }
 
-  /**
-   * Get the current active registry
-   */
   getCurrentRegistry() {
-    // Return default 0.5.6 registry if no version set
-    if (!this.currentRegistry) {
-      this.currentRegistry = this.getRegistryForVersion('0.5.6')
-      this.currentVersion = '0.5.6'
-    }
-    
-    return this.currentRegistry
+    return this.currentRegistry || this.getRegistryForVersion('0.5.6')
   }
 
-  /**
-   * Get current version string
-   */
-  getCurrentVersion() {
-    return this.currentVersion || '0.5.6'
-  }
-
-  /**
-   * Clear current registry (on disconnect)
-   */
   clearCurrentRegistry() {
     this.currentVersion = null
     this.currentRegistry = null
-  }
-
-  /**
-   * Get debug information
-   */
-  getDebugInfo() {
-    return {
-      currentVersion: this.currentVersion,
-      availableRegistries: Array.from(this.registries.keys()),
-      registryCacheSize: this.registries.size,
-      hasCurrentRegistry: !!this.currentRegistry
-    }
   }
 }
 

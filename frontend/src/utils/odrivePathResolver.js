@@ -41,25 +41,28 @@ class ODrivePathResolver {
     this.systemProperties = new Set([
       'hw_version_major', 'hw_version_minor', 'hw_version_variant', 'hw_version_revision',
       'fw_version_major', 'fw_version_minor', 'fw_version_revision', 'fw_version_unreleased',
-      'serial_number', 'vbus_voltage', 'ibus', 'ibus_report_filter_k', 'test_property',
-      'error', 'misconfigured', 'otp_valid', 'n_evt_sampling', 'n_evt_control_loop', 'user_config_loaded'
+      'serial_number', 'vbus_voltage', 'ibus', 'ibus_report_filter_k',
+      'n_evt_sampling', 'n_evt_control_loop', 'task_timers_armed',
+      'system_stats', 'task_times', 'user_config_loaded', 'misconfigured',
+      'test_property'
     ])
     
     // Version-specific system properties
     if (this.config.is06x) {
-      // 0.6.x specific system properties
+      // 0.6.x specific system properties (0.6.11 API Reference, top-level ODrive)
       this.systemProperties.add('commit_hash')
       this.systemProperties.add('bootloader_version')
       this.systemProperties.add('control_loop_hz')
-      this.systemProperties.add('task_timers_armed')
-      this.systemProperties.add('reboot_required')
       this.systemProperties.add('identify')
+      this.systemProperties.add('reboot_required')
+      // Note: no 'error' and no 'otp_valid' on 0.6.x (Changelog 0.6.1 migration)
     } else {
-      // 0.5.x specific system properties
+      // 0.5.x specific
+      this.systemProperties.add('error')
+      this.systemProperties.add('otp_valid')
       this.systemProperties.add('brake_resistor_armed')
       this.systemProperties.add('brake_resistor_saturated')
       this.systemProperties.add('brake_resistor_current')
-      this.systemProperties.add('task_timers_armed')
     }
   }
 
@@ -69,28 +72,31 @@ class ODrivePathResolver {
   updateConfig(firmwareVersion, deviceName, defaultAxis) {
     this.config = new ODrivePathConfig(firmwareVersion, deviceName, defaultAxis)
     
-    // Rebuild system properties for new version
+    // Base props common across versions
     this.systemProperties = new Set([
       'hw_version_major', 'hw_version_minor', 'hw_version_variant', 'hw_version_revision',
       'fw_version_major', 'fw_version_minor', 'fw_version_revision', 'fw_version_unreleased',
-      'serial_number', 'vbus_voltage', 'ibus', 'ibus_report_filter_k', 'test_property',
-      'error', 'misconfigured', 'otp_valid', 'n_evt_sampling', 'n_evt_control_loop', 'user_config_loaded'
+      'serial_number', 'vbus_voltage', 'ibus', 'ibus_report_filter_k',
+      'n_evt_sampling', 'n_evt_control_loop', 'task_timers_armed',
+      'system_stats', 'task_times', 'user_config_loaded', 'misconfigured',
+      'test_property'
     ])
-    
+
     if (this.config.is06x) {
-      // 0.6.x specific system properties
+      // 0.6.x specific system properties (0.6.11 API Reference, top-level ODrive)
       this.systemProperties.add('commit_hash')
       this.systemProperties.add('bootloader_version')
       this.systemProperties.add('control_loop_hz')
-      this.systemProperties.add('task_timers_armed')
-      this.systemProperties.add('reboot_required')
       this.systemProperties.add('identify')
+      this.systemProperties.add('reboot_required')
+      // Note: no 'error' and no 'otp_valid' on 0.6.x (Changelog 0.6.1 migration)
     } else {
-      // 0.5.x specific system properties
+      // 0.5.x specific
+      this.systemProperties.add('error')
+      this.systemProperties.add('otp_valid')
       this.systemProperties.add('brake_resistor_armed')
       this.systemProperties.add('brake_resistor_saturated')
       this.systemProperties.add('brake_resistor_current')
-      this.systemProperties.add('task_timers_armed')
     }
   }
 
@@ -214,9 +220,10 @@ class ODrivePathResolver {
    * @returns {boolean} True if property exists in current firmware
    */
   isPropertySupported(logicalPath) {
-    // Version-specific property support
+    const p = logicalPath
+
     if (!this.config.is06x) {
-      // Properties that don't exist in 0.5.x
+      // 0.5.x: hide 0.6.x-only bits from 0.5.x UI
       const v06xOnlyProps = [
         'commit_hash', 'bootloader_version', 'control_loop_hz',
         'reboot_required', 'identify', 'pos_vel_mapper', 'commutation_mapper',
@@ -225,35 +232,36 @@ class ODrivePathResolver {
         'user_config_6', 'user_config_7', 'dc_max_positive_current',
         'dc_max_negative_current', 'load_mapper', 'harmonic_compensation',
         'thermal_current_limiter', 'motor_thermistor_current_limiter',
-        'detailed_disarm_reason', 'active_errors', 'init_pos', 'init_vel',
-        'init_torque', 'observed_encoder_scale_factor', 'brake_resistor0',
-        'effective_baudrate', 'n_restarts', 'n_rx', 'identify_once',
-        'test_function', 'get_adc_voltage', 'enter_dfu_mode2', 'disable_bootloader'
+        'detailed_disarm_reason', 'active_errors', 'observed_encoder_scale_factor',
+        'brake_resistor0', 'effective_baudrate', 'n_restarts', 'n_rx', 'identify_once'
       ]
-      
-      if (v06xOnlyProps.some(prop => logicalPath.includes(prop))) {
-        return false
-      }
-    }
+      if (v06xOnlyProps.some(x => p.includes(x))) return false
+    } else {
+      // 0.6.x: hide 0.5.x-only/removed/moved props
+      const removedOrMoved = [
+        // Top-level removed in 0.6.x
+        'system.error', 'otp_valid',
+        'brake_resistor_armed', 'brake_resistor_saturated', 'brake_resistor_current',
 
-    if (this.config.is06x) {
-      // Properties that were removed in 0.6.x or moved to different locations
-      const removedProps = [
-        'config.enable_can_a', 'can.config.is_extended', 'amt21_encoder_group0',
-        'system.brake_resistor_armed', 'system.brake_resistor_saturated', 'system.brake_resistor_current'
+        // 0.5.x root config flags not present in 0.6.x
+        'config.enable_can_a', 'config.enable_i2c_a',
+        'config.enable_brake_resistor', 'config.brake_resistance',
+        'config.enable_dc_bus_overvoltage_ramp',
+        'config.dc_bus_overvoltage_ramp_start',
+        'config.dc_bus_overvoltage_ramp_end',
+
+        // CAN field moved/removed
+        'can.config.is_extended',
+
+        // UART/I2C variants not present on 0.6.x API
+        'config.enable_uart_b', 'config.enable_uart_c',
+        'config.uart1_protocol', 'config.uart2_protocol',
+        'config.uart_b_baudrate', 'config.uart_c_baudrate',
+
+        // error GPIO pin moved to axis.config.error_gpio_pin
+        'config.error_gpio_pin'
       ]
-      
-      if (removedProps.some(prop => logicalPath === prop)) {
-        return false
-      }
-      
-      // Properties that were renamed
-      if (logicalPath.includes('endstop_state')) {
-        return false // Use 'state' instead
-      }
-      if (logicalPath.includes('is_saturated')) {
-        return false // Use 'was_saturated' instead  
-      }
+      if (removedOrMoved.some(x => p.includes(x))) return false
     }
 
     return true
