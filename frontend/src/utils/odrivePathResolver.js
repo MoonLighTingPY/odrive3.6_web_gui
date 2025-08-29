@@ -36,22 +36,30 @@ class ODrivePathConfig {
 class ODrivePathResolver {
   constructor(config = new ODrivePathConfig()) {
     this.config = config
+    
+    // Common system properties for all versions
     this.systemProperties = new Set([
       'hw_version_major', 'hw_version_minor', 'hw_version_variant', 'hw_version_revision',
       'fw_version_major', 'fw_version_minor', 'fw_version_revision', 'fw_version_unreleased',
       'serial_number', 'vbus_voltage', 'ibus', 'ibus_report_filter_k', 'test_property',
-      'error', 'brake_resistor_armed', 'brake_resistor_saturated', 'brake_resistor_current',
-      'misconfigured', 'otp_valid', 'n_evt_sampling', 'n_evt_control_loop', 'user_config_loaded'
+      'error', 'misconfigured', 'otp_valid', 'n_evt_sampling', 'n_evt_control_loop', 'user_config_loaded'
     ])
     
     // Version-specific system properties
     if (this.config.is06x) {
+      // 0.6.x specific system properties
       this.systemProperties.add('commit_hash')
       this.systemProperties.add('bootloader_version')
       this.systemProperties.add('control_loop_hz')
       this.systemProperties.add('task_timers_armed')
       this.systemProperties.add('reboot_required')
       this.systemProperties.add('identify')
+    } else {
+      // 0.5.x specific system properties
+      this.systemProperties.add('brake_resistor_armed')
+      this.systemProperties.add('brake_resistor_saturated')
+      this.systemProperties.add('brake_resistor_current')
+      this.systemProperties.add('task_timers_armed')
     }
   }
 
@@ -61,14 +69,28 @@ class ODrivePathResolver {
   updateConfig(firmwareVersion, deviceName, defaultAxis) {
     this.config = new ODrivePathConfig(firmwareVersion, deviceName, defaultAxis)
     
-    // Update system properties for new version
+    // Rebuild system properties for new version
+    this.systemProperties = new Set([
+      'hw_version_major', 'hw_version_minor', 'hw_version_variant', 'hw_version_revision',
+      'fw_version_major', 'fw_version_minor', 'fw_version_revision', 'fw_version_unreleased',
+      'serial_number', 'vbus_voltage', 'ibus', 'ibus_report_filter_k', 'test_property',
+      'error', 'misconfigured', 'otp_valid', 'n_evt_sampling', 'n_evt_control_loop', 'user_config_loaded'
+    ])
+    
     if (this.config.is06x) {
+      // 0.6.x specific system properties
       this.systemProperties.add('commit_hash')
       this.systemProperties.add('bootloader_version')
       this.systemProperties.add('control_loop_hz')
       this.systemProperties.add('task_timers_armed')
       this.systemProperties.add('reboot_required')
       this.systemProperties.add('identify')
+    } else {
+      // 0.5.x specific system properties
+      this.systemProperties.add('brake_resistor_armed')
+      this.systemProperties.add('brake_resistor_saturated')
+      this.systemProperties.add('brake_resistor_current')
+      this.systemProperties.add('task_timers_armed')
     }
   }
 
@@ -193,12 +215,12 @@ class ODrivePathResolver {
     if (!this.config.is06x) {
       // Properties that don't exist in 0.5.x
       const v06xOnlyProps = [
-        'commit_hash', 'bootloader_version', 'control_loop_hz', 'task_timers_armed',
+        'commit_hash', 'bootloader_version', 'control_loop_hz',
         'reboot_required', 'identify', 'pos_vel_mapper', 'commutation_mapper',
         'interpolator', 'mechanical_brake', 'user_config_0', 'user_config_1',
         'user_config_2', 'user_config_3', 'user_config_4', 'user_config_5',
         'user_config_6', 'user_config_7', 'dc_max_positive_current',
-        'dc_max_negative_current', 'ibus_report_filter_k'
+        'dc_max_negative_current'
       ]
       
       if (v06xOnlyProps.some(prop => logicalPath.includes(prop))) {
