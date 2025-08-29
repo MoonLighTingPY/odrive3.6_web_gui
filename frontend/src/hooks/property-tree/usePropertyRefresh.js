@@ -29,9 +29,11 @@ export const usePropertyRefresh = (odrivePropertyTree, collectAllProperties, isC
       try {
         // Use path resolver to convert logical paths to property paths
         const propertyPath = resolveToPropertyPath(displayPath)
-        return propertyPath.replace('device.', '') // Remove device. prefix for backend API
+        const cleanPath = propertyPath.replace('device.', '') // Remove device. prefix for backend API
+        console.debug(`✓ Resolved ${displayPath} → ${cleanPath}`)
+        return cleanPath
       } catch (error) {
-        console.warn(`Failed to resolve path ${displayPath}, using fallback:`, error)
+        console.warn(`❌ Failed to resolve path ${displayPath}, using fallback:`, error)
         // Fallback to legacy hardcoded logic for compatibility
         if (displayPath.startsWith('system.')) {
           const systemProp = displayPath.replace('system.', '')
@@ -76,6 +78,11 @@ export const usePropertyRefresh = (odrivePropertyTree, collectAllProperties, isC
                 value = Infinity
               } else if (value === "-Infinity") {
                 value = -Infinity
+              }
+              
+              // Debug: log null values for problematic properties
+              if (value === null || value === undefined) {
+                console.debug(`🔍 Null value: ${displayPath} → ${devicePath}`)
               }
               
               newPropertyValues[displayPath] = value

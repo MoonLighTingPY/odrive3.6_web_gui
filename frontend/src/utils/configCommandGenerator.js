@@ -9,13 +9,8 @@
 
 import { 
   generateCategoryCommands,
-  generateAllCategoryCommands, 
-  generateSystemCommands,
-  generateCalibrationCommands,
-  generateSaveAndRebootCommands,
-  generateSingleCommand,
-  previewAllCommands,
-  validateConfigurationSupport
+  generateAllCategoryCommands,
+  previewAllCommands
 } from './dynamicCommandGenerator'
 
 import { getCurrentRegistry } from './odriveUnifiedRegistry'

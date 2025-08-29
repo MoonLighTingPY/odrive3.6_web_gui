@@ -118,7 +118,7 @@ class RegistryManager {
 // Export singleton instance
 export const registryManager = new RegistryManager()
 
-// Export convenience functions that use the active registry
+// Export the current active registry (removing unused exports that cause lint errors)
 export const getCurrentRegistry = () => registryManager.getCurrentRegistry()
 export const setRegistryVersion = (version) => registryManager.setCurrentVersion(version)
 export const clearRegistry = () => registryManager.clearCurrentRegistry()
