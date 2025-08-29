@@ -1,4 +1,5 @@
 import { useSelector } from 'react-redux'
+import { generateCommand } from './odrivePathResolver'
 
 /**
  * Utility to check if axes are in idle state
@@ -87,13 +88,16 @@ export const useAxisStates = () => {
 }
 
 /**
- * Send command to set axis to idle
+ * Send command to set axis to idle using dynamic path resolution
  */
 export const setAxisToIdle = async (axisNumber) => {
+  // Use path resolver to generate the correct command for any firmware version/device
+  const command = generateCommand('requested_state', AXIS_STATES.IDLE, axisNumber)
+  
   const response = await fetch('/api/odrive/command', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ command: `odrv0.axis${axisNumber}.requested_state = ${AXIS_STATES.IDLE}` })
+    body: JSON.stringify({ command })
   })
 
   if (!response.ok) {

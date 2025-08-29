@@ -3,27 +3,66 @@
  * 
  * This system uses odrivePropertyTree as the master source and automatically
  * generates all other data structures (commands, batch paths, mappings, etc.)
+ * Now uses dynamic path resolution instead of hardcoded mappings.
  */
 
 import { generateOdrivePropertyTree } from './odrivePropertyTree'
 import { convertKvToTorqueConstant } from './valueHelpers'
+import { 
+  ODrivePathResolver, 
+  ODrivePathConfig, 
+  setPathResolverConfig,
+  isPropertySupported,
+  getCompatiblePath
+} from './odrivePathResolver'
 
 class ODriveUnifiedRegistry {
-  constructor(firmwareVersion = "0.5.6") {
+  constructor(firmwareVersion = "0.5.6", deviceName = "odrv0", defaultAxis = 0) {
     this.firmwareVersion = firmwareVersion
+    this.deviceName = deviceName  
+    this.defaultAxis = defaultAxis
+    this.pathResolver = new ODrivePathResolver(new ODrivePathConfig(firmwareVersion, deviceName, defaultAxis))
+    
+    // Initialize property tree and derived data structures
     this.propertyTree = generateOdrivePropertyTree(firmwareVersion)
     this.configCategories = this._generateConfigCategories()
     this.batchPaths = this._generateBatchPaths()
     this.propertyMappings = this._generatePropertyMappings()
     this.commandGenerators = this._generateCommandGenerators()
-    this.commands = this._generateCommands() // Add this line
+    this.commands = this._generateCommands()
 
     console.log('ODrive Unified Registry initialized:', {
       firmwareVersion: this.firmwareVersion,
+      deviceName: this.deviceName,
+      defaultAxis: this.defaultAxis,
       categories: Object.keys(this.configCategories),
       totalParams: Object.values(this.configCategories).reduce((sum, params) => sum + params.length, 0),
       batchPathsCount: this.batchPaths.length,
-      commandsCount: Object.values(this.commands).reduce((sum, cmds) => sum + cmds.length, 0) // Add this
+      commandsCount: Object.values(this.commands).reduce((sum, cmds) => sum + cmds.length, 0)
+    })
+  }
+
+  /**
+   * Update registry for new firmware version/device configuration  
+   */
+  updateConfiguration(firmwareVersion, deviceName = "odrv0", defaultAxis = 0) {
+    this.firmwareVersion = firmwareVersion
+    this.deviceName = deviceName
+    this.defaultAxis = defaultAxis
+    this.pathResolver = new ODrivePathResolver(new ODrivePathConfig(firmwareVersion, deviceName, defaultAxis))
+    
+    // Regenerate all derived structures
+    this.propertyTree = generateOdrivePropertyTree(firmwareVersion)
+    this.configCategories = this._generateConfigCategories()
+    this.batchPaths = this._generateBatchPaths()
+    this.propertyMappings = this._generatePropertyMappings() 
+    this.commandGenerators = this._generateCommandGenerators()
+    this.commands = this._generateCommands()
+    
+    console.log('ODrive Unified Registry updated:', {
+      firmwareVersion: this.firmwareVersion,
+      deviceName: this.deviceName,
+      defaultAxis: this.defaultAxis
     })
   }
 
@@ -31,14 +70,15 @@ class ODriveUnifiedRegistry {
     const categories = { power: [], motor: [], encoder: [], control: [], interface: [] }
 
     this._traversePropertyTree((path, property) => {
-      if (property.writable) {
+      if (property.writable && isPropertySupported(path)) {
         const category = this._inferCategory(path)
         if (category) {
+          const compatiblePath = getCompatiblePath(path)
           const param = {
-            path,
+            path: compatiblePath,
             property,
-            odriveCommand: this._pathToODriveCommand(path),
-            configKey: this._pathToConfigKey(path),
+            odriveCommand: this.pathResolver.resolveToApiPath(compatiblePath).replace(`${this.deviceName}.`, ''),
+            configKey: this._pathToConfigKey(compatiblePath),
             name: property.name,
             description: property.description,
             type: property.type,
@@ -61,10 +101,10 @@ class ODriveUnifiedRegistry {
     const paths = []
 
     this._traversePropertyTree((path, property) => {
-      if (property.writable && this._isConfigParameter(path)) {
-        const odriveCommand = this._pathToODriveCommand(path)
-        const fullPath = `device.${odriveCommand}`
-        paths.push(fullPath)
+      if (property.writable && this._isConfigParameter(path) && isPropertySupported(path)) {
+        const compatiblePath = getCompatiblePath(path)
+        const propertyPath = this.pathResolver.resolveToPropertyPath(compatiblePath)
+        paths.push(propertyPath)
       }
     })
 
@@ -114,7 +154,7 @@ class ODriveUnifiedRegistry {
     const generators = {}
 
     Object.entries(this.configCategories).forEach(([category, params]) => {
-      generators[category] = (config, axisNumber = 0) => {
+      generators[category] = (config, axisNumber = this.defaultAxis) => {
         const commands = []
         
         // Remove axisNumber from config to avoid treating it as a parameter
@@ -138,10 +178,9 @@ class ODriveUnifiedRegistry {
               commandValue = 1000000
             }
 
-            // SIMPLE FIX: Just replace axis0 with selected axis in ALL commands
-            let odriveCommand = param.odriveCommand.replace(/axis0/g, `axis${axisNumber}`)
-            
-            commands.push(`odrv0.${odriveCommand} = ${commandValue}`)
+            // Use path resolver to generate dynamic command instead of hardcoded axis replacement
+            const command = this.pathResolver.generateCommand(param.path, commandValue, axisNumber)
+            commands.push(command)
           }
         })
         
@@ -166,29 +205,32 @@ class ODriveUnifiedRegistry {
 
     // Generate read commands for all properties (both readable and writable)
     this._traversePropertyTree((path, property) => {
-      const category = this._inferCommandCategory(path, property)
-      if (category && commands[category]) {  // Add safety check here
-        const odriveCommand = this._pathToODriveCommand(path)
+      if (isPropertySupported(path)) {
+        const compatiblePath = getCompatiblePath(path)
+        const category = this._inferCommandCategory(compatiblePath, property)
+        if (category && commands[category]) {
+          const apiPath = this.pathResolver.resolveToApiPath(compatiblePath)
 
-        // Read command
-        commands[category].push({
-          name: `Get ${property.name}`,
-          command: `odrv0.${odriveCommand}`,
-          description: `Read ${property.description}`
-        })
-
-        // Write command for writable properties
-        if (property.writable) {
-          let exampleValue = this._getExampleValue(property)
+          // Read command
           commands[category].push({
-            name: `Set ${property.name}`,
-            command: `odrv0.${odriveCommand} = ${exampleValue}`,
-            description: `Set ${property.description}`
+            name: `Get ${property.name}`,
+            command: apiPath,
+            description: `Read ${property.description}`
           })
+
+          // Write command for writable properties
+          if (property.writable) {
+            let exampleValue = this._getExampleValue(property)
+            commands[category].push({
+              name: `Set ${property.name}`,
+              command: `${apiPath} = ${exampleValue}`,
+              description: `Set ${property.description}`
+            })
+          }
+        } else if (category) {
+          // Debug: log unmapped categories
+          console.warn(`Unmapped command category: ${category} for path: ${compatiblePath}`)
         }
-      } else if (category) {
-        // Debug: log unmapped categories
-        console.warn(`Unmapped command category: ${category} for path: ${path}`)
       }
     })
 
@@ -302,24 +344,35 @@ class ODriveUnifiedRegistry {
   }
 
   _addSpecialCommands(commands) {
+    const deviceName = this.deviceName
+    
     // Add system commands that don't map directly to properties
     commands.system.push(
-      { name: "Reboot Device", command: "odrv0.reboot()", description: "Reboot the ODrive device" },
-      { name: "Save Configuration", command: "odrv0.save_configuration()", description: "Save current configuration to non-volatile memory" },
-      { name: "Erase Configuration", command: "odrv0.erase_configuration()", description: "Erase configuration and restore factory defaults" },
-      { name: "Clear Errors", command: "odrv0.clear_errors()", description: "Clear all error flags on the device" }
+      { name: "Reboot Device", command: `${deviceName}.reboot()`, description: "Reboot the ODrive device" },
+      { name: "Save Configuration", command: `${deviceName}.save_configuration()`, description: "Save current configuration to non-volatile memory" },
+      { name: "Erase Configuration", command: `${deviceName}.erase_configuration()`, description: "Erase configuration and restore factory defaults" },
+      { name: "Clear Errors", command: `${deviceName}.clear_errors()`, description: "Clear all error flags on the device" }
     )
 
-    // Add calibration state commands
-    commands.calibration.push(
-      { name: "Set Axis State - Idle", command: "odrv0.axis0.requested_state = 1", description: "Set axis to idle state" },
-      { name: "Set Axis State - Full Calibration", command: "odrv0.axis0.requested_state = 3", description: "Start full calibration sequence" },
-      { name: "Set Axis State - Motor Calibration", command: "odrv0.axis0.requested_state = 4", description: "Start motor calibration only" },
-      { name: "Set Axis State - Encoder Index Search", command: "odrv0.axis0.requested_state = 6", description: "Search for encoder index pulse" },
-      { name: "Set Axis State - Encoder Offset Calibration", command: "odrv0.axis0.requested_state = 7", description: "Calibrate encoder offset" },
-      { name: "Set Axis State - Closed Loop Control", command: "odrv0.axis0.requested_state = 8", description: "Enter closed loop control mode" },
-      { name: "Set Axis State - Encoder Dir Find", command: "odrv0.axis0.requested_state = 10", description: "Start encoder direction finding" }
-    )
+    // Add calibration state commands for default axis
+    const defaultAxisCommands = [
+      { state: 1, name: "Idle", description: "Set axis to idle state" },
+      { state: 3, name: "Full Calibration", description: "Start full calibration sequence" },
+      { state: 4, name: "Motor Calibration", description: "Start motor calibration only" },
+      { state: 6, name: "Encoder Index Search", description: "Search for encoder index pulse" },
+      { state: 7, name: "Encoder Offset Calibration", description: "Calibrate encoder offset" },
+      { state: 8, name: "Closed Loop Control", description: "Enter closed loop control mode" },
+      { state: 10, name: "Encoder Dir Find", description: "Start encoder direction finding" }
+    ]
+    
+    defaultAxisCommands.forEach(({ state, name, description }) => {
+      const command = this.pathResolver.generateCommand('requested_state', state, this.defaultAxis)
+      commands.calibration.push({
+        name: `Set Axis State - ${name}`,
+        command,
+        description
+      })
+    })
   }
 
   _generatePropertyCategories() {
@@ -432,139 +485,7 @@ class ODriveUnifiedRegistry {
     return null
   }
 
-  _pathToODriveCommand(path) {
-    const specialMappings = {
-      // System properties - map directly to device root
-      'system.hw_version_major': 'hw_version_major',
-      'system.hw_version_minor': 'hw_version_minor',
-      'system.hw_version_variant': 'hw_version_variant',
-      'system.fw_version_major': 'fw_version_major',
-      'system.fw_version_minor': 'fw_version_minor',
-      'system.fw_version_revision': 'fw_version_revision',
-      'system.fw_version_unreleased': 'fw_version_unreleased',
-      'system.serial_number': 'serial_number',
-      'system.user_config_loaded': 'user_config_loaded',
-      'system.vbus_voltage': 'vbus_voltage',
-      'system.ibus': 'ibus',
-      'system.test_property': 'test_property',
-      'system.error': 'error',
-      'system.brake_resistor_armed': 'brake_resistor_armed',
-      'system.brake_resistor_saturated': 'brake_resistor_saturated',
-      'system.brake_resistor_current': 'brake_resistor_current',
-      'system.misconfigured': 'misconfigured',
-      'system.otp_valid': 'otp_valid',
-
-      // Config properties that should be at device root
-      'config.error_gpio_pin': 'config.error_gpio_pin',
-      'config.dc_bus_overvoltage_trip_level': 'config.dc_bus_overvoltage_trip_level',
-      'config.dc_bus_undervoltage_trip_level': 'config.dc_bus_undervoltage_trip_level',
-      'config.enable_brake_resistor': 'config.enable_brake_resistor',
-      'config.brake_resistance': 'config.brake_resistance',
-      'config.max_regen_current': 'config.max_regen_current',
-      'config.dc_max_positive_current': 'config.dc_max_positive_current',
-      'config.dc_max_negative_current': 'config.dc_max_negative_current',
-      'config.enable_uart_a': 'config.enable_uart_a',
-      'config.uart_a_baudrate': 'config.uart_a_baudrate',
-      'config.enable_uart_b': 'config.enable_uart_b',
-      'config.uart_b_baudrate': 'config.uart_b_baudrate',
-      'config.enable_uart_c': 'config.enable_uart_c',
-      'config.uart_c_baudrate': 'config.uart_c_baudrate',
-      'config.uart0_protocol': 'config.uart0_protocol',
-      'config.uart1_protocol': 'config.uart1_protocol',
-      'config.uart2_protocol': 'config.uart2_protocol',
-      'config.usb_cdc_protocol': 'config.usb_cdc_protocol',
-      'config.enable_can_a': 'config.enable_can_a',
-      'config.enable_i2c_a': 'config.enable_i2c_a',
-      'config.enable_dc_bus_overvoltage_ramp': 'config.enable_dc_bus_overvoltage_ramp',
-      'config.dc_bus_overvoltage_ramp_start': 'config.dc_bus_overvoltage_ramp_start',
-      'config.dc_bus_overvoltage_ramp_end': 'config.dc_bus_overvoltage_ramp_end',
-
-      // CAN properties
-      'can.config.baud_rate': 'can.config.baud_rate',
-      'can.config.protocol': 'can.config.protocol',
-      'can.error': 'can.error',
-
-      // System stats properties - map to system_stats
-      'system_stats.uptime': 'system_stats.uptime',
-      'system_stats.min_heap_space': 'system_stats.min_heap_space',
-      'system_stats.max_stack_usage_axis': 'system_stats.max_stack_usage_axis',
-      'system_stats.max_stack_usage_usb': 'system_stats.max_stack_usage_usb',
-      'system_stats.max_stack_usage_uart': 'system_stats.max_stack_usage_uart',
-      'system_stats.max_stack_usage_can': 'system_stats.max_stack_usage_can',
-      'system_stats.max_stack_usage_startup': 'system_stats.max_stack_usage_startup',
-      'system_stats.max_stack_usage_analog': 'system_stats.max_stack_usage_analog',
-
-      // Axis properties
-      'axis0.requested_state': 'axis0.requested_state',
-      'axis0.motor.config.phase_inductance': 'axis0.motor.config.phase_inductance',
-      'axis0.motor.config.phase_resistance': 'axis0.motor.config.phase_resistance',
-      'axis0.motor.config.torque_constant': 'axis0.motor.config.torque_constant',
-      'axis0.motor.config.pre_calibrated': 'axis0.motor.config.pre_calibrated',
-      'axis0.motor.config.motor_type': 'axis0.motor.config.motor_type',
-      'axis0.motor.config.pole_pairs': 'axis0.motor.config.pole_pairs',
-      'axis0.motor.config.current_lim': 'axis0.motor.config.current_lim',
-      'axis0.motor.config.torque_lim': 'axis0.motor.config.torque_lim',
-      'axis0.encoder.config.pre_calibrated': 'axis0.encoder.config.pre_calibrated',
-      'axis0.encoder.config.mode': 'axis0.encoder.config.mode',
-      'axis0.encoder.config.cpr': 'axis0.encoder.config.cpr',
-      'axis0.encoder.config.enable_phase_interpolation': 'axis0.encoder.config.enable_phase_interpolation',
-      'axis0.encoder.config.ignore_illegal_hall_state': 'axis0.encoder.config.ignore_illegal_hall_state',
-      'axis0.encoder.config.hall_polarity': 'axis0.encoder.config.hall_polarity',
-      'axis0.controller.config.enable_overspeed_error': 'axis0.controller.config.enable_overspeed_error',
-      'axis0.controller.config.spinout_electrical_power_threshold': 'axis0.controller.config.spinout_electrical_power_threshold',
-      'axis0.controller.config.spinout_mechanical_power_threshold': 'axis0.controller.config.spinout_mechanical_power_threshold',
-      'axis0.controller.config.anticogging.calib_pos_threshold': 'axis0.controller.config.anticogging.calib_pos_threshold',
-      'axis0.controller.config.anticogging.calib_vel_threshold': 'axis0.controller.config.anticogging.calib_vel_threshold',
-      'axis0.config.can.node_id': 'axis0.config.can.node_id',
-      'axis0.config.can.is_extended': 'axis0.config.can.is_extended',
-      'axis0.config.can.heartbeat_rate_ms': 'axis0.config.can.heartbeat_rate_ms',
-      'axis0.config.can.encoder_error_rate_ms': 'axis0.config.can.encoder_error_rate_ms',
-      'axis0.config.can.controller_error_rate_ms': 'axis0.config.can.controller_error_rate_ms',
-      'axis0.config.can.motor_error_rate_ms': 'axis0.config.can.motor_error_rate_ms',
-      'axis0.config.can.sensorless_error_rate_ms': 'axis0.config.can.sensorless_error_rate_ms',
-      'axis0.motor.fet_thermistor.config.temp_limit_lower': 'axis0.motor.fet_thermistor.config.temp_limit_lower',
-      'axis0.motor.fet_thermistor.config.temp_limit_upper': 'axis0.motor.fet_thermistor.config.temp_limit_upper',
-      'axis0.config.calibration_lockin.current': 'axis0.config.calibration_lockin.current',
-      'axis0.config.calibration_lockin.ramp_time': 'axis0.config.calibration_lockin.ramp_time',
-      'axis0.config.calibration_lockin.ramp_distance': 'axis0.config.calibration_lockin.ramp_distance',
-      'axis0.config.calibration_lockin.accel': 'axis0.config.calibration_lockin.accel',
-      'axis0.config.calibration_lockin.vel': 'axis0.config.calibration_lockin.vel',
-    }
-
-    // Check for exact match first
-    if (specialMappings[path]) {
-      return specialMappings[path]
-    }
-
-    // Handle system properties that start with 'system.'
-    if (path.startsWith('system.')) {
-      const systemProp = path.replace('system.', '')
-      return systemProp // Map directly to device root (no axis0 prefix)
-    }
-
-    // Handle config properties
-    if (path.startsWith('config.')) {
-      return path // Keep as-is for device root config
-    }
-
-    // Handle CAN properties
-    if (path.startsWith('can.')) {
-      return path // Keep as-is for device root CAN
-    }
-
-    // Handle system_stats properties
-    if (path.startsWith('system_stats.')) {
-      return path // Keep as-is for device root system_stats
-    }
-
-    // Handle axis properties (already prefixed)
-    if (path.startsWith('axis0.') || path.startsWith('axis1.')) {
-      return path
-    }
-
-    // Default case - prefix with axis0 for motor/encoder/controller properties
-    return `axis0.${path}`
-  }
+  // REMOVED: _pathToODriveCommand - Now using dynamic path resolver instead
 
   _pathToConfigKey(path) {
     const parts = path.split('.')
@@ -780,15 +701,16 @@ class ODriveUnifiedRegistry {
 }
 
 
-const createRegistryForVersion = (firmwareVersion) => new ODriveUnifiedRegistry(firmwareVersion)
+const createRegistryForVersion = (firmwareVersion, deviceName = "odrv0", defaultAxis = 0) => 
+  new ODriveUnifiedRegistry(firmwareVersion, deviceName, defaultAxis)
 
 // --- ADD START: version-aware active registry and setter ---
-const registryV56 = new ODriveUnifiedRegistry("0.5.6")
-const registryV611 = new ODriveUnifiedRegistry("0.6.11") // instantiate 0.6.11 registry (extend property tree if needed)
+const registryV56 = new ODriveUnifiedRegistry("0.5.6", "odrv0", 0)
+const registryV611 = new ODriveUnifiedRegistry("0.6.11", "odrv0", 0)
 
 let activeRegistry = registryV56
 
-export const setActiveOdriveFirmwareVersion = (fw) => {
+export const setActiveOdriveFirmwareVersion = (fw, deviceName = "odrv0", defaultAxis = 0) => {
   // Accept string like "0.6.10" or object { fw_version_major, fw_version_minor }
   let major = null
   let minor = null
@@ -804,12 +726,23 @@ export const setActiveOdriveFirmwareVersion = (fw) => {
     minor = fw.fw_version_minor ?? fw.minor ?? null
   }
 
-  if (major === 0 && typeof minor === 'number' && minor >= 6) {
-    activeRegistry = registryV611
-  } else {
-    activeRegistry = registryV56
+  // Determine which base registry to use
+  let targetRegistry = (major === 0 && typeof minor === 'number' && minor >= 6) ? registryV611 : registryV56
+  
+  // If device name or axis changed, update the registry configuration
+  if (targetRegistry.deviceName !== deviceName || targetRegistry.defaultAxis !== defaultAxis) {
+    targetRegistry.updateConfiguration(targetRegistry.firmwareVersion, deviceName, defaultAxis)
   }
+  
+  // Set global path resolver configuration
+  setPathResolverConfig(targetRegistry.firmwareVersion, deviceName, defaultAxis)
+  
+  activeRegistry = targetRegistry
+  
+  console.log(`Switched to ODrive registry: ${targetRegistry.firmwareVersion} (device: ${deviceName}, axis: ${defaultAxis})`)
 }
+
+export const getCurrentRegistry = () => activeRegistry
 // --- ADD END ---
 
 // Replace direct references to odriveRegistry with activeRegistry so callers get version-aware data

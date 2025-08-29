@@ -1,4 +1,5 @@
-import { useState, useCallback,} from 'react'
+import { useState, useCallback } from 'react'
+import { resolveToPropertyPath } from '../../utils/odrivePathResolver'
 
 export const usePropertyRefresh = (odrivePropertyTree, collectAllProperties, isConnected) => {
   const [refreshingProperties, setRefreshingProperties] = useState(new Set())
@@ -23,18 +24,26 @@ export const usePropertyRefresh = (odrivePropertyTree, collectAllProperties, isC
     // Set all as refreshing
     setRefreshingProperties(new Set(allPaths))
 
-    // Convert display paths to device paths for batch request
+    // Convert display paths to device paths for batch request using dynamic path resolver
     const devicePaths = allPaths.map(displayPath => {
-      if (displayPath.startsWith('system.')) {
-        const systemProp = displayPath.replace('system.', '')
-        if (['dc_bus_overvoltage_trip_level', 'dc_bus_undervoltage_trip_level', 'dc_max_positive_current', 
-             'dc_max_negative_current', 'enable_brake_resistor', 'brake_resistance'].includes(systemProp)) {
-          return `config.${systemProp}`
-        } else {
-          return systemProp
+      try {
+        // Use path resolver to convert logical paths to property paths
+        const propertyPath = resolveToPropertyPath(displayPath)
+        return propertyPath.replace('device.', '') // Remove device. prefix for backend API
+      } catch (error) {
+        console.warn(`Failed to resolve path ${displayPath}, using fallback:`, error)
+        // Fallback to legacy hardcoded logic for compatibility
+        if (displayPath.startsWith('system.')) {
+          const systemProp = displayPath.replace('system.', '')
+          if (['dc_bus_overvoltage_trip_level', 'dc_bus_undervoltage_trip_level', 'dc_max_positive_current', 
+               'dc_max_negative_current', 'enable_brake_resistor', 'brake_resistance'].includes(systemProp)) {
+            return `config.${systemProp}`
+          } else {
+            return systemProp
+          }
         }
+        return displayPath
       }
-      return displayPath
     })
 
     try {
@@ -126,22 +135,29 @@ export const usePropertyRefresh = (odrivePropertyTree, collectAllProperties, isC
 
   }, [collectAllProperties, odrivePropertyTree, isConnected])
 
-  // Refresh a single property (keep existing single-property logic for individual refreshes)
+  // Refresh a single property using dynamic path resolution
   const refreshProperty = async (displayPath) => {
     if (!isConnected) return
     
     setRefreshingProperties(prev => new Set([...prev, displayPath]))
     
     try {
-      // Build device path
+      // Use dynamic path resolver instead of hardcoded logic
       let devicePath = displayPath
-      if (displayPath.startsWith('system.')) {
-        const systemProp = displayPath.replace('system.', '')
-        if (['dc_bus_overvoltage_trip_level', 'dc_bus_undervoltage_trip_level', 'dc_max_positive_current', 
-             'dc_max_negative_current', 'enable_brake_resistor', 'brake_resistance'].includes(systemProp)) {
-          devicePath = `config.${systemProp}`
-        } else {
-          devicePath = systemProp
+      try {
+        const propertyPath = resolveToPropertyPath(displayPath)
+        devicePath = propertyPath.replace('device.', '') // Remove device. prefix for backend API
+      } catch (error) {
+        console.warn(`Failed to resolve single property path ${displayPath}, using fallback:`, error)
+        // Fallback to legacy logic for compatibility
+        if (displayPath.startsWith('system.')) {
+          const systemProp = displayPath.replace('system.', '')
+          if (['dc_bus_overvoltage_trip_level', 'dc_bus_undervoltage_trip_level', 'dc_max_positive_current', 
+               'dc_max_negative_current', 'enable_brake_resistor', 'brake_resistance'].includes(systemProp)) {
+            devicePath = `config.${systemProp}`
+          } else {
+            devicePath = systemProp
+          }
         }
       }
       

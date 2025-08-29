@@ -55,14 +55,17 @@ const InspectorTab = memo(() => {
     // Prefer system fields if present
     const sys = odriveState.system || odriveState
     if (sys && (sys.fw_version_major != null || typeof sys.firmware_version === 'string')) {
+      const deviceName = "odrv0" // TODO: Make this configurable if multiple devices supported
+      const defaultAxis = selectedAxis // Use currently selected axis as default
+      
       if (sys.fw_version_major != null) {
         setActiveOdriveFirmwareVersion({
           fw_version_major: sys.fw_version_major,
           fw_version_minor: sys.fw_version_minor,
           fw_version_revision: sys.fw_version_revision,
-        })
+        }, deviceName, defaultAxis)
       } else {
-        setActiveOdriveFirmwareVersion(sys.firmware_version) // e.g. "0.6.10"
+        setActiveOdriveFirmwareVersion(sys.firmware_version, deviceName, defaultAxis) // e.g. "0.6.10"
       }
     }
   }, [
@@ -70,6 +73,7 @@ const InspectorTab = memo(() => {
     odriveState?.system?.fw_version_major,
     odriveState?.system?.fw_version_minor,
     odriveState?.system?.fw_version_revision,
+    selectedAxis, // React to axis changes
   ])
 
   // Compute firmware label for UI
