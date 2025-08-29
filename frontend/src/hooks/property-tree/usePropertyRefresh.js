@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { resolveToPropertyPath, isPropertySupported } from '../../utils/odrivePathResolver'
+import { makeApiRequest } from '../../utils/apiResponseHandler'
 
 export const usePropertyRefresh = (odrivePropertyTree, collectAllProperties, isConnected) => {
   const [refreshingProperties, setRefreshingProperties] = useState(new Set())
@@ -8,9 +9,8 @@ export const usePropertyRefresh = (odrivePropertyTree, collectAllProperties, isC
   const refreshAllProperties = useCallback(async () => {
     if (!isConnected) return
 
-    const allPaths = []
-    
     // Collect all property paths from the tree recursively
+    const allPaths = []
     Object.entries(odrivePropertyTree).forEach(([sectionName, section]) => {
       const sectionProperties = collectAllProperties(section, sectionName)
       allPaths.push(...sectionProperties.map(p => p.path))
@@ -21,13 +21,12 @@ export const usePropertyRefresh = (odrivePropertyTree, collectAllProperties, isC
       return
     }
 
-    // Filter out properties that are known to be unsupported in the current firmware version
+    // Filter out unsupported properties
     const supportedPaths = allPaths.filter(path => {
       try {
         return isPropertySupported ? isPropertySupported(path) : true
-      } catch (error) {
-        // If property support check fails, include the path anyway
-        return true
+      } catch {
+        return true // Include if check fails
       }
     })
     
@@ -36,127 +35,75 @@ export const usePropertyRefresh = (odrivePropertyTree, collectAllProperties, isC
       console.log(`Filtered out ${unsupportedCount} unsupported properties for current firmware version`)
     }
 
-    // Set supported paths as refreshing
     setRefreshingProperties(new Set(supportedPaths))
 
-    // Convert display paths to device paths for batch request using dynamic path resolver
+    // Convert display paths to device paths for batch request
     const devicePaths = []
-    const resolvedPaths = []
     const failedPaths = []
 
     supportedPaths.forEach(displayPath => {
       try {
-        // Use path resolver to convert logical paths to property paths
         const propertyPath = resolveToPropertyPath(displayPath)
-        const cleanPath = propertyPath.replace('device.', '') // Remove device. prefix for backend API
-        resolvedPaths.push(`${displayPath} → ${cleanPath}`)
-        devicePaths.push(cleanPath)
+        const devicePath = propertyPath.replace('device.', '')
+        devicePaths.push(devicePath)
       } catch (error) {
-        console.warn(`❌ Failed to resolve path ${displayPath}, using fallback:`, error)
+        console.warn(`Path resolution failed for ${displayPath}:`, error.message)
         failedPaths.push(displayPath)
-        // Fallback to legacy hardcoded logic for compatibility
-        if (displayPath.startsWith('system.')) {
-          const systemProp = displayPath.replace('system.', '')
-          if (['dc_bus_overvoltage_trip_level', 'dc_bus_undervoltage_trip_level', 'dc_max_positive_current', 
-               'dc_max_negative_current', 'enable_brake_resistor', 'brake_resistance'].includes(systemProp)) {
-            devicePaths.push(`config.${systemProp}`)
-          } else {
-            devicePaths.push(systemProp)
-          }
-        } else {
-          devicePaths.push(displayPath)
-        }
       }
     })
-
-    // Consolidated logging for path resolution
-    if (resolvedPaths.length > 0) {
-      console.debug(`✓ Resolved ${resolvedPaths.length} paths:`, resolvedPaths)
-    }
 
     if (failedPaths.length > 0) {
       console.warn(`❌ Failed to resolve ${failedPaths.length} paths:`, failedPaths)
     }
 
     try {
-      // Make single batch request for all properties
       console.log(`Refreshing ${supportedPaths.length} supported properties in batch request...`)
       
-      const response = await fetch('/api/odrive/property', {
+      // Use unified API request handler
+      const data = await makeApiRequest('/api/odrive/property', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paths: devicePaths })
+        body: { paths: devicePaths }
+      }, { 
+        handleInfinity: true, 
+        expectJson: true 
       })
 
-      if (response.ok) {
-        const responseText = await response.text()
+      if (data && data.results) {
+        const newPropertyValues = {}
+        const successfulPaths = []
+        const nullPaths = []
         
-        try {
-          // Handle potential Infinity values in batch response
-          const cleanedResponse = responseText.replace(/:Infinity/g, ':"Infinity"').replace(/:-Infinity/g, ':"-Infinity"')
-          const data = JSON.parse(cleanedResponse)
+        // Map device paths back to display paths and handle values
+        supportedPaths.forEach((displayPath, index) => {
+          const devicePath = devicePaths[index]
+          const value = data.results[devicePath]
           
-          if (data.results) {
-            const newPropertyValues = {}
-            const successfulPaths = []
-            const nullPaths = []
-            
-            // Map device paths back to display paths and handle values
-            supportedPaths.forEach((displayPath, index) => {
-              const devicePath = devicePaths[index]
-              let value = data.results[devicePath]
-              
-              // Convert string Infinity back to actual Infinity
-              if (value === "Infinity") {
-                value = Infinity
-              } else if (value === "-Infinity") {
-                value = -Infinity
-              }
-              
-              // Collect paths for consolidated logging
-              if (value === null || value === undefined) {
-                nullPaths.push(`${displayPath} → ${devicePath}`)
-              } else {
-                successfulPaths.push(displayPath)
-              }
-              
-              newPropertyValues[displayPath] = value
-            })
-            
-            // Consolidated logging
-            if (successfulPaths.length > 0) {
-              console.log(`✅ Successfully loaded ${successfulPaths.length} properties:`, successfulPaths)
-            }
-            
-            if (nullPaths.length > 0) {
-              // Log the full list instead of truncating
-              console.debug(`🔍 Null/undefined values found for ${nullPaths.length} properties:`, nullPaths)
-            }
-            
-            setPropertyValues(newPropertyValues)
-            console.log(`Successfully loaded ${Object.keys(newPropertyValues).length} properties in batch!`)
+          // Collect paths for logging
+          if (value === null || value === undefined) {
+            nullPaths.push(`${displayPath} → ${devicePath}`)
+          } else {
+            successfulPaths.push(displayPath)
           }
-        } catch (cleanupError) {
-          console.error('Failed to parse batch response:', cleanupError)
-          // Fallback: set all to parse error
-          const fallbackValues = {}
-          supportedPaths.forEach(path => {
-            fallbackValues[path] = 'Parse Error'
-          })
-          setPropertyValues(fallbackValues)
-        }
-      } else {
-        console.error('Batch property request failed:', response.status)
-        // Fallback: set all to error
-        const errorValues = {}
-        supportedPaths.forEach(path => {
-          errorValues[path] = 'Request Failed'
+          
+          newPropertyValues[displayPath] = value
         })
-        setPropertyValues(errorValues)
+        
+        // Consolidated logging
+        if (successfulPaths.length > 0) {
+          console.log(`✅ Successfully loaded ${successfulPaths.length} properties`)
+        }
+        
+        if (nullPaths.length > 0) {
+          console.debug(`🔍 Null/undefined values found for ${nullPaths.length} properties:`, nullPaths)
+        }
+        
+        setPropertyValues(newPropertyValues)
+        console.log(`Successfully loaded ${Object.keys(newPropertyValues).length} properties in batch!`)
       }
+      
     } catch (error) {
       console.error('Batch property refresh failed:', error)
-      // Fallback: set all to error
+      // Set error fallback values
       const errorValues = {}
       supportedPaths.forEach(path => {
         errorValues[path] = 'Network Error'
@@ -164,104 +111,40 @@ export const usePropertyRefresh = (odrivePropertyTree, collectAllProperties, isC
       setPropertyValues(errorValues)
     }
 
-    // Clear refreshing state
     setRefreshingProperties(new Set())
-
-    // Log completion status
-    setTimeout(() => {
-      setPropertyValues(currentValues => {
-        const nullProperties = supportedPaths.filter(path => {
-          const value = currentValues[path]
-          return value === null || value === undefined
-        })
-        
-        if (nullProperties.length > 0) {
-          console.log(`🔍 Null/undefined values found for ${nullProperties.length} properties:`, nullProperties.slice(0, 10))
-          if (nullProperties.length > 10) {
-            console.log(`... and ${nullProperties.length - 10} more properties`)
-          }
-        } else {
-          console.log('All properties loaded successfully in batch! 🚀')
-        }
-        
-        return currentValues
-      })
-    }, 100)
 
   }, [collectAllProperties, odrivePropertyTree, isConnected])
 
-  // Refresh a single property using dynamic path resolution
+  // Refresh a single property using unified API handler
   const refreshProperty = async (displayPath) => {
     if (!isConnected) return
     
     setRefreshingProperties(prev => new Set([...prev, displayPath]))
     
     try {
-      // Use dynamic path resolver instead of hardcoded logic
+      // Use dynamic path resolver
       let devicePath = displayPath
       try {
         const propertyPath = resolveToPropertyPath(displayPath)
-        devicePath = propertyPath.replace('device.', '') // Remove device. prefix for backend API
+        devicePath = propertyPath.replace('device.', '')
       } catch (error) {
         console.warn(`Failed to resolve single property path ${displayPath}, using fallback:`, error)
-        // Fallback to legacy logic for compatibility
-        if (displayPath.startsWith('system.')) {
-          const systemProp = displayPath.replace('system.', '')
-          if (['dc_bus_overvoltage_trip_level', 'dc_bus_undervoltage_trip_level', 'dc_max_positive_current', 
-               'dc_max_negative_current', 'enable_brake_resistor', 'brake_resistance'].includes(systemProp)) {
-            devicePath = `config.${systemProp}`
-          } else {
-            devicePath = systemProp
-          }
-        }
       }
       
-      const response = await fetch('/api/odrive/property', {
+      // Use unified API request handler
+      const data = await makeApiRequest('/api/odrive/property', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ path: devicePath })
+        body: { path: devicePath }
+      }, { 
+        handleInfinity: true, 
+        expectJson: true 
       })
       
-      if (response.ok) {
-        const responseText = await response.text()
-        
-        try {
-          // Try to parse as normal JSON first
-          const data = JSON.parse(responseText)
-          setPropertyValues(prev => ({
-            ...prev,
-            [displayPath]: data.value
-          }))
-        // eslint-disable-next-line no-unused-vars
-        } catch (jsonError) {
-          // If JSON parsing fails, try to handle Infinity values
-          try {
-            // Replace Infinity with a string representation for parsing
-            const cleanedResponse = responseText.replace(/:Infinity/g, ':"Infinity"').replace(/:-Infinity/g, ':"-Infinity"')
-            const data = JSON.parse(cleanedResponse)
-            
-            // Convert string back to actual Infinity for proper handling
-            let value = data.value
-            if (value === "Infinity") {
-              value = Infinity
-            } else if (value === "-Infinity") {
-              value = -Infinity
-            }
-            
-            setPropertyValues(prev => ({
-              ...prev,
-              [displayPath]: value
-            }))
-          } catch (cleanupError) {
-            console.error(`Cleaned response also failed to parse:`, cleanupError)
-            // Set a fallback value
-            setPropertyValues(prev => ({
-              ...prev,
-              [displayPath]: 'Parse Error'
-            }))
-          }
-        }
-      }
+      setPropertyValues(prev => ({
+        ...prev,
+        [displayPath]: data.value
+      }))
+      
     } catch (error) {
       console.error('Failed to refresh property:', error)
     } finally {

@@ -6,92 +6,81 @@
 import { generateConfigCommands } from './configCommandGenerator'
 import { setConnectedDevice } from '../store/slices/deviceSlice'
 import { getPathResolver } from './odrivePathResolver'
+import { makeApiRequest } from './apiResponseHandler'
+
+/**
+ * Action to endpoint mapping - eliminates hardcoded endpoint logic
+ */
+const ACTION_CONFIG = {
+  erase: { endpoint: '/api/odrive/erase_config', method: 'POST' },
+  apply: { endpoint: '/api/odrive/apply_config', method: 'POST' },
+  calibrate: { endpoint: '/api/odrive/calibrate', method: 'POST' },
+  calibrate_motor: { endpoint: '/api/odrive/calibrate', method: 'POST' },
+  calibrate_encoder: { endpoint: '/api/odrive/calibrate', method: 'POST' },
+  save: { endpoint: '/api/odrive/save_config', method: 'POST' },
+  clear_errors: { endpoint: '/api/odrive/command', method: 'POST' }
+}
+
+/**
+ * Build payload for configuration action
+ * @param {string} action - The action to execute  
+ * @param {Object} options - Action options
+ * @returns {Object} Payload for the action
+ */
+const buildActionPayload = (action, options = {}) => {
+  switch (action) {
+    case 'apply':
+      return { commands: options.commands || [] }
+    case 'calibrate':
+      return { type: options.calibrationType || 'full' }
+    case 'calibrate_motor':
+      return { type: 'motor' }
+    case 'calibrate_encoder':
+      return { type: 'encoder_sequence' }
+    case 'clear_errors': {
+      // Use dynamic device name instead of hardcoded "odrv0"
+      const pathResolver = getPathResolver()
+      return { command: `${pathResolver.config.deviceName}.clear_errors()` }
+    }
+    default:
+      return {}
+  }
+}
 
 /**
  * Execute configuration action via API
- * @param {string} action - The action to execute ('erase', 'apply', 'calibrate', 'save', 'clear_errors')
+ * @param {string} action - The action to execute
  * @param {Object} options - Action options
- * @param {Array<string>} options.commands - Array of commands (for apply action)
- * @param {string} options.calibrationType - Type of calibration ('full', 'motor', 'encoder_sequence')
  * @returns {Promise<Object>} Response from the API
  */
 export const executeConfigAction = async (action, options = {}) => {
-  let endpoint = ''
-  let payload = {}
-
-  switch (action) {
-    case 'erase':
-      endpoint = '/api/odrive/erase_config'
-      break
-    case 'apply':
-      endpoint = '/api/odrive/apply_config'
-      payload = { commands: options.commands || [] }
-      break
-    case 'calibrate':
-      endpoint = '/api/odrive/calibrate'
-      payload = { type: options.calibrationType || 'full' }
-      break
-    case 'calibrate_motor':
-      endpoint = '/api/odrive/calibrate'
-      payload = { type: 'motor' }
-      break
-    case 'calibrate_encoder':
-      endpoint = '/api/odrive/calibrate'
-      payload = { type: 'encoder_sequence' }
-      break
-    case 'save':
-      endpoint = '/api/odrive/save_config'
-      break
-    case 'clear_errors': {
-      endpoint = '/api/odrive/command'
-      // Use dynamic device name instead of hardcoded "odrv0"
-      const pathResolver = getPathResolver()
-      payload = { command: `${pathResolver.config.deviceName}.clear_errors()` }
-      break
-    }
-    default:
-      throw new Error(`Unknown action: ${action}`)
+  const actionConfig = ACTION_CONFIG[action]
+  if (!actionConfig) {
+    throw new Error(`Unknown action: ${action}`)
   }
 
-  console.log(`Executing action: ${action}`, { endpoint, payload }) // Add debugging
+  const payload = buildActionPayload(action, options)
+  
+  console.log(`Executing action: ${action}`, { endpoint: actionConfig.endpoint, payload })
 
   try {
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    })
-
-    // Get the response text first to see what we're actually receiving
-    const responseText = await response.text()
-    console.log(`Response for ${action}:`, { status: response.status, text: responseText })
-
-    if (!response.ok) {
-      let errorMessage = `${action} action failed`
-
-      try {
-        const errorData = JSON.parse(responseText)
-        errorMessage = errorData.error || errorData.message || errorMessage
-        // eslint-disable-next-line no-unused-vars
-      } catch (parseError) {
-        // If JSON parsing fails, use the raw response text
-        errorMessage = responseText || errorMessage
+    const data = await makeApiRequest(
+      actionConfig.endpoint,
+      {
+        method: actionConfig.method,
+        body: payload
+      },
+      {
+        expectJson: true,
+        handleInfinity: false
       }
-
-      throw new Error(errorMessage)
-    }
-
-    // Try to parse as JSON, fallback to text if it fails
-    try {
-      return JSON.parse(responseText)
-      // eslint-disable-next-line no-unused-vars
-    } catch (parseError) {
-      return { message: responseText }
-    }
-
-  } catch (fetchError) {
-    console.error(`Fetch error for ${action}:`, fetchError)
-    throw fetchError
+    )
+    
+    return data || { message: 'Success' }
+    
+  } catch (error) {
+    console.error(`Action ${action} failed:`, error)
+    throw error
   }
 }
 
@@ -143,16 +132,17 @@ export const startCalibration = async (type = 'full') => {
  * @returns {Promise<Object>} Calibration status from the API
  */
 export const getCalibrationStatus = async (selectedAxis) => {
-  const response = await fetch(`/api/odrive/calibration_status?axis=${selectedAxis}`)
-
-  if (!response.ok) {
-    throw new Error('Failed to get calibration status')
+  try {
+    return await makeApiRequest(`/api/odrive/calibration_status?axis=${selectedAxis}`, {
+      method: 'GET'
+    }, {
+      expectJson: true,
+      handleInfinity: false
+    })
+  } catch (error) {
+    throw new Error(`Failed to get calibration status: ${error.message}`)
   }
-
-  return await response.json()
 }
-
-
 
 /**
  * Execute ODrive command
@@ -160,26 +150,25 @@ export const getCalibrationStatus = async (selectedAxis) => {
  * @returns {Promise<Object>} Response from the API
  */
 export const executeCommand = async (command) => {
-  const response = await fetch('/api/odrive/command', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ command })
-  })
-
-  if (!response.ok) {
-    const error = await response.json()
-    throw new Error(error.message || 'Command execution failed')
+  try {
+    return await makeApiRequest('/api/odrive/command', {
+      method: 'POST',
+      body: { command }
+    }, {
+      expectJson: true,
+      handleInfinity: false
+    })
+  } catch (error) {
+    throw new Error(`Command execution failed: ${error.message}`)
   }
-
-  return await response.json()
 }
 
 /**
  * Apply configuration and save to non-volatile memory
- * Backend now handles all reconnection logic, so frontend just needs to apply and save
  * @param {Object} deviceConfig - Device configuration object
  * @param {Function} toast - Toast notification function
  * @param {Function} dispatch - Redux dispatch function
+ * @param {Object} connectedDevice - Connected device info
  * @returns {Promise<void>} Resolves when both apply and save are complete
  */
 export const applyAndSaveConfiguration = async (deviceConfig, toast, dispatch, connectedDevice) => {
@@ -195,7 +184,7 @@ export const applyAndSaveConfiguration = async (deviceConfig, toast, dispatch, c
 
   await applyConfiguration(commands)
 
-  // Step 2: Save configuration (backend handles reboot and reconnection)
+  // Step 2: Save configuration
   toast({
     title: 'Saving configuration...',
     description: 'Saving to non-volatile memory. Device will reboot.',
@@ -203,9 +192,20 @@ export const applyAndSaveConfiguration = async (deviceConfig, toast, dispatch, c
     duration: 3000,
   })
 
+  await handleSaveWithReconnect(connectedDevice, dispatch, toast)
+}
+
+/**
+ * Handle save configuration with automatic reconnect
+ * @param {Object} connectedDevice - Connected device info
+ * @param {Function} dispatch - Redux dispatch function  
+ * @param {Function} toast - Toast notification function
+ * @returns {Promise<void>}
+ */
+const handleSaveWithReconnect = async (connectedDevice, dispatch, toast) => {
   try {
     await saveConfiguration()
-
+    
     toast({
       title: 'Configuration Saved',
       description: 'Configuration saved to non-volatile memory successfully.',
@@ -213,26 +213,11 @@ export const applyAndSaveConfiguration = async (deviceConfig, toast, dispatch, c
       duration: 5000,
     })
 
-    // --- NEW: Reconnect frontend to device ---
-    if (connectedDevice && dispatch) {
-      try {
-        const response = await fetch('/api/odrive/connect', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ device: connectedDevice })
-        })
-        if (response.ok) {
-          dispatch(setConnectedDevice(connectedDevice))
-        }
-      } catch (e) {
-        // Optionally show a toast or log error
-        console.warn('Auto-reconnect failed:', e)
-      }
-    }
-    // --- END NEW ---
+    // Attempt reconnect
+    await attemptReconnect(connectedDevice, dispatch)
 
   } catch (error) {
-    // Handle save errors...
+    // Handle expected disconnect during reboot
     if (error.message.includes('reboot') || error.message.includes('disconnect')) {
       toast({
         title: 'Configuration Saved',
@@ -240,24 +225,35 @@ export const applyAndSaveConfiguration = async (deviceConfig, toast, dispatch, c
         status: 'success',
         duration: 5000,
       })
-      // --- NEW: Try reconnect here as well ---
-      if (connectedDevice && dispatch) {
-        try {
-          const response = await fetch('/api/odrive/connect', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ device: connectedDevice })
-          })
-          if (response.ok) {
-            dispatch(setConnectedDevice(connectedDevice))
-          }
-        } catch (e) {
-          console.warn('Auto-reconnect failed:', e)
-        }
-      }
-      // --- END NEW ---
+      await attemptReconnect(connectedDevice, dispatch)
     } else {
       throw error
+    }
+  }
+}
+
+/**
+ * Attempt to reconnect to ODrive device
+ * @param {Object} connectedDevice - Device to reconnect to
+ * @param {Function} dispatch - Redux dispatch function
+ * @returns {Promise<void>}
+ */
+const attemptReconnect = async (connectedDevice, dispatch) => {
+  if (connectedDevice && dispatch) {
+    try {
+      const data = await makeApiRequest('/api/odrive/connect', {
+        method: 'POST',
+        body: { device: connectedDevice }
+      }, {
+        expectJson: true,
+        handleInfinity: false
+      })
+      
+      if (data) {
+        dispatch(setConnectedDevice(connectedDevice))
+      }
+    } catch (error) {
+      console.warn('Auto-reconnect failed:', error)
     }
   }
 }
@@ -270,46 +266,14 @@ export const applyAndSaveConfiguration = async (deviceConfig, toast, dispatch, c
  */
 export const saveAndRebootWithReconnect = async (toast, dispatch, connectedDevice) => {
   try {
-    let saveError = null
-    try {
-      await saveConfiguration()
-    } catch (error) {
-      // Accept "Device ... disconnected" as a normal part of reboot
-      if (
-        typeof error.message === 'string' &&
-        error.message.includes('disconnected')
-      ) {
-        saveError = error
-      } else {
-        throw error
-      }
-    }
-
-    // --- Reconnect frontend to device ---
-    if (connectedDevice && dispatch) {
-      try {
-        const response = await fetch('/api/odrive/connect', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ device: connectedDevice })
-        })
-        if (response.ok) {
-          dispatch(setConnectedDevice(connectedDevice))
-        }
-      } catch (e) {
-        console.warn('Auto-reconnect failed:', e)
-      }
-    }
+    await handleSaveWithReconnect(connectedDevice, dispatch, toast)
+    
     toast({
       title: 'Configuration Saved',
       description: 'Configuration saved and device reconnected successfully.',
       status: 'success',
       duration: 5000,
     })
-    if (saveError) {
-      // Optionally log or toast about the disconnect, but treat as success
-      console.warn('Device disconnected during save, but this is expected on reboot.')
-    }
   } catch (error) {
     toast({
       title: 'Save & Reboot Failed',
