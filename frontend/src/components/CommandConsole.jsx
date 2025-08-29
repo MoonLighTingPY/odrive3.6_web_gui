@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { useSelector } from 'react-redux'
 import { useToast } from '@chakra-ui/react'
 import { ODriveCommands } from '../utils/odriveUnifiedRegistry'
+import { generateCommand, getPathResolver } from '../utils/odrivePathResolver'
 import {
   Box, VStack, HStack, Input, Button, Text, Select, FormControl, FormLabel,
   SimpleGrid, Code, Tooltip, IconButton, Badge
@@ -210,7 +211,16 @@ const CommandConsole = ({ isConnected }) => {
           <Input
             value={commandInput}
             onChange={(e) => setCommandInput(e.target.value)}
-            placeholder={`Enter ODrive command (e.g., odrv0.axis${selectedAxis}.requested_state = 1)`}
+            placeholder={(() => {
+              try {
+                // Generate dynamic example command
+                return generateCommand('requested_state', 1, selectedAxis)
+              } catch {
+                // Fallback to basic example
+                const pathResolver = getPathResolver()
+                return `${pathResolver.config.deviceName}.axis${selectedAxis}.requested_state = 1`
+              }
+            })()}
             bg="gray.600"
             border="1px solid"
             borderColor="gray.500"

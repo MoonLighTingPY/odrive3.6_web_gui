@@ -5,6 +5,7 @@ import CalibrationModal from '../components/modals/CalibrationModal'
 import { useCalibration } from './useCalibration'
 import { saveAndRebootWithReconnect } from '../utils/configurationActions'
 import { useAxisStateGuard } from './useAxisStateGuard'
+import { generateCommand, getPathResolver } from '../utils/odrivePathResolver'
 
 // Custom hook for shared command functionality
 const useODriveCommand = () => {
@@ -96,16 +97,17 @@ const CalibrationButtonBase = ({
   const axisState = telemetry?.axis_state ?? odriveState.device?.[`axis${axisNumber}`]?.current_state ?? 0
 
   const handleCalibration = () => {
-    // Direct command execution without modal
-    const commands = {
-      'motor': `odrv0.axis${axisNumber}.requested_state = 4`,
-      'encoder_polarity': `odrv0.axis${axisNumber}.requested_state = 10`,
-      'encoder_offset': `odrv0.axis${axisNumber}.requested_state = 7`,
-      'encoder_index_search': `odrv0.axis${axisNumber}.requested_state = 6`
+    // Use dynamic command generation instead of hardcoded commands
+    const stateCommands = {
+      'motor': 4, // AXIS_STATE_MOTOR_CALIBRATION
+      'encoder_polarity': 10, // AXIS_STATE_ENCODER_DIR_FIND
+      'encoder_offset': 7, // AXIS_STATE_ENCODER_OFFSET_CALIBRATION
+      'encoder_index_search': 6 // AXIS_STATE_ENCODER_INDEX_SEARCH
     }
 
-    const command = commands[calibrationType]
-    if (command) {
+    const state = stateCommands[calibrationType]
+    if (state) {
+      const command = generateCommand('requested_state', state, axisNumber)
       sendCommand(command)
     }
   }
@@ -223,7 +225,8 @@ export const EnableMotorButton = ({ axisNumber = 0, size = "sm" }) => {
   const axisState = telemetry?.axis_state ?? odriveState.device?.[`axis${axisNumber}`]?.current_state ?? 0
 
   const handleEnableMotor = () => {
-    sendCommand(`odrv0.axis${axisNumber}.requested_state = 8`) // AXIS_STATE_CLOSED_LOOP_CONTROL
+    const command = generateCommand('requested_state', 8, axisNumber) // AXIS_STATE_CLOSED_LOOP_CONTROL
+    sendCommand(command)
   }
 
   // State checking logic
@@ -267,7 +270,8 @@ export const DisableMotorButton = ({ axisNumber = 0, size = "sm" }) => {
   const axisState = telemetry?.axis_state ?? odriveState.device?.[`axis${axisNumber}`]?.current_state ?? 0
 
   const handleDisableMotor = () => {
-    sendCommand(`odrv0.axis${axisNumber}.requested_state = 1`) // AXIS_STATE_IDLE
+    const command = generateCommand('requested_state', 1, axisNumber) // AXIS_STATE_IDLE
+    sendCommand(command)
   }
 
   // State checking logic
@@ -306,7 +310,9 @@ export const ClearErrorsButton = ({ axisNumber = 0, size = "sm" }) => {
   const currentErrors = useAxisErrors(axisNumber)
 
   const handleClearErrors = () => {
-    sendCommand('odrv0.clear_errors()')
+    const pathResolver = getPathResolver()
+    const command = `${pathResolver.config.deviceName}.clear_errors()`
+    sendCommand(command)
   }
 
   const hasAnyErrors = Object.values(currentErrors).some(error => error !== 0)

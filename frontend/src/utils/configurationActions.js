@@ -5,6 +5,7 @@
 
 import { generateConfigCommands } from './configCommandGenerator'
 import { setConnectedDevice } from '../store/slices/deviceSlice'
+import { getPathResolver } from './odrivePathResolver'
 
 /**
  * Execute configuration action via API
@@ -41,10 +42,13 @@ export const executeConfigAction = async (action, options = {}) => {
     case 'save':
       endpoint = '/api/odrive/save_config'
       break
-    case 'clear_errors':
+    case 'clear_errors': {
       endpoint = '/api/odrive/command'
-      payload = { command: 'odrv0.clear_errors()' }
+      // Use dynamic device name instead of hardcoded "odrv0"
+      const pathResolver = getPathResolver()
+      payload = { command: `${pathResolver.config.deviceName}.clear_errors()` }
       break
+    }
     default:
       throw new Error(`Unknown action: ${action}`)
   }

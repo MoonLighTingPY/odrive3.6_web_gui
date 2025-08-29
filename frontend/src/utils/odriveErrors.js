@@ -1,8 +1,29 @@
 // ODrive v0.5.6 Error Codes - Updated to match official firmware definitions
+import { resolveToApiPath } from './odrivePathResolver'
 
 const safeNumber = (value, fallback = 0) => {
   const num = Number(value)
   return isNaN(num) ? fallback : num
+}
+
+/**
+ * Generate dynamic example commands for error messages
+ * This eliminates hardcoded device/axis references
+ */
+const generateExampleCommands = (logicalPaths, axis = 0) => {
+  try {
+    return logicalPaths.map(path => {
+      // Handle commands (function calls)
+      if (path.includes('clear_errors()')) {
+        return `${resolveToApiPath('clear_errors', axis).replace('.clear_errors', '.clear_errors()')}`
+      }
+      return resolveToApiPath(path, axis)
+    })
+  } catch (error) {
+    console.warn('Failed to generate dynamic commands, using fallback:', error)
+    // Fallback to basic hardcoded commands for compatibility
+    return logicalPaths.map(path => `odrv0.axis${axis}.${path.replace(/^(axis[01]\.)?/, '')}`)
+  }
 }
 
 
@@ -302,13 +323,13 @@ const troubleshootingGuides = {
       "Check encoder mode: Hall sensors (mode 1) vs Incremental (mode 0)",
       "Recalibrate encoder after correcting CPR value"
     ],
-    commands: [
-      "odrv0.axis0.encoder.config.cpr",
-      "odrv0.axis0.motor.config.pole_pairs",
-      "odrv0.axis0.encoder.config.mode",
-      "odrv0.axis0.encoder.error",
-      "odrv0.axis0.clear_errors()"
-    ]
+    commands: generateExampleCommands([
+      "encoder.config.cpr",
+      "motor.config.pole_pairs", 
+      "encoder.config.mode",
+      "encoder.error",
+      "clear_errors()"
+    ])
   },
 
   [EncoderError.NO_RESPONSE]: {
