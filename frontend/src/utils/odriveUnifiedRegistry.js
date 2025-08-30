@@ -72,7 +72,7 @@ class ODriveUnifiedRegistry {
     this._traversePropertyTree((path, property) => {
       if (property.writable && 
           isPropertySupported(path) &&
-          !this._isMethodProperty(path)) {
+          !this._isMethodProperty(path, property)) {
         const category = this._inferCategory(path)
         if (category) {
           const compatiblePath = getCompatiblePath(path)
@@ -99,15 +99,15 @@ class ODriveUnifiedRegistry {
     return categories
   }
 
-  _isMethodProperty(path) {
+  _isMethodProperty(path, property) {
     // Filter out method endpoints that should not be read as properties
-    const methodPaths = [
-      'methods.test_function', 'methods.get_adc_voltage', 'methods.enter_dfu_mode2',
-      'methods.disable_bootloader', 'methods.identify_once', 'methods.get_interrupt_status',
-      'methods.get_dma_status', 'methods.set_gpio', 'methods.get_raw_8',
-      'methods.get_raw_32', 'methods.get_raw_256', 'methods.get_gpio_states'
-    ]
-    return methodPaths.some(methodPath => path.includes(methodPath.split('.')[1]))
+    // Check if the property is explicitly marked as a function
+    if (property && property.type === 'function') {
+      return true
+    }
+    
+    // Fallback: check path for known method patterns
+    return path.includes('methods.') || path.startsWith('methods.')
   }
 
   _generateBatchPaths() {
@@ -117,7 +117,7 @@ class ODriveUnifiedRegistry {
       if (property.writable && 
           this._isConfigParameter(path) && 
           isPropertySupported(path) &&
-          !this._isMethodProperty(path)) {
+          !this._isMethodProperty(path, property)) {
         const compatiblePath = getCompatiblePath(path)
         const propertyPath = this.pathResolver.resolveToPropertyPath(compatiblePath)
         paths.push(propertyPath)
