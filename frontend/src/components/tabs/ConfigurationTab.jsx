@@ -28,6 +28,7 @@ import {
 } from '../../utils/configBatchApi'
 import EraseConfigModal from '../modals/EraseConfigModal'
 import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
+import { resolveToPropertyPath } from '../../utils/odrivePathResolver'
 import { useAxisStateGuard } from '../../hooks/useAxisStateGuard'
 
 // Configuration steps array
@@ -277,20 +278,28 @@ const ConfigurationTab = memo(() => {
     setLoadingParams(prev => new Set([...prev, `${category}.${configKey}`]))
     
     try {
-      // Build the correct ODrive path based on category and axis
-      let odriveCommand
-      if (category === 'power' || category === 'interface') {
-        // Power and interface are global, not axis-specific
-        const param = getCategoryParameters(category).find(p => p.configKey === configKey)
-        odriveCommand = param?.odriveCommand || `config.${configKey}`
-      } else {
-        // Motor, encoder, control are axis-specific
-        const param = getCategoryParameters(category).find(p => p.configKey === configKey)
-        if (param?.odriveCommand) {
-          odriveCommand = param.odriveCommand.replace(/axis0/g, `axis${axisNumber}`)
+      // Build display path from registry and resolve dynamically to device path
+      const param = getCategoryParameters(category).find(p => p.configKey === configKey)
+      // Prefer registry-provided path if available
+      let displayPath = param?.path
+      // Fallbacks if path absent: axis-aware for axis categories, otherwise system config
+      if (!displayPath) {
+        if (category === 'motor' || category === 'encoder' || category === 'control') {
+          displayPath = `axis${axisNumber}.${category}.config.${configKey}`
         } else {
-          odriveCommand = `axis${axisNumber}.${category}.config.${configKey}`
+          displayPath = `system.config.${configKey}`
         }
+      }
+
+      // Resolve to firmware-specific device path
+      let odriveCommand
+      try {
+        odriveCommand = resolveToPropertyPath(displayPath).replace('device.', '')
+      } catch {
+        // Last-resort legacy fallback
+        odriveCommand = (category === 'motor' || category === 'encoder' || category === 'control')
+          ? `axis${axisNumber}.${category}.config.${configKey}`
+          : `config.${configKey}`
       }
       
       const response = await fetch('/api/odrive/property', {
@@ -303,8 +312,8 @@ const ConfigurationTab = memo(() => {
         const data = await response.json()
         let value = data.value
 
-        // Handle special conversions
-        if (configKey === 'motor_kv' && odriveCommand.includes('torque_constant')) {
+        // Special conversion if registry maps motor_kv -> torque_constant on 0.6.x
+        if (configKey === 'motor_kv' && typeof odriveCommand === 'string' && odriveCommand.includes('torque_constant')) {
           value = convertTorqueConstantToKv(value)
         }
 

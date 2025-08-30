@@ -163,7 +163,6 @@ const InterfaceConfigStep = ({
                         onChange={(e) => handleConfigChange('can_baudrate', parseInt(e.target.value))}
                         onRefresh={() => handleRefresh('can_baudrate')}
                         isLoading={isLoading('can_baudrate')}
-                        parameterPath="can.config.baud_rate"
                         size="sm"
                         placeholder="Select Baudrate"
                       />
@@ -228,7 +227,6 @@ const InterfaceConfigStep = ({
                               onChange={(e) => handleConfigChange('uart_a_baudrate', parseInt(e.target.value))}
                               onRefresh={() => handleRefresh('uart_a_baudrate')}
                               isLoading={isLoading('uart_a_baudrate')}
-                              parameterPath="config.uart_a_baudrate"
                               configKey="uart_a_baudrate"
                               size="sm"
                             />
@@ -241,7 +239,6 @@ const InterfaceConfigStep = ({
                               onChange={(e) => handleConfigChange('uart0_protocol', parseInt(e.target.value))}
                               onRefresh={() => handleRefresh('uart0_protocol')}
                               isLoading={isLoading('uart0_protocol')}
-                              parameterPath="config.uart0_protocol"
                               size="sm"
                             >
                             </ParameterSelect>
@@ -279,7 +276,6 @@ const InterfaceConfigStep = ({
                               onChange={(e) => handleConfigChange('uart_b_baudrate', parseInt(e.target.value))}
                               onRefresh={() => handleRefresh('uart_b_baudrate')}
                               isLoading={isLoading('uart_b_baudrate')}
-                              parameterPath="config.uart_b_baudrate"
                               configKey="uart_b_baudrate"
                               size="sm"
                             />
@@ -292,7 +288,6 @@ const InterfaceConfigStep = ({
                               onChange={(e) => handleConfigChange('uart1_protocol', parseInt(e.target.value))}
                               onRefresh={() => handleRefresh('uart1_protocol')}
                               isLoading={isLoading('uart1_protocol')}
-                              parameterPath="config.uart1_protocol"
                               size="sm"
                             >
                             </ParameterSelect>

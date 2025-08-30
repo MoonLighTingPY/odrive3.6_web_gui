@@ -129,7 +129,6 @@ const MotorConfigStep = ({
                   onChange={(e) => handleConfigChange('motor_type', parseInt(e.target.value))}
                   onRefresh={() => handleReadParameter('motor_type')}
                   isLoading={isLoading('motor_type')}
-                  parameterPath={`axis${selectedAxis}.motor.config.motor_type`}
                   configKey="motor_type"
                   size="sm"
                 >
