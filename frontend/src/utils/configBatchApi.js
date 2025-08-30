@@ -5,8 +5,21 @@
  * for all batch loading paths and categorization logic.
  */
 
-import { odriveRegistry, getBatchPaths } from './odriveUnifiedRegistry'
+import { getRegistry, getBatchPaths } from './odriveUnifiedRegistry'
 import { convertTorqueConstantToKv } from './valueHelpers'
+
+// Helper function to get firmware version from Redux store
+const getFirmwareVersion = () => {
+  try {
+    // Try to get from Redux store if available
+    const state = window.__REDUX_STORE__?.getState?.();
+    return state?.device?.fw_is_0_6 || false;
+  } catch (e) {
+    // Fallback to 0.5.x if Redux not available
+    console.warn('Could not access firmware version from Redux, defaulting to 0.5.x');
+    return false;
+  }
+}
 
 export const loadConfigurationBatch = async (configPaths) => {
   try {
@@ -38,13 +51,19 @@ export const loadConfigurationBatch = async (configPaths) => {
       throw new Error('Invalid response structure: missing results field');
     }
 
+    // Get firmware version
+    const fw_is_0_6 = getFirmwareVersion();
+    
+    // Get the appropriate registry based on firmware version
+    const registry = getRegistry(fw_is_0_6);
+
     // Clean the data to handle null/undefined values with reasonable defaults
     const cleanedResults = {};
     Object.entries(data.results).forEach(([path, value]) => {
       if (value === null || value === undefined) {
         // Use parameter metadata to set appropriate defaults
-        const param = odriveRegistry.findParameter(path)
-        if (param) {
+        const param = registry.findParameter(path)
+        if (param && param.property) {
           if (param.property.type === 'boolean') {
             cleanedResults[path] = false
           } else if (param.property.type === 'number') {
@@ -86,15 +105,19 @@ export const loadConfigurationBatch = async (configPaths) => {
 };
 
 /**
- * Load ALL ODrive v0.5.6 configuration parameters in a single batch request
- * Now uses unified registry for automatic path generation
+ * Load ALL ODrive configuration parameters in a single batch request
+ * Now uses unified registry for automatic path generation and firmware awareness
  * @returns {Promise<Object>} All configuration parameters organized by category
  */
 export const loadAllConfigurationBatch = async () => {
-  // Get all batch paths from unified registry
-  const allPaths = getBatchPaths()
+  // Get firmware version
+  const fw_is_0_6 = getFirmwareVersion();
 
-  console.log(`Loading ${allPaths.length} configuration parameters from unified registry...`)
+  // Get all batch paths from unified registry (firmware-aware)
+  const allPaths = getBatchPaths(fw_is_0_6)
+  const registry = getRegistry(fw_is_0_6)
+
+  console.log(`Loading ${allPaths.length} configuration parameters from ${fw_is_0_6 ? '0.6.x' : '0.5.x'} unified registry...`)
 
   // Load all parameters in one batch request
   const allResults = await loadConfigurationBatch(allPaths);
@@ -121,7 +144,7 @@ export const loadAllConfigurationBatch = async () => {
       const propertyPath = path.replace(/^device\./, '')
 
       // Find the parameter in the registry
-      const param = odriveRegistry.findParameter(propertyPath)
+      const param = registry.findParameter(propertyPath)
 
       if (param && param.category) {
         let processedValue = value
@@ -157,24 +180,34 @@ export const loadAllConfigurationBatch = async () => {
 /**
  * Get batch paths for a specific category
  * @param {string} category - Configuration category
+ * @param {boolean} fw_is_0_6 - Whether to use 0.6.x firmware paths
  * @returns {Array<string>} Array of batch paths for the category
  */
-export const getCategoryBatchPaths = (category) => {
-  const categoryParams = odriveRegistry.getCategoryParameters(category)
+export const getCategoryBatchPaths = (category, fw_is_0_6 = null) => {
+  if (fw_is_0_6 === null) {
+    fw_is_0_6 = getFirmwareVersion();
+  }
+  const registry = getRegistry(fw_is_0_6)
+  const categoryParams = registry.getCategoryParameters(category)
   return categoryParams.map(param => `device.${param.odriveCommand}`)
 }
 
 /**
  * Load configuration for a specific category only
  * @param {string} category - Configuration category to load
+ * @param {boolean} fw_is_0_6 - Whether to use 0.6.x firmware paths
  * @returns {Promise<Object>} Configuration for the specified category
  */
-export const loadCategoryConfigurationBatch = async (category) => {
-  const categoryPaths = getCategoryBatchPaths(category)
+export const loadCategoryConfigurationBatch = async (category, fw_is_0_6 = null) => {
+  if (fw_is_0_6 === null) {
+    fw_is_0_6 = getFirmwareVersion();
+  }
+  const categoryPaths = getCategoryBatchPaths(category, fw_is_0_6)
   const results = await loadConfigurationBatch(categoryPaths)
 
+  const registry = getRegistry(fw_is_0_6)
+  const categoryParams = registry.getCategoryParameters(category)
   const categoryConfig = {}
-  const categoryParams = odriveRegistry.getCategoryParameters(category)
 
   categoryParams.forEach(param => {
     const path = `device.${param.odriveCommand}`
