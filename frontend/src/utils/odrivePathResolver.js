@@ -141,18 +141,33 @@ export class ODrivePathResolver {
   /**
    * Check if property is supported in current firmware version
    */
-  isPropertySupported(logicalPath) {
+    isPropertySupported(logicalPath) {
     if (this.config.isV06x) {
-      // All properties supported in 0.6.x
-      return true
+      // In 0.6.x, filter out 0.5.6-only properties
+      const v056OnlyPatterns = [
+        'encoder.config.mode', // Changed to load_mapper in 0.6.x
+        'encoder.config.cpr',  // Changed to load_mapper.config.cpr in 0.6.x
+        // Add more 0.5.6-only patterns as needed
+      ]
+      
+      return !v056OnlyPatterns.some(pattern => logicalPath.includes(pattern))
     } else {
-      // Check if it's a 0.6.x-only property
+      // In 0.5.6, filter out 0.6.x-only properties more comprehensively
       const v06xOnlyPatterns = [
         'load_mapper', 'commutation_mapper', 'pos_vel_mapper',
         'harmonic_compensation', 'thermal_current_limiter',
         'motor_thermistor_current_limiter', 'sensorless_estimator',
         'detailed_disarm_reason', 'brake_resistor0',
-        'init_pos', 'init_vel', 'init_torque'
+        'init_pos', 'init_vel', 'init_torque',
+        'inverter.', // 0.6.x has axis-level inverter objects
+        'methods.', // 0.6.x methods section
+        'gpio3_analog_mapping', 'gpio4_analog_mapping',
+        'effective_baudrate', 'autobaud_enabled',
+        'user_config_', 'inverter0', // Device-level 0.6.x properties
+        'observed_encoder_scale_factor',
+        'I_bus_hard_', 'I_bus_soft_', 'P_bus_soft_', // 0.6.x bus limits
+        'loss_power', // 0.6.x motor property
+        'enter_dfu_mode2', 'identify_once' // 0.6.x methods
       ]
       
       return !v06xOnlyPatterns.some(pattern => logicalPath.includes(pattern))

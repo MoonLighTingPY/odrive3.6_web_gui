@@ -58,26 +58,28 @@ class ODriveUnifiedRegistry {
   }
 
   // Add this method to ODriveUnifiedRegistry class
-validatePropertyTree() {
-  const issues = []
-  
-  this._traversePropertyTree((path, property) => {
-    if (!property) {
-      issues.push(`Missing property definition: ${path}`)
-    } else if (!property.type) {
-      issues.push(`Missing property type: ${path}`)
+  validatePropertyTree() {
+    const issues = []
+    
+    this._traversePropertyTree((path, property) => {
+      if (!property) {
+        issues.push(`Missing property definition: ${path}`)
+      } else if (!property.type) {
+        issues.push(`Missing property type: ${path}`)
+      } else if (property.type === 'object' && !property.properties) {
+        issues.push(`Object property missing properties: ${path}`)
+      }
+    })
+    
+    if (issues.length > 0) {
+      console.warn('Property tree validation issues:', issues.slice(0, 10))
+      if (issues.length > 10) {
+        console.warn(`... and ${issues.length - 10} more issues`)
+      }
     }
-  })
-  
-  if (issues.length > 0) {
-    console.warn('Property tree validation issues:', issues.slice(0, 10))
-    if (issues.length > 10) {
-      console.warn(`... and ${issues.length - 10} more issues`)
-    }
+    
+    return issues
   }
-  
-  return issues
-}
 
   _generateConfigCategories() {
     const categories = { power: [], motor: [], encoder: [], control: [], interface: [] }
@@ -122,14 +124,14 @@ validatePropertyTree() {
     return categories
   }
 
-  _isMethodProperty(path, property) {
+    _isMethodProperty(path, property) {
     // Filter out method endpoints that should not be read as properties
     // Check if the property is explicitly marked as a function
     if (property && property.type === 'function') {
       return true
     }
     
-    // Extensive method pattern filtering
+    // Extensive method pattern filtering - updated for 0.6.x
     const methodPatterns = [
       'methods.',
       '.test_function',
@@ -146,54 +148,66 @@ validatePropertyTree() {
       '.save_configuration',
       '.erase_configuration',
       '.reboot',
-      '.clear_errors'
+      '.clear_errors',
+      // 0.6.x specific methods
+      '.enter_dfu_mode2',
+      'system.identify',  // This is a method in 0.6.x
+      'system.reboot_required' // This might be method-like in some versions
     ]
     
     return methodPatterns.some(pattern => path.includes(pattern))
   }
 
-  _generateBatchPaths() {
-  const paths = []
+    _generateBatchPaths() {
+    const paths = []
 
-  this._traversePropertyTree((path, property) => {
-    // Skip methods - they can't be read as properties
-    if (this._isMethodProperty(path, property)) {
-      console.debug(`Skipping method property: ${path}`)
-      return
-    }
-
-    // Check if property is supported in current firmware version
-    if (!this.pathResolver.isPropertySupported(path)) {
-      console.debug(`Skipping unsupported property for ${this.firmwareVersion}: ${path}`)
-      return
-    }
-
-    try {
-      // Use path resolver to convert logical path to device path
-      const devicePath = this.pathResolver.resolve(path)
-      
-      // Additional validation: don't include known problematic paths
-      const problematicPatterns = [
-        'methods.',
-        '.test_function',
-        '.get_adc_voltage'
-      ]
-      
-      if (problematicPatterns.some(pattern => path.includes(pattern))) {
-        console.debug(`Skipping problematic path pattern: ${path}`)
+    this._traversePropertyTree((path, property) => {
+      // Skip methods - they can't be read as properties
+      if (this._isMethodProperty(path, property)) {
+        console.debug(`Skipping method property: ${path}`)
         return
       }
-      
-      paths.push(devicePath)
-    } catch (error) {
-      // Skip properties that can't be resolved for this firmware version
-      console.debug(`Skipping property ${path} for firmware ${this.firmwareVersion}:`, error.message)
-    }
-  })
 
-  console.log(`Generated ${paths.length} batch paths for ${this.firmwareVersion}`)
-  return paths
-}
+      // Check if property is supported in current firmware version
+      if (!this.pathResolver.isPropertySupported(path)) {
+        console.debug(`Skipping unsupported property for ${this.firmwareVersion}: ${path}`)
+        return
+      }
+
+      // Skip properties without proper definitions
+      if (!property || !property.type) {
+        console.debug(`Skipping property without type definition: ${path}`)
+        return
+      }
+
+      try {
+        // Use path resolver to convert logical path to device path
+        const devicePath = this.pathResolver.resolve(path)
+        
+        // Additional validation: don't include known problematic paths
+        const problematicPatterns = [
+          'methods.',
+          '.test_function',
+          '.get_adc_voltage',
+          '.enter_dfu_mode2',
+          '.identify_once'
+        ]
+        
+        if (problematicPatterns.some(pattern => path.includes(pattern))) {
+          console.debug(`Skipping problematic path pattern: ${path}`)
+          return
+        }
+      
+        paths.push(devicePath)
+      } catch (error) {
+        // Skip properties that can't be resolved for this firmware version
+        console.debug(`Skipping property ${path} for firmware ${this.firmwareVersion}:`, error.message)
+      }
+    })
+
+    console.log(`Generated ${paths.length} batch paths for ${this.firmwareVersion}`)
+    return paths
+  }
 
   _traversePropertyTree(callback, node = this.propertyTree, basePath = '') {
     if (!node) return

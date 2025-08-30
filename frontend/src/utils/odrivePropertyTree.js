@@ -124,6 +124,7 @@ export const generateOdrivePropertyTree = (firmwareVersion = "0.5.6") => {
           effective_baudrate: { type: 'number', unit: 'bps', description: 'Effective CAN baudrate' }
         }),
         config: {
+          type: 'object',
           properties: {
             baud_rate: { type: 'number', unit: 'bps', description: 'CAN baud rate' },
             protocol: { type: 'number', min: 0, max: 3, description: 'CAN protocol' },
@@ -305,6 +306,7 @@ function generateMotorProperties(isV06x) {
       motor_thermistor: {
         properties: {
           config: {
+            type: 'object',
             properties: {
               enabled: { type: 'boolean', description: 'Motor thermistor enabled' },
               gpio_pin: { type: 'number', min: 0, max: 16, description: 'Motor thermistor GPIO pin' },
@@ -449,19 +451,20 @@ function generateSensorlessRampProperties() {
 function generateLoadMapperProperties() {
   return {
     properties: {
-      is_ready: { type: 'boolean', description: 'Load mapper ready' },
-      error: { type: 'number', description: 'Load mapper error' },
-      shadow_count: { type: 'number', description: 'Load mapper shadow count' },
-      pos_estimate: { type: 'number', unit: 'turns', description: 'Load mapper position estimate' },
-      vel_estimate: { type: 'number', unit: 'turns/s', description: 'Load mapper velocity estimate' }
+      is_ready: { type: 'boolean', description: 'Load mapper is ready' },
+      error: { type: 'number', description: 'Load mapper error flags' },
+      shadow_count: { type: 'number', description: 'Shadow count' },
+      pos_estimate: { type: 'number', unit: 'turns', description: 'Position estimate' },
+      vel_estimate: { type: 'number', unit: 'turns/s', description: 'Velocity estimate' }
     },
     children: {
       config: {
+        type: 'object',
         properties: {
-          use_index: { type: 'boolean', description: 'Load mapper use index' },
-          index_offset: { type: 'number', unit: 'turns', description: 'Load mapper index offset' },
-          cpr: { type: 'number', min: 1, max: 100000, description: 'Load mapper counts per revolution' },
-          pre_calibrated: { type: 'boolean', description: 'Load mapper pre-calibrated' }
+          use_index: { type: 'boolean', description: 'Use index pulse' },
+          index_offset: { type: 'number', unit: 'turns', description: 'Index offset' },
+          cpr: { type: 'number', min: 1, max: 100000, description: 'Counts per revolution' },
+          pre_calibrated: { type: 'boolean', description: 'Load encoder pre-calibrated' }
         }
       }
     }
@@ -471,16 +474,17 @@ function generateLoadMapperProperties() {
 function generateCommutationMapperProperties() {
   return {
     properties: {
-      is_ready: { type: 'boolean', description: 'Commutation mapper ready' },
-      error: { type: 'number', description: 'Commutation mapper error' },
+      is_ready: { type: 'boolean', description: 'Commutation mapper is ready' },
+      error: { type: 'number', description: 'Commutation mapper error flags' },
       phase: { type: 'number', unit: 'rad', description: 'Commutation phase' },
       phase_vel: { type: 'number', unit: 'rad/s', description: 'Commutation phase velocity' }
     },
     children: {
       config: {
+        type: 'object',
         properties: {
-          pole_pairs: { type: 'number', min: 1, max: 50, description: 'Commutation pole pairs' },
-          use_index_electrical_offset: { type: 'boolean', description: 'Use index electrical offset' },
+          pole_pairs: { type: 'number', min: 1, max: 50, description: 'Motor pole pairs' },
+          use_index_electrical_offset: { type: 'boolean', description: 'Use index for electrical offset' },
           electrical_offset: { type: 'number', unit: 'rad', description: 'Electrical offset' },
           direction: { type: 'number', min: -1, max: 1, description: 'Commutation direction' }
         }
@@ -492,18 +496,19 @@ function generateCommutationMapperProperties() {
 function generatePosVelMapperProperties() {
   return {
     properties: {
-      is_ready: { type: 'boolean', description: 'Position velocity mapper ready' },
-      error: { type: 'number', description: 'Position velocity mapper error' },
-      pos_estimate: { type: 'number', unit: 'turns', description: 'Position velocity mapper position estimate' },
-      vel_estimate: { type: 'number', unit: 'turns/s', description: 'Position velocity mapper velocity estimate' }
+      is_ready: { type: 'boolean', description: 'Position velocity mapper is ready' },
+      error: { type: 'number', description: 'Position velocity mapper error flags' },
+      pos_estimate: { type: 'number', unit: 'turns', description: 'Position estimate' },
+      vel_estimate: { type: 'number', unit: 'turns/s', description: 'Velocity estimate' }
     },
     children: {
       config: {
+        type: 'object',
         properties: {
           use_circular_pos: { type: 'boolean', description: 'Use circular position' },
           circular_setpoints: { type: 'boolean', description: 'Use circular setpoints' },
-          range: { type: 'number', unit: 'turns', description: 'Position velocity mapper range' },
-          bandwidth: { type: 'number', unit: 'Hz', description: 'Position velocity mapper bandwidth' }
+          range: { type: 'number', unit: 'turns', description: 'Position range' },
+          bandwidth: { type: 'number', unit: 'Hz', description: 'Velocity estimation bandwidth' }
         }
       }
     }
@@ -520,11 +525,12 @@ function generateHarmonicCompensationProperties() {
     },
     children: {
       config: {
+        type: 'object',
         properties: {
           enable: { type: 'boolean', description: 'Enable harmonic compensation' },
-          calib_vel: { type: 'number', unit: 'turns/s', description: 'Harmonic calibration velocity' },
-          calib_turns: { type: 'number', unit: 'turns', description: 'Harmonic calibration turns' },
-          calib_settling_delay: { type: 'number', unit: 's', description: 'Harmonic calibration settling delay' }
+          calib_vel: { type: 'number', unit: 'turns/s', description: 'Calibration velocity' },
+          calib_turns: { type: 'number', unit: 'turns', description: 'Calibration turns' },
+          calib_settling_delay: { type: 'number', unit: 's', description: 'Calibration settling delay' }
         }
       }
     }
@@ -538,9 +544,10 @@ function generateThermalCurrentLimiterProperties() {
     },
     children: {
       config: {
+        type: 'object',
         properties: {
-          temp_limit_lower: { type: 'number', unit: '°C', description: 'Thermal lower temperature limit' },
-          temp_limit_upper: { type: 'number', unit: '°C', description: 'Thermal upper temperature limit' }
+          temp_limit_lower: { type: 'number', unit: '°C', description: 'Lower temperature limit' },
+          temp_limit_upper: { type: 'number', unit: '°C', description: 'Upper temperature limit' }
         }
       }
     }
@@ -555,10 +562,11 @@ function generateMotorThermistorCurrentLimiterProperties() {
     },
     children: {
       config: {
+        type: 'object',
         properties: {
-          enabled: { type: 'boolean', description: 'Motor thermistor current limiter enabled' },
-          temp_limit_lower: { type: 'number', unit: '°C', description: 'Motor thermistor lower limit' },
-          temp_limit_upper: { type: 'number', unit: '°C', description: 'Motor thermistor upper limit' },
+          enabled: { type: 'boolean', description: 'Enable motor thermistor current limiting' },
+          temp_limit_lower: { type: 'number', unit: '°C', description: 'Lower temperature limit' },
+          temp_limit_upper: { type: 'number', unit: '°C', description: 'Upper temperature limit' },
           poly_coefficient_0: { type: 'number', description: 'Polynomial coefficient 0' },
           poly_coefficient_1: { type: 'number', description: 'Polynomial coefficient 1' },
           poly_coefficient_2: { type: 'number', description: 'Polynomial coefficient 2' },
@@ -572,18 +580,19 @@ function generateMotorThermistorCurrentLimiterProperties() {
 function generateSensorlessEstimatorProperties() {
   return {
     properties: {
-      error: { type: 'number', description: 'Sensorless estimator error' },
-      phase: { type: 'number', unit: 'rad', description: 'Sensorless phase estimate' },
+      error: { type: 'number', description: 'Sensorless estimator error flags' },
+      phase: { type: 'number', unit: 'rad', description: 'Estimated phase' },
       pll_pos: { type: 'number', unit: 'rad', description: 'PLL position' },
-      phase_vel: { type: 'number', unit: 'rad/s', description: 'Sensorless phase velocity' },
-      vel_estimate: { type: 'number', unit: 'turns/s', description: 'Sensorless velocity estimate' }
+      phase_vel: { type: 'number', unit: 'rad/s', description: 'Phase velocity' },
+      vel_estimate: { type: 'number', unit: 'turns/s', description: 'Velocity estimate' }
     },
     children: {
       config: {
+        type: 'object',
         properties: {
-          observer_gain: { type: 'number', description: 'Sensorless observer gain' },
-          pll_bandwidth: { type: 'number', unit: 'Hz', description: 'Sensorless PLL bandwidth' },
-          pm_flux_linkage: { type: 'number', unit: 'Wb', description: 'PM flux linkage' }
+          observer_gain: { type: 'number', description: 'Observer gain' },
+          pll_bandwidth: { type: 'number', unit: 'Hz', description: 'PLL bandwidth' },
+          pm_flux_linkage: { type: 'number', description: 'Permanent magnet flux linkage' }
         }
       }
     }
@@ -594,7 +603,7 @@ function generateSensorlessEstimatorProperties() {
 function generateInverterProperties() {
   return {
     properties: {
-      is_ready: { type: 'boolean', description: 'Inverter ready status' },
+      is_ready: { type: 'boolean', description: 'Inverter is ready' },
       error: { type: 'number', description: 'Inverter error flags' },
       armed_state: { type: 'number', description: 'Inverter armed state' },
       temperature: { type: 'number', unit: '°C', description: 'Inverter temperature' },
