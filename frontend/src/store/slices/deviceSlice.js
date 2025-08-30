@@ -1,6 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit'
 
-// Update initialState - remove complex reconnection states
 const initialState = {
   availableDevices: [],
   connectedDevice: null,
@@ -10,12 +9,12 @@ const initialState = {
   odriveState: {},
   lastUpdateTime: 0,
   telemetryEnabled: true,
-  telemetryRate: 10, // Hz
-
-  // Added: firmware info
+  telemetryRate: 10,
+  
+  // Firmware info - simplified
   fw_version_string: null,
   fw_version_major: null,
-  fw_version_minor: null,
+  fw_version_minor: null, 
   fw_version_revision: null,
   fw_is_0_6: false,
   fw_is_0_5: false,
@@ -33,60 +32,33 @@ const deviceSlice = createSlice({
     },
     setConnectedDevice: (state, action) => {
       if (action.payload) {
-        const dev = action.payload
-        state.connectedDevice = dev
+        const device = action.payload
+        state.connectedDevice = device
         state.isConnected = true
         state.connectionError = null
 
-        // Parse firmware version (try device.fw_version first, fallback to odriveState fields)
-        const parseVersion = (s) => {
-          if (!s || typeof s !== 'string') return null
-          const m = s.match(/(\d+)\.(\d+)(?:\.(\d+))?/)
-          if (!m) return null
-          return { major: parseInt(m[1], 10), minor: parseInt(m[2], 10), revision: m[3] ? parseInt(m[3], 10) : 0 }
-        }
-
-        let parsed = parseVersion(dev.fw_version || dev.fw_version_string || dev.firmware_version)
-
-        if (!parsed && state.odriveState) {
-          // try fields exposed by the property tree
-          const major = state.odriveState.fw_version_major ?? state.odriveState.device?.fw_version_major
-          const minor = state.odriveState.fw_version_minor ?? state.odriveState.device?.fw_version_minor
-          const rev = state.odriveState.fw_version_revision ?? state.odriveState.device?.fw_version_revision
-          if (typeof major === 'number' && typeof minor === 'number') {
-            parsed = { major, minor, revision: rev || 0 }
+        // Simple firmware version parsing
+        const versionStr = device.fw_version || device.fw_version_string || device.firmware_version
+        
+        if (versionStr && typeof versionStr === 'string') {
+          state.fw_version_string = versionStr
+          
+          // Parse version components
+          const match = versionStr.match(/(\d+)\.(\d+)\.?(\d+)?/)
+          if (match) {
+            state.fw_version_major = parseInt(match[1])
+            state.fw_version_minor = parseInt(match[2]) 
+            state.fw_version_revision = match[3] ? parseInt(match[3]) : 0
+            
+            // Set boolean flags
+            state.fw_is_0_6 = state.fw_version_major === 0 && state.fw_version_minor === 6
+            state.fw_is_0_5 = state.fw_version_major === 0 && state.fw_version_minor === 5
           }
         }
-
-        if (parsed) {
-          state.fw_version_string = dev.fw_version || `${parsed.major}.${parsed.minor}.${parsed.revision}`
-          state.fw_version_major = parsed.major
-          state.fw_version_minor = parsed.minor
-          state.fw_version_revision = parsed.revision
-          state.fw_is_0_6 = parsed.major === 0 && parsed.minor === 6
-          state.fw_is_0_5 = parsed.major === 0 && parsed.minor === 5
-        } else {
-          state.fw_version_string = null
-          state.fw_version_major = null
-          state.fw_version_minor = null
-          state.fw_version_revision = null
-          state.fw_is_0_6 = false
-          state.fw_is_0_5 = false
-        }
+        
       } else {
-        // Clear all device state on disconnect
-        state.connectedDevice = null
-        state.isConnected = false
-        state.odriveState = {}
-        state.connectionError = null
-
-        // Clear firmware info
-        state.fw_version_string = null
-        state.fw_version_major = null
-        state.fw_version_minor = null
-        state.fw_version_revision = null
-        state.fw_is_0_6 = false
-        state.fw_is_0_5 = false
+        // Clear everything on disconnect
+        Object.assign(state, initialState)
       }
     },
     setConnectionError: (state, action) => {
@@ -94,13 +66,9 @@ const deviceSlice = createSlice({
       state.isConnected = false
       state.connectedDevice = null
     },
-    // New: Single action to update all connection status from backend
     setConnectionStatus: (state, action) => {
       const { connected } = action.payload
-
       state.isConnected = connected
-
-      // Clear error if we're connected
       if (connected) {
         state.connectionError = null
       } else {
@@ -108,7 +76,6 @@ const deviceSlice = createSlice({
       }
     },
     updateOdriveState: (state, action) => {
-      // Completely replace the state to prevent partial updates causing flicker
       state.odriveState = action.payload
       state.lastUpdateTime = Date.now()
     },
@@ -117,7 +84,6 @@ const deviceSlice = createSlice({
       const pathParts = path.split('.')
       let current = state.odriveState
 
-      // Navigate to the parent object
       for (let i = 0; i < pathParts.length - 1; i++) {
         if (!current[pathParts[i]]) {
           current[pathParts[i]] = {}
@@ -125,7 +91,6 @@ const deviceSlice = createSlice({
         current = current[pathParts[i]]
       }
 
-      // Set the final property
       current[pathParts[pathParts.length - 1]] = value
       state.lastUpdateTime = Date.now()
     },

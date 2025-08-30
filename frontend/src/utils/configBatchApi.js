@@ -5,8 +5,37 @@
  * for all batch loading paths and categorization logic.
  */
 
-import { odriveRegistry, getBatchPaths } from './odriveUnifiedRegistry'
+import { getRegistry, getBatchPaths } from './odriveUnifiedRegistry'
 import { convertTorqueConstantToKv } from './valueHelpers'
+import { store } from '../store'  // Changed to named import
+
+// Simple, reliable firmware version detection
+const getFirmwareVersion = () => {
+  try {
+    // 1. Check manual override first (for testing)
+    if (typeof window !== 'undefined' && window.__FW_IS_0_6 !== undefined) {
+      return !!window.__FW_IS_0_6
+    }
+
+    // 2. Check Redux store for firmware info
+    const state = store?.getState()?.device
+    if (state?.fw_is_0_6 === true) return true
+    if (state?.fw_is_0_5 === true) return false
+
+    // 3. Parse version string if available
+    const versionStr = state?.fw_version_string || state?.connectedDevice?.fw_version
+    if (typeof versionStr === 'string') {
+      return versionStr.startsWith('0.6')
+    }
+
+    // 4. Default to 0.5.x (most common case)
+    return false
+
+  } catch (err) {
+    console.warn('getFirmwareVersion error, defaulting to 0.5.x:', err)
+    return false
+  }
+}
 
 export const loadConfigurationBatch = async (configPaths) => {
   try {
@@ -27,7 +56,7 @@ export const loadConfigurationBatch = async (configPaths) => {
     if (!contentType || !contentType.includes('application/json')) {
       const responseText = await response.text();
       console.error('Non-JSON response received:', responseText);
-      throw new Error(`Expected JSON response but got: ${contentType || 'unknown'}. Response: ${responseText.substring(0, 200)}`);
+      throw new Error(`Expected JSON response but got: ${contentType || 'unknown'}`);
     }
 
     const data = await response.json();
@@ -38,31 +67,33 @@ export const loadConfigurationBatch = async (configPaths) => {
       throw new Error('Invalid response structure: missing results field');
     }
 
-    // Clean the data to handle null/undefined values with reasonable defaults
+    // Get firmware version and registry
+    const fw_is_0_6 = getFirmwareVersion();
+    const registry = getRegistry(fw_is_0_6);
+
+    console.log(`Using ${fw_is_0_6 ? '0.6.x' : '0.5.x'} registry for batch processing`);
+
+    // Clean the data with smart defaults
     const cleanedResults = {};
     Object.entries(data.results).forEach(([path, value]) => {
       if (value === null || value === undefined) {
-        // Use parameter metadata to set appropriate defaults
-        const param = odriveRegistry.findParameter(path)
-        if (param) {
+        // Try to get parameter info for smart defaults
+        const param = registry.findParameter(path.replace(/^device\./, ''));
+        
+        if (param?.property) {
+          // Use property metadata for defaults
           if (param.property.type === 'boolean') {
-            cleanedResults[path] = false
+            cleanedResults[path] = false;
           } else if (param.property.type === 'number') {
-            cleanedResults[path] = param.property.min || 0
+            cleanedResults[path] = param.property.min || 0;
           } else {
-            cleanedResults[path] = 0
+            cleanedResults[path] = 0;
           }
         } else {
-          // Fallback to old logic for unknown parameters
-          if (path.includes('enable_') || path.includes('pre_calibrated') || path.includes('use_')) {
+          // Simple fallback based on path patterns
+          if (path.includes('enable_') || path.includes('pre_calibrated')) {
             cleanedResults[path] = false;
-          } else if (path.includes('current') || path.includes('voltage') || path.includes('resistance') ||
-            path.includes('gain') || path.includes('limit') || path.includes('constant')) {
-            cleanedResults[path] = 0.0;
-          } else if (path.includes('mode') || path.includes('type') || path.includes('pairs') ||
-            path.includes('cpr') || path.includes('node_id')) {
-            cleanedResults[path] = 0;
-          } else if (path.includes('bandwidth') || path.includes('timeout') || path.includes('rate')) {
+          } else if (path.includes('bandwidth') || path.includes('rate')) {
             cleanedResults[path] = 1000;
           } else {
             cleanedResults[path] = 0;
@@ -77,29 +108,25 @@ export const loadConfigurationBatch = async (configPaths) => {
 
   } catch (error) {
     console.error('Batch configuration load failed:', error);
-
-    if (error.message.includes('JSON')) {
-      throw new Error('Backend returned invalid JSON response. Check if ODrive is connected and backend is running properly.');
-    }
     throw error;
   }
 };
 
 /**
- * Load ALL ODrive v0.5.6 configuration parameters in a single batch request
- * Now uses unified registry for automatic path generation
+ * Load ALL ODrive configuration parameters in a single batch request
  * @returns {Promise<Object>} All configuration parameters organized by category
  */
 export const loadAllConfigurationBatch = async () => {
-  // Get all batch paths from unified registry
-  const allPaths = getBatchPaths()
+  const fw_is_0_6 = getFirmwareVersion();
+  const allPaths = getBatchPaths(fw_is_0_6);
+  const registry = getRegistry(fw_is_0_6);
 
-  console.log(`Loading ${allPaths.length} configuration parameters from unified registry...`)
+  console.log(`Loading ${allPaths.length} parameters using ${fw_is_0_6 ? '0.6.x' : '0.5.x'} registry`);
 
-  // Load all parameters in one batch request
+  // Load all parameters
   const allResults = await loadConfigurationBatch(allPaths);
 
-  // Organize results by category AND axis
+  // Organize by category and axis
   const categorizedResults = {
     power: {},
     motor: { axis0: {}, axis1: {} },
@@ -108,87 +135,70 @@ export const loadAllConfigurationBatch = async () => {
     interface: {}
   };
 
-  // Use unified registry to categorize results
+  // Categorize results using registry
   Object.entries(allResults).forEach(([path, value]) => {
-    // Skip error responses
-    if (value && typeof value === 'object' && value.error) {
-      console.warn(`Error reading ${path}:`, value.error);
-      return;
-    }
-
     if (value !== undefined && value !== null) {
-      // Remove 'device.' prefix to get the property path
-      const propertyPath = path.replace(/^device\./, '')
+      const propertyPath = path.replace(/^device\./, '');
+      const param = registry.findParameter(propertyPath);
 
-      // Find the parameter in the registry
-      const param = odriveRegistry.findParameter(propertyPath)
+      if (param?.category) {
+        let processedValue = value;
 
-      if (param && param.category) {
-        let processedValue = value
-
-        // Handle special value conversions
+        // Handle special conversions
         if (param.configKey === 'motor_kv' && param.path.includes('torque_constant')) {
-          processedValue = convertTorqueConstantToKv(value)
+          processedValue = convertTorqueConstantToKv(value);
         }
 
-        // Determine axis number from path
-        const axisMatch = propertyPath.match(/axis(\d+)/)
-        const axisNumber = axisMatch ? parseInt(axisMatch[1]) : null
+        // Determine axis
+        const axisMatch = propertyPath.match(/axis(\d+)/);
+        const axisNumber = axisMatch ? parseInt(axisMatch[1]) : null;
 
-        if (param.category === 'motor' || param.category === 'encoder' || param.category === 'control') {
-          if (axisNumber !== null) {
-            if (!categorizedResults[param.category][`axis${axisNumber}`]) {
-              categorizedResults[param.category][`axis${axisNumber}`] = {}
-            }
-            categorizedResults[param.category][`axis${axisNumber}`][param.configKey] = processedValue
-          }
+        // Store in appropriate category/axis
+        if (['motor', 'encoder', 'control'].includes(param.category) && axisNumber !== null) {
+          categorizedResults[param.category][`axis${axisNumber}`][param.configKey] = processedValue;
         } else {
-          // Power and interface are global
-          categorizedResults[param.category][param.configKey] = processedValue
+          categorizedResults[param.category][param.configKey] = processedValue;
         }
       }
     }
   });
 
-  console.log('Categorized configuration:', categorizedResults)
   return categorizedResults;
 };
 
 /**
  * Get batch paths for a specific category
- * @param {string} category - Configuration category
- * @returns {Array<string>} Array of batch paths for the category
  */
-export const getCategoryBatchPaths = (category) => {
-  const categoryParams = odriveRegistry.getCategoryParameters(category)
-  return categoryParams.map(param => `device.${param.odriveCommand}`)
-}
+export const getCategoryBatchPaths = (category, fw_is_0_6 = null) => {
+  if (fw_is_0_6 === null) fw_is_0_6 = getFirmwareVersion();
+  const registry = getRegistry(fw_is_0_6);
+  const categoryParams = registry.getCategoryParameters(category);
+  return categoryParams.map(param => `device.${param.odriveCommand}`);
+};
 
 /**
  * Load configuration for a specific category only
- * @param {string} category - Configuration category to load
- * @returns {Promise<Object>} Configuration for the specified category
  */
-export const loadCategoryConfigurationBatch = async (category) => {
-  const categoryPaths = getCategoryBatchPaths(category)
-  const results = await loadConfigurationBatch(categoryPaths)
-
-  const categoryConfig = {}
-  const categoryParams = odriveRegistry.getCategoryParameters(category)
+export const loadCategoryConfigurationBatch = async (category, fw_is_0_6 = null) => {
+  if (fw_is_0_6 === null) fw_is_0_6 = getFirmwareVersion();
+  const categoryPaths = getCategoryBatchPaths(category, fw_is_0_6);
+  const results = await loadConfigurationBatch(categoryPaths);
+  const registry = getRegistry(fw_is_0_6);
+  const categoryParams = registry.getCategoryParameters(category);
+  const categoryConfig = {};
 
   categoryParams.forEach(param => {
-    const path = `device.${param.odriveCommand}`
+    const path = `device.${param.odriveCommand}`;
     if (results[path] !== undefined) {
-      let value = results[path]
-
-      // Handle special conversions
+      let value = results[path];
+      
       if (param.configKey === 'motor_kv' && param.path.includes('torque_constant')) {
-        value = convertTorqueConstantToKv(value)
+        value = convertTorqueConstantToKv(value);
       }
-
-      categoryConfig[param.configKey] = value
+      
+      categoryConfig[param.configKey] = value;
     }
-  })
+  });
 
-  return categoryConfig
-}
+  return categoryConfig;
+};

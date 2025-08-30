@@ -15,6 +15,8 @@ import {
 } from '@chakra-ui/react'
 import { SearchIcon } from '@chakra-ui/icons'
 import { odrivePropertyTree } from '../../../utils/odrivePropertyTree'
+import { odrivePropertyTree06 } from '../../../utils/odrivePropertyTree_0_6'
+import { useSelector } from 'react-redux'
 import { usePropertyRefresh } from '../../../hooks/property-tree/usePropertyRefresh'
 import { usePropertyEditor } from '../../../hooks/property-tree/usePropertyEditor'
 import { usePropertyTreeFilter } from '../../../hooks/property-tree/usePropertyTreeFilter'
@@ -36,6 +38,15 @@ const PropertyTree = ({
   const [favouritesVersion, setFavouritesVersion] = useState(0)
   const [searchFilter, setSearchFilter] = useState(initialSearchFilter)
   const [debouncedSearch, setDebouncedSearch] = useState(searchFilter)
+
+  // Get firmware version info from Redux store
+  const { fw_is_0_6, fw_is_0_5, fw_version_string } = useSelector(state => state.device)
+
+  // Select the appropriate property tree based on firmware version
+  const selectedPropertyTree = useMemo(() => {
+    console.log(`PropertyTree: Using ${fw_is_0_6 ? '0.6.x' : '0.5.x'} property tree (fw: ${fw_version_string})`)
+    return fw_is_0_6 ? odrivePropertyTree06 : odrivePropertyTree
+  }, [fw_is_0_6, fw_is_0_5, fw_version_string])
 
   // Function to collect all properties recursively from the tree structure
   const collectAllProperties = useCallback((node, basePath = '') => {
@@ -60,13 +71,13 @@ const PropertyTree = ({
     return properties
   }, [])
 
-  // Custom hooks
+  // Custom hooks - now using the selected property tree
   const {
     refreshingProperties,
     propertyValues,
     refreshAllProperties,
     refreshProperty
-  } = usePropertyRefresh(odrivePropertyTree, collectAllProperties, isConnected)
+  } = usePropertyRefresh(selectedPropertyTree, collectAllProperties, isConnected)
 
   const {
     editingProperty,
@@ -77,14 +88,22 @@ const PropertyTree = ({
     cancelEdit
   } = usePropertyEditor(updateProperty, refreshProperty)
 
-  const { filteredTree } = usePropertyTreeFilter(odrivePropertyTree, debouncedSearch)
+  const { filteredTree } = usePropertyTreeFilter(selectedPropertyTree, debouncedSearch)
 
-  // Refresh all properties when refreshTrigger changes
+  // Refresh all properties when refreshTrigger changes OR when firmware version changes
   useEffect(() => {
     if (refreshTrigger > 0 && isConnected) {
       refreshAllProperties()
     }
   }, [refreshTrigger, isConnected, refreshAllProperties])
+
+  // Refresh properties when firmware version changes (tree switch)
+  useEffect(() => {
+    if (isConnected && (fw_is_0_6 || fw_is_0_5)) {
+      console.log('PropertyTree: Firmware version changed, refreshing all properties...')
+      refreshAllProperties()
+    }
+  }, [fw_is_0_6, fw_is_0_5, isConnected, refreshAllProperties])
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -234,7 +253,7 @@ const PropertyTree = ({
         sectionItems.push(
           <LazyItem key={displayPath}>
             <PropertyItem
-              key={displayPath} // STABLE KEY - no version suffix
+              key={displayPath}
               prop={prop}
               value={value}
               displayPath={displayPath}
@@ -251,7 +270,6 @@ const PropertyTree = ({
               togglePropertyChart={togglePropertyChart}
               updateProperty={updateProperty}
               onFavouriteChange={handleFavouriteChange}
-              // REMOVE favouritesVersion prop - handle internally
             />
           </LazyItem>
         )
@@ -350,7 +368,13 @@ const PropertyTree = ({
       >
         <CardHeader py={2} flexShrink={0}>
           <HStack justify="space-between">
-            <Heading size="sm" color="white">ODrive Properties</Heading>
+            <Heading size="sm" color="white">
+              ODrive Properties {fw_version_string && (
+                <Badge colorScheme={fw_is_0_6 ? "green" : "blue"} size="sm" ml={2}>
+                  {fw_version_string}
+                </Badge>
+              )}
+            </Heading>
             <HStack spacing={1}>
               <Badge colorScheme="green" size="sm">
                 {Object.values(propertyValues).length} loaded
@@ -367,14 +391,14 @@ const PropertyTree = ({
                   name="Favourites"
                   section={{ name: "Favourites", description: "Your favourite properties" }}
                   sectionPath="favourites"
-                  count={favouritePaths.length} // <-- add this prop
+                  count={favouritePaths.length}
                 />
                 {!collapsedSections.has("favourites") && (
                   <VStack spacing={1} align="stretch" ml={2}>
                     {favouritePaths.map(path => {
-                      // Find property node for display (search in odrivePropertyTree, not filteredTree)
+                      // Find property node for display (use selectedPropertyTree)
                       const parts = path.split('.')
-                      let node = odrivePropertyTree
+                      let node = selectedPropertyTree
                       let prop = null
                       // Traverse: first part is section, then properties/children
                       for (let i = 0; i < parts.length; i++) {
@@ -394,7 +418,7 @@ const PropertyTree = ({
                       return (
                         <LazyItem key={path}>
                           <PropertyItem
-                            key={path} // STABLE KEY - no version suffix
+                            key={path}
                             prop={prop}
                             value={prop ? getValueFromState(path) : undefined}
                             displayPath={path}
@@ -411,7 +435,6 @@ const PropertyTree = ({
                             togglePropertyChart={togglePropertyChart}
                             updateProperty={updateProperty}
                             onFavouriteChange={handleFavouriteChange}
-                            // REMOVE favouritesVersion prop
                           />
                         </LazyItem>
                       )
