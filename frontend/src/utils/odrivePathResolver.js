@@ -134,9 +134,14 @@ class ODrivePathResolver {
 
     // Handle axis properties
     if (logicalPath.startsWith('axis0.') || logicalPath.startsWith('axis1.')) {
-      // Replace hardcoded axis with effective axis
-      const pathWithoutAxis = logicalPath.replace(/^axis[01]\./, '')
-      return `${this.config.deviceName}.axis${effectiveAxis}.${pathWithoutAxis}`
+      // IMPORTANT: Do NOT replace axis numbers! Each axis should keep its own path
+      // Only override if explicitly requested via axis parameter
+      if (axis !== null) {
+        const pathWithoutAxis = logicalPath.replace(/^axis[01]\./, '')
+        return `${this.config.deviceName}.axis${axis}.${pathWithoutAxis}`
+      }
+      // Keep original axis in path
+      return `${this.config.deviceName}.${logicalPath}`
     }
 
     // For unspecified axis-level properties, prefix with effective axis
@@ -259,7 +264,33 @@ class ODrivePathResolver {
         'config.uart_b_baudrate', 'config.uart_c_baudrate',
 
         // error GPIO pin moved to axis.config.error_gpio_pin
-        'config.error_gpio_pin'
+        'config.error_gpio_pin',
+        
+        // 0.5.x encoder properties not in 0.6.x mappers
+        'is_ready', 'shadow_count', 'count_in_cpr', 'pos_estimate_counts', 
+        'pos_circular', 'vel_estimate_counts', 'delta_pos_cpr_counts',
+        'hall_state', 'calib_scan_response', 'pos_abs', 'spi_error_rate',
+        
+        // Motor properties that changed structure in 0.6.x
+        'current_meas_phA', 'current_meas_phB', 'current_meas_phC',
+        'DC_calib_phA', 'DC_calib_phB', 'DC_calib_phC', 'I_bus',
+        'phase_current_rev_gain', 'max_allowed_current', 'max_dc_calib',
+        'n_evt_current_measurement', 'n_evt_pwm_update', 'current_meas_status',
+        
+        // Current control structure changes
+        'current_control.p_gain', 'current_control.i_gain',
+        'current_control.v_current_control_integral_d', 'current_control.v_current_control_integral_q',
+        'current_control.Iq_setpoint', 'current_control.Id_setpoint', 'current_control.power',
+        'current_control.Vq_setpoint', 'current_control.Vd_setpoint',
+        
+        // GPIO analog mapping that may not exist in 0.6.x
+        'config.gpio3_analog_mapping', 'config.gpio4_analog_mapping',
+        
+        // System stats that may not exist
+        'system_stats.max_stack_usage_usb', 'system_stats.max_stack_usage_can', 
+        'system_stats.max_stack_usage_analog', 'system_stats.stack_size_usb',
+        'system_stats.stack_size_can', 'system_stats.stack_size_analog',
+        'system_stats.prio_usb', 'system_stats.prio_can', 'system_stats.prio_analog'
       ]
       if (removedOrMoved.some(x => p.includes(x))) return false
     }

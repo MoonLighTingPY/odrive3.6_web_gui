@@ -70,7 +70,9 @@ class ODriveUnifiedRegistry {
     const categories = { power: [], motor: [], encoder: [], control: [], interface: [] }
 
     this._traversePropertyTree((path, property) => {
-      if (property.writable && isPropertySupported(path)) {
+      if (property.writable && 
+          isPropertySupported(path) &&
+          !this._isMethodProperty(path, property)) {
         const category = this._inferCategory(path)
         if (category) {
           const compatiblePath = getCompatiblePath(path)
@@ -97,11 +99,25 @@ class ODriveUnifiedRegistry {
     return categories
   }
 
+  _isMethodProperty(path, property) {
+    // Filter out method endpoints that should not be read as properties
+    // Check if the property is explicitly marked as a function
+    if (property && property.type === 'function') {
+      return true
+    }
+    
+    // Fallback: check path for known method patterns
+    return path.includes('methods.') || path.startsWith('methods.')
+  }
+
   _generateBatchPaths() {
     const paths = []
 
     this._traversePropertyTree((path, property) => {
-      if (property.writable && this._isConfigParameter(path) && isPropertySupported(path)) {
+      if (property.writable && 
+          this._isConfigParameter(path) && 
+          isPropertySupported(path) &&
+          !this._isMethodProperty(path, property)) {
         const compatiblePath = getCompatiblePath(path)
         const propertyPath = this.pathResolver.resolveToPropertyPath(compatiblePath)
         paths.push(propertyPath)

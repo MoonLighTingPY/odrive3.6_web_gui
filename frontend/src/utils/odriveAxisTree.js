@@ -422,6 +422,7 @@ export const generateAxisTree = (axisNumber, firmwareVersion = "0.5.6") => {
         name: 'Load Mapper',
         description: 'Load encoder position mapping',
         properties: {
+          status: { name: 'Status', description: 'Component status', writable: false, type: 'number', valueType: 'Property[ODrive.ComponentStatus]' },
           pos_rel: { name: 'Position Relative', description: 'Relative position (turns)', writable: false, type: 'number', decimals: 6, valueType: 'Float32Property' },
           pos_abs: { name: 'Position Absolute', description: 'Absolute position (turns)', writable: false, type: 'number', decimals: 6, valueType: 'Float32Property' },
           vel: { name: 'Velocity', description: 'Velocity estimate (turns/s)', writable: false, type: 'number', decimals: 6, valueType: 'Float32Property' },
@@ -443,6 +444,7 @@ export const generateAxisTree = (axisNumber, firmwareVersion = "0.5.6") => {
         name: 'Commutation Mapper',
         description: 'Commutation encoder position mapping',
         properties: {
+          status: { name: 'Status', description: 'Component status', writable: false, type: 'number', valueType: 'Property[ODrive.ComponentStatus]' },
           pos_rel: { name: 'Position Relative', description: 'Relative commutation position (turns)', writable: false, type: 'number', decimals: 6, valueType: 'Float32Property' },
           pos_abs: { name: 'Position Absolute', description: 'Absolute commutation position (turns)', writable: false, type: 'number', decimals: 6, valueType: 'Float32Property' },
           vel: { name: 'Velocity', description: 'Commutation velocity estimate (turns/s)', writable: false, type: 'number', decimals: 6, valueType: 'Float32Property' },
@@ -464,6 +466,7 @@ export const generateAxisTree = (axisNumber, firmwareVersion = "0.5.6") => {
         name: 'Position Velocity Mapper',
         description: 'Combined position and velocity mapping',
         properties: {
+          status: { name: 'Status', description: 'Component status', writable: false, type: 'number', valueType: 'Property[ODrive.ComponentStatus]' },
           pos_rel: { name: 'Position Relative', description: 'Relative position (turns)', writable: false, type: 'number', decimals: 6, valueType: 'Float32Property' },
           pos_abs: { name: 'Position Absolute', description: 'Absolute position (turns)', writable: false, type: 'number', decimals: 6, valueType: 'Float32Property' },
           vel: { name: 'Velocity', description: 'Velocity estimate (turns/s)', writable: false, type: 'number', decimals: 6, valueType: 'Float32Property' },
@@ -604,93 +607,6 @@ export const generateAxisTree = (axisNumber, firmwareVersion = "0.5.6") => {
       },
     } : {}),
 
-    // 0.6.x Encoder Components (split architecture)
-    ...(isV06x ? {
-      load_mapper: {
-        name: 'Load Mapper',
-        description: 'Load mapper for encoder measurements (0.6.x)',
-        properties: {
-          is_ready: { name: 'Is Ready', description: 'Load mapper ready status', writable: false, type: 'boolean', valueType: 'BoolProperty' },
-          error: { name: 'Error', description: 'Load mapper error flags', writable: false, type: 'number', valueType: 'Property[ODrive.Component.Error]' },
-          shadow_count: { name: 'Shadow Count', description: 'Shadow count value', writable: false, type: 'number', decimals: 0, valueType: 'Int32Property' },
-          count_in_cpr: { name: 'Count in CPR', description: 'Count within CPR range', writable: false, type: 'number', decimals: 0, valueType: 'Int32Property' },
-          pos_estimate: { name: 'Position Estimate', description: 'Position estimate (turns)', writable: false, type: 'number', decimals: 6, valueType: 'Float32Property' },
-          pos_estimate_counts: { name: 'Position Estimate Counts', description: 'Position estimate in counts', writable: false, type: 'number', decimals: 1, valueType: 'Float32Property' },
-          pos_circular: { name: 'Position Circular', description: 'Circular position (0-1 turns)', writable: false, type: 'number', decimals: 6, valueType: 'Float32Property' },
-          vel_estimate: { name: 'Velocity Estimate', description: 'Velocity estimate (turns/s)', writable: false, type: 'number', decimals: 3, valueType: 'Float32Property' },
-          vel_estimate_counts: { name: 'Velocity Estimate Counts', description: 'Velocity estimate in counts/s', writable: false, type: 'number', decimals: 1, valueType: 'Float32Property' },
-        },
-        children: {
-          config: {
-            name: 'Load Mapper Configuration',
-            description: 'Load mapper configuration parameters',
-            properties: {
-              use_index: { name: 'Use Index', description: 'Use encoder index signal', writable: true, type: 'boolean', valueType: 'BoolProperty' },
-              use_index_offset: { name: 'Use Index Offset', description: 'Use encoder index offset', writable: true, type: 'boolean', valueType: 'BoolProperty' },
-              index_offset: { name: 'Index Offset', description: 'Encoder index offset', writable: true, type: 'number', decimals: 6, valueType: 'Float32Property' },
-              cpr: { name: 'CPR', description: 'Counts per revolution', writable: true, type: 'number', step: 1, hasSlider: true, valueType: 'Int32Property' },
-              pre_calibrated: { name: 'Pre-calibrated', description: 'Mark encoder as pre-calibrated', writable: true, type: 'boolean', valueType: 'BoolProperty' },
-            }
-          }
-        }
-      },
-
-      commutation_mapper: {
-        name: 'Commutation Mapper',
-        description: 'Commutation mapper for motor control (0.6.x)',
-        properties: {
-          is_ready: { name: 'Is Ready', description: 'Commutation mapper ready status', writable: false, type: 'boolean', valueType: 'BoolProperty' },
-          error: { name: 'Error', description: 'Commutation mapper error flags', writable: false, type: 'number', valueType: 'Property[ODrive.Component.Error]' },
-          phase: { name: 'Phase', description: 'Commutation phase estimate', writable: false, type: 'number', decimals: 6, valueType: 'Float32Property' },
-          phase_vel: { name: 'Phase Velocity', description: 'Commutation phase velocity', writable: false, type: 'number', decimals: 3, valueType: 'Float32Property' },
-        },
-        children: {
-          config: {
-            name: 'Commutation Mapper Configuration',
-            description: 'Commutation mapper configuration parameters',
-            properties: {
-              pole_pairs: { name: 'Pole Pairs', description: 'Number of motor pole pairs', writable: true, type: 'number', step: 1, hasSlider: true, valueType: 'Int32Property' },
-              use_index_electrical_offset: { name: 'Use Index Electrical Offset', description: 'Use index for electrical offset', writable: true, type: 'boolean', valueType: 'BoolProperty' },
-              electrical_offset: { name: 'Electrical Offset', description: 'Motor electrical offset', writable: true, type: 'number', decimals: 6, valueType: 'Float32Property' },
-              direction: {
-                name: 'Direction',
-                description: 'Commutation direction (1 or -1)',
-                writable: true,
-                type: 'number',
-                valueType: 'Int32Property',
-                selectOptions: [
-                  { value: 1, label: 'Forward (1)' },
-                  { value: -1, label: 'Reverse (-1)' }
-                ]
-              },
-            }
-          }
-        }
-      },
-
-      pos_vel_mapper: {
-        name: 'Position/Velocity Mapper',
-        description: 'Position and velocity mapper for control (0.6.x)',
-        properties: {
-          is_ready: { name: 'Is Ready', description: 'Position/velocity mapper ready status', writable: false, type: 'boolean', valueType: 'BoolProperty' },
-          error: { name: 'Error', description: 'Position/velocity mapper error flags', writable: false, type: 'number', valueType: 'Property[ODrive.Component.Error]' },
-          pos_estimate: { name: 'Position Estimate', description: 'Position estimate (turns)', writable: false, type: 'number', decimals: 6, valueType: 'Float32Property' },
-          vel_estimate: { name: 'Velocity Estimate', description: 'Velocity estimate (turns/s)', writable: false, type: 'number', decimals: 3, valueType: 'Float32Property' },
-        },
-        children: {
-          config: {
-            name: 'Position/Velocity Mapper Configuration',
-            description: 'Position/velocity mapper configuration parameters',
-            properties: {
-              use_circular_pos: { name: 'Use Circular Position', description: 'Use circular position mapping', writable: true, type: 'boolean', valueType: 'BoolProperty' },
-              circular_setpoints: { name: 'Circular Setpoints', description: 'Use circular setpoints', writable: true, type: 'boolean', valueType: 'BoolProperty' },
-              range: { name: 'Range', description: 'Position range for circular mapping', writable: true, type: 'number', decimals: 6, valueType: 'Float32Property' },
-              bandwidth: { name: 'Bandwidth', description: 'Velocity filter bandwidth (Hz)', writable: true, type: 'number', step: 10, hasSlider: true, valueType: 'Float32Property' },
-            }
-          }
-        }
-      }
-    } : {}),
 
     sensorless_estimator: {
       name: 'Sensorless Estimator',
