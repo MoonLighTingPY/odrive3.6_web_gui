@@ -1,311 +1,91 @@
+🏗️ ODrive Unified Registry initialized: 
+Object { firmwareVersion: "0.5.6", deviceName: "odrv0", defaultAxis: 0, categories: (5) […], totalParams: 190, batchPathsCount: 275, commandsCount: 256 }
+​
+batchPathsCount: 275
+​
+categories: Array(5) [ "power", "motor", "encoder", … ]
+​​
+0: "power"
+​​
+1: "motor"
+​​
+2: "encoder"
+​​
+3: "control"
+​​
+4: "interface"
+​​
+length: 5
+​​
+<prototype>: Array []
+​
+commandsCount: 256
+​
+defaultAxis: 0
+​
+deviceName: "odrv0"
+​
+firmwareVersion: "0.5.6"
+​
+totalParams: 190
+​
+<prototype>: Object { … }
+odriveUnifiedRegistry.js:25:13
+🌳 Using property tree from registry for firmware version: 0.5.6 PropertyTree.jsx:50:13
 🔌 Device connected, detecting firmware version... DeviceList.jsx:369:17
 🔍 Detected firmware version: v0.6.10 DeviceList.jsx:379:21
 🔄 Registry Manager: Switching registry from none to 0.6.11 registryManager.js:52:15
-Switched to ODrive registry: 0.6.11 (device: odrv0, axis: 0) odriveUnifiedRegistry.js:780:11
+Switched to ODrive registry: 0.6.11 (device: odrv0, axis: 0) odriveUnifiedRegistry.js:835:11
 📊 New registry stats: 
-Object { firmwareVersion: "0.6.11", totalParams: 277, batchPathsCount: 314 }
+Object { firmwareVersion: "0.6.11", totalParams: 255, batchPathsCount: 441 }
 ​
-batchPathsCount: 314
+batchPathsCount: 441
 ​
 firmwareVersion: "0.6.11"
 ​
-totalParams: 277
+totalParams: 255
 ​
 <prototype>: Object { … }
 registryManager.js:62:15
 🔄 Registry switched, now setting device as connected... DeviceList.jsx:386:21
 🌳 Using property tree from registry for firmware version: v0.6.10 2 PropertyTree.jsx:50:13
-Loading 314 configuration parameters from unified registry... configBatchApi.js:101:11
-Filtered out 3 unsupported properties for current firmware version usePropertyRefresh.js:36:15
-✓ Resolved 671 paths: 
-Array(671) [ "system.hw_version_major → hw_version_major", "system.hw_version_minor → hw_version_minor", "system.hw_version_variant → hw_version_variant", "system.fw_version_major → fw_version_major", "system.fw_version_minor → fw_version_minor", "system.fw_version_revision → fw_version_revision", "system.fw_version_unreleased → fw_version_unreleased", "system.vbus_voltage → vbus_voltage", "system.ibus → ibus", "system.ibus_report_filter_k → ibus_report_filter_k", … ]
+Loading 441 configuration parameters from unified registry... configBatchApi.js:101:11
+✓ Resolved 454 paths: 
+Array(454) [ "system.hw_version_major → hw_version_major", "system.hw_version_minor → hw_version_minor", "system.hw_version_variant → hw_version_variant", "system.fw_version_major → fw_version_major", "system.fw_version_minor → fw_version_minor", "system.fw_version_revision → fw_version_revision", "system.fw_version_unreleased → fw_version_unreleased", "system.serial_number → serial_number", "system.vbus_voltage → vbus_voltage", "system.ibus → ibus", … ]
 usePropertyRefresh.js:74:15
-Refreshing 671 supported properties in batch request... usePropertyRefresh.js:83:15
-Categorized configuration: 
-Object { power: {…}, motor: {…}, encoder: {…}, control: {…}, interface: {…} }
-​
-control: Object { axis0: {…}, axis1: {} }
-​​
-axis0: Object { init_pos: 0, init_torque: 0, init_vel: 0, … }
-​​​
-absolute_setpoints: false
-​​​
-accel_limit: 0.5
-​​​
-anticogging_enabled: 0
-​​​
-anticogging_pre_calibrated: false
-​​​
-axis_to_mirror: 0
-​​​
-calib_bidirectional: 0
-​​​
-calib_coarse_integrator_gain: 0
-​​​
-calib_end_vel: 0
-​​​
-calib_pos_threshold: 0
-​​​
-calib_start_vel: 0
-​​​
-calib_vel_threshold: 0
-​​​
-circular_setpoint_range: 1
-​​​
-circular_setpoints: false
-​​​
-control_mode: 3
-​​​
-decel_limit: 0.5
-​​​
-electrical_power_bandwidth: 1000
-​​​
-enable_gain_scheduling: false
-​​​
-enable_overspeed_error: true
-​​​
-enable_torque_mode_vel_limit: true
-​​​
-enable_vel_limit: true
-​​​
-frequency: 0
-​​​
-gain_scheduling_width: 0.0010000000474974513
-​​​
-homing_speed: 0.25
-​​​
-inertia: 0
-​​​
-init_pos: 0
-​​​
-init_torque: 0
-​​​
-init_vel: 0
-​​​
-input_filter_bandwidth: 20
-​​​
-input_mode: 1
-​​​
-load_encoder_axis: 0
-​​​
-mechanical_power_bandwidth: 1000
-​​​
-mirror_ratio: 0
-​​​
-pos_gain: 20
-​​​
-requested_state: 0
-​​​
-spinout_electrical_power_threshold: 10
-​​​
-spinout_mechanical_power_threshold: -10
-​​​
-torque_amplitude: 0
-​​​
-torque_ramp_rate: 0.009999999776482582
-​​​
-trap_vel_limit: 2
-​​​
-use_commutation_vel: false
-​​​
-vel_gain: 0.1666666716337204
-​​​
-vel_integrator_gain: 0.3333333432674408
-​​​
-vel_limit: 10
-​​​
-vel_limit_tolerance: 1.2000000476837158
-​​​
-vel_ramp_rate: 10
-​​​
-<prototype>: Object { … }
-​​
-axis1: Object {  }
-​​
-<prototype>: Object { … }
-​
-encoder: Object { axis0: {}, axis1: {} }
-​​
-axis0: Object {  }
-​​
-axis1: Object {  }
-​​
-<prototype>: Object { … }
-​
-interface: Object { controller_error_rate_ms: 1000, encoder_error_rate_ms: 1000, encoder_rate_ms: 1000, … }
-​​
-autobaud_enabled: 0
-​​
-can_baudrate: 250000
-​​
-can_node_id: 63
-​​
-can_node_id_extended: 0
-​​
-controller_error_rate_ms: 1000
-​​
-debounce_ms: 50
-​​
-dir_gpio_pin: 9
-​​
-enable_gpio_pin: false
-​​
-enable_sensorless_mode: false
-​​
-enable_step_dir: false
-​​
-enable_watchdog: false
-​​
-encoder_error_rate_ms: 1000
-​​
-encoder_rate_ms: 1000
-​​
-error_gpio_pin: 0
-​​
-gpio3_analog_mapping: 0
-​​
-gpio4_analog_mapping: 0
-​​
-heartbeat_rate_ms: 1000
-​​
-is_active_high: false
-​​
-max_endstop_enabled: false
-​​
-max_endstop_gpio_num: 0
-​​
-max_endstop_offset: 0
-​​
-min_endstop_enabled: false
-​​
-min_endstop_gpio_num: 0
-​​
-min_endstop_offset: 0
-​​
-motor_error_rate_ms: 1000
-​​
-observer_gain: 0
-​​
-pll_bandwidth: 1000
-​​
-pm_flux_linkage: 0
-​​
-protocol: 1
-​​
-sensorless_error_rate_ms: 1000
-​​
-startup_closed_loop_control: false
-​​
-startup_encoder_index_search: false
-​​
-startup_encoder_offset_calibration: false
-​​
-startup_homing: false
-​​
-startup_max_wait_for_ready: 3
-​​
-startup_motor_calibration: false
-​​
-step_dir_always_on: false
-​​
-step_gpio_pin: 8
-​​
-uart0_protocol: 3
-​​
-watchdog_timeout: 0
-​​
-<prototype>: Object { … }
-​
-motor: Object { axis0: {…}, axis1: {} }
-​​
-axis0: Object { accel: 31.83098793029785, lock_in_spin_current: 10, ramp_distance: 0.5, … }
-​​​
-accel: 31.83098793029785
-​​​
-acim_autoflux_attack_gain: 0
-​​​
-acim_autoflux_decay_gain: 0
-​​​
-acim_autoflux_enable: 0
-​​​
-bEMF_FF_enable: 0
-​​​
-calibration_current: 0
-​​​
-current: 10
-​​​
-current_control_bandwidth: 0
-​​​
-current_lim_margin: 0
-​​​
-current_slew_rate_limit: 0
-​​​
-dI_dt_FF_enable: 0
-​​​
-finish_distance: 15.915493965148926
-​​​
-finish_on_distance: false
-​​​
-finish_on_vel: true
-​​​
-gpio_pin: 3
-​​​
-inverter_temp_limit_lower: 0
-​​​
-inverter_temp_limit_upper: 0
-​​​
-lock_in_spin_current: 10
-​​​
-motor_kv: 0
-​​​
-motor_pre_calibrated: false
-​​​
-motor_temp_limit_lower: 100
-​​​
-motor_temp_limit_upper: 120
-​​​
-motor_thermistor_enabled: false
-​​​
-motor_type: 0
-​​​
-phase_inductance: 0
-​​​
-phase_inductance_valid: 0
-​​​
-phase_resistance: 0
-​​​
-phase_resistance_valid: 0
-​​​
-pole_pairs: 0
-​​​
-power_torque_report_filter_bandwidth: 1000
-​​​
-ramp_distance: 0.5
-​​​
-ramp_time: 0.4000000059604645
-​​​
-requested_current_range: 0
-​​​
-resistance_calib_max_voltage: 0
-​​​
-torque_lim: 0
-​​​
-vel: 63.6619758605957
-​​​
-wL_FF_enable: 0
-​​​
-<prototype>: Object { … }
-​​
-axis1: Object {  }
-​​
-<prototype>: Object { … }
-​
-power: Object { fet_thermistor_enabled: 0, fet_temp_limit_lower: 0, fet_temp_limit_upper: 0, … }
-​
-<prototype>: Object { … }
-configBatchApi.js:157:11
-✅ Successfully loaded 314 properties: 
-Array(314) [ "system.hw_version_major", "system.hw_version_minor", "system.hw_version_variant", "system.fw_version_major", "system.fw_version_minor", "system.fw_version_revision", "system.fw_version_unreleased", "system.vbus_voltage", "system.ibus", "system.ibus_report_filter_k", … ]
+Refreshing 454 supported properties in batch request... usePropertyRefresh.js:83:15
+Batch configuration load failed: TypeError: can't access property "type", param.property is undefined
+    loadConfigurationBatch configBatchApi.js:52
+    loadConfigurationBatch configBatchApi.js:47
+    loadAllConfigurationBatch configBatchApi.js:104
+    pullBatchParams ConfigurationTab.jsx:90
+    _c ConfigurationTab.jsx:186
+    React 16
+    Redux 11
+    createImmutableStateInvariantMiddleware Immutable
+    createActionCreatorInvariantMiddleware Redux
+    handleConnect DeviceList.jsx:402
+    onClick DeviceList.jsx:211
+    React 23
+    <anonymous> main.jsx:39
+configBatchApi.js:83:13
+Failed to pull configuration: TypeError: can't access property "type", param.property is undefined
+    loadConfigurationBatch configBatchApi.js:52
+    loadConfigurationBatch configBatchApi.js:47
+    loadAllConfigurationBatch configBatchApi.js:104
+    pullBatchParams ConfigurationTab.jsx:90
+    _c ConfigurationTab.jsx:186
+    React 16
+    Redux 11
+    createImmutableStateInvariantMiddleware Immutable
+    createActionCreatorInvariantMiddleware Redux
+    handleConnect DeviceList.jsx:402
+    onClick DeviceList.jsx:211
+    React 23
+    <anonymous> main.jsx:39
+ConfigurationTab.jsx:147:15
+✅ Successfully loaded 153 properties: 
+Array(153) [ "system.hw_version_major", "system.hw_version_minor", "system.hw_version_variant", "system.fw_version_major", "system.fw_version_minor", "system.fw_version_revision", "system.fw_version_unreleased", "system.serial_number", "system.vbus_voltage", "system.ibus", … ]
 ​
 [0…99]
 ​​
@@ -323,632 +103,306 @@ Array(314) [ "system.hw_version_major", "system.hw_version_minor", "system.hw_ve
 ​​
 6: "system.fw_version_unreleased"
 ​​
-7: "system.vbus_voltage"
+7: "system.serial_number"
 ​​
-8: "system.ibus"
+8: "system.vbus_voltage"
 ​​
-9: "system.ibus_report_filter_k"
+9: "system.ibus"
 ​​
-10: "system.serial_number"
+10: "system.ibus_report_filter_k"
 ​​
-11: "system.n_evt_sampling"
+11: "system.test_property"
 ​​
-12: "system.n_evt_control_loop"
+12: "system.identify"
 ​​
-13: "system.commit_hash"
+13: "system.reboot_required"
 ​​
-14: "system.bootloader_version"
+14: "system.user_config_loaded"
 ​​
-15: "system.control_loop_hz"
+15: "system.misconfigured"
 ​​
-16: "system.hw_version_revision"
+16: "config.dc_bus_overvoltage_trip_level"
 ​​
-17: "system.task_timers_armed"
+17: "config.dc_bus_undervoltage_trip_level"
 ​​
-18: "system.test_property"
+18: "config.dc_max_positive_current"
 ​​
-19: "system.reboot_required"
+19: "config.dc_max_negative_current"
 ​​
-20: "system.identify"
+20: "config.max_regen_current"
 ​​
-21: "system.user_config_loaded"
+21: "config.usb_cdc_protocol"
 ​​
-22: "system.misconfigured"
+22: "config.uart0_protocol"
 ​​
-23: "config.usb_cdc_protocol"
+23: "config.user_config_0"
 ​​
-24: "config.uart0_protocol"
+24: "config.user_config_1"
 ​​
-25: "config.user_config_0"
+25: "config.user_config_2"
 ​​
-26: "config.user_config_1"
+26: "config.user_config_3"
 ​​
-27: "config.user_config_2"
+27: "config.user_config_4"
 ​​
-28: "config.user_config_3"
+28: "config.user_config_5"
 ​​
-29: "config.user_config_4"
+29: "config.user_config_6"
 ​​
-30: "config.user_config_5"
+30: "config.user_config_7"
 ​​
-31: "config.user_config_6"
+31: "config.inverter0"
 ​​
-32: "config.user_config_7"
+32: "can.error"
 ​​
-33: "config.max_regen_current"
+33: "can.n_restarts"
 ​​
-34: "config.dc_bus_undervoltage_trip_level"
+34: "can.n_rx"
 ​​
-35: "config.dc_bus_overvoltage_trip_level"
+35: "can.config"
 ​​
-36: "config.dc_max_positive_current"
+36: "axis0.active_errors"
 ​​
-37: "config.dc_max_negative_current"
+37: "axis0.disarm_reason"
 ​​
-38: "config.inverter0.current_soft_max"
+38: "axis0.current_state"
 ​​
-39: "config.inverter0.current_hard_max"
+39: "axis0.requested_state"
 ​​
-40: "config.inverter0.temp_limit_lower"
+40: "axis0.step_dir_active"
 ​​
-41: "config.inverter0.temp_limit_upper"
+41: "axis0.last_drv_fault"
 ​​
-42: "config.inverter0.mod_magn_max"
+42: "axis0.steps"
 ​​
-43: "config.inverter0.shunt_conductance"
+43: "axis0.vel_estimate"
 ​​
-44: "can.error"
+44: "axis0.is_homed"
 ​​
-45: "can.n_restarts"
+45: "axis0.is_armed"
 ​​
-46: "can.n_rx"
+46: "axis0.procedure_result"
 ​​
-47: "can.config.baud_rate"
+47: "axis0.disarm_time"
 ​​
-48: "can.config.protocol"
+48: "axis0.config.startup_motor_calibration"
 ​​
-49: "system_stats.uptime"
+49: "axis0.config.startup_encoder_index_search"
 ​​
-50: "system_stats.min_heap_space"
+50: "axis0.config.startup_encoder_offset_calibration"
 ​​
-51: "system_stats.max_stack_usage_axis"
+51: "axis0.config.startup_closed_loop_control"
 ​​
-52: "system_stats.max_stack_usage_uart"
+52: "axis0.config.startup_homing"
 ​​
-53: "system_stats.max_stack_usage_startup"
+53: "axis0.config.enable_step_dir"
 ​​
-54: "system_stats.stack_size_axis"
+54: "axis0.config.step_dir_always_on"
 ​​
-55: "system_stats.stack_size_uart"
+55: "axis0.config.step_gpio_pin"
 ​​
-56: "system_stats.stack_size_startup"
+56: "axis0.config.dir_gpio_pin"
 ​​
-57: "system_stats.prio_axis"
+57: "axis0.config.enable_watchdog"
 ​​
-58: "system_stats.prio_uart"
+58: "axis0.config.watchdog_timeout"
 ​​
-59: "system_stats.prio_startup"
+59: "axis0.config.startup_max_wait_for_ready"
 ​​
-60: "system_stats.usb.rx_cnt"
+60: "axis0.config.calib_range"
 ​​
-61: "system_stats.usb.tx_cnt"
+61: "axis0.config.calib_scan_distance"
 ​​
-62: "system_stats.usb.tx_overrun_cnt"
+62: "axis0.config.calib_scan_vel"
 ​​
-63: "system_stats.i2c.addr"
+63: "axis0.config.encoder_bandwidth"
 ​​
-64: "system_stats.i2c.addr_match_cnt"
+64: "axis0.config.init_vel"
 ​​
-65: "system_stats.i2c.rx_cnt"
+65: "axis0.config.init_torque"
 ​​
-66: "system_stats.i2c.error_cnt"
+66: "axis0.config.I_bus_hard_min"
 ​​
-67: "oscilloscope.size"
+67: "axis0.config.I_bus_hard_max"
 ​​
-68: "axis0.active_errors"
+68: "axis0.config.I_bus_soft_min"
 ​​
-69: "axis0.disarm_reason"
+69: "axis0.config.I_bus_soft_max"
 ​​
-70: "axis0.current_state"
+70: "axis0.config.P_bus_soft_min"
 ​​
-71: "axis0.requested_state"
+71: "axis0.config.P_bus_soft_max"
 ​​
-72: "axis0.step_dir_active"
+72: "axis0.config.can.node_id"
 ​​
-73: "axis0.last_drv_fault"
+73: "axis0.config.calibration_lockin.current"
 ​​
-74: "axis0.steps"
+74: "axis0.config.calibration_lockin.ramp_time"
 ​​
-75: "axis0.vel_estimate"
+75: "axis0.config.calibration_lockin.ramp_distance"
 ​​
-76: "axis0.is_homed"
+76: "axis0.config.calibration_lockin.accel"
 ​​
-77: "axis0.is_armed"
+77: "axis0.config.calibration_lockin.vel"
 ​​
-78: "axis0.procedure_result"
+78: "axis0.config.sensorless_ramp.current"
 ​​
-79: "axis0.disarm_time"
+79: "axis0.config.sensorless_ramp.ramp_time"
 ​​
-80: "axis0.config.startup_motor_calibration"
+80: "axis0.config.sensorless_ramp.ramp_distance"
 ​​
-81: "axis0.config.startup_encoder_index_search"
+81: "axis0.config.sensorless_ramp.accel"
 ​​
-82: "axis0.config.startup_encoder_offset_calibration"
+82: "axis0.config.sensorless_ramp.vel"
 ​​
-83: "axis0.config.startup_closed_loop_control"
+83: "axis0.config.sensorless_ramp.finish_distance"
 ​​
-84: "axis0.config.startup_homing"
+84: "axis0.config.sensorless_ramp.finish_on_vel"
 ​​
-85: "axis0.config.enable_step_dir"
+85: "axis0.config.sensorless_ramp.finish_on_distance"
 ​​
-86: "axis0.config.step_dir_always_on"
+86: "axis0.config.general_lockin.current"
 ​​
-87: "axis0.config.step_gpio_pin"
+87: "axis0.config.general_lockin.ramp_time"
 ​​
-88: "axis0.config.dir_gpio_pin"
+88: "axis0.config.general_lockin.ramp_distance"
 ​​
-89: "axis0.config.enable_watchdog"
+89: "axis0.config.general_lockin.accel"
 ​​
-90: "axis0.config.watchdog_timeout"
+90: "axis0.config.general_lockin.vel"
 ​​
-91: "axis0.config.startup_max_wait_for_ready"
+91: "axis0.motor.effective_current_lim"
 ​​
-92: "axis0.config.init_vel"
+92: "axis0.motor.torque_estimate"
 ​​
-93: "axis0.config.init_torque"
+93: "axis0.motor.mechanical_power"
 ​​
-94: "axis0.config.calib_range"
+94: "axis0.motor.electrical_power"
 ​​
-95: "axis0.config.calib_scan_distance"
+95: "axis0.motor.loss_power"
 ​​
-96: "axis0.config.calib_scan_vel"
+96: "axis0.motor.resistance_calibration_I_beta"
 ​​
-97: "axis0.config.encoder_bandwidth"
+97: "axis0.motor.input_id"
 ​​
-98: "axis0.config.I_bus_hard_min"
+98: "axis0.motor.input_iq"
 ​​
-99: "axis0.config.I_bus_hard_max"
+99: "axis0.motor.fet_thermistor.temperature"
 ​
-[100…199]
+[100…152]
 ​​
-100: "axis0.config.I_bus_soft_min"
+100: "axis0.motor.motor_thermistor.config"
 ​​
-101: "axis0.config.I_bus_soft_max"
+101: "axis0.controller.input_pos"
 ​​
-102: "axis0.config.P_bus_soft_min"
+102: "axis0.controller.input_vel"
 ​​
-103: "axis0.config.P_bus_soft_max"
+103: "axis0.controller.input_torque"
 ​​
-104: "axis0.config.can.node_id"
+104: "axis0.controller.pos_setpoint"
 ​​
-105: "axis0.config.calibration_lockin.current"
+105: "axis0.controller.vel_setpoint"
 ​​
-106: "axis0.config.calibration_lockin.ramp_time"
+106: "axis0.controller.torque_setpoint"
 ​​
-107: "axis0.config.calibration_lockin.ramp_distance"
+107: "axis0.controller.trajectory_done"
 ​​
-108: "axis0.config.calibration_lockin.accel"
+108: "axis0.controller.vel_integrator_torque"
 ​​
-109: "axis0.config.calibration_lockin.vel"
+109: "axis0.controller.autotuning_phase"
 ​​
-110: "axis0.config.sensorless_ramp.current"
+110: "axis0.controller.effective_torque_setpoint"
 ​​
-111: "axis0.config.sensorless_ramp.ramp_time"
+111: "axis0.controller.spinout_electrical_power"
 ​​
-112: "axis0.config.sensorless_ramp.ramp_distance"
+112: "axis0.controller.spinout_mechanical_power"
 ​​
-113: "axis0.config.sensorless_ramp.accel"
+113: "axis0.controller.config.control_mode"
 ​​
-114: "axis0.config.sensorless_ramp.vel"
+114: "axis0.controller.config.input_mode"
 ​​
-115: "axis0.config.sensorless_ramp.finish_distance"
+115: "axis0.controller.config.pos_gain"
 ​​
-116: "axis0.config.sensorless_ramp.finish_on_vel"
+116: "axis0.controller.config.vel_gain"
 ​​
-117: "axis0.config.sensorless_ramp.finish_on_distance"
+117: "axis0.controller.config.vel_integrator_gain"
 ​​
-118: "axis0.config.general_lockin.current"
+118: "axis0.controller.config.vel_limit"
 ​​
-119: "axis0.config.general_lockin.ramp_time"
+119: "axis0.controller.config.vel_limit_tolerance"
 ​​
-120: "axis0.config.general_lockin.ramp_distance"
+120: "axis0.controller.config.vel_ramp_rate"
 ​​
-121: "axis0.config.general_lockin.accel"
+121: "axis0.controller.config.torque_ramp_rate"
 ​​
-122: "axis0.config.general_lockin.vel"
+122: "axis0.controller.config.circular_setpoints"
 ​​
-123: "axis0.config.general_lockin.finish_distance"
+123: "axis0.controller.config.circular_setpoint_range"
 ​​
-124: "axis0.config.general_lockin.finish_on_vel"
+124: "axis0.controller.config.homing_speed"
 ​​
-125: "axis0.config.general_lockin.finish_on_distance"
+125: "axis0.controller.config.inertia"
 ​​
-126: "axis0.motor.effective_current_lim"
+126: "axis0.controller.config.input_filter_bandwidth"
 ​​
-127: "axis0.motor.torque_estimate"
+127: "axis0.controller.config.enable_overspeed_error"
 ​​
-128: "axis0.motor.mechanical_power"
+128: "axis0.controller.config.enable_torque_mode_vel_limit"
 ​​
-129: "axis0.motor.electrical_power"
+129: "axis0.controller.config.enable_gain_scheduling"
 ​​
-130: "axis0.motor.loss_power"
+130: "axis0.controller.config.gain_scheduling_width"
 ​​
-131: "axis0.motor.resistance_calibration_I_beta"
+131: "axis0.controller.config.enable_vel_limit"
 ​​
-132: "axis0.motor.input_id"
+132: "axis0.controller.config.spinout_electrical_power_threshold"
 ​​
-133: "axis0.motor.input_iq"
+133: "axis0.controller.config.spinout_mechanical_power_threshold"
 ​​
-134: "axis0.motor.fet_thermistor.temperature"
+134: "axis0.controller.config.absolute_setpoints"
 ​​
-135: "axis0.motor.motor_thermistor.config.enabled"
+135: "axis0.controller.config.use_commutation_vel"
 ​​
-136: "axis0.motor.motor_thermistor.config.gpio_pin"
+136: "axis0.controller.autotuning.frequency"
 ​​
-137: "axis0.motor.motor_thermistor.config.temp_limit_lower"
+137: "axis0.controller.autotuning.torque_amplitude"
 ​​
-138: "axis0.motor.motor_thermistor.config.temp_limit_upper"
+138: "axis0.trap_traj.config.vel_limit"
 ​​
-139: "axis0.controller.input_pos"
+139: "axis0.trap_traj.config.accel_limit"
 ​​
-140: "axis0.controller.input_vel"
+140: "axis0.trap_traj.config.decel_limit"
 ​​
-141: "axis0.controller.input_torque"
+141: "axis0.min_endstop.config.gpio_num"
 ​​
-142: "axis0.controller.pos_setpoint"
+142: "axis0.min_endstop.config.enabled"
 ​​
-143: "axis0.controller.vel_setpoint"
+143: "axis0.min_endstop.config.offset"
 ​​
-144: "axis0.controller.torque_setpoint"
+144: "axis0.min_endstop.config.is_active_high"
 ​​
-145: "axis0.controller.trajectory_done"
+145: "axis0.min_endstop.config.debounce_ms"
 ​​
-146: "axis0.controller.vel_integrator_torque"
+146: "axis0.max_endstop.config.gpio_num"
 ​​
-147: "axis0.controller.autotuning_phase"
+147: "axis0.max_endstop.config.enabled"
 ​​
-148: "axis0.controller.effective_torque_setpoint"
+148: "axis0.max_endstop.config.offset"
 ​​
-149: "axis0.controller.spinout_electrical_power"
+149: "axis0.max_endstop.config.is_active_high"
 ​​
-150: "axis0.controller.spinout_mechanical_power"
+150: "axis0.max_endstop.config.debounce_ms"
 ​​
-151: "axis0.controller.config.control_mode"
+151: "axis0.mechanical_brake.config.gpio_num"
 ​​
-152: "axis0.controller.config.input_mode"
-​​
-153: "axis0.controller.config.pos_gain"
-​​
-154: "axis0.controller.config.vel_gain"
-​​
-155: "axis0.controller.config.vel_integrator_gain"
-​​
-156: "axis0.controller.config.vel_limit"
-​​
-157: "axis0.controller.config.vel_limit_tolerance"
-​​
-158: "axis0.controller.config.vel_ramp_rate"
-​​
-159: "axis0.controller.config.torque_ramp_rate"
-​​
-160: "axis0.controller.config.circular_setpoints"
-​​
-161: "axis0.controller.config.circular_setpoint_range"
-​​
-162: "axis0.controller.config.homing_speed"
-​​
-163: "axis0.controller.config.inertia"
-​​
-164: "axis0.controller.config.input_filter_bandwidth"
-​​
-165: "axis0.controller.config.enable_overspeed_error"
-​​
-166: "axis0.controller.config.enable_torque_mode_vel_limit"
-​​
-167: "axis0.controller.config.enable_gain_scheduling"
-​​
-168: "axis0.controller.config.gain_scheduling_width"
-​​
-169: "axis0.controller.config.enable_vel_limit"
-​​
-170: "axis0.controller.config.spinout_electrical_power_threshold"
-​​
-171: "axis0.controller.config.spinout_mechanical_power_threshold"
-​​
-172: "axis0.controller.config.absolute_setpoints"
-​​
-173: "axis0.controller.config.use_commutation_vel"
-​​
-174: "axis0.controller.autotuning.frequency"
-​​
-175: "axis0.controller.autotuning.torque_amplitude"
-​​
-176: "axis0.trap_traj.config.vel_limit"
-​​
-177: "axis0.trap_traj.config.accel_limit"
-​​
-178: "axis0.trap_traj.config.decel_limit"
-​​
-179: "axis0.min_endstop.config.gpio_num"
-​​
-180: "axis0.min_endstop.config.enabled"
-​​
-181: "axis0.min_endstop.config.offset"
-​​
-182: "axis0.min_endstop.config.is_active_high"
-​​
-183: "axis0.min_endstop.config.debounce_ms"
-​​
-184: "axis0.max_endstop.config.gpio_num"
-​​
-185: "axis0.max_endstop.config.enabled"
-​​
-186: "axis0.max_endstop.config.offset"
-​​
-187: "axis0.max_endstop.config.is_active_high"
-​​
-188: "axis0.max_endstop.config.debounce_ms"
-​​
-189: "axis0.mechanical_brake.config.gpio_num"
-​​
-190: "axis0.mechanical_brake.config.is_active_low"
-​​
-191: "axis1.active_errors"
-​​
-192: "axis1.disarm_reason"
-​​
-193: "axis1.current_state"
-​​
-194: "axis1.requested_state"
-​​
-195: "axis1.step_dir_active"
-​​
-196: "axis1.last_drv_fault"
-​​
-197: "axis1.steps"
-​​
-198: "axis1.vel_estimate"
-​​
-199: "axis1.is_homed"
+152: "axis0.mechanical_brake.config.is_active_low"
 ​
-[200…299]
-​​
-200: "axis1.is_armed"
-​​
-201: "axis1.procedure_result"
-​​
-202: "axis1.disarm_time"
-​​
-203: "axis1.config.startup_motor_calibration"
-​​
-204: "axis1.config.startup_encoder_index_search"
-​​
-205: "axis1.config.startup_encoder_offset_calibration"
-​​
-206: "axis1.config.startup_closed_loop_control"
-​​
-207: "axis1.config.startup_homing"
-​​
-208: "axis1.config.enable_step_dir"
-​​
-209: "axis1.config.step_dir_always_on"
-​​
-210: "axis1.config.step_gpio_pin"
-​​
-211: "axis1.config.dir_gpio_pin"
-​​
-212: "axis1.config.enable_watchdog"
-​​
-213: "axis1.config.watchdog_timeout"
-​​
-214: "axis1.config.startup_max_wait_for_ready"
-​​
-215: "axis1.config.init_vel"
-​​
-216: "axis1.config.init_torque"
-​​
-217: "axis1.config.calib_range"
-​​
-218: "axis1.config.calib_scan_distance"
-​​
-219: "axis1.config.calib_scan_vel"
-​​
-220: "axis1.config.encoder_bandwidth"
-​​
-221: "axis1.config.I_bus_hard_min"
-​​
-222: "axis1.config.I_bus_hard_max"
-​​
-223: "axis1.config.I_bus_soft_min"
-​​
-224: "axis1.config.I_bus_soft_max"
-​​
-225: "axis1.config.P_bus_soft_min"
-​​
-226: "axis1.config.P_bus_soft_max"
-​​
-227: "axis1.config.can.node_id"
-​​
-228: "axis1.config.calibration_lockin.current"
-​​
-229: "axis1.config.calibration_lockin.ramp_time"
-​​
-230: "axis1.config.calibration_lockin.ramp_distance"
-​​
-231: "axis1.config.calibration_lockin.accel"
-​​
-232: "axis1.config.calibration_lockin.vel"
-​​
-233: "axis1.config.sensorless_ramp.current"
-​​
-234: "axis1.config.sensorless_ramp.ramp_time"
-​​
-235: "axis1.config.sensorless_ramp.ramp_distance"
-​​
-236: "axis1.config.sensorless_ramp.accel"
-​​
-237: "axis1.config.sensorless_ramp.vel"
-​​
-238: "axis1.config.sensorless_ramp.finish_distance"
-​​
-239: "axis1.config.sensorless_ramp.finish_on_vel"
-​​
-240: "axis1.config.sensorless_ramp.finish_on_distance"
-​​
-241: "axis1.config.general_lockin.current"
-​​
-242: "axis1.config.general_lockin.ramp_time"
-​​
-243: "axis1.config.general_lockin.ramp_distance"
-​​
-244: "axis1.config.general_lockin.accel"
-​​
-245: "axis1.config.general_lockin.vel"
-​​
-246: "axis1.config.general_lockin.finish_distance"
-​​
-247: "axis1.config.general_lockin.finish_on_vel"
-​​
-248: "axis1.config.general_lockin.finish_on_distance"
-​​
-249: "axis1.motor.effective_current_lim"
-​​
-250: "axis1.motor.torque_estimate"
-​​
-251: "axis1.motor.mechanical_power"
-​​
-252: "axis1.motor.electrical_power"
-​​
-253: "axis1.motor.loss_power"
-​​
-254: "axis1.motor.resistance_calibration_I_beta"
-​​
-255: "axis1.motor.input_id"
-​​
-256: "axis1.motor.input_iq"
-​​
-257: "axis1.motor.fet_thermistor.temperature"
-​​
-258: "axis1.motor.motor_thermistor.config.enabled"
-​​
-259: "axis1.motor.motor_thermistor.config.gpio_pin"
-​​
-260: "axis1.motor.motor_thermistor.config.temp_limit_lower"
-​​
-261: "axis1.motor.motor_thermistor.config.temp_limit_upper"
-​​
-262: "axis1.controller.input_pos"
-​​
-263: "axis1.controller.input_vel"
-​​
-264: "axis1.controller.input_torque"
-​​
-265: "axis1.controller.pos_setpoint"
-​​
-266: "axis1.controller.vel_setpoint"
-​​
-267: "axis1.controller.torque_setpoint"
-​​
-268: "axis1.controller.trajectory_done"
-​​
-269: "axis1.controller.vel_integrator_torque"
-​​
-270: "axis1.controller.autotuning_phase"
-​​
-271: "axis1.controller.effective_torque_setpoint"
-​​
-272: "axis1.controller.spinout_electrical_power"
-​​
-273: "axis1.controller.spinout_mechanical_power"
-​​
-274: "axis1.controller.config.control_mode"
-​​
-275: "axis1.controller.config.input_mode"
-​​
-276: "axis1.controller.config.pos_gain"
-​​
-277: "axis1.controller.config.vel_gain"
-​​
-278: "axis1.controller.config.vel_integrator_gain"
-​​
-279: "axis1.controller.config.vel_limit"
-​​
-280: "axis1.controller.config.vel_limit_tolerance"
-​​
-281: "axis1.controller.config.vel_ramp_rate"
-​​
-282: "axis1.controller.config.torque_ramp_rate"
-​​
-283: "axis1.controller.config.circular_setpoints"
-​​
-284: "axis1.controller.config.circular_setpoint_range"
-​​
-285: "axis1.controller.config.homing_speed"
-​​
-286: "axis1.controller.config.inertia"
-​​
-287: "axis1.controller.config.input_filter_bandwidth"
-​​
-288: "axis1.controller.config.enable_overspeed_error"
-​​
-289: "axis1.controller.config.enable_torque_mode_vel_limit"
-​​
-290: "axis1.controller.config.enable_gain_scheduling"
-​​
-291: "axis1.controller.config.gain_scheduling_width"
-​​
-292: "axis1.controller.config.enable_vel_limit"
-​​
-293: "axis1.controller.config.spinout_electrical_power_threshold"
-​​
-294: "axis1.controller.config.spinout_mechanical_power_threshold"
-​​
-295: "axis1.controller.config.absolute_setpoints"
-​​
-296: "axis1.controller.config.use_commutation_vel"
-​​
-297: "axis1.controller.autotuning.frequency"
-​​
-298: "axis1.controller.autotuning.torque_amplitude"
-​​
-299: "axis1.trap_traj.config.vel_limit"
-​
-[300…313]
-​​
-300: "axis1.trap_traj.config.accel_limit"
-​​
-301: "axis1.trap_traj.config.decel_limit"
-​​
-302: "axis1.min_endstop.config.gpio_num"
-​​
-303: "axis1.min_endstop.config.enabled"
-​​
-304: "axis1.min_endstop.config.offset"
-​​
-305: "axis1.min_endstop.config.is_active_high"
-​​
-306: "axis1.min_endstop.config.debounce_ms"
-​​
-307: "axis1.max_endstop.config.gpio_num"
-​​
-308: "axis1.max_endstop.config.enabled"
-​​
-309: "axis1.max_endstop.config.offset"
-​​
-310: "axis1.max_endstop.config.is_active_high"
-​​
-311: "axis1.max_endstop.config.debounce_ms"
-​​
-312: "axis1.mechanical_brake.config.gpio_num"
-​​
-313: "axis1.mechanical_brake.config.is_active_low"
-​
-length: 314
+length: 153
 ​
 <prototype>: Array []
 usePropertyRefresh.js:128:23
-🔍 Null/undefined values found for 357 properties: 
-Array(357) [ "config.gpio3_analog_mapping → config.gpio3_analog_mapping", "config.gpio4_analog_mapping → config.gpio4_analog_mapping", "config.brake_resistor0.enable → config.brake_resistor0.enable", "config.brake_resistor0.resistance → config.brake_resistor0.resistance", "config.brake_resistor0.enable_dc_bus_voltage_feedback → config.brake_resistor0.enable_dc_bus_voltage_feedback", "config.brake_resistor0.dc_bus_voltage_feedback_ramp_start → config.brake_resistor0.dc_bus_voltage_feedback_ramp_start", "config.brake_resistor0.dc_bus_voltage_feedback_ramp_end → config.brake_resistor0.dc_bus_voltage_feedback_ramp_end", "can.effective_baudrate → can.effective_baudrate", "can.config.autobaud_enabled → can.config.autobaud_enabled", "system_stats.max_stack_usage_usb → system_stats.max_stack_usage_usb", … ]
+🔍 Null/undefined values found for 301 properties: 
+Array(301) [ "config.gpio3_analog_mapping → config.gpio3_analog_mapping", "config.gpio4_analog_mapping → config.gpio4_analog_mapping", "brake_resistor0.current → brake_resistor0.current", "brake_resistor0.current_meas → brake_resistor0.current_meas", "brake_resistor0.duty → brake_resistor0.duty", "brake_resistor0.additional_duty → brake_resistor0.additional_duty", "brake_resistor0.chopper_temp → brake_resistor0.chopper_temp", "brake_resistor0.is_armed → brake_resistor0.is_armed", "brake_resistor0.was_saturated → brake_resistor0.was_saturated", "brake_resistor0.config → brake_resistor0.config", … ]
 ​
 [0…99]
 ​​
@@ -956,723 +410,781 @@ Array(357) [ "config.gpio3_analog_mapping → config.gpio3_analog_mapping", "con
 ​​
 1: "config.gpio4_analog_mapping → config.gpio4_analog_mapping"
 ​​
-2: "config.brake_resistor0.enable → config.brake_resistor0.enable"
+2: "brake_resistor0.current → brake_resistor0.current"
 ​​
-3: "config.brake_resistor0.resistance → config.brake_resistor0.resistance"
+3: "brake_resistor0.current_meas → brake_resistor0.current_meas"
 ​​
-4: "config.brake_resistor0.enable_dc_bus_voltage_feedback → config.brake_resistor0.enable_dc_bus_voltage_feedback"
+4: "brake_resistor0.duty → brake_resistor0.duty"
 ​​
-5: "config.brake_resistor0.dc_bus_voltage_feedback_ramp_start → config.brake_resistor0.dc_bus_voltage_feedback_ramp_start"
+5: "brake_resistor0.additional_duty → brake_resistor0.additional_duty"
 ​​
-6: "config.brake_resistor0.dc_bus_voltage_feedback_ramp_end → config.brake_resistor0.dc_bus_voltage_feedback_ramp_end"
+6: "brake_resistor0.chopper_temp → brake_resistor0.chopper_temp"
 ​​
-7: "can.effective_baudrate → can.effective_baudrate"
+7: "brake_resistor0.is_armed → brake_resistor0.is_armed"
 ​​
-8: "can.config.autobaud_enabled → can.config.autobaud_enabled"
+8: "brake_resistor0.was_saturated → brake_resistor0.was_saturated"
 ​​
-9: "system_stats.max_stack_usage_usb → system_stats.max_stack_usage_usb"
+9: "brake_resistor0.config → brake_resistor0.config"
 ​​
-10: "system_stats.max_stack_usage_can → system_stats.max_stack_usage_can"
+10: "can.effective_baudrate → can.effective_baudrate"
 ​​
-11: "system_stats.max_stack_usage_analog → system_stats.max_stack_usage_analog"
+11: "methods.test_function → methods.test_function"
 ​​
-12: "system_stats.stack_size_usb → system_stats.stack_size_usb"
+12: "methods.get_adc_voltage → methods.get_adc_voltage"
 ​​
-13: "system_stats.stack_size_can → system_stats.stack_size_can"
+13: "methods.enter_dfu_mode2 → methods.enter_dfu_mode2"
 ​​
-14: "system_stats.stack_size_analog → system_stats.stack_size_analog"
+14: "methods.disable_bootloader → methods.disable_bootloader"
 ​​
-15: "system_stats.prio_usb → system_stats.prio_usb"
+15: "methods.identify_once → methods.identify_once"
 ​​
-16: "system_stats.prio_can → system_stats.prio_can"
+16: "methods.get_interrupt_status → methods.get_interrupt_status"
 ​​
-17: "system_stats.prio_analog → system_stats.prio_analog"
+17: "methods.get_dma_status → methods.get_dma_status"
 ​​
-18: "brake_resistor0.current → brake_resistor0.current"
+18: "methods.set_gpio → methods.set_gpio"
 ​​
-19: "brake_resistor0.current_meas → brake_resistor0.current_meas"
+19: "methods.get_raw_8 → methods.get_raw_8"
 ​​
-20: "brake_resistor0.current_meas_status → brake_resistor0.current_meas_status"
+20: "methods.get_raw_32 → methods.get_raw_32"
 ​​
-21: "brake_resistor0.duty → brake_resistor0.duty"
+21: "methods.get_raw_256 → methods.get_raw_256"
 ​​
-22: "brake_resistor0.additional_duty → brake_resistor0.additional_duty"
+22: "axis0.pos_estimate → axis0.pos_estimate"
 ​​
-23: "brake_resistor0.chopper_temp → brake_resistor0.chopper_temp"
+23: "axis0.detailed_disarm_reason → axis0.detailed_disarm_reason"
 ​​
-24: "brake_resistor0.is_armed → brake_resistor0.is_armed"
+24: "axis0.observed_encoder_scale_factor → axis0.observed_encoder_scale_factor"
 ​​
-25: "brake_resistor0.was_saturated → brake_resistor0.was_saturated"
+25: "axis0.config.init_pos → axis0.config.init_pos"
 ​​
-26: "methods.test_function → methods.test_function"
+26: "axis0.motor.config.pre_calibrated → axis0.motor.config.pre_calibrated"
 ​​
-27: "methods.get_adc_voltage → methods.get_adc_voltage"
+27: "axis0.motor.config.pole_pairs → axis0.motor.config.pole_pairs"
 ​​
-28: "methods.enter_dfu_mode2 → methods.enter_dfu_mode2"
+28: "axis0.motor.config.calibration_current → axis0.motor.config.calibration_current"
 ​​
-29: "methods.disable_bootloader → methods.disable_bootloader"
+29: "axis0.motor.config.resistance_calib_max_voltage → axis0.motor.config.resistance_calib_max_voltage"
 ​​
-30: "methods.identify_once → methods.identify_once"
+30: "axis0.motor.config.phase_inductance → axis0.motor.config.phase_inductance"
 ​​
-31: "methods.get_interrupt_status → methods.get_interrupt_status"
+31: "axis0.motor.config.phase_resistance → axis0.motor.config.phase_resistance"
 ​​
-32: "methods.get_dma_status → methods.get_dma_status"
+32: "axis0.motor.config.torque_constant → axis0.motor.config.torque_constant"
 ​​
-33: "methods.set_gpio → methods.set_gpio"
+33: "axis0.motor.config.direction → axis0.motor.config.direction"
 ​​
-34: "methods.get_raw_8 → methods.get_raw_8"
+34: "axis0.motor.config.motor_type → axis0.motor.config.motor_type"
 ​​
-35: "methods.get_raw_32 → methods.get_raw_32"
+35: "axis0.motor.config.current_lim → axis0.motor.config.current_lim"
 ​​
-36: "methods.get_raw_256 → methods.get_raw_256"
+36: "axis0.motor.config.current_lim_margin → axis0.motor.config.current_lim_margin"
 ​​
-37: "axis0.detailed_disarm_reason → axis0.detailed_disarm_reason"
+37: "axis0.motor.config.torque_lim → axis0.motor.config.torque_lim"
 ​​
-38: "axis0.pos_estimate → axis0.pos_estimate"
+38: "axis0.motor.config.inverter_temp_limit_lower → axis0.motor.config.inverter_temp_limit_lower"
 ​​
-39: "axis0.observed_encoder_scale_factor → axis0.observed_encoder_scale_factor"
+39: "axis0.motor.config.inverter_temp_limit_upper → axis0.motor.config.inverter_temp_limit_upper"
 ​​
-40: "axis0.config.enable_sensorless_mode → axis0.config.enable_sensorless_mode"
+40: "axis0.motor.config.requested_current_range → axis0.motor.config.requested_current_range"
 ​​
-41: "axis0.config.user_config_0 → axis0.config.user_config_0"
+41: "axis0.motor.config.current_control_bandwidth → axis0.motor.config.current_control_bandwidth"
 ​​
-42: "axis0.config.user_config_1 → axis0.config.user_config_1"
+42: "axis0.inverter.is_ready → axis0.inverter.is_ready"
 ​​
-43: "axis0.config.user_config_2 → axis0.config.user_config_2"
+43: "axis0.inverter.error → axis0.inverter.error"
 ​​
-44: "axis0.config.user_config_3 → axis0.config.user_config_3"
+44: "axis0.inverter.armed_state → axis0.inverter.armed_state"
 ​​
-45: "axis0.config.user_config_4 → axis0.config.user_config_4"
+45: "axis0.inverter.temperature → axis0.inverter.temperature"
 ​​
-46: "axis0.config.user_config_5 → axis0.config.user_config_5"
+46: "axis0.inverter.effective_current_lim → axis0.inverter.effective_current_lim"
 ​​
-47: "axis0.config.user_config_6 → axis0.config.user_config_6"
+47: "axis0.inverter.current_meas_phA → axis0.inverter.current_meas_phA"
 ​​
-48: "axis0.config.user_config_7 → axis0.config.user_config_7"
+48: "axis0.inverter.current_meas_phB → axis0.inverter.current_meas_phB"
 ​​
-49: "axis0.config.enable_gpio_pin → axis0.config.enable_gpio_pin"
+49: "axis0.inverter.current_meas_phC → axis0.inverter.current_meas_phC"
 ​​
-50: "axis0.config.init_pos → axis0.config.init_pos"
+50: "axis0.load_mapper.is_ready → axis0.load_mapper.is_ready"
 ​​
-51: "axis0.config.commutation_encoder_bandwidth → axis0.config.commutation_encoder_bandwidth"
+51: "axis0.load_mapper.error → axis0.load_mapper.error"
 ​​
-52: "axis0.config.can.is_extended → axis0.config.can.is_extended"
+52: "axis0.load_mapper.shadow_count → axis0.load_mapper.shadow_count"
 ​​
-53: "axis0.config.can.heartbeat_rate_ms → axis0.config.can.heartbeat_rate_ms"
+53: "axis0.load_mapper.pos_estimate → axis0.load_mapper.pos_estimate"
 ​​
-54: "axis0.config.can.encoder_rate_ms → axis0.config.can.encoder_rate_ms"
+54: "axis0.load_mapper.vel_estimate → axis0.load_mapper.vel_estimate"
 ​​
-55: "axis0.config.can.encoder_error_rate_ms → axis0.config.can.encoder_error_rate_ms"
+55: "axis0.load_mapper.config.use_index → axis0.load_mapper.config.use_index"
 ​​
-56: "axis0.config.can.controller_error_rate_ms → axis0.config.can.controller_error_rate_ms"
+56: "axis0.load_mapper.config.index_offset → axis0.load_mapper.config.index_offset"
 ​​
-57: "axis0.config.can.motor_error_rate_ms → axis0.config.can.motor_error_rate_ms"
+57: "axis0.load_mapper.config.cpr → axis0.load_mapper.config.cpr"
 ​​
-58: "axis0.config.can.sensorless_error_rate_ms → axis0.config.can.sensorless_error_rate_ms"
+58: "axis0.load_mapper.config.pre_calibrated → axis0.load_mapper.config.pre_calibrated"
 ​​
-59: "axis0.motor.current_meas_phA → axis0.motor.current_meas_phA"
+59: "axis0.commutation_mapper.is_ready → axis0.commutation_mapper.is_ready"
 ​​
-60: "axis0.motor.current_meas_phB → axis0.motor.current_meas_phB"
+60: "axis0.commutation_mapper.error → axis0.commutation_mapper.error"
 ​​
-61: "axis0.motor.current_meas_phC → axis0.motor.current_meas_phC"
+61: "axis0.commutation_mapper.phase → axis0.commutation_mapper.phase"
 ​​
-62: "axis0.motor.DC_calib_phA → axis0.motor.DC_calib_phA"
+62: "axis0.commutation_mapper.phase_vel → axis0.commutation_mapper.phase_vel"
 ​​
-63: "axis0.motor.DC_calib_phB → axis0.motor.DC_calib_phB"
+63: "axis0.commutation_mapper.config.pole_pairs → axis0.commutation_mapper.config.pole_pairs"
 ​​
-64: "axis0.motor.DC_calib_phC → axis0.motor.DC_calib_phC"
+64: "axis0.commutation_mapper.config.use_index_electrical_offset → axis0.commutation_mapper.config.use_index_electrical_offset"
 ​​
-65: "axis0.motor.I_bus → axis0.motor.I_bus"
+65: "axis0.commutation_mapper.config.electrical_offset → axis0.commutation_mapper.config.electrical_offset"
 ​​
-66: "axis0.motor.phase_current_rev_gain → axis0.motor.phase_current_rev_gain"
+66: "axis0.commutation_mapper.config.direction → axis0.commutation_mapper.config.direction"
 ​​
-67: "axis0.motor.max_allowed_current → axis0.motor.max_allowed_current"
+67: "axis0.pos_vel_mapper.is_ready → axis0.pos_vel_mapper.is_ready"
 ​​
-68: "axis0.motor.max_dc_calib → axis0.motor.max_dc_calib"
+68: "axis0.pos_vel_mapper.error → axis0.pos_vel_mapper.error"
 ​​
-69: "axis0.motor.n_evt_current_measurement → axis0.motor.n_evt_current_measurement"
+69: "axis0.pos_vel_mapper.pos_estimate → axis0.pos_vel_mapper.pos_estimate"
 ​​
-70: "axis0.motor.n_evt_pwm_update → axis0.motor.n_evt_pwm_update"
+70: "axis0.pos_vel_mapper.vel_estimate → axis0.pos_vel_mapper.vel_estimate"
 ​​
-71: "axis0.motor.current_meas_status → axis0.motor.current_meas_status"
+71: "axis0.pos_vel_mapper.config.use_circular_pos → axis0.pos_vel_mapper.config.use_circular_pos"
 ​​
-72: "axis0.motor.current_control.p_gain → axis0.motor.current_control.p_gain"
+72: "axis0.pos_vel_mapper.config.circular_setpoints → axis0.pos_vel_mapper.config.circular_setpoints"
 ​​
-73: "axis0.motor.current_control.i_gain → axis0.motor.current_control.i_gain"
+73: "axis0.pos_vel_mapper.config.range → axis0.pos_vel_mapper.config.range"
 ​​
-74: "axis0.motor.current_control.v_current_control_integral_d → axis0.motor.current_control.v_current_control_integral_d"
+74: "axis0.pos_vel_mapper.config.bandwidth → axis0.pos_vel_mapper.config.bandwidth"
 ​​
-75: "axis0.motor.current_control.v_current_control_integral_q → axis0.motor.current_control.v_current_control_integral_q"
+75: "axis0.harmonic_compensation.cosx_coef → axis0.harmonic_compensation.cosx_coef"
 ​​
-76: "axis0.motor.current_control.Iq_setpoint → axis0.motor.current_control.Iq_setpoint"
+76: "axis0.harmonic_compensation.sinx_coef → axis0.harmonic_compensation.sinx_coef"
 ​​
-77: "axis0.motor.current_control.Iq_measured → axis0.motor.current_control.Iq_measured"
+77: "axis0.harmonic_compensation.cos2x_coef → axis0.harmonic_compensation.cos2x_coef"
 ​​
-78: "axis0.motor.current_control.Id_setpoint → axis0.motor.current_control.Id_setpoint"
+78: "axis0.harmonic_compensation.sin2x_coef → axis0.harmonic_compensation.sin2x_coef"
 ​​
-79: "axis0.motor.current_control.Id_measured → axis0.motor.current_control.Id_measured"
+79: "axis0.harmonic_compensation.config.enable → axis0.harmonic_compensation.config.enable"
 ​​
-80: "axis0.motor.current_control.power → axis0.motor.current_control.power"
+80: "axis0.harmonic_compensation.config.calib_vel → axis0.harmonic_compensation.config.calib_vel"
 ​​
-81: "axis0.motor.current_control.Vq_setpoint → axis0.motor.current_control.Vq_setpoint"
+81: "axis0.harmonic_compensation.config.calib_turns → axis0.harmonic_compensation.config.calib_turns"
 ​​
-82: "axis0.motor.current_control.Vd_setpoint → axis0.motor.current_control.Vd_setpoint"
+82: "axis0.harmonic_compensation.config.calib_settling_delay → axis0.harmonic_compensation.config.calib_settling_delay"
 ​​
-83: "axis0.motor.config.pre_calibrated → axis0.motor.config.pre_calibrated"
+83: "axis0.thermal_current_limiter.current_lim → axis0.thermal_current_limiter.current_lim"
 ​​
-84: "axis0.motor.config.motor_type → axis0.motor.config.motor_type"
+84: "axis0.thermal_current_limiter.config.temp_limit_lower → axis0.thermal_current_limiter.config.temp_limit_lower"
 ​​
-85: "axis0.motor.config.pole_pairs → axis0.motor.config.pole_pairs"
+85: "axis0.thermal_current_limiter.config.temp_limit_upper → axis0.thermal_current_limiter.config.temp_limit_upper"
 ​​
-86: "axis0.motor.config.calibration_current → axis0.motor.config.calibration_current"
+86: "axis0.motor_thermistor_current_limiter.current_lim → axis0.motor_thermistor_current_limiter.current_lim"
 ​​
-87: "axis0.motor.config.resistance_calib_max_voltage → axis0.motor.config.resistance_calib_max_voltage"
+87: "axis0.motor_thermistor_current_limiter.temperature → axis0.motor_thermistor_current_limiter.temperature"
 ​​
-88: "axis0.motor.config.phase_inductance → axis0.motor.config.phase_inductance"
+88: "axis0.motor_thermistor_current_limiter.config.enabled → axis0.motor_thermistor_current_limiter.config.enabled"
 ​​
-89: "axis0.motor.config.phase_resistance → axis0.motor.config.phase_resistance"
+89: "axis0.motor_thermistor_current_limiter.config.temp_limit_lower → axis0.motor_thermistor_current_limiter.config.temp_limit_lower"
 ​​
-90: "axis0.motor.config.torque_constant → axis0.motor.config.torque_constant"
+90: "axis0.motor_thermistor_current_limiter.config.temp_limit_upper → axis0.motor_thermistor_current_limiter.config.temp_limit_upper"
 ​​
-91: "axis0.motor.config.current_lim → axis0.motor.config.current_lim"
+91: "axis0.motor_thermistor_current_limiter.config.poly_coefficient_0 → axis0.motor_thermistor_current_limiter.config.poly_coefficient_0"
 ​​
-92: "axis0.motor.config.current_lim_margin → axis0.motor.config.current_lim_margin"
+92: "axis0.motor_thermistor_current_limiter.config.poly_coefficient_1 → axis0.motor_thermistor_current_limiter.config.poly_coefficient_1"
 ​​
-93: "axis0.motor.config.torque_lim → axis0.motor.config.torque_lim"
+93: "axis0.motor_thermistor_current_limiter.config.poly_coefficient_2 → axis0.motor_thermistor_current_limiter.config.poly_coefficient_2"
 ​​
-94: "axis0.motor.config.inverter_temp_limit_lower → axis0.motor.config.inverter_temp_limit_lower"
+94: "axis0.motor_thermistor_current_limiter.config.poly_coefficient_3 → axis0.motor_thermistor_current_limiter.config.poly_coefficient_3"
 ​​
-95: "axis0.motor.config.inverter_temp_limit_upper → axis0.motor.config.inverter_temp_limit_upper"
+95: "axis0.sensorless_estimator.error → axis0.sensorless_estimator.error"
 ​​
-96: "axis0.motor.config.requested_current_range → axis0.motor.config.requested_current_range"
+96: "axis0.sensorless_estimator.phase → axis0.sensorless_estimator.phase"
 ​​
-97: "axis0.motor.config.current_control_bandwidth → axis0.motor.config.current_control_bandwidth"
+97: "axis0.sensorless_estimator.pll_pos → axis0.sensorless_estimator.pll_pos"
 ​​
-98: "axis0.motor.config.acim_autoflux_enable → axis0.motor.config.acim_autoflux_enable"
+98: "axis0.sensorless_estimator.phase_vel → axis0.sensorless_estimator.phase_vel"
 ​​
-99: "axis0.motor.config.acim_autoflux_attack_gain → axis0.motor.config.acim_autoflux_attack_gain"
+99: "axis0.sensorless_estimator.vel_estimate → axis0.sensorless_estimator.vel_estimate"
 ​
 [100…199]
 ​​
-100: "axis0.motor.config.acim_autoflux_decay_gain → axis0.motor.config.acim_autoflux_decay_gain"
+100: "axis0.sensorless_estimator.config.observer_gain → axis0.sensorless_estimator.config.observer_gain"
 ​​
-101: "axis0.motor.config.bEMF_FF_enable → axis0.motor.config.bEMF_FF_enable"
+101: "axis0.sensorless_estimator.config.pll_bandwidth → axis0.sensorless_estimator.config.pll_bandwidth"
 ​​
-102: "axis0.motor.config.current_slew_rate_limit → axis0.motor.config.current_slew_rate_limit"
+102: "axis0.sensorless_estimator.config.pm_flux_linkage → axis0.sensorless_estimator.config.pm_flux_linkage"
 ​​
-103: "axis0.motor.config.wL_FF_enable → axis0.motor.config.wL_FF_enable"
+103: "axis1.active_errors → axis1.active_errors"
 ​​
-104: "axis0.motor.config.dI_dt_FF_enable → axis0.motor.config.dI_dt_FF_enable"
+104: "axis1.disarm_reason → axis1.disarm_reason"
 ​​
-105: "axis0.motor.config.phase_resistance_valid → axis0.motor.config.phase_resistance_valid"
+105: "axis1.current_state → axis1.current_state"
 ​​
-106: "axis0.motor.config.phase_inductance_valid → axis0.motor.config.phase_inductance_valid"
+106: "axis1.requested_state → axis1.requested_state"
 ​​
-107: "axis0.motor.config.power_torque_report_filter_bandwidth → axis0.motor.config.power_torque_report_filter_bandwidth"
+107: "axis1.step_dir_active → axis1.step_dir_active"
 ​​
-108: "axis0.motor.fet_thermistor.config.enabled → axis0.motor.fet_thermistor.config.enabled"
+108: "axis1.last_drv_fault → axis1.last_drv_fault"
 ​​
-109: "axis0.motor.fet_thermistor.config.temp_limit_lower → axis0.motor.fet_thermistor.config.temp_limit_lower"
+109: "axis1.steps → axis1.steps"
 ​​
-110: "axis0.motor.fet_thermistor.config.temp_limit_upper → axis0.motor.fet_thermistor.config.temp_limit_upper"
+110: "axis1.vel_estimate → axis1.vel_estimate"
 ​​
-111: "axis0.motor.motor_thermistor.temperature → axis0.motor.motor_thermistor.temperature"
+111: "axis1.pos_estimate → axis1.pos_estimate"
 ​​
-112: "axis0.thermal_current_limiter.current_lim → axis0.thermal_current_limiter.current_lim"
+112: "axis1.is_homed → axis1.is_homed"
 ​​
-113: "axis0.thermal_current_limiter.config.temp_limit_lower → axis0.thermal_current_limiter.config.temp_limit_lower"
+113: "axis1.is_armed → axis1.is_armed"
 ​​
-114: "axis0.thermal_current_limiter.config.temp_limit_upper → axis0.thermal_current_limiter.config.temp_limit_upper"
+114: "axis1.procedure_result → axis1.procedure_result"
 ​​
-115: "axis0.motor_thermistor_current_limiter.current_lim → axis0.motor_thermistor_current_limiter.current_lim"
+115: "axis1.disarm_time → axis1.disarm_time"
 ​​
-116: "axis0.motor_thermistor_current_limiter.temperature → axis0.motor_thermistor_current_limiter.temperature"
+116: "axis1.detailed_disarm_reason → axis1.detailed_disarm_reason"
 ​​
-117: "axis0.motor_thermistor_current_limiter.config.gpio_pin → axis0.motor_thermistor_current_limiter.config.gpio_pin"
+117: "axis1.observed_encoder_scale_factor → axis1.observed_encoder_scale_factor"
 ​​
-118: "axis0.motor_thermistor_current_limiter.config.temp_limit_lower → axis0.motor_thermistor_current_limiter.config.temp_limit_lower"
+118: "axis1.config.startup_motor_calibration → axis1.config.startup_motor_calibration"
 ​​
-119: "axis0.motor_thermistor_current_limiter.config.temp_limit_upper → axis0.motor_thermistor_current_limiter.config.temp_limit_upper"
+119: "axis1.config.startup_encoder_index_search → axis1.config.startup_encoder_index_search"
 ​​
-120: "axis0.motor_thermistor_current_limiter.config.poly_coefficient_0 → axis0.motor_thermistor_current_limiter.config.poly_coefficient_0"
+120: "axis1.config.startup_encoder_offset_calibration → axis1.config.startup_encoder_offset_calibration"
 ​​
-121: "axis0.motor_thermistor_current_limiter.config.poly_coefficient_1 → axis0.motor_thermistor_current_limiter.config.poly_coefficient_1"
+121: "axis1.config.startup_closed_loop_control → axis1.config.startup_closed_loop_control"
 ​​
-122: "axis0.motor_thermistor_current_limiter.config.poly_coefficient_2 → axis0.motor_thermistor_current_limiter.config.poly_coefficient_2"
+122: "axis1.config.startup_homing → axis1.config.startup_homing"
 ​​
-123: "axis0.motor_thermistor_current_limiter.config.poly_coefficient_3 → axis0.motor_thermistor_current_limiter.config.poly_coefficient_3"
+123: "axis1.config.enable_step_dir → axis1.config.enable_step_dir"
 ​​
-124: "axis0.load_mapper.is_ready → axis0.load_mapper.is_ready"
+124: "axis1.config.step_dir_always_on → axis1.config.step_dir_always_on"
 ​​
-125: "axis0.load_mapper.error → axis0.load_mapper.error"
+125: "axis1.config.step_gpio_pin → axis1.config.step_gpio_pin"
 ​​
-126: "axis0.load_mapper.shadow_count → axis0.load_mapper.shadow_count"
+126: "axis1.config.dir_gpio_pin → axis1.config.dir_gpio_pin"
 ​​
-127: "axis0.load_mapper.count_in_cpr → axis0.load_mapper.count_in_cpr"
+127: "axis1.config.enable_watchdog → axis1.config.enable_watchdog"
 ​​
-128: "axis0.load_mapper.pos_estimate → axis0.load_mapper.pos_estimate"
+128: "axis1.config.watchdog_timeout → axis1.config.watchdog_timeout"
 ​​
-129: "axis0.load_mapper.pos_estimate_counts → axis0.load_mapper.pos_estimate_counts"
+129: "axis1.config.startup_max_wait_for_ready → axis1.config.startup_max_wait_for_ready"
 ​​
-130: "axis0.load_mapper.pos_circular → axis0.load_mapper.pos_circular"
+130: "axis1.config.calib_range → axis1.config.calib_range"
 ​​
-131: "axis0.load_mapper.vel_estimate → axis0.load_mapper.vel_estimate"
+131: "axis1.config.calib_scan_distance → axis1.config.calib_scan_distance"
 ​​
-132: "axis0.load_mapper.vel_estimate_counts → axis0.load_mapper.vel_estimate_counts"
+132: "axis1.config.calib_scan_vel → axis1.config.calib_scan_vel"
 ​​
-133: "axis0.load_mapper.config.use_index → axis0.load_mapper.config.use_index"
+133: "axis1.config.encoder_bandwidth → axis1.config.encoder_bandwidth"
 ​​
-134: "axis0.load_mapper.config.use_index_offset → axis0.load_mapper.config.use_index_offset"
+134: "axis1.config.init_pos → axis1.config.init_pos"
 ​​
-135: "axis0.load_mapper.config.index_offset → axis0.load_mapper.config.index_offset"
+135: "axis1.config.init_vel → axis1.config.init_vel"
 ​​
-136: "axis0.load_mapper.config.cpr → axis0.load_mapper.config.cpr"
+136: "axis1.config.init_torque → axis1.config.init_torque"
 ​​
-137: "axis0.load_mapper.config.pre_calibrated → axis0.load_mapper.config.pre_calibrated"
+137: "axis1.config.I_bus_hard_min → axis1.config.I_bus_hard_min"
 ​​
-138: "axis0.commutation_mapper.is_ready → axis0.commutation_mapper.is_ready"
+138: "axis1.config.I_bus_hard_max → axis1.config.I_bus_hard_max"
 ​​
-139: "axis0.commutation_mapper.error → axis0.commutation_mapper.error"
+139: "axis1.config.I_bus_soft_min → axis1.config.I_bus_soft_min"
 ​​
-140: "axis0.commutation_mapper.phase → axis0.commutation_mapper.phase"
+140: "axis1.config.I_bus_soft_max → axis1.config.I_bus_soft_max"
 ​​
-141: "axis0.commutation_mapper.phase_vel → axis0.commutation_mapper.phase_vel"
+141: "axis1.config.P_bus_soft_min → axis1.config.P_bus_soft_min"
 ​​
-142: "axis0.commutation_mapper.config.pole_pairs → axis0.commutation_mapper.config.pole_pairs"
+142: "axis1.config.P_bus_soft_max → axis1.config.P_bus_soft_max"
 ​​
-143: "axis0.commutation_mapper.config.use_index_electrical_offset → axis0.commutation_mapper.config.use_index_electrical_offset"
+143: "axis1.config.can.node_id → axis1.config.can.node_id"
 ​​
-144: "axis0.commutation_mapper.config.electrical_offset → axis0.commutation_mapper.config.electrical_offset"
+144: "axis1.config.calibration_lockin.current → axis1.config.calibration_lockin.current"
 ​​
-145: "axis0.commutation_mapper.config.direction → axis0.commutation_mapper.config.direction"
+145: "axis1.config.calibration_lockin.ramp_time → axis1.config.calibration_lockin.ramp_time"
 ​​
-146: "axis0.pos_vel_mapper.is_ready → axis0.pos_vel_mapper.is_ready"
+146: "axis1.config.calibration_lockin.ramp_distance → axis1.config.calibration_lockin.ramp_distance"
 ​​
-147: "axis0.pos_vel_mapper.error → axis0.pos_vel_mapper.error"
+147: "axis1.config.calibration_lockin.accel → axis1.config.calibration_lockin.accel"
 ​​
-148: "axis0.pos_vel_mapper.pos_estimate → axis0.pos_vel_mapper.pos_estimate"
+148: "axis1.config.calibration_lockin.vel → axis1.config.calibration_lockin.vel"
 ​​
-149: "axis0.pos_vel_mapper.vel_estimate → axis0.pos_vel_mapper.vel_estimate"
+149: "axis1.config.sensorless_ramp.current → axis1.config.sensorless_ramp.current"
 ​​
-150: "axis0.pos_vel_mapper.config.use_circular_pos → axis0.pos_vel_mapper.config.use_circular_pos"
+150: "axis1.config.sensorless_ramp.ramp_time → axis1.config.sensorless_ramp.ramp_time"
 ​​
-151: "axis0.pos_vel_mapper.config.circular_setpoints → axis0.pos_vel_mapper.config.circular_setpoints"
+151: "axis1.config.sensorless_ramp.ramp_distance → axis1.config.sensorless_ramp.ramp_distance"
 ​​
-152: "axis0.pos_vel_mapper.config.range → axis0.pos_vel_mapper.config.range"
+152: "axis1.config.sensorless_ramp.accel → axis1.config.sensorless_ramp.accel"
 ​​
-153: "axis0.pos_vel_mapper.config.bandwidth → axis0.pos_vel_mapper.config.bandwidth"
+153: "axis1.config.sensorless_ramp.vel → axis1.config.sensorless_ramp.vel"
 ​​
-154: "axis0.harmonic_compensation.cosx_coef → axis0.harmonic_compensation.cosx_coef"
+154: "axis1.config.sensorless_ramp.finish_distance → axis1.config.sensorless_ramp.finish_distance"
 ​​
-155: "axis0.harmonic_compensation.sinx_coef → axis0.harmonic_compensation.sinx_coef"
+155: "axis1.config.sensorless_ramp.finish_on_vel → axis1.config.sensorless_ramp.finish_on_vel"
 ​​
-156: "axis0.harmonic_compensation.cos2x_coef → axis0.harmonic_compensation.cos2x_coef"
+156: "axis1.config.sensorless_ramp.finish_on_distance → axis1.config.sensorless_ramp.finish_on_distance"
 ​​
-157: "axis0.harmonic_compensation.sin2x_coef → axis0.harmonic_compensation.sin2x_coef"
+157: "axis1.config.general_lockin.current → axis1.config.general_lockin.current"
 ​​
-158: "axis0.harmonic_compensation.config.calib_vel → axis0.harmonic_compensation.config.calib_vel"
+158: "axis1.config.general_lockin.ramp_time → axis1.config.general_lockin.ramp_time"
 ​​
-159: "axis0.harmonic_compensation.config.calib_turns → axis0.harmonic_compensation.config.calib_turns"
+159: "axis1.config.general_lockin.ramp_distance → axis1.config.general_lockin.ramp_distance"
 ​​
-160: "axis0.harmonic_compensation.config.calib_settling_delay → axis0.harmonic_compensation.config.calib_settling_delay"
+160: "axis1.config.general_lockin.accel → axis1.config.general_lockin.accel"
 ​​
-161: "axis0.sensorless_estimator.error → axis0.sensorless_estimator.error"
+161: "axis1.config.general_lockin.vel → axis1.config.general_lockin.vel"
 ​​
-162: "axis0.sensorless_estimator.phase → axis0.sensorless_estimator.phase"
+162: "axis1.motor.effective_current_lim → axis1.motor.effective_current_lim"
 ​​
-163: "axis0.sensorless_estimator.pll_pos → axis0.sensorless_estimator.pll_pos"
+163: "axis1.motor.torque_estimate → axis1.motor.torque_estimate"
 ​​
-164: "axis0.sensorless_estimator.phase_vel → axis0.sensorless_estimator.phase_vel"
+164: "axis1.motor.mechanical_power → axis1.motor.mechanical_power"
 ​​
-165: "axis0.sensorless_estimator.vel_estimate → axis0.sensorless_estimator.vel_estimate"
+165: "axis1.motor.electrical_power → axis1.motor.electrical_power"
 ​​
-166: "axis0.sensorless_estimator.config.observer_gain → axis0.sensorless_estimator.config.observer_gain"
+166: "axis1.motor.loss_power → axis1.motor.loss_power"
 ​​
-167: "axis0.sensorless_estimator.config.pll_bandwidth → axis0.sensorless_estimator.config.pll_bandwidth"
+167: "axis1.motor.resistance_calibration_I_beta → axis1.motor.resistance_calibration_I_beta"
 ​​
-168: "axis0.sensorless_estimator.config.pm_flux_linkage → axis0.sensorless_estimator.config.pm_flux_linkage"
+168: "axis1.motor.input_id → axis1.motor.input_id"
 ​​
-169: "axis0.controller.anticogging_valid → axis0.controller.anticogging_valid"
+169: "axis1.motor.input_iq → axis1.motor.input_iq"
 ​​
-170: "axis0.controller.mechanical_power → axis0.controller.mechanical_power"
+170: "axis1.motor.config.pre_calibrated → axis1.motor.config.pre_calibrated"
 ​​
-171: "axis0.controller.electrical_power → axis0.controller.electrical_power"
+171: "axis1.motor.config.pole_pairs → axis1.motor.config.pole_pairs"
 ​​
-172: "axis0.controller.config.axis_to_mirror → axis0.controller.config.axis_to_mirror"
+172: "axis1.motor.config.calibration_current → axis1.motor.config.calibration_current"
 ​​
-173: "axis0.controller.config.mirror_ratio → axis0.controller.config.mirror_ratio"
+173: "axis1.motor.config.resistance_calib_max_voltage → axis1.motor.config.resistance_calib_max_voltage"
 ​​
-174: "axis0.controller.config.load_encoder_axis → axis0.controller.config.load_encoder_axis"
+174: "axis1.motor.config.phase_inductance → axis1.motor.config.phase_inductance"
 ​​
-175: "axis0.controller.config.mechanical_power_bandwidth → axis0.controller.config.mechanical_power_bandwidth"
+175: "axis1.motor.config.phase_resistance → axis1.motor.config.phase_resistance"
 ​​
-176: "axis0.controller.config.electrical_power_bandwidth → axis0.controller.config.electrical_power_bandwidth"
+176: "axis1.motor.config.torque_constant → axis1.motor.config.torque_constant"
 ​​
-177: "axis0.controller.config.anticogging.index → axis0.controller.config.anticogging.index"
+177: "axis1.motor.config.direction → axis1.motor.config.direction"
 ​​
-178: "axis0.controller.config.anticogging.pre_calibrated → axis0.controller.config.anticogging.pre_calibrated"
+178: "axis1.motor.config.motor_type → axis1.motor.config.motor_type"
 ​​
-179: "axis0.controller.config.anticogging.anticogging_enabled → axis0.controller.config.anticogging.anticogging_enabled"
+179: "axis1.motor.config.current_lim → axis1.motor.config.current_lim"
 ​​
-180: "axis0.controller.config.anticogging.calib_anticogging → axis0.controller.config.anticogging.calib_anticogging"
+180: "axis1.motor.config.current_lim_margin → axis1.motor.config.current_lim_margin"
 ​​
-181: "axis0.controller.config.anticogging.calib_pos_threshold → axis0.controller.config.anticogging.calib_pos_threshold"
+181: "axis1.motor.config.torque_lim → axis1.motor.config.torque_lim"
 ​​
-182: "axis0.controller.config.anticogging.calib_vel_threshold → axis0.controller.config.anticogging.calib_vel_threshold"
+182: "axis1.motor.config.inverter_temp_limit_lower → axis1.motor.config.inverter_temp_limit_lower"
 ​​
-183: "axis0.controller.config.anticogging.calib_start_vel → axis0.controller.config.anticogging.calib_start_vel"
+183: "axis1.motor.config.inverter_temp_limit_upper → axis1.motor.config.inverter_temp_limit_upper"
 ​​
-184: "axis0.controller.config.anticogging.calib_end_vel → axis0.controller.config.anticogging.calib_end_vel"
+184: "axis1.motor.config.requested_current_range → axis1.motor.config.requested_current_range"
 ​​
-185: "axis0.controller.config.anticogging.calib_bidirectional → axis0.controller.config.anticogging.calib_bidirectional"
+185: "axis1.motor.config.current_control_bandwidth → axis1.motor.config.current_control_bandwidth"
 ​​
-186: "axis0.controller.config.anticogging.calib_coarse_integrator_gain → axis0.controller.config.anticogging.calib_coarse_integrator_gain"
+186: "axis1.motor.fet_thermistor.temperature → axis1.motor.fet_thermistor.temperature"
 ​​
-187: "axis0.min_endstop.endstop_state → axis0.min_endstop.endstop_state"
+187: "axis1.motor.motor_thermistor.config → axis1.motor.motor_thermistor.config"
 ​​
-188: "axis0.max_endstop.endstop_state → axis0.max_endstop.endstop_state"
+188: "axis1.controller.input_pos → axis1.controller.input_pos"
 ​​
-189: "axis0.inverter.is_ready → axis0.inverter.is_ready"
+189: "axis1.controller.input_vel → axis1.controller.input_vel"
 ​​
-190: "axis0.inverter.error → axis0.inverter.error"
+190: "axis1.controller.input_torque → axis1.controller.input_torque"
 ​​
-191: "axis0.inverter.armed_state → axis0.inverter.armed_state"
+191: "axis1.controller.pos_setpoint → axis1.controller.pos_setpoint"
 ​​
-192: "axis0.inverter.temperature → axis0.inverter.temperature"
+192: "axis1.controller.vel_setpoint → axis1.controller.vel_setpoint"
 ​​
-193: "axis0.inverter.effective_current_lim → axis0.inverter.effective_current_lim"
+193: "axis1.controller.torque_setpoint → axis1.controller.torque_setpoint"
 ​​
-194: "axis0.inverter.max_allowed_current → axis0.inverter.max_allowed_current"
+194: "axis1.controller.trajectory_done → axis1.controller.trajectory_done"
 ​​
-195: "axis0.inverter.config.temp_limit_lower → axis0.inverter.config.temp_limit_lower"
+195: "axis1.controller.vel_integrator_torque → axis1.controller.vel_integrator_torque"
 ​​
-196: "axis0.inverter.config.temp_limit_upper → axis0.inverter.config.temp_limit_upper"
+196: "axis1.controller.autotuning_phase → axis1.controller.autotuning_phase"
 ​​
-197: "axis1.detailed_disarm_reason → axis0.detailed_disarm_reason"
+197: "axis1.controller.effective_torque_setpoint → axis1.controller.effective_torque_setpoint"
 ​​
-198: "axis1.pos_estimate → axis0.pos_estimate"
+198: "axis1.controller.spinout_electrical_power → axis1.controller.spinout_electrical_power"
 ​​
-199: "axis1.observed_encoder_scale_factor → axis0.observed_encoder_scale_factor"
+199: "axis1.controller.spinout_mechanical_power → axis1.controller.spinout_mechanical_power"
 ​
 [200…299]
 ​​
-200: "axis1.config.enable_sensorless_mode → axis0.config.enable_sensorless_mode"
+200: "axis1.controller.config.control_mode → axis1.controller.config.control_mode"
 ​​
-201: "axis1.config.user_config_0 → axis0.config.user_config_0"
+201: "axis1.controller.config.input_mode → axis1.controller.config.input_mode"
 ​​
-202: "axis1.config.user_config_1 → axis0.config.user_config_1"
+202: "axis1.controller.config.pos_gain → axis1.controller.config.pos_gain"
 ​​
-203: "axis1.config.user_config_2 → axis0.config.user_config_2"
+203: "axis1.controller.config.vel_gain → axis1.controller.config.vel_gain"
 ​​
-204: "axis1.config.user_config_3 → axis0.config.user_config_3"
+204: "axis1.controller.config.vel_integrator_gain → axis1.controller.config.vel_integrator_gain"
 ​​
-205: "axis1.config.user_config_4 → axis0.config.user_config_4"
+205: "axis1.controller.config.vel_limit → axis1.controller.config.vel_limit"
 ​​
-206: "axis1.config.user_config_5 → axis0.config.user_config_5"
+206: "axis1.controller.config.vel_limit_tolerance → axis1.controller.config.vel_limit_tolerance"
 ​​
-207: "axis1.config.user_config_6 → axis0.config.user_config_6"
+207: "axis1.controller.config.vel_ramp_rate → axis1.controller.config.vel_ramp_rate"
 ​​
-208: "axis1.config.user_config_7 → axis0.config.user_config_7"
+208: "axis1.controller.config.torque_ramp_rate → axis1.controller.config.torque_ramp_rate"
 ​​
-209: "axis1.config.enable_gpio_pin → axis0.config.enable_gpio_pin"
+209: "axis1.controller.config.circular_setpoints → axis1.controller.config.circular_setpoints"
 ​​
-210: "axis1.config.init_pos → axis0.config.init_pos"
+210: "axis1.controller.config.circular_setpoint_range → axis1.controller.config.circular_setpoint_range"
 ​​
-211: "axis1.config.commutation_encoder_bandwidth → axis0.config.commutation_encoder_bandwidth"
+211: "axis1.controller.config.homing_speed → axis1.controller.config.homing_speed"
 ​​
-212: "axis1.config.can.is_extended → axis0.config.can.is_extended"
+212: "axis1.controller.config.inertia → axis1.controller.config.inertia"
 ​​
-213: "axis1.config.can.heartbeat_rate_ms → axis0.config.can.heartbeat_rate_ms"
+213: "axis1.controller.config.input_filter_bandwidth → axis1.controller.config.input_filter_bandwidth"
 ​​
-214: "axis1.config.can.encoder_rate_ms → axis0.config.can.encoder_rate_ms"
+214: "axis1.controller.config.enable_overspeed_error → axis1.controller.config.enable_overspeed_error"
 ​​
-215: "axis1.config.can.encoder_error_rate_ms → axis0.config.can.encoder_error_rate_ms"
+215: "axis1.controller.config.enable_torque_mode_vel_limit → axis1.controller.config.enable_torque_mode_vel_limit"
 ​​
-216: "axis1.config.can.controller_error_rate_ms → axis0.config.can.controller_error_rate_ms"
+216: "axis1.controller.config.enable_gain_scheduling → axis1.controller.config.enable_gain_scheduling"
 ​​
-217: "axis1.config.can.motor_error_rate_ms → axis0.config.can.motor_error_rate_ms"
+217: "axis1.controller.config.gain_scheduling_width → axis1.controller.config.gain_scheduling_width"
 ​​
-218: "axis1.config.can.sensorless_error_rate_ms → axis0.config.can.sensorless_error_rate_ms"
+218: "axis1.controller.config.enable_vel_limit → axis1.controller.config.enable_vel_limit"
 ​​
-219: "axis1.motor.current_meas_phA → axis0.motor.current_meas_phA"
+219: "axis1.controller.config.spinout_electrical_power_threshold → axis1.controller.config.spinout_electrical_power_threshold"
 ​​
-220: "axis1.motor.current_meas_phB → axis0.motor.current_meas_phB"
+220: "axis1.controller.config.spinout_mechanical_power_threshold → axis1.controller.config.spinout_mechanical_power_threshold"
 ​​
-221: "axis1.motor.current_meas_phC → axis0.motor.current_meas_phC"
+221: "axis1.controller.config.absolute_setpoints → axis1.controller.config.absolute_setpoints"
 ​​
-222: "axis1.motor.DC_calib_phA → axis0.motor.DC_calib_phA"
+222: "axis1.controller.config.use_commutation_vel → axis1.controller.config.use_commutation_vel"
 ​​
-223: "axis1.motor.DC_calib_phB → axis0.motor.DC_calib_phB"
+223: "axis1.controller.autotuning.frequency → axis1.controller.autotuning.frequency"
 ​​
-224: "axis1.motor.DC_calib_phC → axis0.motor.DC_calib_phC"
+224: "axis1.controller.autotuning.torque_amplitude → axis1.controller.autotuning.torque_amplitude"
 ​​
-225: "axis1.motor.I_bus → axis0.motor.I_bus"
+225: "axis1.trap_traj.config.vel_limit → axis1.trap_traj.config.vel_limit"
 ​​
-226: "axis1.motor.phase_current_rev_gain → axis0.motor.phase_current_rev_gain"
+226: "axis1.trap_traj.config.accel_limit → axis1.trap_traj.config.accel_limit"
 ​​
-227: "axis1.motor.max_allowed_current → axis0.motor.max_allowed_current"
+227: "axis1.trap_traj.config.decel_limit → axis1.trap_traj.config.decel_limit"
 ​​
-228: "axis1.motor.max_dc_calib → axis0.motor.max_dc_calib"
+228: "axis1.min_endstop.config.gpio_num → axis1.min_endstop.config.gpio_num"
 ​​
-229: "axis1.motor.n_evt_current_measurement → axis0.motor.n_evt_current_measurement"
+229: "axis1.min_endstop.config.enabled → axis1.min_endstop.config.enabled"
 ​​
-230: "axis1.motor.n_evt_pwm_update → axis0.motor.n_evt_pwm_update"
+230: "axis1.min_endstop.config.offset → axis1.min_endstop.config.offset"
 ​​
-231: "axis1.motor.current_meas_status → axis0.motor.current_meas_status"
+231: "axis1.min_endstop.config.is_active_high → axis1.min_endstop.config.is_active_high"
 ​​
-232: "axis1.motor.current_control.p_gain → axis0.motor.current_control.p_gain"
+232: "axis1.min_endstop.config.debounce_ms → axis1.min_endstop.config.debounce_ms"
 ​​
-233: "axis1.motor.current_control.i_gain → axis0.motor.current_control.i_gain"
+233: "axis1.max_endstop.config.gpio_num → axis1.max_endstop.config.gpio_num"
 ​​
-234: "axis1.motor.current_control.v_current_control_integral_d → axis0.motor.current_control.v_current_control_integral_d"
+234: "axis1.max_endstop.config.enabled → axis1.max_endstop.config.enabled"
 ​​
-235: "axis1.motor.current_control.v_current_control_integral_q → axis0.motor.current_control.v_current_control_integral_q"
+235: "axis1.max_endstop.config.offset → axis1.max_endstop.config.offset"
 ​​
-236: "axis1.motor.current_control.Iq_setpoint → axis0.motor.current_control.Iq_setpoint"
+236: "axis1.max_endstop.config.is_active_high → axis1.max_endstop.config.is_active_high"
 ​​
-237: "axis1.motor.current_control.Iq_measured → axis0.motor.current_control.Iq_measured"
+237: "axis1.max_endstop.config.debounce_ms → axis1.max_endstop.config.debounce_ms"
 ​​
-238: "axis1.motor.current_control.Id_setpoint → axis0.motor.current_control.Id_setpoint"
+238: "axis1.mechanical_brake.config.gpio_num → axis1.mechanical_brake.config.gpio_num"
 ​​
-239: "axis1.motor.current_control.Id_measured → axis0.motor.current_control.Id_measured"
+239: "axis1.mechanical_brake.config.is_active_low → axis1.mechanical_brake.config.is_active_low"
 ​​
-240: "axis1.motor.current_control.power → axis0.motor.current_control.power"
+240: "axis1.inverter.is_ready → axis1.inverter.is_ready"
 ​​
-241: "axis1.motor.current_control.Vq_setpoint → axis0.motor.current_control.Vq_setpoint"
+241: "axis1.inverter.error → axis1.inverter.error"
 ​​
-242: "axis1.motor.current_control.Vd_setpoint → axis0.motor.current_control.Vd_setpoint"
+242: "axis1.inverter.armed_state → axis1.inverter.armed_state"
 ​​
-243: "axis1.motor.config.pre_calibrated → axis0.motor.config.pre_calibrated"
+243: "axis1.inverter.temperature → axis1.inverter.temperature"
 ​​
-244: "axis1.motor.config.motor_type → axis0.motor.config.motor_type"
+244: "axis1.inverter.effective_current_lim → axis1.inverter.effective_current_lim"
 ​​
-245: "axis1.motor.config.pole_pairs → axis0.motor.config.pole_pairs"
+245: "axis1.inverter.current_meas_phA → axis1.inverter.current_meas_phA"
 ​​
-246: "axis1.motor.config.calibration_current → axis0.motor.config.calibration_current"
+246: "axis1.inverter.current_meas_phB → axis1.inverter.current_meas_phB"
 ​​
-247: "axis1.motor.config.resistance_calib_max_voltage → axis0.motor.config.resistance_calib_max_voltage"
+247: "axis1.inverter.current_meas_phC → axis1.inverter.current_meas_phC"
 ​​
-248: "axis1.motor.config.phase_inductance → axis0.motor.config.phase_inductance"
+248: "axis1.load_mapper.is_ready → axis1.load_mapper.is_ready"
 ​​
-249: "axis1.motor.config.phase_resistance → axis0.motor.config.phase_resistance"
+249: "axis1.load_mapper.error → axis1.load_mapper.error"
 ​​
-250: "axis1.motor.config.torque_constant → axis0.motor.config.torque_constant"
+250: "axis1.load_mapper.shadow_count → axis1.load_mapper.shadow_count"
 ​​
-251: "axis1.motor.config.current_lim → axis0.motor.config.current_lim"
+251: "axis1.load_mapper.pos_estimate → axis1.load_mapper.pos_estimate"
 ​​
-252: "axis1.motor.config.current_lim_margin → axis0.motor.config.current_lim_margin"
+252: "axis1.load_mapper.vel_estimate → axis1.load_mapper.vel_estimate"
 ​​
-253: "axis1.motor.config.torque_lim → axis0.motor.config.torque_lim"
+253: "axis1.load_mapper.config.use_index → axis1.load_mapper.config.use_index"
 ​​
-254: "axis1.motor.config.inverter_temp_limit_lower → axis0.motor.config.inverter_temp_limit_lower"
+254: "axis1.load_mapper.config.index_offset → axis1.load_mapper.config.index_offset"
 ​​
-255: "axis1.motor.config.inverter_temp_limit_upper → axis0.motor.config.inverter_temp_limit_upper"
+255: "axis1.load_mapper.config.cpr → axis1.load_mapper.config.cpr"
 ​​
-256: "axis1.motor.config.requested_current_range → axis0.motor.config.requested_current_range"
+256: "axis1.load_mapper.config.pre_calibrated → axis1.load_mapper.config.pre_calibrated"
 ​​
-257: "axis1.motor.config.current_control_bandwidth → axis0.motor.config.current_control_bandwidth"
+257: "axis1.commutation_mapper.is_ready → axis1.commutation_mapper.is_ready"
 ​​
-258: "axis1.motor.config.acim_autoflux_enable → axis0.motor.config.acim_autoflux_enable"
+258: "axis1.commutation_mapper.error → axis1.commutation_mapper.error"
 ​​
-259: "axis1.motor.config.acim_autoflux_attack_gain → axis0.motor.config.acim_autoflux_attack_gain"
+259: "axis1.commutation_mapper.phase → axis1.commutation_mapper.phase"
 ​​
-260: "axis1.motor.config.acim_autoflux_decay_gain → axis0.motor.config.acim_autoflux_decay_gain"
+260: "axis1.commutation_mapper.phase_vel → axis1.commutation_mapper.phase_vel"
 ​​
-261: "axis1.motor.config.bEMF_FF_enable → axis0.motor.config.bEMF_FF_enable"
+261: "axis1.commutation_mapper.config.pole_pairs → axis1.commutation_mapper.config.pole_pairs"
 ​​
-262: "axis1.motor.config.current_slew_rate_limit → axis0.motor.config.current_slew_rate_limit"
+262: "axis1.commutation_mapper.config.use_index_electrical_offset → axis1.commutation_mapper.config.use_index_electrical_offset"
 ​​
-263: "axis1.motor.config.wL_FF_enable → axis0.motor.config.wL_FF_enable"
+263: "axis1.commutation_mapper.config.electrical_offset → axis1.commutation_mapper.config.electrical_offset"
 ​​
-264: "axis1.motor.config.dI_dt_FF_enable → axis0.motor.config.dI_dt_FF_enable"
+264: "axis1.commutation_mapper.config.direction → axis1.commutation_mapper.config.direction"
 ​​
-265: "axis1.motor.config.phase_resistance_valid → axis0.motor.config.phase_resistance_valid"
+265: "axis1.pos_vel_mapper.is_ready → axis1.pos_vel_mapper.is_ready"
 ​​
-266: "axis1.motor.config.phase_inductance_valid → axis0.motor.config.phase_inductance_valid"
+266: "axis1.pos_vel_mapper.error → axis1.pos_vel_mapper.error"
 ​​
-267: "axis1.motor.config.power_torque_report_filter_bandwidth → axis0.motor.config.power_torque_report_filter_bandwidth"
+267: "axis1.pos_vel_mapper.pos_estimate → axis1.pos_vel_mapper.pos_estimate"
 ​​
-268: "axis1.motor.fet_thermistor.config.enabled → axis0.motor.fet_thermistor.config.enabled"
+268: "axis1.pos_vel_mapper.vel_estimate → axis1.pos_vel_mapper.vel_estimate"
 ​​
-269: "axis1.motor.fet_thermistor.config.temp_limit_lower → axis0.motor.fet_thermistor.config.temp_limit_lower"
+269: "axis1.pos_vel_mapper.config.use_circular_pos → axis1.pos_vel_mapper.config.use_circular_pos"
 ​​
-270: "axis1.motor.fet_thermistor.config.temp_limit_upper → axis0.motor.fet_thermistor.config.temp_limit_upper"
+270: "axis1.pos_vel_mapper.config.circular_setpoints → axis1.pos_vel_mapper.config.circular_setpoints"
 ​​
-271: "axis1.motor.motor_thermistor.temperature → axis0.motor.motor_thermistor.temperature"
+271: "axis1.pos_vel_mapper.config.range → axis1.pos_vel_mapper.config.range"
 ​​
-272: "axis1.thermal_current_limiter.current_lim → axis0.thermal_current_limiter.current_lim"
+272: "axis1.pos_vel_mapper.config.bandwidth → axis1.pos_vel_mapper.config.bandwidth"
 ​​
-273: "axis1.thermal_current_limiter.config.temp_limit_lower → axis0.thermal_current_limiter.config.temp_limit_lower"
+273: "axis1.harmonic_compensation.cosx_coef → axis1.harmonic_compensation.cosx_coef"
 ​​
-274: "axis1.thermal_current_limiter.config.temp_limit_upper → axis0.thermal_current_limiter.config.temp_limit_upper"
+274: "axis1.harmonic_compensation.sinx_coef → axis1.harmonic_compensation.sinx_coef"
 ​​
-275: "axis1.motor_thermistor_current_limiter.current_lim → axis0.motor_thermistor_current_limiter.current_lim"
+275: "axis1.harmonic_compensation.cos2x_coef → axis1.harmonic_compensation.cos2x_coef"
 ​​
-276: "axis1.motor_thermistor_current_limiter.temperature → axis0.motor_thermistor_current_limiter.temperature"
+276: "axis1.harmonic_compensation.sin2x_coef → axis1.harmonic_compensation.sin2x_coef"
 ​​
-277: "axis1.motor_thermistor_current_limiter.config.gpio_pin → axis0.motor_thermistor_current_limiter.config.gpio_pin"
+277: "axis1.harmonic_compensation.config.enable → axis1.harmonic_compensation.config.enable"
 ​​
-278: "axis1.motor_thermistor_current_limiter.config.temp_limit_lower → axis0.motor_thermistor_current_limiter.config.temp_limit_lower"
+278: "axis1.harmonic_compensation.config.calib_vel → axis1.harmonic_compensation.config.calib_vel"
 ​​
-279: "axis1.motor_thermistor_current_limiter.config.temp_limit_upper → axis0.motor_thermistor_current_limiter.config.temp_limit_upper"
+279: "axis1.harmonic_compensation.config.calib_turns → axis1.harmonic_compensation.config.calib_turns"
 ​​
-280: "axis1.motor_thermistor_current_limiter.config.poly_coefficient_0 → axis0.motor_thermistor_current_limiter.config.poly_coefficient_0"
+280: "axis1.harmonic_compensation.config.calib_settling_delay → axis1.harmonic_compensation.config.calib_settling_delay"
 ​​
-281: "axis1.motor_thermistor_current_limiter.config.poly_coefficient_1 → axis0.motor_thermistor_current_limiter.config.poly_coefficient_1"
+281: "axis1.thermal_current_limiter.current_lim → axis1.thermal_current_limiter.current_lim"
 ​​
-282: "axis1.motor_thermistor_current_limiter.config.poly_coefficient_2 → axis0.motor_thermistor_current_limiter.config.poly_coefficient_2"
+282: "axis1.thermal_current_limiter.config.temp_limit_lower → axis1.thermal_current_limiter.config.temp_limit_lower"
 ​​
-283: "axis1.motor_thermistor_current_limiter.config.poly_coefficient_3 → axis0.motor_thermistor_current_limiter.config.poly_coefficient_3"
+283: "axis1.thermal_current_limiter.config.temp_limit_upper → axis1.thermal_current_limiter.config.temp_limit_upper"
 ​​
-284: "axis1.load_mapper.is_ready → axis0.load_mapper.is_ready"
+284: "axis1.motor_thermistor_current_limiter.current_lim → axis1.motor_thermistor_current_limiter.current_lim"
 ​​
-285: "axis1.load_mapper.error → axis0.load_mapper.error"
+285: "axis1.motor_thermistor_current_limiter.temperature → axis1.motor_thermistor_current_limiter.temperature"
 ​​
-286: "axis1.load_mapper.shadow_count → axis0.load_mapper.shadow_count"
+286: "axis1.motor_thermistor_current_limiter.config.enabled → axis1.motor_thermistor_current_limiter.config.enabled"
 ​​
-287: "axis1.load_mapper.count_in_cpr → axis0.load_mapper.count_in_cpr"
+287: "axis1.motor_thermistor_current_limiter.config.temp_limit_lower → axis1.motor_thermistor_current_limiter.config.temp_limit_lower"
 ​​
-288: "axis1.load_mapper.pos_estimate → axis0.load_mapper.pos_estimate"
+288: "axis1.motor_thermistor_current_limiter.config.temp_limit_upper → axis1.motor_thermistor_current_limiter.config.temp_limit_upper"
 ​​
-289: "axis1.load_mapper.pos_estimate_counts → axis0.load_mapper.pos_estimate_counts"
+289: "axis1.motor_thermistor_current_limiter.config.poly_coefficient_0 → axis1.motor_thermistor_current_limiter.config.poly_coefficient_0"
 ​​
-290: "axis1.load_mapper.pos_circular → axis0.load_mapper.pos_circular"
+290: "axis1.motor_thermistor_current_limiter.config.poly_coefficient_1 → axis1.motor_thermistor_current_limiter.config.poly_coefficient_1"
 ​​
-291: "axis1.load_mapper.vel_estimate → axis0.load_mapper.vel_estimate"
+291: "axis1.motor_thermistor_current_limiter.config.poly_coefficient_2 → axis1.motor_thermistor_current_limiter.config.poly_coefficient_2"
 ​​
-292: "axis1.load_mapper.vel_estimate_counts → axis0.load_mapper.vel_estimate_counts"
+292: "axis1.motor_thermistor_current_limiter.config.poly_coefficient_3 → axis1.motor_thermistor_current_limiter.config.poly_coefficient_3"
 ​​
-293: "axis1.load_mapper.config.use_index → axis0.load_mapper.config.use_index"
+293: "axis1.sensorless_estimator.error → axis1.sensorless_estimator.error"
 ​​
-294: "axis1.load_mapper.config.use_index_offset → axis0.load_mapper.config.use_index_offset"
+294: "axis1.sensorless_estimator.phase → axis1.sensorless_estimator.phase"
 ​​
-295: "axis1.load_mapper.config.index_offset → axis0.load_mapper.config.index_offset"
+295: "axis1.sensorless_estimator.pll_pos → axis1.sensorless_estimator.pll_pos"
 ​​
-296: "axis1.load_mapper.config.cpr → axis0.load_mapper.config.cpr"
+296: "axis1.sensorless_estimator.phase_vel → axis1.sensorless_estimator.phase_vel"
 ​​
-297: "axis1.load_mapper.config.pre_calibrated → axis0.load_mapper.config.pre_calibrated"
+297: "axis1.sensorless_estimator.vel_estimate → axis1.sensorless_estimator.vel_estimate"
 ​​
-298: "axis1.commutation_mapper.is_ready → axis0.commutation_mapper.is_ready"
+298: "axis1.sensorless_estimator.config.observer_gain → axis1.sensorless_estimator.config.observer_gain"
 ​​
-299: "axis1.commutation_mapper.error → axis0.commutation_mapper.error"
+299: "axis1.sensorless_estimator.config.pll_bandwidth → axis1.sensorless_estimator.config.pll_bandwidth"
 ​
-[300…356]
+[300…300]
 ​​
-300: "axis1.commutation_mapper.phase → axis0.commutation_mapper.phase"
-​​
-301: "axis1.commutation_mapper.phase_vel → axis0.commutation_mapper.phase_vel"
-​​
-302: "axis1.commutation_mapper.config.pole_pairs → axis0.commutation_mapper.config.pole_pairs"
-​​
-303: "axis1.commutation_mapper.config.use_index_electrical_offset → axis0.commutation_mapper.config.use_index_electrical_offset"
-​​
-304: "axis1.commutation_mapper.config.electrical_offset → axis0.commutation_mapper.config.electrical_offset"
-​​
-305: "axis1.commutation_mapper.config.direction → axis0.commutation_mapper.config.direction"
-​​
-306: "axis1.pos_vel_mapper.is_ready → axis0.pos_vel_mapper.is_ready"
-​​
-307: "axis1.pos_vel_mapper.error → axis0.pos_vel_mapper.error"
-​​
-308: "axis1.pos_vel_mapper.pos_estimate → axis0.pos_vel_mapper.pos_estimate"
-​​
-309: "axis1.pos_vel_mapper.vel_estimate → axis0.pos_vel_mapper.vel_estimate"
-​​
-310: "axis1.pos_vel_mapper.config.use_circular_pos → axis0.pos_vel_mapper.config.use_circular_pos"
-​​
-311: "axis1.pos_vel_mapper.config.circular_setpoints → axis0.pos_vel_mapper.config.circular_setpoints"
-​​
-312: "axis1.pos_vel_mapper.config.range → axis0.pos_vel_mapper.config.range"
-​​
-313: "axis1.pos_vel_mapper.config.bandwidth → axis0.pos_vel_mapper.config.bandwidth"
-​​
-314: "axis1.harmonic_compensation.cosx_coef → axis0.harmonic_compensation.cosx_coef"
-​​
-315: "axis1.harmonic_compensation.sinx_coef → axis0.harmonic_compensation.sinx_coef"
-​​
-316: "axis1.harmonic_compensation.cos2x_coef → axis0.harmonic_compensation.cos2x_coef"
-​​
-317: "axis1.harmonic_compensation.sin2x_coef → axis0.harmonic_compensation.sin2x_coef"
-​​
-318: "axis1.harmonic_compensation.config.calib_vel → axis0.harmonic_compensation.config.calib_vel"
-​​
-319: "axis1.harmonic_compensation.config.calib_turns → axis0.harmonic_compensation.config.calib_turns"
-​​
-320: "axis1.harmonic_compensation.config.calib_settling_delay → axis0.harmonic_compensation.config.calib_settling_delay"
-​​
-321: "axis1.sensorless_estimator.error → axis0.sensorless_estimator.error"
-​​
-322: "axis1.sensorless_estimator.phase → axis0.sensorless_estimator.phase"
-​​
-323: "axis1.sensorless_estimator.pll_pos → axis0.sensorless_estimator.pll_pos"
-​​
-324: "axis1.sensorless_estimator.phase_vel → axis0.sensorless_estimator.phase_vel"
-​​
-325: "axis1.sensorless_estimator.vel_estimate → axis0.sensorless_estimator.vel_estimate"
-​​
-326: "axis1.sensorless_estimator.config.observer_gain → axis0.sensorless_estimator.config.observer_gain"
-​​
-327: "axis1.sensorless_estimator.config.pll_bandwidth → axis0.sensorless_estimator.config.pll_bandwidth"
-​​
-328: "axis1.sensorless_estimator.config.pm_flux_linkage → axis0.sensorless_estimator.config.pm_flux_linkage"
-​​
-329: "axis1.controller.anticogging_valid → axis0.controller.anticogging_valid"
-​​
-330: "axis1.controller.mechanical_power → axis0.controller.mechanical_power"
-​​
-331: "axis1.controller.electrical_power → axis0.controller.electrical_power"
-​​
-332: "axis1.controller.config.axis_to_mirror → axis0.controller.config.axis_to_mirror"
-​​
-333: "axis1.controller.config.mirror_ratio → axis0.controller.config.mirror_ratio"
-​​
-334: "axis1.controller.config.load_encoder_axis → axis0.controller.config.load_encoder_axis"
-​​
-335: "axis1.controller.config.mechanical_power_bandwidth → axis0.controller.config.mechanical_power_bandwidth"
-​​
-336: "axis1.controller.config.electrical_power_bandwidth → axis0.controller.config.electrical_power_bandwidth"
-​​
-337: "axis1.controller.config.anticogging.index → axis0.controller.config.anticogging.index"
-​​
-338: "axis1.controller.config.anticogging.pre_calibrated → axis0.controller.config.anticogging.pre_calibrated"
-​​
-339: "axis1.controller.config.anticogging.anticogging_enabled → axis0.controller.config.anticogging.anticogging_enabled"
-​​
-340: "axis1.controller.config.anticogging.calib_anticogging → axis0.controller.config.anticogging.calib_anticogging"
-​​
-341: "axis1.controller.config.anticogging.calib_pos_threshold → axis0.controller.config.anticogging.calib_pos_threshold"
-​​
-342: "axis1.controller.config.anticogging.calib_vel_threshold → axis0.controller.config.anticogging.calib_vel_threshold"
-​​
-343: "axis1.controller.config.anticogging.calib_start_vel → axis0.controller.config.anticogging.calib_start_vel"
-​​
-344: "axis1.controller.config.anticogging.calib_end_vel → axis0.controller.config.anticogging.calib_end_vel"
-​​
-345: "axis1.controller.config.anticogging.calib_bidirectional → axis0.controller.config.anticogging.calib_bidirectional"
-​​
-346: "axis1.controller.config.anticogging.calib_coarse_integrator_gain → axis0.controller.config.anticogging.calib_coarse_integrator_gain"
-​​
-347: "axis1.min_endstop.endstop_state → axis0.min_endstop.endstop_state"
-​​
-348: "axis1.max_endstop.endstop_state → axis0.max_endstop.endstop_state"
-​​
-349: "axis1.inverter.is_ready → axis0.inverter.is_ready"
-​​
-350: "axis1.inverter.error → axis0.inverter.error"
-​​
-351: "axis1.inverter.armed_state → axis0.inverter.armed_state"
-​​
-352: "axis1.inverter.temperature → axis0.inverter.temperature"
-​​
-353: "axis1.inverter.effective_current_lim → axis0.inverter.effective_current_lim"
-​​
-354: "axis1.inverter.max_allowed_current → axis0.inverter.max_allowed_current"
-​​
-355: "axis1.inverter.config.temp_limit_lower → axis0.inverter.config.temp_limit_lower"
-​​
-356: "axis1.inverter.config.temp_limit_upper → axis0.inverter.config.temp_limit_upper"
+300: "axis1.sensorless_estimator.config.pm_flux_linkage → axis1.sensorless_estimator.config.pm_flux_linkage"
 ​
-length: 357
+length: 301
 ​
 <prototype>: Array []
 usePropertyRefresh.js:133:23
+Successfully loaded 454 properties in batch! usePropertyRefresh.js:137:21
+Loading 441 configuration parameters from unified registry... configBatchApi.js:101:11
+🔍 Null/undefined values found for 301 properties: 
+Array(10) [ "config.gpio3_analog_mapping", "config.gpio4_analog_mapping", "brake_resistor0.current", "brake_resistor0.current_meas", "brake_resistor0.duty", "brake_resistor0.additional_duty", "brake_resistor0.chopper_temp", "brake_resistor0.is_armed", "brake_resistor0.was_saturated", "brake_resistor0.config" ]
+usePropertyRefresh.js:179:19
+... and 291 more properties usePropertyRefresh.js:181:21
+🔍 Null/undefined values found for 301 properties: 
+Array(10) [ "config.gpio3_analog_mapping", "config.gpio4_analog_mapping", "brake_resistor0.current", "brake_resistor0.current_meas", "brake_resistor0.duty", "brake_resistor0.additional_duty", "brake_resistor0.chopper_temp", "brake_resistor0.is_armed", "brake_resistor0.was_saturated", "brake_resistor0.config" ]
+usePropertyRefresh.js:179:19
+... and 291 more properties usePropertyRefresh.js:181:21
+Batch configuration load failed: TypeError: can't access property "type", param.property is undefined
+    loadConfigurationBatch configBatchApi.js:52
+    loadConfigurationBatch configBatchApi.js:47
+    loadAllConfigurationBatch configBatchApi.js:104
+    pullBatchParams ConfigurationTab.jsx:90
+    _c ConfigurationTab.jsx:186
+    React 13
+    workLoop scheduler.development.js:266
+    flushWork scheduler.development.js:239
+    performWorkUntilDeadline scheduler.development.js:533
+    js scheduler.development.js:571
+    js scheduler.development.js:633
+    __require2 chunk-LK32TJAX.js:18
+    js index.js:6
+    __require2 chunk-LK32TJAX.js:18
+    React 2
+    __require2 chunk-LK32TJAX.js:18
+    js React
+    __require2 chunk-LK32TJAX.js:18
+    js React
+    __require2 chunk-LK32TJAX.js:18
+    <anonymous> react-dom_client.js:38
+configBatchApi.js:83:13
+Failed to pull configuration: TypeError: can't access property "type", param.property is undefined
+    loadConfigurationBatch configBatchApi.js:52
+    loadConfigurationBatch configBatchApi.js:47
+    loadAllConfigurationBatch configBatchApi.js:104
+    pullBatchParams ConfigurationTab.jsx:90
+    _c ConfigurationTab.jsx:186
+    React 13
+    workLoop scheduler.development.js:266
+    flushWork scheduler.development.js:239
+    performWorkUntilDeadline scheduler.development.js:533
+    js scheduler.development.js:571
+    js scheduler.development.js:633
+    __require2 chunk-LK32TJAX.js:18
+    js index.js:6
+    __require2 chunk-LK32TJAX.js:18
+    React 2
+    __require2 chunk-LK32TJAX.js:18
+    js React
+    __require2 chunk-LK32TJAX.js:18
+    js React
+    __require2 chunk-LK32TJAX.js:18
+    <anonymous> react-dom_client.js:38
+ConfigurationTab.jsx:147:15
+Loading 441 configuration parameters from unified registry... configBatchApi.js:101:11
+Batch configuration load failed: TypeError: can't access property "type", param.property is undefined
+    loadConfigurationBatch configBatchApi.js:52
+    loadConfigurationBatch configBatchApi.js:47
+    loadAllConfigurationBatch configBatchApi.js:104
+    pullBatchParams ConfigurationTab.jsx:90
+    _c ConfigurationTab.jsx:186
+    React 13
+    workLoop scheduler.development.js:266
+    flushWork scheduler.development.js:239
+    performWorkUntilDeadline scheduler.development.js:533
+    js scheduler.development.js:571
+    js scheduler.development.js:633
+    __require2 chunk-LK32TJAX.js:18
+    js index.js:6
+    __require2 chunk-LK32TJAX.js:18
+    React 2
+    __require2 chunk-LK32TJAX.js:18
+    js React
+    __require2 chunk-LK32TJAX.js:18
+    js React
+    __require2 chunk-LK32TJAX.js:18
+    <anonymous> react-dom_client.js:38
+configBatchApi.js:83:13
+Failed to pull configuration: TypeError: can't access property "type", param.property is undefined
+    loadConfigurationBatch configBatchApi.js:52
+    loadConfigurationBatch configBatchApi.js:47
+    loadAllConfigurationBatch configBatchApi.js:104
+    pullBatchParams ConfigurationTab.jsx:90
+    _c ConfigurationTab.jsx:186
+    React 13
+    workLoop scheduler.development.js:266
+    flushWork scheduler.development.js:239
+    performWorkUntilDeadline scheduler.development.js:533
+    js scheduler.development.js:571
+    js scheduler.development.js:633
+    __require2 chunk-LK32TJAX.js:18
+    js index.js:6
+    __require2 chunk-LK32TJAX.js:18
+    React 2
+    __require2 chunk-LK32TJAX.js:18
+    js React
+    __require2 chunk-LK32TJAX.js:18
+    js React
+    __require2 chunk-LK32TJAX.js:18
+    <anonymous> react-dom_client.js:38
+ConfigurationTab.jsx:147:15
+Loading 441 configuration parameters from unified registry... configBatchApi.js:101:11
+Batch configuration load failed: TypeError: can't access property "type", param.property is undefined
+    loadConfigurationBatch configBatchApi.js:52
+    loadConfigurationBatch configBatchApi.js:47
+    loadAllConfigurationBatch configBatchApi.js:104
+    pullBatchParams ConfigurationTab.jsx:90
+    _c ConfigurationTab.jsx:186
+    React 13
+    workLoop scheduler.development.js:266
+    flushWork scheduler.development.js:239
+    performWorkUntilDeadline scheduler.development.js:533
+    js scheduler.development.js:571
+    js scheduler.development.js:633
+    __require2 chunk-LK32TJAX.js:18
+    js index.js:6
+    __require2 chunk-LK32TJAX.js:18
+    React 2
+    __require2 chunk-LK32TJAX.js:18
+    js React
+    __require2 chunk-LK32TJAX.js:18
+    js React
+    __require2 chunk-LK32TJAX.js:18
+    <anonymous> react-dom_client.js:38
+configBatchApi.js:83:13
+Failed to pull configuration: TypeError: can't access property "type", param.property is undefined
+    loadConfigurationBatch configBatchApi.js:52
+    loadConfigurationBatch configBatchApi.js:47
+    loadAllConfigurationBatch configBatchApi.js:104
+    pullBatchParams ConfigurationTab.jsx:90
+    _c ConfigurationTab.jsx:186
+    React 13
+    workLoop scheduler.development.js:266
+    flushWork scheduler.development.js:239
+    performWorkUntilDeadline scheduler.development.js:533
+    js scheduler.development.js:571
+    js scheduler.development.js:633
+    __require2 chunk-LK32TJAX.js:18
+    js index.js:6
+    __require2 chunk-LK32TJAX.js:18
+    React 2
+    __require2 chunk-LK32TJAX.js:18
+    js React
+    __require2 chunk-LK32TJAX.js:18
+    js React
+    __require2 chunk-LK32TJAX.js:18
+    <anonymous> react-dom_client.js:38
+ConfigurationTab.jsx:147:15
+Property tree validation issues: 
+Array(3) [ "Missing property type: can.config", "Missing property type: axis0.motor.motor_thermistor.config", "Missing property type: axis1.motor.motor_thermistor.config" ]
+odriveUnifiedRegistry.js:73:13
+Skipping method property: system.identify odriveUnifiedRegistry.js:161:15
+Skipping method property: system.reboot_required odriveUnifiedRegistry.js:161:15
+Generated 275 batch paths for 0.5.6 odriveUnifiedRegistry.js:194:11
+🏗️ ODrive Unified Registry initialized: 
+Object { firmwareVersion: "0.5.6", deviceName: "odrv0", defaultAxis: 0, categories: (5) […], totalParams: 190, batchPathsCount: 275, commandsCount: 256 }
+odriveUnifiedRegistry.js:25:13
+🌳 Using property tree from registry for firmware version: 0.5.6 PropertyTree.jsx:50:13
+Property tree validation issues: 
+Array(3) [ "Missing property type: can.config", "Missing property type: axis0.motor.motor_thermistor.config", "Missing property type: axis1.motor.motor_thermistor.config" ]
+odriveUnifiedRegistry.js:73:13
+Skipping method property: system.identify odriveUnifiedRegistry.js:161:15
+Skipping method property: system.reboot_required odriveUnifiedRegistry.js:161:15
+Generated 275 batch paths for 0.5.6 odriveUnifiedRegistry.js:194:11
+🏗️ ODrive Unified Registry initialized: 
+Object { firmwareVersion: "0.5.6", deviceName: "odrv0", defaultAxis: 0, categories: (5) […], totalParams: 190, batchPathsCount: 275, commandsCount: 256 }
+odriveUnifiedRegistry.js:25:13
+🌳 Using property tree from registry for firmware version: 0.5.6 PropertyTree.jsx:50:13

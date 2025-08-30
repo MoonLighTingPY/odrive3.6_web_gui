@@ -40,6 +40,46 @@ def safe_json_serialize(value):
         # For any other complex objects, convert to string
         return str(value)
 
+def resolve_property_path_v06x(odrive_obj, path_parts):
+    """
+    Handle 0.6.x specific path resolution for new components
+    """
+    current_obj = odrive_obj
+    
+    # Handle new 0.6.x components that don't exist in 0.5.6
+    new_v06x_components = [
+        'brake_resistor0', 'load_mapper', 'commutation_mapper', 
+        'pos_vel_mapper', 'harmonic_compensation', 'thermal_current_limiter',
+        'motor_thermistor_current_limiter', 'sensorless_estimator', 'inverter'
+    ]
+    
+    # Check if path contains new 0.6.x components
+    path_str = '.'.join(path_parts)
+    if any(comp in path_str for comp in new_v06x_components):
+        # Check firmware version
+        try:
+            fw_major = getattr(current_obj, 'fw_version_major', 0)
+            fw_minor = getattr(current_obj, 'fw_version_minor', 5)
+            
+            if fw_major == 0 and fw_minor < 6:
+                # This is a 0.5.x device, component doesn't exist
+                return None
+        except:
+            # If we can't determine version, assume it might not exist
+            return None
+    
+    # Traverse the path
+    for part in path_parts:
+        try:
+            if hasattr(current_obj, part):
+                current_obj = getattr(current_obj, part)
+            else:
+                return None
+        except Exception:
+            return None
+    
+    return current_obj
+
 @config_bp.route('/config/batch', methods=['POST'])
 def get_config_batch():
     """Get multiple configuration values in a single request"""
@@ -113,6 +153,63 @@ def get_config_batch():
     except Exception as e:
         logger.error(f"Error in get_config_batch: {e}")
         return jsonify({'error': f'Internal server error: {str(e)}'}), 500
+
+# Update the batch configuration loading function
+@config_bp.route('/batch', methods=['POST'])
+def get_batch_configuration():
+    try:
+        data = request.get_json()
+        paths = data.get('paths', [])
+        
+        if not odrive_manager.is_connected():
+            return jsonify({'error': 'ODrive not connected'}), 400
+        
+        odrive_obj = odrive_manager.get_odrive_object()
+        results = {}
+        
+        # Determine firmware version for path resolution
+        try:
+            fw_major = getattr(odrive_obj, 'fw_version_major', 0)
+            fw_minor = getattr(odrive_obj, 'fw_version_minor', 5)
+            is_v06x = fw_major == 0 and fw_minor >= 6
+        except:
+            is_v06x = False
+        
+        for path in paths:
+            try:
+                path_parts = path.split('.')
+                
+                # Use version-specific path resolution
+                if is_v06x:
+                    current_obj = resolve_property_path_v06x(odrive_obj, path_parts)
+                else:
+                    # Standard path traversal for 0.5.x
+                    current_obj = odrive_obj
+                    for part in path_parts:
+                        if hasattr(current_obj, part):
+                            current_obj = getattr(current_obj, part)
+                        else:
+                            current_obj = None
+                            break
+                
+                if current_obj is not None:
+                    # Check if it's a callable method
+                    if callable(current_obj):
+                        results[path] = None  # Don't try to read callable methods
+                    else:
+                        results[path] = current_obj
+                else:
+                    results[path] = None
+                    
+            except Exception as e:
+                print(f"Error reading {path}: {e}")
+                results[path] = None
+        
+        return jsonify({'results': results})
+        
+    except Exception as e:
+        print(f"Batch config error: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @config_bp.route('/apply_config', methods=['POST'])
 def apply_config():

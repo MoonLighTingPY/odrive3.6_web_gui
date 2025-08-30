@@ -1,441 +1,611 @@
-import { generateAxisTree } from './odriveAxisTree.js'
+/**
+ * ODrive Property Tree Generator - Version-aware tree generation
+ * Generates appropriate property trees for different firmware versions
+ */
 
-// Generate property tree with firmware version awareness
-export const generateOdrivePropertyTree = (firmwareVersion = "0.5.6") => {
-  const parseVersion = (versionString) => {
-    if (!versionString || typeof versionString !== 'string') return { major: 0, minor: 5, patch: 6 };
-    const parts = versionString.replace('v', '').split('.').map(Number);
-    return {
-      major: parts[0] || 0,
-      minor: parts[1] || 5,
-      patch: parts[2] || 6
-    };
-  };
-
-  const isVersion06x = (firmwareVersion) => {
-    const version = parseVersion(firmwareVersion);
-    return version.major === 0 && version.minor >= 6;
-  };
-
-  const isV06x = isVersion06x(firmwareVersion);
-
+const parseVersion = (versionString) => {
+  if (!versionString || typeof versionString !== 'string') return { major: 0, minor: 5, patch: 6 }
+  const cleanVersion = versionString.replace(/^v/, '')
+  const parts = cleanVersion.split('.').map(Number)
   return {
-  // Root system properties
-  system: {
-    name: 'System Properties',
-    description: 'Top-level ODrive system settings and information',
-    properties: {
-      hw_version_major: { name: 'Hardware Version Major', description: 'Major hardware version', writable: false, type: 'number', valueType: 'Uint8Property' },
-      hw_version_minor: { name: 'Hardware Version Minor', description: 'Minor hardware version', writable: false, type: 'number', valueType: 'Uint8Property' },
-      hw_version_variant: { name: 'Hardware Variant', description: 'Hardware variant identifier', writable: false, type: 'number', valueType: 'Uint8Property' },
-      fw_version_major: { name: 'Firmware Version Major', description: 'Major firmware version', writable: false, type: 'number', valueType: 'Uint8Property' },
-      fw_version_minor: { name: 'Firmware Version Minor', description: 'Minor firmware version', writable: false, type: 'number', valueType: 'Uint8Property' },
-      fw_version_revision: { name: 'Firmware Revision', description: 'Firmware revision number', writable: false, type: 'number', valueType: 'Uint8Property' },
-      fw_version_unreleased: { name: 'Firmware Unreleased', description: 'Unreleased firmware flag (0 for official releases)', writable: false, type: 'number', valueType: 'Uint8Property' },
-      vbus_voltage: { name: 'VBus Voltage', description: 'Voltage on the DC bus as measured by the ODrive (V)', writable: false, type: 'number', decimals: 2, valueType: 'Float32Property' },
-      ibus: { name: 'IBus Current', description: 'Current on the DC bus as calculated by the ODrive (A)', writable: false, type: 'number', decimals: 3, valueType: 'Float32Property' },
-      ibus_report_filter_k: { name: 'IBus Report Filter', description: 'Filter gain for the reported ibus', writable: true, type: 'number', decimals: 6, valueType: 'Float32Property' },
-      serial_number: { name: 'Serial Number', description: 'Device serial number', writable: false, type: 'number', valueType: 'Uint64Property' },
-      n_evt_sampling: { name: 'Sampling Events', description: 'Number of input sampling events since startup', writable: false, type: 'number', valueType: 'Uint32Property' },
-      n_evt_control_loop: { name: 'Control Loop Events', description: 'Number of control loop iterations since startup', writable: false, type: 'number', valueType: 'Uint32Property' },
-      error: { name: 'ODrive Error', description: 'ODrive system error flags', writable: false, type: 'number', valueType: 'Property[ODrive.Error]' },
-      
-      // Version-specific system properties
-      ...(isV06x ? {
-        // 0.6.x specific system properties
-        commit_hash: { name: 'Commit Hash', description: 'Git commit hash of firmware', writable: false, type: 'number', valueType: 'Uint32Property' },
-        bootloader_version: { name: 'Bootloader Version', description: 'ODrive bootloader version', writable: false, type: 'number', valueType: 'Uint32Property' },
-        control_loop_hz: { name: 'Control Loop Frequency', description: 'Control loop frequency (Hz)', writable: false, type: 'number', valueType: 'Uint32Property' },
-        hw_version_revision: { name: 'Hardware Revision', description: 'Hardware revision number', writable: false, type: 'number', valueType: 'Uint8Property' },
-        task_timers_armed: { name: 'Task Timers Armed', description: 'Indicates profiler trigger', writable: true, type: 'boolean', valueType: 'BoolProperty' },
-        test_property: { name: 'Test Property', description: 'Developer-use property', writable: true, type: 'number', valueType: 'Uint32Property' },
-        reboot_required: { name: 'Reboot Required', description: 'Indicates if reboot is pending', writable: false, type: 'boolean', valueType: 'BoolProperty' },
-        identify: { name: 'Identify', description: 'LED identify toggle', writable: true, type: 'boolean', valueType: 'BoolProperty' },
-        user_config_loaded: { name: 'User Config Loaded', description: 'User configuration loaded count', writable: false, type: 'number', valueType: 'Uint32Property' },
-        misconfigured: { name: 'Misconfigured', description: 'Whether device is misconfigured', writable: false, type: 'boolean', valueType: 'BoolProperty' },
-        otp_valid: { name: 'OTP Valid', description: 'Whether OTP (One-Time Programmable) memory is valid', writable: false, type: 'boolean', valueType: 'BoolProperty' },
-      } : {
-        // 0.5.x specific system properties
-        brake_resistor_armed: { name: 'Brake Resistor Armed', description: 'Brake resistor armed state', writable: false, type: 'boolean', valueType: 'BoolProperty' },
-        brake_resistor_saturated: { name: 'Brake Resistor Saturated', description: 'Brake resistor saturated state', writable: false, type: 'boolean', valueType: 'BoolProperty' },
-        brake_resistor_current: { name: 'Brake Resistor Current', description: 'Commanded brake resistor current (A)', writable: false, type: 'number', decimals: 3, valueType: 'Float32Property' },
-        task_timers_armed: { name: 'Task Timers Armed', description: 'Set by profiling application to trigger sampling', writable: true, type: 'boolean', valueType: 'BoolProperty' },
-        user_config_loaded: { name: 'User Config Loaded', description: 'User configuration loaded status', writable: false, type: 'number', valueType: 'Uint32Property' },
-        misconfigured: { name: 'Misconfigured', description: 'System misconfiguration flag', writable: false, type: 'boolean', valueType: 'BoolProperty' },
-        otp_valid: { name: 'OTP Valid', description: 'One-time programmable memory valid', writable: false, type: 'boolean', valueType: 'BoolProperty' },
-        test_property: { name: 'Test Property', description: 'Test property for development', writable: true, type: 'number', valueType: 'Uint32Property' },
-      }),
-    }
-  },
+    major: parts[0] || 0,
+    minor: parts[1] || 5,
+    patch: parts[2] || 6
+  }
+}
 
-  // Root config properties - these map to ODrive.Config
-  config: {
-    name: 'System Configuration',
-    description: 'Top-level ODrive configuration parameters',
-    properties: {
-      // Common properties for both versions
-      usb_cdc_protocol: {
-        name: 'USB CDC Protocol',
-        description: 'Protocol for USB virtual COM port',
-        writable: true,
-        type: 'number',
-        valueType: 'Property[ODrive.StreamProtocolType]',
-        selectOptions: [
-          { value: 0, label: 'Fibre' },
-          { value: 1, label: 'ASCII' },
-          { value: 2, label: 'Stdout' },
-          { value: 3, label: 'ASCII + Stdout' }
-        ]
-      },
-      
-      // Version-specific properties
-      ...(isV06x ? {
-        // 0.6.x only has uart0_protocol, not uart1/uart2
-        uart0_protocol: {
-          name: 'UART0 Protocol',
-          description: 'Protocol selection for UART0 interface',
-          writable: true,
-          type: 'number',
-          valueType: 'Property[ODrive.StreamProtocolType]',
-          selectOptions: [
-            { value: 0, label: 'Fibre' },
-            { value: 1, label: 'ASCII' },
-            { value: 2, label: 'Stdout' },
-            { value: 3, label: 'ASCII + Stdout' }
-          ]
-        },
-        // User config slots for 0.6.x
-        user_config_0: { name: 'User Config 0', description: 'General purpose persistent user storage slot 0', writable: true, type: 'number', valueType: 'Uint32Property' },
-        user_config_1: { name: 'User Config 1', description: 'General purpose persistent user storage slot 1', writable: true, type: 'number', valueType: 'Uint32Property' },
-        user_config_2: { name: 'User Config 2', description: 'General purpose persistent user storage slot 2', writable: true, type: 'number', valueType: 'Uint32Property' },
-        user_config_3: { name: 'User Config 3', description: 'General purpose persistent user storage slot 3', writable: true, type: 'number', valueType: 'Uint32Property' },
-        user_config_4: { name: 'User Config 4', description: 'General purpose persistent user storage slot 4', writable: true, type: 'number', valueType: 'Uint32Property' },
-        user_config_5: { name: 'User Config 5', description: 'General purpose persistent user storage slot 5', writable: true, type: 'number', valueType: 'Uint32Property' },
-        user_config_6: { name: 'User Config 6', description: 'General purpose persistent user storage slot 6', writable: true, type: 'number', valueType: 'Uint32Property' },
-        user_config_7: { name: 'User Config 7', description: 'General purpose persistent user storage slot 7', writable: true, type: 'number', valueType: 'Uint32Property' },
-      } : {
-        // 0.5.x has enable flags and multiple UARTs
-        enable_uart_a: { name: 'Enable UART A', description: 'Enable UART A interface', writable: true, type: 'boolean', valueType: 'BoolProperty' },
-        enable_uart_b: { name: 'Enable UART B', description: 'Enable UART B interface', writable: true, type: 'boolean', valueType: 'BoolProperty' },
-        enable_uart_c: { name: 'Enable UART C', description: 'Enable UART C interface (not supported on ODrive v3.x)', writable: true, type: 'boolean', valueType: 'BoolProperty' },
-        uart_a_baudrate: {
-          name: 'UART A Baudrate',
-          description: 'UART A communication baudrate',
-          writable: true,
-          type: 'number',
-          valueType: 'Uint32Property',
-          selectOptions: [
-            { value: 9600, label: '9600 bps' },
-            { value: 19200, label: '19200 bps' },
-            { value: 38400, label: '38400 bps' },
-            { value: 57600, label: '57600 bps' },
-            { value: 115200, label: '115200 bps' },
-            { value: 230400, label: '230400 bps' },
-            { value: 460800, label: '460800 bps' },
-            { value: 921600, label: '921600 bps' }
-          ]
-        },
-        uart_b_baudrate: {
-          name: 'UART B Baudrate',
-          description: 'UART B communication baudrate',
-          writable: true,
-          type: 'number',
-          valueType: 'Uint32Property',
-          selectOptions: [
-            { value: 9600, label: '9600 bps' },
-            { value: 19200, label: '19200 bps' },
-            { value: 38400, label: '38400 bps' },
-            { value: 57600, label: '57600 bps' },
-            { value: 115200, label: '115200 bps' },
-            { value: 230400, label: '230400 bps' },
-            { value: 460800, label: '460800 bps' },
-            { value: 921600, label: '921600 bps' }
-          ]
-        },
-        uart_c_baudrate: {
-          name: 'UART C Baudrate',
-          description: 'UART C communication baudrate (not supported on ODrive v3.x)',
-          writable: true,
-          type: 'number',
-          valueType: 'Uint32Property',
-          selectOptions: [
-            { value: 9600, label: '9600 bps' },
-            { value: 19200, label: '19200 bps' },
-            { value: 38400, label: '38400 bps' },
-            { value: 57600, label: '57600 bps' },
-            { value: 115200, label: '115200 bps' },
-            { value: 230400, label: '230400 bps' },
-            { value: 460800, label: '460800 bps' },
-            { value: 921600, label: '921600 bps' }
-          ]
-        },
-        uart0_protocol: {
-          name: 'UART0 Protocol',
-          description: 'UART0 protocol selection',
-          writable: true,
-          type: 'number',
-          valueType: 'Property[ODrive.StreamProtocolType]',
-          selectOptions: [
-            { value: 0, label: 'Fibre' },
-            { value: 1, label: 'ASCII' },
-            { value: 2, label: 'Stdout' },
-            { value: 3, label: 'ASCII + Stdout' }
-          ]
-        },
-        uart1_protocol: {
-          name: 'UART1 Protocol',
-          description: 'UART1 protocol selection',
-          writable: true,
-          type: 'number',
-          valueType: 'Property[ODrive.StreamProtocolType]',
-          selectOptions: [
-            { value: 0, label: 'Fibre' },
-            { value: 1, label: 'ASCII' },
-            { value: 2, label: 'Stdout' },
-            { value: 3, label: 'ASCII + Stdout' }
-          ]
-        },
-        uart2_protocol: {
-          name: 'UART2 Protocol',
-          description: 'UART2 protocol selection',
-          writable: true,
-          type: 'number',
-          valueType: 'Property[ODrive.StreamProtocolType]',
-          selectOptions: [
-            { value: 0, label: 'Fibre' },
-            { value: 1, label: 'ASCII' },
-            { value: 2, label: 'Stdout' },
-            { value: 3, label: 'ASCII + Stdout' }
-          ]
-        },
-        enable_can_a: { name: 'Enable CAN A', description: 'Enable CAN A interface', writable: true, type: 'boolean', valueType: 'BoolProperty' },
-        enable_i2c_a: { name: 'Enable I2C A', description: 'Enable I2C A interface', writable: true, type: 'boolean', valueType: 'BoolProperty' },
-      }),
-      
-      // Common properties for both versions
-      max_regen_current: { name: 'Max Regen Current', description: 'Bus current allowed to flow back to power supply before brake resistor starts shunting (A)', writable: true, type: 'number', min: 0, max: 60, step: 0.1, decimals: 1, hasSlider: true, valueType: 'Float32Property' },
-      
-      // Brake resistor properties only for 0.5.x (moved to brake_resistor0 in 0.6.x)
-      ...(!isV06x ? {
-        enable_brake_resistor: { name: 'Enable Brake Resistor', description: 'Enable/disable the use of a brake resistor', writable: true, type: 'boolean', valueType: 'BoolProperty' },
-        brake_resistance: { name: 'Brake Resistance', description: 'Value of the brake resistor connected to the ODrive (Ω)', writable: true, type: 'number', min: 0.1, max: 100, step: 0.1, decimals: 2, hasSlider: true, valueType: 'Float32Property' },
-      } : {}),
-      
-      dc_bus_undervoltage_trip_level: { name: 'DC Bus Undervoltage Trip', description: 'Minimum voltage below which the motor stops operating (V)', writable: true, type: 'number', min: 8, max: 30, step: 0.1, decimals: 1, hasSlider: true, valueType: 'Float32Property' },
-      dc_bus_overvoltage_trip_level: { name: 'DC Bus Overvoltage Trip', description: 'Maximum voltage above which the motor stops operating (V)', writable: true, type: 'number', min: 12, max: 60, step: 0.1, decimals: 1, hasSlider: true, valueType: 'Float32Property' },
-      
-      // DC bus overvoltage ramp properties only for 0.5.x (moved to brake_resistor0 in 0.6.x)
-      ...(!isV06x ? {
-        enable_dc_bus_overvoltage_ramp: { name: 'Enable DC Bus Overvoltage Ramp', description: 'Enable DC bus overvoltage ramp feature', writable: true, type: 'boolean', valueType: 'BoolProperty' },
-        dc_bus_overvoltage_ramp_start: { name: 'DC Bus Overvoltage Ramp Start', description: 'DC bus overvoltage ramp start voltage (V)', writable: true, type: 'number', decimals: 1, valueType: 'Float32Property' },
-        dc_bus_overvoltage_ramp_end: { name: 'DC Bus Overvoltage Ramp End', description: 'DC bus overvoltage ramp end voltage (V)', writable: true, type: 'number', decimals: 1, valueType: 'Float32Property' },
-      } : {}),
-      
-      dc_max_positive_current: { name: 'DC Max Positive Current', description: 'Max current the power supply can source (A)', writable: true, type: 'number', min: 0, max: 60, step: 0.1, decimals: 1, hasSlider: true, valueType: 'Float32Property' },
-      dc_max_negative_current: { name: 'DC Max Negative Current', description: 'Max current the power supply can sink (A)', writable: true, type: 'number', min: -60, max: 0, step: 0.1, decimals: 1, hasSlider: true, valueType: 'Float32Property' },
-      error_gpio_pin: { name: 'Error GPIO Pin', description: 'GPIO pin for error output', writable: true, type: 'number', valueType: 'Uint32Property' },
-      gpio3_analog_mapping: { name: 'GPIO3 Analog Mapping', description: 'Analog mapping for GPIO3', writable: true, type: 'object', valueType: 'ODrive.Endpoint' },
-      gpio4_analog_mapping: { name: 'GPIO4 Analog Mapping', description: 'Analog mapping for GPIO4', writable: true, type: 'object', valueType: 'ODrive.Endpoint' },
+const isVersion06x = (firmwareVersion) => {
+  const version = parseVersion(firmwareVersion)
+  return version.major === 0 && version.minor >= 6
+}
+
+/**
+ * Generate property tree based on firmware version
+ */
+export const generateOdrivePropertyTree = (firmwareVersion = "0.5.6") => {
+  const isV06x = isVersion06x(firmwareVersion)
+  
+  const tree = {
+    system: {
+      properties: {
+        hw_version_major: { type: 'number', unit: '', description: 'Hardware version major' },
+        hw_version_minor: { type: 'number', unit: '', description: 'Hardware version minor' },
+        hw_version_variant: { type: 'number', unit: '', description: 'Hardware version variant' },
+        fw_version_major: { type: 'number', unit: '', description: 'Firmware version major' },
+        fw_version_minor: { type: 'number', unit: '', description: 'Firmware version minor' },
+        fw_version_revision: { type: 'number', unit: '', description: 'Firmware version revision' },
+        fw_version_unreleased: { type: 'number', unit: '', description: 'Firmware unreleased flag' },
+        serial_number: { type: 'number', unit: '', description: 'Device serial number' },
+        vbus_voltage: { type: 'number', unit: 'V', description: 'DC bus voltage' },
+        ibus: { type: 'number', unit: 'A', description: 'DC bus current' },
+        ibus_report_filter_k: { type: 'number', unit: '', description: 'Current report filter' },
+        test_property: { type: 'number', unit: '', description: 'Test property' },
+        identify: { type: 'function', description: 'Identify device' },
+        reboot_required: { type: 'boolean', description: 'Reboot required flag' },
+        user_config_loaded: { type: 'boolean', description: 'User config loaded flag' },
+        misconfigured: { type: 'boolean', description: 'Device misconfigured flag' }
+      }
     },
-    // 0.6.x has nested inverter0 config
-    ...(isV06x ? {
-      children: {
-        inverter0: {
-          name: 'Inverter 0 Configuration',
-          description: 'Inverter 0 configuration parameters',
-          properties: {
-            current_soft_max: { name: 'Current Soft Max', description: 'Soft maximum current limit for this inverter (A)', writable: true, type: 'number', decimals: 1, valueType: 'Float32Property' },
-            current_hard_max: { name: 'Current Hard Max', description: 'Hard maximum current limit for this inverter (A)', writable: true, type: 'number', decimals: 1, valueType: 'Float32Property' },
-            temp_limit_lower: { name: 'Temperature Limit Lower', description: 'Lower temperature limit for current limiting (°C)', writable: true, type: 'number', decimals: 1, valueType: 'Float32Property' },
-            temp_limit_upper: { name: 'Temperature Limit Upper', description: 'Upper temperature limit for shutdown (°C)', writable: true, type: 'number', decimals: 1, valueType: 'Float32Property' },
-            mod_magn_max: { name: 'Max Modulation Magnitude', description: 'Maximum modulation depth', writable: true, type: 'number', decimals: 3, valueType: 'Float32Property' },
-            shunt_conductance: { name: 'Shunt Conductance', description: 'Current sense shunt conductance (S)', writable: true, type: 'number', decimals: 6, valueType: 'Float32Property' },
+
+    config: {
+      properties: {
+        // Power configuration
+        dc_bus_overvoltage_trip_level: { type: 'number', unit: 'V', min: 12, max: 60, description: 'DC bus overvoltage trip level' },
+        dc_bus_undervoltage_trip_level: { type: 'number', unit: 'V', min: 8, max: 48, description: 'DC bus undervoltage trip level' },
+        dc_max_positive_current: { type: 'number', unit: 'A', min: 0, max: 100, description: 'Maximum positive DC current' },
+        dc_max_negative_current: { type: 'number', unit: 'A', min: -100, max: 0, description: 'Maximum negative DC current' },
+        max_regen_current: { type: 'number', unit: 'A', min: 0, max: 50, description: 'Maximum regenerative current' },
+        
+        // Protocol configuration  
+        usb_cdc_protocol: { type: 'number', min: 0, max: 5, description: 'USB CDC protocol' },
+        uart0_protocol: { type: 'number', min: 0, max: 5, description: 'UART0 protocol' },
+        
+        // User config storage (0.6.x feature)
+        ...(isV06x && {
+          user_config_0: { type: 'number', description: 'User config 0' },
+          user_config_1: { type: 'number', description: 'User config 1' },
+          user_config_2: { type: 'number', description: 'User config 2' },
+          user_config_3: { type: 'number', description: 'User config 3' },
+          user_config_4: { type: 'number', description: 'User config 4' },
+          user_config_5: { type: 'number', description: 'User config 5' },
+          user_config_6: { type: 'number', description: 'User config 6' },
+          user_config_7: { type: 'number', description: 'User config 7' }
+        }),
+
+        // Inverter configuration (0.6.x structure)
+        ...(isV06x && {
+          inverter0: {
+            properties: {
+              current_soft_max: { type: 'number', unit: 'A', description: 'Inverter soft current limit' },
+              current_hard_max: { type: 'number', unit: 'A', description: 'Inverter hard current limit' },
+              temp_limit_lower: { type: 'number', unit: '°C', description: 'Inverter lower temp limit' },
+              temp_limit_upper: { type: 'number', unit: '°C', description: 'Inverter upper temp limit' },
+              mod_magn_max: { type: 'number', description: 'Maximum modulation magnitude' },
+              shunt_conductance: { type: 'number', unit: 'S', description: 'Shunt conductance' }
+            }
           }
-        },
-        brake_resistor0: {
-          name: 'Brake Resistor 0 Configuration',
-          description: 'Brake resistor configuration parameters (0.6.x)',
-          properties: {
-            enable: { name: 'Enable', description: 'Enable/disable the use of a brake resistor', writable: true, type: 'boolean', valueType: 'BoolProperty' },
-            resistance: { name: 'Resistance', description: 'Value of the brake resistor (Ω)', writable: true, type: 'number', min: 0.1, max: 100, step: 0.1, decimals: 2, hasSlider: true, valueType: 'Float32Property' },
-            enable_dc_bus_voltage_feedback: { name: 'Enable DC Bus Voltage Feedback', description: 'Enable DC bus voltage feedback feature', writable: true, type: 'boolean', valueType: 'BoolProperty' },
-            dc_bus_voltage_feedback_ramp_start: { name: 'DC Bus Voltage Feedback Ramp Start', description: 'DC bus voltage feedback ramp start voltage (V)', writable: true, type: 'number', decimals: 1, valueType: 'Float32Property' },
-            dc_bus_voltage_feedback_ramp_end: { name: 'DC Bus Voltage Feedback Ramp End', description: 'DC bus voltage feedback ramp end voltage (V)', writable: true, type: 'number', decimals: 1, valueType: 'Float32Property' },
+        }),
+
+        // GPIO configuration (0.6.x has different structure)
+        ...(isV06x && {
+          gpio3_analog_mapping: { type: 'number', description: 'GPIO3 analog mapping' },
+          gpio4_analog_mapping: { type: 'number', description: 'GPIO4 analog mapping' }
+        })
+      }
+    },
+
+    // 0.6.x brake resistor (separate object)
+    ...(isV06x && {
+      brake_resistor0: {
+        properties: {
+          current: { type: 'number', unit: 'A', description: 'Brake resistor current' },
+          current_meas: { type: 'number', unit: 'A', description: 'Brake resistor current measurement' },
+          duty: { type: 'number', unit: '%', description: 'Brake resistor duty cycle' },
+          additional_duty: { type: 'number', unit: '%', description: 'Additional duty cycle' },
+          chopper_temp: { type: 'number', unit: '°C', description: 'Chopper temperature' },
+          is_armed: { type: 'boolean', description: 'Brake resistor armed' },
+          was_saturated: { type: 'boolean', description: 'Brake resistor was saturated' },
+          config: {
+            properties: {
+              enable: { type: 'boolean', description: 'Enable brake resistor' },
+              resistance: { type: 'number', unit: 'Ω', min: 0.1, max: 100, description: 'Brake resistor resistance' }
+            }
           }
         }
       }
-    } : {})
-  },
+    }),
 
-  // CAN bus interface
-  can: {
-    name: 'CAN Bus',
-    description: 'CAN bus interface settings and status',
+    can: {
+      properties: {
+        error: { type: 'number', description: 'CAN error count' },
+        n_restarts: { type: 'number', description: 'CAN restart count' },
+        n_rx: { type: 'number', description: 'CAN RX count' },
+        ...(isV06x && {
+          effective_baudrate: { type: 'number', unit: 'bps', description: 'Effective CAN baudrate' }
+        }),
+        config: {
+          properties: {
+            baud_rate: { type: 'number', unit: 'bps', description: 'CAN baud rate' },
+            protocol: { type: 'number', min: 0, max: 3, description: 'CAN protocol' },
+            ...(isV06x && {
+              autobaud_enabled: { type: 'boolean', description: 'CAN autobaud enabled' }
+            })
+          }
+        }
+      }
+    },
+
+    // 0.6.x methods (should be filtered out from property queries)
+    ...(isV06x && {
+      methods: {
+        properties: {
+          test_function: { type: 'function', description: 'Test function' },
+          get_adc_voltage: { type: 'function', description: 'Get ADC voltage' },
+          enter_dfu_mode2: { type: 'function', description: 'Enter DFU mode' },
+          disable_bootloader: { type: 'function', description: 'Disable bootloader' },
+          identify_once: { type: 'function', description: 'Identify once' },
+          get_interrupt_status: { type: 'function', description: 'Get interrupt status' },
+          get_dma_status: { type: 'function', description: 'Get DMA status' },
+          set_gpio: { type: 'function', description: 'Set GPIO' },
+          get_raw_8: { type: 'function', description: 'Get raw 8-bit' },
+          get_raw_32: { type: 'function', description: 'Get raw 32-bit' },
+          get_raw_256: { type: 'function', description: 'Get raw 256-bit' }
+        }
+      }
+    })
+  }
+
+  // Add axis-specific properties
+  for (let axisNum = 0; axisNum < 2; axisNum++) {
+    tree[`axis${axisNum}`] = generateAxisProperties(axisNum, isV06x)
+  }
+
+  return tree
+}
+
+/**
+ * Generate axis-specific properties based on firmware version
+ */
+function generateAxisProperties(axisNum, isV06x) {
+  const axisTree = {
     properties: {
-      error: { name: 'CAN Error', description: 'CAN bus error flags', writable: false, type: 'number', valueType: 'Property[ODrive.Can.Error]' },
-      
-      // 0.6.x specific CAN diagnostic properties
-      ...(isV06x ? {
-        n_restarts: { name: 'CAN Restarts', description: 'Number of CAN bus restarts', writable: false, type: 'number', valueType: 'Uint32Property' },
-        n_rx: { name: 'CAN RX Count', description: 'Number of CAN messages received', writable: false, type: 'number', valueType: 'Uint32Property' },
-        effective_baudrate: { name: 'Effective Baudrate', description: 'Actual CAN baudrate after autobaud detection', writable: false, type: 'number', valueType: 'Uint32Property' },
-      } : {}),
+      // Core axis properties
+      active_errors: { type: 'number', description: 'Active error flags' },
+      disarm_reason: { type: 'number', description: 'Disarm reason code' },
+      current_state: { type: 'number', description: 'Current axis state' },
+      requested_state: { type: 'number', description: 'Requested axis state' },
+      step_dir_active: { type: 'boolean', description: 'Step/dir active' },
+      last_drv_fault: { type: 'number', description: 'Last driver fault' },
+      steps: { type: 'number', description: 'Step count' },
+      vel_estimate: { type: 'number', unit: 'turns/s', description: 'Velocity estimate' },
+      pos_estimate: { type: 'number', unit: 'turns', description: 'Position estimate' },
+      is_homed: { type: 'boolean', description: 'Axis is homed' },
+      is_armed: { type: 'boolean', description: 'Axis is armed' },
+      procedure_result: { type: 'number', description: 'Last procedure result' },
+      disarm_time: { type: 'number', description: 'Disarm time' },
+
+      // 0.6.x specific properties
+      ...(isV06x && {
+        detailed_disarm_reason: { type: 'number', description: 'Detailed disarm reason' },
+        observed_encoder_scale_factor: { type: 'number', description: 'Observed encoder scale factor' }
+      })
+    },
+
+    children: {
+      config: generateAxisConfigProperties(isV06x),
+      motor: generateMotorProperties(isV06x),
+      controller: generateControllerProperties(isV06x),
+      trap_traj: generateTrapTrajProperties(),
+      min_endstop: generateEndstopProperties(),
+      max_endstop: generateEndstopProperties(),
+      mechanical_brake: generateMechanicalBrakeProperties(),
+      ...(isV06x && {
+        inverter: generateInverterProperties(),
+        load_mapper: generateLoadMapperProperties(),
+        commutation_mapper: generateCommutationMapperProperties(),
+        pos_vel_mapper: generatePosVelMapperProperties(),
+        harmonic_compensation: generateHarmonicCompensationProperties(),
+        thermal_current_limiter: generateThermalCurrentLimiterProperties(),
+        motor_thermistor_current_limiter: generateMotorThermistorCurrentLimiterProperties(),
+        sensorless_estimator: generateSensorlessEstimatorProperties()
+      })
+    }
+  }
+
+  return axisTree
+}
+
+// Helper functions for generating component properties
+function generateAxisConfigProperties(isV06x) {
+  return {
+    properties: {
+      startup_motor_calibration: { type: 'boolean', description: 'Start motor calibration on startup' },
+      startup_encoder_index_search: { type: 'boolean', description: 'Start encoder index search on startup' },
+      startup_encoder_offset_calibration: { type: 'boolean', description: 'Start encoder offset calibration on startup' },
+      startup_closed_loop_control: { type: 'boolean', description: 'Start closed loop control on startup' },
+      startup_homing: { type: 'boolean', description: 'Start homing on startup' },
+      enable_step_dir: { type: 'boolean', description: 'Enable step/direction input' },
+      step_dir_always_on: { type: 'boolean', description: 'Keep step/dir always on' },
+      step_gpio_pin: { type: 'number', min: 0, max: 16, description: 'Step GPIO pin' },
+      dir_gpio_pin: { type: 'number', min: 0, max: 16, description: 'Direction GPIO pin' },
+      enable_watchdog: { type: 'boolean', description: 'Enable watchdog' },
+      watchdog_timeout: { type: 'number', unit: 's', min: 0, max: 60, description: 'Watchdog timeout' },
+      startup_max_wait_for_ready: { type: 'number', unit: 's', min: 0, max: 10, description: 'Max wait for ready on startup' },
+      calib_range: { type: 'number', unit: 'turns', description: 'Calibration range' },
+      calib_scan_distance: { type: 'number', unit: 'turns', description: 'Calibration scan distance' },
+      calib_scan_vel: { type: 'number', unit: 'turns/s', description: 'Calibration scan velocity' },
+      encoder_bandwidth: { type: 'number', unit: 'Hz', min: 10, max: 10000, description: 'Encoder bandwidth' },
+
+      // 0.6.x additions
+      ...(isV06x && {
+        init_pos: { type: 'number', unit: 'turns', description: 'Initial position' },
+        init_vel: { type: 'number', unit: 'turns/s', description: 'Initial velocity' },
+        init_torque: { type: 'number', unit: 'Nm', description: 'Initial torque' },
+        I_bus_hard_min: { type: 'number', unit: 'A', description: 'Hard minimum bus current' },
+        I_bus_hard_max: { type: 'number', unit: 'A', description: 'Hard maximum bus current' },
+        I_bus_soft_min: { type: 'number', unit: 'A', description: 'Soft minimum bus current' },
+        I_bus_soft_max: { type: 'number', unit: 'A', description: 'Soft maximum bus current' },
+        P_bus_soft_min: { type: 'number', unit: 'W', description: 'Soft minimum bus power' },
+        P_bus_soft_max: { type: 'number', unit: 'W', description: 'Soft maximum bus power' }
+      })
+    },
+    children: {
+      can: {
+        properties: {
+          node_id: { type: 'number', min: 0, max: 127, description: 'CAN node ID' }
+        }
+      },
+      calibration_lockin: generateLockinProperties(),
+      sensorless_ramp: generateSensorlessRampProperties(),
+      general_lockin: generateLockinProperties()
+    }
+  }
+}
+
+function generateMotorProperties(isV06x) {
+  return {
+    properties: {
+      effective_current_lim: { type: 'number', unit: 'A', description: 'Effective current limit' },
+      torque_estimate: { type: 'number', unit: 'Nm', description: 'Torque estimate' },
+      mechanical_power: { type: 'number', unit: 'W', description: 'Mechanical power' },
+      electrical_power: { type: 'number', unit: 'W', description: 'Electrical power' },
+      ...(isV06x && {
+        loss_power: { type: 'number', unit: 'W', description: 'Loss power' }
+      }),
+      resistance_calibration_I_beta: { type: 'number', unit: 'A', description: 'Resistance calibration beta current' },
+      input_id: { type: 'number', unit: 'A', description: 'Input D current' },
+      input_iq: { type: 'number', unit: 'A', description: 'Input Q current' }
     },
     children: {
       config: {
-        name: 'CAN Configuration',
-        description: 'CAN bus configuration parameters',
         properties: {
-          baud_rate: {
-            name: 'Baud Rate',
-            description: 'CAN bus communication speed',
-            writable: true,
-            type: 'number',
-            valueType: 'Uint32Property',
-            selectOptions: [
-              { value: 125000, label: '125 kbps' },
-              { value: 250000, label: '250 kbps' },
-              { value: 500000, label: '500 kbps' },
-              { value: 1000000, label: '1 Mbps' }
-            ]
-          },
-          protocol: {
-            name: 'Protocol',
-            description: 'CAN protocol selection',
-            writable: true,
-            type: 'number',
-            valueType: 'Property[ODrive.Can.Protocol]',
-            selectOptions: [
-              { value: 1, label: 'Simple' }
-            ]
-          },
-          ...(isV06x ? {
-            autobaud_enabled: { name: 'Auto Baud Enable', description: 'Enable automatic baud rate detection', writable: true, type: 'boolean', valueType: 'BoolProperty' },
-          } : {}),
-        }
-      }
-    }
-  },
-
-  // System stats
-  system_stats: {
-    name: 'System Statistics',
-    description: 'System performance statistics',
-    properties: {
-      uptime: { name: 'Uptime', description: 'System uptime (ms)', writable: false, type: 'number', valueType: 'Uint32Property' },
-      min_heap_space: { name: 'Min Heap Space', description: 'Minimum available heap space (bytes)', writable: false, type: 'number', valueType: 'Uint32Property' },
-      max_stack_usage_axis: { name: 'Max Stack Usage Axis', description: 'Maximum stack usage for axis thread (bytes)', writable: false, type: 'number', valueType: 'Uint32Property' },
-      max_stack_usage_usb: { name: 'Max Stack Usage USB', description: 'Maximum stack usage for USB thread (bytes)', writable: false, type: 'number', valueType: 'Uint32Property' },
-      max_stack_usage_uart: { name: 'Max Stack Usage UART', description: 'Maximum stack usage for UART thread (bytes)', writable: false, type: 'number', valueType: 'Uint32Property' },
-      max_stack_usage_can: { name: 'Max Stack Usage CAN', description: 'Maximum stack usage for CAN thread (bytes)', writable: false, type: 'number', valueType: 'Uint32Property' },
-      max_stack_usage_startup: { name: 'Max Stack Usage Startup', description: 'Maximum stack usage for startup thread (bytes)', writable: false, type: 'number', valueType: 'Uint32Property' },
-      max_stack_usage_analog: { name: 'Max Stack Usage Analog', description: 'Maximum stack usage for analog thread (bytes)', writable: false, type: 'number', valueType: 'Uint32Property' },
-      stack_size_axis: { name: 'Stack Size Axis', description: 'Stack size for axis thread (bytes)', writable: false, type: 'number', valueType: 'Uint32Property' },
-      stack_size_usb: { name: 'Stack Size USB', description: 'Stack size for USB thread (bytes)', writable: false, type: 'number', valueType: 'Uint32Property' },
-      stack_size_uart: { name: 'Stack Size UART', description: 'Stack size for UART thread (bytes)', writable: false, type: 'number', valueType: 'Uint32Property' },
-      stack_size_startup: { name: 'Stack Size Startup', description: 'Stack size for startup thread (bytes)', writable: false, type: 'number', valueType: 'Uint32Property' },
-      stack_size_can: { name: 'Stack Size CAN', description: 'Stack size for CAN thread (bytes)', writable: false, type: 'number', valueType: 'Uint32Property' },
-      stack_size_analog: { name: 'Stack Size Analog', description: 'Stack size for analog thread (bytes)', writable: false, type: 'number', valueType: 'Uint32Property' },
-      prio_axis: { name: 'Priority Axis', description: 'Thread priority for axis thread', writable: false, type: 'number', valueType: 'Int32Property' },
-      prio_usb: { name: 'Priority USB', description: 'Thread priority for USB thread', writable: false, type: 'number', valueType: 'Int32Property' },
-      prio_uart: { name: 'Priority UART', description: 'Thread priority for UART thread', writable: false, type: 'number', valueType: 'Int32Property' },
-      prio_startup: { name: 'Priority Startup', description: 'Thread priority for startup thread', writable: false, type: 'number', valueType: 'Int32Property' },
-      prio_can: { name: 'Priority CAN', description: 'Thread priority for CAN thread', writable: false, type: 'number', valueType: 'Int32Property' },
-      prio_analog: { name: 'Priority Analog', description: 'Thread priority for analog thread', writable: false, type: 'number', valueType: 'Int32Property' },
-    },
-    children: {
-      usb: {
-        name: 'USB Statistics',
-        description: 'USB interface statistics',
-        properties: {
-          rx_cnt: { name: 'RX Count', description: 'USB receive count', writable: false, type: 'number', valueType: 'Uint32Property' },
-          tx_cnt: { name: 'TX Count', description: 'USB transmit count', writable: false, type: 'number', valueType: 'Uint32Property' },
-          tx_overrun_cnt: { name: 'TX Overrun Count', description: 'USB transmit overrun count', writable: false, type: 'number', valueType: 'Uint32Property' },
+          pre_calibrated: { type: 'boolean', description: 'Motor pre-calibrated' },
+          pole_pairs: { type: 'number', min: 1, max: 50, description: 'Motor pole pairs' },
+          calibration_current: { type: 'number', unit: 'A', min: 0, max: 100, description: 'Calibration current' },
+          resistance_calib_max_voltage: { type: 'number', unit: 'V', min: 0, max: 24, description: 'Resistance calibration max voltage' },
+          phase_inductance: { type: 'number', unit: 'H', description: 'Motor phase inductance' },
+          phase_resistance: { type: 'number', unit: 'Ω', description: 'Motor phase resistance' },
+          torque_constant: { type: 'number', unit: 'Nm/A', description: 'Motor torque constant' },
+          direction: { type: 'number', min: -1, max: 1, description: 'Motor direction' },
+          motor_type: { type: 'number', min: 0, max: 2, description: 'Motor type' },
+          current_lim: { type: 'number', unit: 'A', min: 0, max: 100, description: 'Motor current limit' },
+          current_lim_margin: { type: 'number', unit: 'A', description: 'Current limit margin' },
+          torque_lim: { type: 'number', unit: 'Nm', min: 0, max: 1000, description: 'Torque limit' },
+          inverter_temp_limit_lower: { type: 'number', unit: '°C', description: 'Inverter lower temp limit' },
+          inverter_temp_limit_upper: { type: 'number', unit: '°C', description: 'Inverter upper temp limit' },
+          requested_current_range: { type: 'number', unit: 'A', description: 'Requested current range' },
+          current_control_bandwidth: { type: 'number', unit: 'Hz', description: 'Current control bandwidth' }
         }
       },
-      i2c: {
-        name: 'I2C Statistics',
-        description: 'I2C interface statistics',
+      fet_thermistor: {
         properties: {
-          addr: { name: 'Address', description: 'I2C address', writable: false, type: 'number', valueType: 'Uint8Property' },
-          addr_match_cnt: { name: 'Address Match Count', description: 'I2C address match count', writable: false, type: 'number', valueType: 'Uint32Property' },
-          rx_cnt: { name: 'RX Count', description: 'I2C receive count', writable: false, type: 'number', valueType: 'Uint32Property' },
-          error_cnt: { name: 'Error Count', description: 'I2C error count', writable: false, type: 'number', valueType: 'Uint32Property' },
+          temperature: { type: 'number', unit: '°C', description: 'FET thermistor temperature' }
+        }
+      },
+      motor_thermistor: {
+        properties: {
+          config: {
+            properties: {
+              enabled: { type: 'boolean', description: 'Motor thermistor enabled' },
+              gpio_pin: { type: 'number', min: 0, max: 16, description: 'Motor thermistor GPIO pin' },
+              temp_limit_lower: { type: 'number', unit: '°C', description: 'Motor thermistor lower limit' },
+              temp_limit_upper: { type: 'number', unit: '°C', description: 'Motor thermistor upper limit' }
+            }
+          }
         }
       }
     }
-  },
+  }
+}
 
-  // Oscilloscope
-  oscilloscope: {
-    name: 'Oscilloscope',
-    description: 'Built-in oscilloscope for debugging',
+function generateControllerProperties(isV06x) {
+  return {
     properties: {
-      size: { name: 'Size', description: 'Oscilloscope buffer size', writable: false, type: 'number', valueType: 'Uint32Property' },
-    }
-  },
-
-  // 0.6.x brake resistor support
-  ...(isV06x ? {
-    brake_resistor0: {
-      name: 'Brake Resistor',
-      description: 'Brake resistor control and monitoring (0.6.x)',
-      properties: {
-        current: { name: 'Current', description: 'Calculated current dumped into the brake resistor (A)', writable: false, type: 'number', decimals: 3, valueType: 'Float32Property' },
-        current_meas: { name: 'Current Measured', description: 'Measured brake resistor current (A)', writable: false, type: 'number', decimals: 3, valueType: 'Float32Property' },
-        current_meas_status: { name: 'Current Measurement Status', description: 'Current measurement status', writable: false, type: 'number', valueType: 'Uint32Property' },
-        duty: { name: 'Duty Cycle', description: 'Brake resistor duty cycle', writable: false, type: 'number', decimals: 3, valueType: 'Float32Property' },
-        additional_duty: { name: 'Additional Duty', description: 'Additional duty cycle to add (experimental)', writable: true, type: 'number', decimals: 3, valueType: 'Float32Property' },
-        chopper_temp: { name: 'Chopper Temperature', description: 'Estimate of the brake resistor chopper temperature (°C)', writable: false, type: 'number', decimals: 1, valueType: 'Float32Property' },
-        is_armed: { name: 'Is Armed', description: 'Brake resistor armed state', writable: false, type: 'boolean', valueType: 'BoolProperty' },
-        was_saturated: { name: 'Was Saturated', description: 'Indicates if the brake resistor reached saturation (latching)', writable: true, type: 'boolean', valueType: 'BoolProperty' },
+      input_pos: { type: 'number', unit: 'turns', description: 'Controller input position' },
+      input_vel: { type: 'number', unit: 'turns/s', description: 'Controller input velocity' },
+      input_torque: { type: 'number', unit: 'Nm', description: 'Controller input torque' },
+      pos_setpoint: { type: 'number', unit: 'turns', description: 'Position setpoint' },
+      vel_setpoint: { type: 'number', unit: 'turns/s', description: 'Velocity setpoint' },
+      torque_setpoint: { type: 'number', unit: 'Nm', description: 'Torque setpoint' },
+      trajectory_done: { type: 'boolean', description: 'Trajectory complete' },
+      vel_integrator_torque: { type: 'number', unit: 'Nm', description: 'Velocity integrator torque' },
+      autotuning_phase: { type: 'number', description: 'Autotuning phase' },
+      effective_torque_setpoint: { type: 'number', unit: 'Nm', description: 'Effective torque setpoint' },
+      spinout_electrical_power: { type: 'number', unit: 'W', description: 'Spinout electrical power' },
+      spinout_mechanical_power: { type: 'number', unit: 'W', description: 'Spinout mechanical power' }
+    },
+    children: {
+      config: {
+        properties: {
+          control_mode: { type: 'number', min: 0, max: 4, description: 'Control mode' },
+          input_mode: { type: 'number', min: 0, max: 7, description: 'Input mode' },
+          pos_gain: { type: 'number', unit: '(turns/s)/turn', min: 0, max: 1000, description: 'Position gain' },
+          vel_gain: { type: 'number', unit: 'Nm/(turns/s)', min: 0, max: 10, description: 'Velocity gain' },
+          vel_integrator_gain: { type: 'number', unit: 'Nm/((turns/s)*s)', min: 0, max: 10, description: 'Velocity integrator gain' },
+          vel_limit: { type: 'number', unit: 'turns/s', min: 0, max: 100, description: 'Velocity limit' },
+          vel_limit_tolerance: { type: 'number', unit: 'turns/s', min: 0, max: 10, description: 'Velocity limit tolerance' },
+          vel_ramp_rate: { type: 'number', unit: '(turns/s)/s', min: 0, max: 1000, description: 'Velocity ramp rate' },
+          torque_ramp_rate: { type: 'number', unit: 'Nm/s', min: 0, max: 1000, description: 'Torque ramp rate' },
+          circular_setpoints: { type: 'boolean', description: 'Use circular setpoints' },
+          circular_setpoint_range: { type: 'number', unit: 'turns', description: 'Circular setpoint range' },
+          homing_speed: { type: 'number', unit: 'turns/s', description: 'Homing speed' },
+          inertia: { type: 'number', unit: 'kg*m²', description: 'Load inertia' },
+          input_filter_bandwidth: { type: 'number', unit: 'Hz', min: 0, max: 1000, description: 'Input filter bandwidth' },
+          enable_overspeed_error: { type: 'boolean', description: 'Enable overspeed error' },
+          enable_torque_mode_vel_limit: { type: 'boolean', description: 'Enable torque mode velocity limit' },
+          enable_gain_scheduling: { type: 'boolean', description: 'Enable gain scheduling' },
+          gain_scheduling_width: { type: 'number', description: 'Gain scheduling width' },
+          enable_vel_limit: { type: 'boolean', description: 'Enable velocity limit' },
+          spinout_electrical_power_threshold: { type: 'number', unit: 'W', description: 'Spinout electrical power threshold' },
+          spinout_mechanical_power_threshold: { type: 'number', unit: 'W', description: 'Spinout mechanical power threshold' },
+          absolute_setpoints: { type: 'boolean', description: 'Use absolute setpoints' },
+          use_commutation_vel: { type: 'boolean', description: 'Use commutation velocity' }
+        }
+      },
+      autotuning: {
+        properties: {
+          frequency: { type: 'number', unit: 'Hz', description: 'Autotuning frequency' },
+          torque_amplitude: { type: 'number', unit: 'Nm', description: 'Autotuning torque amplitude' }
+        }
       }
     }
-  } : {}),
+  }
+}
 
-  // 0.6.x New Methods/Functions
-  ...(isV06x ? {
-    methods: {
-      name: 'ODrive Methods',
-      description: 'Callable methods and functions available in 0.6.x',
-      properties: {
-        test_function: { name: 'Test Function', description: 'Test function accepting a delta parameter', writable: false, type: 'function', valueType: 'Function', parameters: [{ name: 'delta', type: 'number' }] },
-        get_adc_voltage: { name: 'Get ADC Voltage', description: 'Reads ADC voltage from a specified GPIO', writable: false, type: 'function', valueType: 'Function', parameters: [{ name: 'gpio', type: 'number' }] },
-        enter_dfu_mode2: { name: 'Enter DFU Mode 2', description: 'Enters experimental DFU mode via CAN', writable: false, type: 'function', valueType: 'Function' },
-        disable_bootloader: { name: 'Disable Bootloader', description: 'Disables bootloader (useful for downgrades)', writable: false, type: 'function', valueType: 'Function' },
-        identify_once: { name: 'Identify Once', description: 'Blinks the LED once (for identifying devices)', writable: false, type: 'function', valueType: 'Function' },
-        get_interrupt_status: { name: 'Get Interrupt Status', description: 'Returns status of specified interrupt', writable: false, type: 'function', valueType: 'Function', parameters: [{ name: 'irqn', type: 'number' }] },
-        get_dma_status: { name: 'Get DMA Status', description: 'Returns DMA stream information', writable: false, type: 'function', valueType: 'Function', parameters: [{ name: 'stream_num', type: 'number' }] },
-        set_gpio: { name: 'Set GPIO', description: 'Sets a GPIO state (experimental)', writable: false, type: 'function', valueType: 'Function', parameters: [{ name: 'num', type: 'number' }, { name: 'status', type: 'boolean' }] },
-        get_raw_8: { name: 'Get Raw 8', description: 'Raw memory access for 8-bit diagnostics', writable: false, type: 'function', valueType: 'Function', parameters: [{ name: 'address', type: 'number' }] },
-        get_raw_32: { name: 'Get Raw 32', description: 'Raw memory access for 32-bit diagnostics', writable: false, type: 'function', valueType: 'Function', parameters: [{ name: 'address', type: 'number' }] },
-        get_raw_256: { name: 'Get Raw 256', description: 'Raw memory access for 256-bit diagnostics', writable: false, type: 'function', valueType: 'Function', parameters: [{ name: 'address', type: 'number' }] },
+function generateTrapTrajProperties() {
+  return {
+    properties: {},
+    children: {
+      config: {
+        properties: {
+          vel_limit: { type: 'number', unit: 'turns/s', min: 0, max: 100, description: 'Trapezoidal velocity limit' },
+          accel_limit: { type: 'number', unit: '(turns/s)/s', min: 0, max: 1000, description: 'Acceleration limit' },
+          decel_limit: { type: 'number', unit: '(turns/s)/s', min: 0, max: 1000, description: 'Deceleration limit' }
+        }
       }
-    },
-    // Experimental interfaces for 0.6.x
-    auth: {
-      name: 'Authentication',
-      description: 'Experimental authentication interface',
-      properties: {}
-    },
-    issues: {
-      name: 'Issues',
-      description: 'Experimental diagnostic and issue reporting interface',
-      properties: {}
-    },
-    debug: {
-      name: 'Debug',
-      description: 'Diagnostics features. Not intended for use by end users',
-      properties: {}
-    },
-  } : {}),
+    }
+  }
+}
 
-  // Axis 0 tree structure
-  axis0: generateAxisTree(0, firmwareVersion),
-  axis1: generateAxisTree(1, firmwareVersion),
-  };
-};
+function generateEndstopProperties() {
+  return {
+    properties: {},
+    children: {
+      config: {
+        properties: {
+          gpio_num: { type: 'number', min: 0, max: 16, description: 'Endstop GPIO pin' },
+          enabled: { type: 'boolean', description: 'Endstop enabled' },
+          offset: { type: 'number', unit: 'turns', description: 'Endstop offset' },
+          is_active_high: { type: 'boolean', description: 'Endstop active high' },
+          debounce_ms: { type: 'number', unit: 'ms', min: 0, max: 1000, description: 'Endstop debounce time' }
+        }
+      }
+    }
+  }
+}
+
+function generateMechanicalBrakeProperties() {
+  return {
+    properties: {},
+    children: {
+      config: {
+        properties: {
+          gpio_num: { type: 'number', min: 0, max: 16, description: 'Mechanical brake GPIO pin' },
+          is_active_low: { type: 'boolean', description: 'Mechanical brake active low' }
+        }
+      }
+    }
+  }
+}
+
+function generateLockinProperties() {
+  return {
+    properties: {
+      current: { type: 'number', unit: 'A', description: 'Lockin current' },
+      ramp_time: { type: 'number', unit: 's', description: 'Lockin ramp time' },
+      ramp_distance: { type: 'number', unit: 'turns', description: 'Lockin ramp distance' },
+      accel: { type: 'number', unit: '(turns/s)/s', description: 'Lockin acceleration' },
+      vel: { type: 'number', unit: 'turns/s', description: 'Lockin velocity' }
+    }
+  }
+}
+
+function generateSensorlessRampProperties() {
+  return {
+    properties: {
+      current: { type: 'number', unit: 'A', description: 'Sensorless ramp current' },
+      ramp_time: { type: 'number', unit: 's', description: 'Sensorless ramp time' },
+      ramp_distance: { type: 'number', unit: 'turns', description: 'Sensorless ramp distance' },
+      accel: { type: 'number', unit: '(turns/s)/s', description: 'Sensorless ramp acceleration' },
+      vel: { type: 'number', unit: 'turns/s', description: 'Sensorless ramp velocity' },
+      finish_distance: { type: 'number', unit: 'turns', description: 'Sensorless ramp finish distance' },
+      finish_on_vel: { type: 'boolean', description: 'Finish sensorless ramp on velocity' },
+      finish_on_distance: { type: 'boolean', description: 'Finish sensorless ramp on distance' }
+    }
+  }
+}
+
+// 0.6.x specific component generators
+function generateLoadMapperProperties() {
+  return {
+    properties: {
+      is_ready: { type: 'boolean', description: 'Load mapper ready' },
+      error: { type: 'number', description: 'Load mapper error' },
+      shadow_count: { type: 'number', description: 'Load mapper shadow count' },
+      pos_estimate: { type: 'number', unit: 'turns', description: 'Load mapper position estimate' },
+      vel_estimate: { type: 'number', unit: 'turns/s', description: 'Load mapper velocity estimate' }
+    },
+    children: {
+      config: {
+        properties: {
+          use_index: { type: 'boolean', description: 'Load mapper use index' },
+          index_offset: { type: 'number', unit: 'turns', description: 'Load mapper index offset' },
+          cpr: { type: 'number', min: 1, max: 100000, description: 'Load mapper counts per revolution' },
+          pre_calibrated: { type: 'boolean', description: 'Load mapper pre-calibrated' }
+        }
+      }
+    }
+  }
+}
+
+function generateCommutationMapperProperties() {
+  return {
+    properties: {
+      is_ready: { type: 'boolean', description: 'Commutation mapper ready' },
+      error: { type: 'number', description: 'Commutation mapper error' },
+      phase: { type: 'number', unit: 'rad', description: 'Commutation phase' },
+      phase_vel: { type: 'number', unit: 'rad/s', description: 'Commutation phase velocity' }
+    },
+    children: {
+      config: {
+        properties: {
+          pole_pairs: { type: 'number', min: 1, max: 50, description: 'Commutation pole pairs' },
+          use_index_electrical_offset: { type: 'boolean', description: 'Use index electrical offset' },
+          electrical_offset: { type: 'number', unit: 'rad', description: 'Electrical offset' },
+          direction: { type: 'number', min: -1, max: 1, description: 'Commutation direction' }
+        }
+      }
+    }
+  }
+}
+
+function generatePosVelMapperProperties() {
+  return {
+    properties: {
+      is_ready: { type: 'boolean', description: 'Position velocity mapper ready' },
+      error: { type: 'number', description: 'Position velocity mapper error' },
+      pos_estimate: { type: 'number', unit: 'turns', description: 'Position velocity mapper position estimate' },
+      vel_estimate: { type: 'number', unit: 'turns/s', description: 'Position velocity mapper velocity estimate' }
+    },
+    children: {
+      config: {
+        properties: {
+          use_circular_pos: { type: 'boolean', description: 'Use circular position' },
+          circular_setpoints: { type: 'boolean', description: 'Use circular setpoints' },
+          range: { type: 'number', unit: 'turns', description: 'Position velocity mapper range' },
+          bandwidth: { type: 'number', unit: 'Hz', description: 'Position velocity mapper bandwidth' }
+        }
+      }
+    }
+  }
+}
+
+function generateHarmonicCompensationProperties() {
+  return {
+    properties: {
+      cosx_coef: { type: 'number', description: 'Cosine X coefficient' },
+      sinx_coef: { type: 'number', description: 'Sine X coefficient' },
+      cos2x_coef: { type: 'number', description: 'Cosine 2X coefficient' },
+      sin2x_coef: { type: 'number', description: 'Sine 2X coefficient' }
+    },
+    children: {
+      config: {
+        properties: {
+          enable: { type: 'boolean', description: 'Enable harmonic compensation' },
+          calib_vel: { type: 'number', unit: 'turns/s', description: 'Harmonic calibration velocity' },
+          calib_turns: { type: 'number', unit: 'turns', description: 'Harmonic calibration turns' },
+          calib_settling_delay: { type: 'number', unit: 's', description: 'Harmonic calibration settling delay' }
+        }
+      }
+    }
+  }
+}
+
+function generateThermalCurrentLimiterProperties() {
+  return {
+    properties: {
+      current_lim: { type: 'number', unit: 'A', description: 'Thermal current limit' }
+    },
+    children: {
+      config: {
+        properties: {
+          temp_limit_lower: { type: 'number', unit: '°C', description: 'Thermal lower temperature limit' },
+          temp_limit_upper: { type: 'number', unit: '°C', description: 'Thermal upper temperature limit' }
+        }
+      }
+    }
+  }
+}
+
+function generateMotorThermistorCurrentLimiterProperties() {
+  return {
+    properties: {
+      current_lim: { type: 'number', unit: 'A', description: 'Motor thermistor current limit' },
+      temperature: { type: 'number', unit: '°C', description: 'Motor thermistor temperature' }
+    },
+    children: {
+      config: {
+        properties: {
+          enabled: { type: 'boolean', description: 'Motor thermistor current limiter enabled' },
+          temp_limit_lower: { type: 'number', unit: '°C', description: 'Motor thermistor lower limit' },
+          temp_limit_upper: { type: 'number', unit: '°C', description: 'Motor thermistor upper limit' },
+          poly_coefficient_0: { type: 'number', description: 'Polynomial coefficient 0' },
+          poly_coefficient_1: { type: 'number', description: 'Polynomial coefficient 1' },
+          poly_coefficient_2: { type: 'number', description: 'Polynomial coefficient 2' },
+          poly_coefficient_3: { type: 'number', description: 'Polynomial coefficient 3' }
+        }
+      }
+    }
+  }
+}
+
+function generateSensorlessEstimatorProperties() {
+  return {
+    properties: {
+      error: { type: 'number', description: 'Sensorless estimator error' },
+      phase: { type: 'number', unit: 'rad', description: 'Sensorless phase estimate' },
+      pll_pos: { type: 'number', unit: 'rad', description: 'PLL position' },
+      phase_vel: { type: 'number', unit: 'rad/s', description: 'Sensorless phase velocity' },
+      vel_estimate: { type: 'number', unit: 'turns/s', description: 'Sensorless velocity estimate' }
+    },
+    children: {
+      config: {
+        properties: {
+          observer_gain: { type: 'number', description: 'Sensorless observer gain' },
+          pll_bandwidth: { type: 'number', unit: 'Hz', description: 'Sensorless PLL bandwidth' },
+          pm_flux_linkage: { type: 'number', unit: 'Wb', description: 'PM flux linkage' }
+        }
+      }
+    }
+  }
+}
+
+// Update the generateInverterProperties function (add if missing)
+function generateInverterProperties() {
+  return {
+    properties: {
+      is_ready: { type: 'boolean', description: 'Inverter ready status' },
+      error: { type: 'number', description: 'Inverter error flags' },
+      armed_state: { type: 'number', description: 'Inverter armed state' },
+      temperature: { type: 'number', unit: '°C', description: 'Inverter temperature' },
+      effective_current_lim: { type: 'number', unit: 'A', description: 'Effective current limit' },
+      current_meas_phA: { type: 'number', unit: 'A', description: 'Phase A current measurement' },
+      current_meas_phB: { type: 'number', unit: 'A', description: 'Phase B current measurement' },
+      current_meas_phC: { type: 'number', unit: 'A', description: 'Phase C current measurement' }
+    }
+  }
+}
 
 // For backward compatibility
-export const odrivePropertyTree = generateOdrivePropertyTree("0.5.6");
+export const odrivePropertyTree = generateOdrivePropertyTree("0.5.6")
 

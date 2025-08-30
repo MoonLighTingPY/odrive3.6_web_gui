@@ -113,46 +113,95 @@ export const loadAllConfigurationBatch = async () => {
   };
 
   // Use unified registry to categorize results
-  Object.entries(allResults).forEach(([path, value]) => {
-    // Skip error responses
-    if (value && typeof value === 'object' && value.error) {
-      console.warn(`Error reading ${path}:`, value.error);
-      return;
-    }
+  // In configBatchApi.js, update the parameter processing in loadConfigurationBatch
+Object.entries(allResults).forEach(([path, value]) => {
+  // Skip error responses
+  if (value && typeof value === 'object' && value.error) {
+    console.warn(`Error reading ${path}:`, value.error);
+    return;
+  }
 
-    if (value !== undefined && value !== null) {
-      // Remove 'device.' prefix to get the property path
-      const propertyPath = path.replace(/^device\./, '')
+  if (value !== undefined && value !== null) {
+    // Remove 'device.' prefix to get the property path
+    const propertyPath = path.replace(/^device\./, '')
 
-      // Find the parameter in the registry
-      const param = findParameter(propertyPath)
+    // Find the parameter in the registry
+    const param = findParameter(propertyPath)
 
-      if (param && param.category) {
-        let processedValue = value
+    if (param && param.category) {
+      // Add safety check for param.property
+      if (!param.property) {
+        console.warn(`Parameter ${propertyPath} missing property definition, skipping special processing`)
+        // Still process the value but without special conversions
+        return
+      }
 
-        // Handle special value conversions
-        if (param.configKey === 'motor_kv' && param.path.includes('torque_constant')) {
-          processedValue = convertTorqueConstantToKv(value)
-        }
+      let processedValue = value
 
-        // Determine axis number from path
-        const axisMatch = propertyPath.match(/axis(\d+)/)
-        const axisNumber = axisMatch ? parseInt(axisMatch[1]) : null
+      // Handle special value conversions - now safely
+      if (param.configKey === 'motor_kv' && param.path && param.path.includes('torque_constant')) {
+        processedValue = convertTorqueConstantToKv(value)
+      }
 
-        if (param.category === 'motor' || param.category === 'encoder' || param.category === 'control') {
-          if (axisNumber !== null) {
-            if (!categorizedResults[param.category][`axis${axisNumber}`]) {
-              categorizedResults[param.category][`axis${axisNumber}`] = {}
-            }
-            categorizedResults[param.category][`axis${axisNumber}`][param.configKey] = processedValue
+      // Determine axis number from path
+      const axisMatch = propertyPath.match(/^axis(\d+)\./)
+      const axisNumber = axisMatch ? parseInt(axisMatch[1]) : null
+
+      // Categorize the result
+      if (param.category === 'motor' || param.category === 'encoder' || param.category === 'control') {
+        // Axis-specific categories
+        if (axisNumber !== null) {
+          const axisKey = `axis${axisNumber}`
+          if (!categorizedResults[param.category][axisKey]) {
+            categorizedResults[param.category][axisKey] = {}
           }
+          categorizedResults[param.category][axisKey][param.configKey] = processedValue
+        }
+      } else {
+        // Global categories (power, interface)
+        categorizedResults[param.category][param.configKey] = processedValue
+      }
+    } else {
+      // Handle fallback cases for parameters not found in registry
+      console.debug(`Parameter ${propertyPath} not found in registry, using fallback categorization`)
+      
+      // Simple fallback categorization
+      if (propertyPath.includes('motor.config') || propertyPath.includes('phase_') || propertyPath.includes('torque_')) {
+        const axisMatch = propertyPath.match(/^axis(\d+)\./)
+        if (axisMatch) {
+          const axisKey = `axis${axisMatch[1]}`
+          if (!categorizedResults.motor[axisKey]) categorizedResults.motor[axisKey] = {}
+          const key = propertyPath.split('.').pop()
+          categorizedResults.motor[axisKey][key] = value
+        }
+      } else if (propertyPath.includes('encoder.config')) {
+        const axisMatch = propertyPath.match(/^axis(\d+)\./)
+        if (axisMatch) {
+          const axisKey = `axis${axisMatch[1]}`
+          if (!categorizedResults.encoder[axisKey]) categorizedResults.encoder[axisKey] = {}
+          const key = propertyPath.split('.').pop()
+          categorizedResults.encoder[axisKey][key] = value
+        }
+      } else if (propertyPath.includes('controller.config') || propertyPath.includes('trap_traj.config')) {
+        const axisMatch = propertyPath.match(/^axis(\d+)\./)
+        if (axisMatch) {
+          const axisKey = `axis${axisMatch[1]}`
+          if (!categorizedResults.control[axisKey]) categorizedResults.control[axisKey] = {}
+          const key = propertyPath.split('.').pop()
+          categorizedResults.control[axisKey][key] = value
+        }
+      } else if (propertyPath.includes('config.')) {
+        // Power/interface config
+        const key = propertyPath.replace('config.', '')
+        if (key.includes('brake_') || key.includes('dc_bus_') || key.includes('fet_')) {
+          categorizedResults.power[key] = value
         } else {
-          // Power and interface are global
-          categorizedResults[param.category][param.configKey] = processedValue
+          categorizedResults.interface[key] = value
         }
       }
     }
-  });
+  }
+});
 
   console.log('Categorized configuration:', categorizedResults)
   return categorizedResults;
