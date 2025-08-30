@@ -134,9 +134,14 @@ class ODrivePathResolver {
 
     // Handle axis properties
     if (logicalPath.startsWith('axis0.') || logicalPath.startsWith('axis1.')) {
-      // Replace hardcoded axis with effective axis
-      const pathWithoutAxis = logicalPath.replace(/^axis[01]\./, '')
-      return `${this.config.deviceName}.axis${effectiveAxis}.${pathWithoutAxis}`
+      // IMPORTANT: Do NOT replace axis numbers! Each axis should keep its own path
+      // Only override if explicitly requested via axis parameter
+      if (axis !== null) {
+        const pathWithoutAxis = logicalPath.replace(/^axis[01]\./, '')
+        return `${this.config.deviceName}.axis${axis}.${pathWithoutAxis}`
+      }
+      // Keep original axis in path
+      return `${this.config.deviceName}.${logicalPath}`
     }
 
     // For unspecified axis-level properties, prefix with effective axis
