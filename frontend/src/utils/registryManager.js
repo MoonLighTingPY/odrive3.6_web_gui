@@ -5,7 +5,7 @@
  * based on the detected firmware version of the connected ODrive.
  */
 
-import { createRegistryForVersion } from './odriveUnifiedRegistry'
+import { createRegistryForVersion, setActiveOdriveFirmwareVersion, getCurrentRegistry as getActiveRegistry } from './odriveUnifiedRegistry'
 import { setPathResolverConfig } from './odrivePathResolver'
 
 class RegistryManager {
@@ -51,10 +51,13 @@ class RegistryManager {
     if (this.currentVersion !== normalizedVersion) {
       console.log(`🔄 Registry Manager: Switching registry from ${this.currentVersion || 'none'} to ${normalizedVersion}`)
       this.currentVersion = normalizedVersion
-      this.currentRegistry = this.getRegistryForVersion(normalizedVersion)
 
-      // Also update the global path resolver configuration
+      // Ensure the global active registry + path resolver are updated first
+      setActiveOdriveFirmwareVersion(normalizedVersion, 'odrv0', 0)
       setPathResolverConfig(normalizedVersion, 'odrv0', 0)
+
+      // Use the exact active registry instance managed by odriveUnifiedRegistry
+      this.currentRegistry = getActiveRegistry()
 
       console.log(`📊 New registry stats:`, {
         firmwareVersion: normalizedVersion,

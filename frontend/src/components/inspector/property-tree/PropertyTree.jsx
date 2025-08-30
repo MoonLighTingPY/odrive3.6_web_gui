@@ -14,7 +14,7 @@ import {
   Skeleton
 } from '@chakra-ui/react'
 import { SearchIcon } from '@chakra-ui/icons'
-import { generateOdrivePropertyTree } from '../../../utils/odrivePropertyTree'
+import { getCurrentRegistry } from '../../../utils/registryManager'
 import { usePropertyRefresh } from '../../../hooks/property-tree/usePropertyRefresh'
 import { usePropertyEditor } from '../../../hooks/property-tree/usePropertyEditor'
 import { usePropertyTreeFilter } from '../../../hooks/property-tree/usePropertyTreeFilter'
@@ -24,28 +24,31 @@ import Observer from '@researchgate/react-intersection-observer'
 import { useSelector } from 'react-redux'
 
 const PropertyTree = ({ 
-  odriveState, 
-  searchFilter: initialSearchFilter, 
-  // setSearchFilter: setInitialSearchFilter,  // Removed unused parameter
   updateProperty, 
   isConnected,
   selectedProperties = [],
   togglePropertyChart,
-  refreshTrigger
+  refreshTrigger,
+  odriveState: odriveStateProp // <--- accept odriveState if parent passes it
 }) => {
   const [collapsedSections, setCollapsedSections] = useState(new Set())
   const [favouritesVersion, setFavouritesVersion] = useState(0)
-  const [searchFilter, setSearchFilter] = useState(initialSearchFilter)
+  const [searchFilter, setSearchFilter] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState(searchFilter)
+  
 
   // Get current firmware version from Redux store
   const firmwareVersion = useSelector((state) => state.device.firmwareVersion)
-  
-  // Generate property tree based on current firmware version
+  // Ensure odriveState is defined (prop wins, otherwise read from store)
+  const odriveStateFromStore = useSelector((state) => state.device.odriveState)
+  const odriveState = odriveStateProp ?? odriveStateFromStore
+
+  // Use the property tree from the active registry instead of generating our own
   const odrivePropertyTree = useMemo(() => {
-    const version = firmwareVersion || '0.5.6'
-    console.log(`🌳 Generating property tree for firmware version: ${version}`)
-    return generateOdrivePropertyTree(version)
+    const registry = getCurrentRegistry()
+    const version = firmwareVersion || registry.firmwareVersion || '0.5.6'
+    console.log(`🌳 Using property tree from registry for firmware version: ${version}`)
+    return registry.propertyTree
   }, [firmwareVersion])
 
   // Function to collect all properties recursively from the tree structure
