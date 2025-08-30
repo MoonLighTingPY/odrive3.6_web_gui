@@ -4,13 +4,13 @@
  * This system uses odrivePropertyTree as the master source and automatically
  * generates all other data structures (commands, batch paths, mappings, etc.)
  */
-
 import { odrivePropertyTree } from './odrivePropertyTree'
+import { odrivePropertyTree06 } from './odrivePropertyTree_0_6'
 import { convertKvToTorqueConstant } from './valueHelpers'
 
 class ODriveUnifiedRegistry {
-  constructor() {
-    this.propertyTree = odrivePropertyTree
+  constructor(propertyTree = odrivePropertyTree) {
+    this.propertyTree = propertyTree
     this.configCategories = this._generateConfigCategories()
     this.batchPaths = this._generateBatchPaths()
     this.propertyMappings = this._generatePropertyMappings()
@@ -797,3 +797,21 @@ export const ODriveUnifiedCommands = odriveRegistry.configCategories
 export const ODriveUnifiedMappings = odriveRegistry.propertyMappings
 
 export const ODriveCommands = odriveRegistry.getCommands()
+
+// Optional 0.6.x variants (non-breaking): use the new 0.6.x property tree
+const odriveRegistry06 = new ODriveUnifiedRegistry(odrivePropertyTree06)
+
+export const getBatchPaths06 = () => odriveRegistry06.getBatchPaths()
+export const getPropertyMappings06 = (category) => odriveRegistry06.getPropertyMappings(category)
+export const generateCommands06 = (category, config) => odriveRegistry06.generateCommands(category, config)
+export const generateAllCommands06 = (deviceConfig) => odriveRegistry06.generateAllCommands(deviceConfig)
+export const findParameter06 = (identifier) => odriveRegistry06.findParameter(identifier)
+export const getCategoryParameters06 = (category) => odriveRegistry06.getCategoryParameters(category)
+export const getParameterMetadata06 = (category, configKey) => odriveRegistry06.getParameterMetadata(category, configKey)
+export const validateConfig06 = (category, config) => odriveRegistry06.validateConfig(category, config)
+export const getDebugInfo06 = () => odriveRegistry06.getDebugInfo()
+export const ODrivePropertyMappings06 = odriveRegistry06.getPropertyMappings()
+export { odriveRegistry06 }
+export const ODriveUnifiedCommands06 = odriveRegistry06.configCategories
+export const ODriveUnifiedMappings06 = odriveRegistry06.propertyMappings
+export const ODriveCommands06 = odriveRegistry06.getCommands()
