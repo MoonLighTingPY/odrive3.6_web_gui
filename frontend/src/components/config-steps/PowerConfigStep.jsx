@@ -52,8 +52,14 @@ const PowerConfigStep = ({
   
   // Use version-aware utilities
   const { registry, grouping } = useVersionedUtils()
-  const powerParams = registry.getConfigCategories().power || []
-
+  // Normalize registry parameters so UI components always have label/description for titles/tooltips
+  const rawPowerParams = registry.getConfigCategories().power || []
+  const powerParams = rawPowerParams.map(p => {
+    const name = p.name || p.label || (p.property && (p.property.name || p.property.label)) || p.configKey || ''
+    const description = p.description || (p.property && (p.property.description || p.property.help)) || ''
+    return { ...p, name, description }
+  })
+  
   const handleConfigChange = (configKey, value) => {
     onUpdateConfig('power', configKey, value)
   }

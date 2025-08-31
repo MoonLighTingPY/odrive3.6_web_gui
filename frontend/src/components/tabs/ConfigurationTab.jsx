@@ -317,12 +317,12 @@ const ConfigurationTab = memo(() => {
         handleUpdateConfig(category, configKey, value, axisNumber)
         
 
-        toast({
-          title: 'Parameter Read',
-          description: `${configKey}: ${data.value} (axis${axisNumber})`,
-          status: 'success',
-          duration: 2000,
-        })
+        // toast({
+        //   title: 'Parameter Read',
+        //   description: `${configKey}: ${data.value} (axis${axisNumber})`,
+        //   status: 'success',
+        //   duration: 2000,
+        // })
       } else {
         throw new Error('Failed to read parameter')
       }
