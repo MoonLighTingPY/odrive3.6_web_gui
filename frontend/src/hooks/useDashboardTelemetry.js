@@ -105,7 +105,6 @@ export const useDashboardTelemetry = () => {
             if (/\bNaN\b/.test(responseText) || /\bInfinity\b/.test(responseText) || /\b-Infinity\b/.test(responseText)) {
               rawHadInvalidToken = true
               // Log the raw response once (requested)
-              console.warn('Telemetry raw response contained invalid tokens (NaN/Infinity). Raw response:', responseText)
               // Replace invalid tokens with null / large sentinel so JSON.parse succeeds
               const cleaned = responseText
                 .replace(/\bNaN\b/g, 'null')
@@ -199,7 +198,7 @@ export const useDashboardTelemetry = () => {
 
             // If we sanitized anything but haven't logged raw yet, log the raw response once
             if ((sanitizedAny || rawHadInvalidToken) && responseText) {
-              console.warn('Telemetry response contained NaN/non-finite values; sanitized before updating state. Raw response:', responseText)
+              // console.warn('Telemetry response contained NaN/non-finite values; sanitized before updating state. Raw response:', responseText)
             }
 
             // Dispatch to telemetry slice for immediate updates
