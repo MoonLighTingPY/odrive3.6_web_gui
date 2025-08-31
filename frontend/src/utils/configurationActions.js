@@ -3,8 +3,9 @@
  * Handles API calls for ODrive configuration operations
  */
 
-import { generateConfigCommands } from './configCommandGenerator'
+import { generateConfigCommandsVersioned } from './versionSelection'
 import { setConnectedDevice } from '../store/slices/deviceSlice'
+import { store } from '../store'
 
 /**
  * Execute configuration action via API
@@ -179,7 +180,12 @@ export const executeCommand = async (command) => {
  * @returns {Promise<void>} Resolves when both apply and save are complete
  */
 export const applyAndSaveConfiguration = async (deviceConfig, toast, dispatch, connectedDevice) => {
-  const commands = generateConfigCommands(deviceConfig)
+  // Get firmware version from Redux store to use appropriate command generator
+  const state = store.getState()
+  const is0_6 = state.device.fw_is_0_6 || false
+  
+  // Use version-aware command generation
+  const commands = generateConfigCommandsVersioned(deviceConfig, 0, is0_6)
 
   // Step 1: Apply configuration
   toast({

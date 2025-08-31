@@ -28,14 +28,11 @@ import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
 import AdvancedSettingsSection from '../config-parameter-fields/AdvancedSettingsSection'
 import { ControlMode, InputMode } from '../../utils/odriveEnums'
 import {
-  getGroupedAdvancedParameters,
-} from '../../utils/configParameterGrouping'
-import {
   turnsToRpm,
   rpmToTurns,
 } from '../../utils/unitConversions'
 import { useSelector } from 'react-redux'
-import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
+import { useVersionedUtils } from '../../utils/versionSelection'
 
 // Control parameter groups
 const CONTROL_PARAM_GROUPS = {
@@ -159,9 +156,12 @@ const ControlConfigStep = ({
 
   const isPositionControl = (controlConfig.control_mode ?? ControlMode.VELOCITY_CONTROL) === ControlMode.POSITION_CONTROL
 
-  // Get advanced parameters grouped by category
-  const controlParams = getCategoryParameters('control')
-  const groupedAdvancedParams = getGroupedAdvancedParameters(controlParams, CONTROL_PARAM_GROUPS)
+  // Use version-aware utilities
+  const { registry, grouping } = useVersionedUtils()
+  
+  // Get advanced parameters grouped by category using version-aware grouping
+  const controlParams = registry.getConfigCategories().control || []
+  const groupedAdvancedParams = grouping.getGroupedAdvancedParameters(controlParams, CONTROL_PARAM_GROUPS)
   const totalAdvancedCount = Object.values(groupedAdvancedParams)
     .reduce((total, group) => total + Object.values(group).reduce((groupTotal, subgroup) => groupTotal + subgroup.length, 0), 0)
 
