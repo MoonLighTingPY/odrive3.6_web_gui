@@ -46,7 +46,6 @@ const MOTOR_PARAM_GROUPS_06 = {
   dI_dt_FF_enable: { group: 'Current Control', subgroup: 'Feedforward', importance: 'advanced' }, // New in 0.6.x
 
   // Advanced Motor Properties (enhanced in 0.6.x)
-  resistance_calib_max_voltage: { group: 'Motor Configuration', subgroup: 'Calibration', importance: 'advanced' },
   requested_current_range: { group: 'Motor Configuration', subgroup: 'Current', importance: 'advanced' },
   pre_calibrated: { group: 'Motor Configuration', subgroup: 'Calibration', importance: 'advanced' },
   current_lim_margin: { group: 'Motor Configuration', subgroup: 'Current', importance: 'advanced' },

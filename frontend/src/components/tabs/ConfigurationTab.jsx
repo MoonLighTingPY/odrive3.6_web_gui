@@ -14,11 +14,13 @@ import {
   Spinner,
   useDisclosure
 } from '@chakra-ui/react'
-import PowerConfigStep from '../config-steps/PowerConfigStep'
-import MotorConfigStep from '../config-steps/MotorConfigStep'
-import EncoderConfigStep from '../config-steps/EncoderConfigStep'
-import ControlConfigStep from '../config-steps/ControlConfigStep'
-import InterfaceConfigStep from '../config-steps/InterfaceConfigStep'
+import {
+  VersionedPowerConfigStep,
+  VersionedMotorConfigStep,
+  VersionedEncoderConfigStep,
+  VersionedControlConfigStep,
+  VersionedInterfaceConfigStep,
+} from '../../utils/componentVersionSelector.jsx'
 import FinalConfigStep from '../config-steps/FinalConfigStep'
 import DebugConfigStep from '../config-steps/DebugConfigStep'
 import { convertTorqueConstantToKv } from '../../utils/valueHelpers'
@@ -31,13 +33,13 @@ import { getCategoryParametersVersioned } from '../../utils/versionSelection'
 import { useAxisStateGuard } from '../../hooks/useAxisStateGuard'
 import { store } from '../../store'
 
-// Configuration steps array
+// Configuration steps array - now using versioned components
 const CONFIGURATION_STEPS = [
-  { id: 1, name: 'Power', icon: '⚡', component: PowerConfigStep },
-  { id: 2, name: 'Motor', icon: '🔧', component: MotorConfigStep },
-  { id: 3, name: 'Encoder', icon: '📐', component: EncoderConfigStep },
-  { id: 4, name: 'Control', icon: '🎮', component: ControlConfigStep },
-  { id: 5, name: 'Interface', icon: '🔌', component: InterfaceConfigStep },
+  { id: 1, name: 'Power', icon: '⚡', component: VersionedPowerConfigStep },
+  { id: 2, name: 'Motor', icon: '🔧', component: VersionedMotorConfigStep },
+  { id: 3, name: 'Encoder', icon: '📐', component: VersionedEncoderConfigStep },
+  { id: 4, name: 'Control', icon: '🎮', component: VersionedControlConfigStep },
+  { id: 5, name: 'Interface', icon: '🔌', component: VersionedInterfaceConfigStep },
   { id: 6, name: 'Apply', icon: '✅', component: FinalConfigStep },
 ]
 

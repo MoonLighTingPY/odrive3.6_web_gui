@@ -62,9 +62,6 @@ const ENCODER_PARAM_GROUPS_06 = {
   calib_scan_distance: { group: 'Calibration', subgroup: 'Scanning', importance: 'advanced' },
   calib_scan_omega: { group: 'Calibration', subgroup: 'Scanning', importance: 'advanced' },
 
-  // Advanced filtering and bandwidth
-  encoder_bandwidth: { group: 'Filtering', subgroup: 'Bandwidth', importance: 'advanced' },
-  
   // Harmonic Compensation (New in 0.6.x)
   harmonic_compensation_enabled: { group: 'Harmonic Compensation', subgroup: 'Configuration', importance: 'advanced' }, // New in 0.6.x
   harmonic_compensation_order: { group: 'Harmonic Compensation', subgroup: 'Configuration', importance: 'advanced' }, // New in 0.6.x

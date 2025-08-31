@@ -52,3 +52,22 @@ export const convertKvToTorqueConstant = (motorKv) => {
   }
   return 0.0
 }
+
+/**
+ * Format value safely with proper precision and fallback
+ * @param {*} value - The value to format
+ * @param {number} precision - Decimal places to show
+ * @param {*} defaultValue - Default value if input is invalid
+ * @returns {string|number} The formatted value or default
+ */
+export const formatSafeValue = (value, precision = 3, defaultValue = '---') => {
+  if (value === undefined || value === null || isNaN(value)) {
+    return defaultValue
+  }
+  
+  if (typeof value === 'number') {
+    return Number(value.toFixed(precision))
+  }
+  
+  return value
+}

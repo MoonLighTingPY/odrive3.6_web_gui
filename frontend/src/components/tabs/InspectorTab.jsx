@@ -19,7 +19,7 @@ import {
   GridItem,
 } from '@chakra-ui/react'
 import { RefreshCw } from 'lucide-react'
-import PropertyTree from '../inspector/property-tree/PropertyTree'
+import { VersionedPropertyTree } from '../../utils/componentVersionSelector.jsx'
 import LiveCharts from '../inspector/LiveCharts'
 import { EnableMotorButton, DisableMotorButton, CalibrationButton, ClearErrorsButton, SaveAndRebootButton } from '../MotorControls'
 
@@ -103,7 +103,7 @@ const InspectorTab = memo(() => {
           <GridItem display="flex" flexDirection="column" flex="1" minH="0">
             {/* make this box scrollable */}
             <Box flex="1" minH="0" overflowY="auto">
-              <PropertyTree
+              <VersionedPropertyTree
                 odriveState={odriveState}
                 searchFilter={searchFilter}
                 setSearchFilter={setSearchFilter}

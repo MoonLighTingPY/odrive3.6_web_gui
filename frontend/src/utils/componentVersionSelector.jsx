@@ -6,6 +6,7 @@
  * and 0.6.x variants are used for 0.6.x devices.
  */
 
+import React from 'react'
 import { useSelector } from 'react-redux'
 
 // Config Steps Components
