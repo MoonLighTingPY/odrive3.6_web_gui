@@ -86,7 +86,23 @@ const MotorConfigStep = ({
   // Get axis-specific motor config
   const motorConfig = deviceConfig.motor?.[`axis${selectedAxis}`] || {}
   
-  const motorParams = registry.getConfigCategories().motor || []
+  // Get raw parameters and normalize them (same pattern as PowerConfigStep)
+  const rawMotorParams = registry.getConfigCategories().motor || []
+  const motorParams = rawMotorParams.map(p => {
+    const name = p.name || p.label || (p.property && (p.property.name || p.property.label)) || p.configKey || 'Unknown Parameter'
+    const description = p.description || (p.property && (p.property.description || p.property.help)) || `Configuration parameter: ${p.configKey}`
+    
+    return { 
+      ...p, 
+      name, 
+      description,
+      property: {
+        ...p.property,
+        name,
+        description
+      }
+    }
+  })
 
   const handleConfigChange = (configKey, value) => {
     onUpdateConfig('motor', configKey, value, selectedAxis)

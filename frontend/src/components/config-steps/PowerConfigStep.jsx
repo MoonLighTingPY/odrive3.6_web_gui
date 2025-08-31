@@ -17,8 +17,9 @@ import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
 import AdvancedSettingsSection from '../config-parameter-fields/AdvancedSettingsSection'
 import { useVersionedUtils } from '../../utils/versionSelection'
 import { useSelector } from 'react-redux'
-// Power parameter groups
-const POWER_PARAM_GROUPS = {
+
+// Power parameter groups for 0.5.x
+const POWER_PARAM_GROUPS_0_5 = {
   // DC Bus Voltage Protection (including ramp)
   dc_bus_overvoltage_trip_level: { group: 'DC Bus Voltage Protection', subgroup: 'Trip Levels', importance: 'essential' },
   dc_bus_undervoltage_trip_level: { group: 'DC Bus Voltage Protection', subgroup: 'Trip Levels', importance: 'essential' },
@@ -29,15 +30,52 @@ const POWER_PARAM_GROUPS = {
   // Current Limits & Brake Resistor
   dc_max_positive_current: { group: 'Current Limits & Brake Resistor', subgroup: 'Current Limits', importance: 'essential' },
   dc_max_negative_current: { group: 'Current Limits & Brake Resistor', subgroup: 'Current Limits', importance: 'essential' },
-  max_regen_current: { group: 'Current Limits & Brake Resistor', subgroup: 'Current Limits', importance: 'essential' },
-
+  enable_brake_resistor: { group: 'Current Limits & Brake Resistor', subgroup: 'Brake Resistor', importance: 'essential' },
+  brake_resistance: { group: 'Current Limits & Brake Resistor', subgroup: 'Brake Resistor', importance: 'essential' },
 
   // FET Thermistor
   fet_thermistor_enabled: { group: 'FET Thermistor', subgroup: 'Thermistor', importance: 'advanced' },
   fet_temp_limit_lower: { group: 'FET Thermistor', subgroup: 'Thermistor', importance: 'advanced' },
   fet_temp_limit_upper: { group: 'FET Thermistor', subgroup: 'Thermistor', importance: 'advanced' },
 
-  // Everything else goes to advanced (no more miscellaneous)
+  // Everything else goes to advanced
+  usb_cdc_protocol: { group: 'System', subgroup: 'Communication', importance: 'advanced' },
+}
+
+// Power parameter groups for 0.6.x
+const POWER_PARAM_GROUPS_0_6 = {
+  // DC Bus Voltage Protection (enhanced in 0.6.x)
+  dc_bus_overvoltage_trip_level: { group: 'DC Bus Voltage Protection', subgroup: 'Trip Levels', importance: 'essential' },
+  dc_bus_undervoltage_trip_level: { group: 'DC Bus Voltage Protection', subgroup: 'Trip Levels', importance: 'essential' },
+  enable_dc_bus_overvoltage_ramp: { group: 'DC Bus Voltage Protection', subgroup: 'Ramp', importance: 'essential' },
+  dc_bus_overvoltage_ramp_start: { group: 'DC Bus Voltage Protection', subgroup: 'Ramp', importance: 'essential' },
+  dc_bus_overvoltage_ramp_end: { group: 'DC Bus Voltage Protection', subgroup: 'Ramp', importance: 'essential' },
+
+  // Current Limits & Regeneration (0.6.x uses max_regen_current)
+  dc_max_positive_current: { group: 'Current Limits & Regeneration', subgroup: 'Current Limits', importance: 'essential' },
+  dc_max_negative_current: { group: 'Current Limits & Regeneration', subgroup: 'Current Limits', importance: 'essential' },
+  max_regen_current: { group: 'Current Limits & Regeneration', subgroup: 'Regeneration', importance: 'essential' },
+  
+  // Brake resistor (still available in 0.6.x but less prominent)
+  enable_brake_resistor: { group: 'Current Limits & Regeneration', subgroup: 'Brake Resistor', importance: 'advanced' },
+  brake_resistance: { group: 'Current Limits & Regeneration', subgroup: 'Brake Resistor', importance: 'advanced' },
+
+  // Inverter Configuration (0.6.x specific)
+  inverter_temp_limit_lower: { group: 'Inverter Protection', subgroup: 'Temperature', importance: 'essential' },
+  inverter_temp_limit_upper: { group: 'Inverter Protection', subgroup: 'Temperature', importance: 'essential' },
+  inverter_temp_enabled: { group: 'Inverter Protection', subgroup: 'Temperature', importance: 'essential' },
+
+  // FET Thermistor (enhanced in 0.6.x)
+  fet_thermistor_enabled: { group: 'FET Thermistor', subgroup: 'Thermistor', importance: 'advanced' },
+  fet_temp_limit_lower: { group: 'FET Thermistor', subgroup: 'Thermistor', importance: 'advanced' },
+  fet_temp_limit_upper: { group: 'FET Thermistor', subgroup: 'Thermistor', importance: 'advanced' },
+
+  // Power Stage Configuration (0.6.x specific)
+  shunt_conductance: { group: 'Power Stage', subgroup: 'Sensing', importance: 'advanced' },
+  mod_magn_max: { group: 'Power Stage', subgroup: 'Modulation', importance: 'advanced' },
+  drv_config: { group: 'Power Stage', subgroup: 'Gate Driver', importance: 'advanced' },
+
+  // System
   usb_cdc_protocol: { group: 'System', subgroup: 'Communication', importance: 'advanced' },
 }
 
@@ -51,13 +89,29 @@ const PowerConfigStep = ({
   const selectedAxis = useSelector(state => state.ui.selectedAxis)
   
   // Use version-aware utilities
-  const { registry, grouping } = useVersionedUtils()
-  // Normalize registry parameters so UI components always have label/description for titles/tooltips
+  const { registry, grouping, is0_6 } = useVersionedUtils()
+  
+  // Select the right parameter groups based on firmware version
+  const POWER_PARAM_GROUPS = is0_6 ? POWER_PARAM_GROUPS_0_6 : POWER_PARAM_GROUPS_0_5
+  
+  // Get raw parameters and normalize them
   const rawPowerParams = registry.getConfigCategories().power || []
   const powerParams = rawPowerParams.map(p => {
-    const name = p.name || p.label || (p.property && (p.property.name || p.property.label)) || p.configKey || ''
-    const description = p.description || (p.property && (p.property.description || p.property.help)) || ''
-    return { ...p, name, description }
+    // Ensure every parameter has a name and description
+    const name = p.name || p.label || (p.property && (p.property.name || p.property.label)) || p.configKey || 'Unknown Parameter'
+    const description = p.description || (p.property && (p.property.description || p.property.help)) || `Configuration parameter: ${p.configKey}`
+    
+    return { 
+      ...p, 
+      name, 
+      description,
+      // Ensure property object exists with fallbacks
+      property: {
+        ...p.property,
+        name,
+        description
+      }
+    }
   })
   
   const handleConfigChange = (configKey, value) => {
@@ -113,14 +167,16 @@ const PowerConfigStep = ({
             </CardBody>
           </Card>
 
-          {/* Current Limits & Brake Resistor */}
+          {/* Current Limits & Power Management (version-aware title) */}
           <Card bg="gray.800" variant="elevated">
             <CardHeader py={1}>
-              <Heading size="sm" color="white">Current Limits & Brake Resistor</Heading>
+              <Heading size="sm" color="white">
+                {is0_6 ? 'Current Limits & Regeneration' : 'Current Limits & Brake Resistor'}
+              </Heading>
             </CardHeader>
             <CardBody py={2}>
               <ParameterFormGrid
-                params={groupedEssentialParams['Current Limits & Brake Resistor'] || []}
+                params={groupedEssentialParams[is0_6 ? 'Current Limits & Regeneration' : 'Current Limits & Brake Resistor'] || []}
                 config={powerConfig}
                 onChange={handleConfigChange}
                 onRefresh={handleRefresh}
@@ -129,12 +185,31 @@ const PowerConfigStep = ({
               />
             </CardBody>
           </Card>
+
+          {/* Inverter Protection (0.6.x only) */}
+          {is0_6 && groupedEssentialParams['Inverter Protection'] && (
+            <Card bg="gray.800" variant="elevated">
+              <CardHeader py={1}>
+                <Heading size="sm" color="white">Inverter Protection</Heading>
+              </CardHeader>
+              <CardBody py={2}>
+                <ParameterFormGrid
+                  params={groupedEssentialParams['Inverter Protection'] || []}
+                  config={powerConfig}
+                  onChange={handleConfigChange}
+                  onRefresh={handleRefresh}
+                  isLoading={isLoading}
+                  subgroup={param => grouping.getParameterSubgroup(param, POWER_PARAM_GROUPS)}
+                />
+              </CardBody>
+            </Card>
+          )}
         </SimpleGrid>
 
-        {/* Advanced Settings - Collapsible with grouping */}
+        {/* Advanced Settings */}
         {totalAdvancedCount > 0 && (
           <AdvancedSettingsSection
-            title="Advanced Settings"
+            title="Advanced Power Settings"
             isOpen={isAdvancedOpen}
             onToggle={onAdvancedToggle}
             paramCount={totalAdvancedCount}

@@ -11,6 +11,7 @@ import { odrivePropertyTree06 } from './odrivePropertyTree_0_6.js'
 class ODriveUnifiedRegistry06 {
   constructor(propertyTree = odrivePropertyTree06) {
     this.propertyTree = propertyTree
+    // Add missing initialization calls
     this.configCategories = this._generateConfigCategories()
     this.batchPaths = this._generateBatchPaths()
     this.propertyMappings = this._generatePropertyMappings()
@@ -32,12 +33,35 @@ class ODriveUnifiedRegistry06 {
       if (property.writable) {
         const category = this._inferCategory(path)
         if (category) {
-          categories[category].push({
+          const configKey = this._pathToConfigKey(path)
+          const odriveCommand = this._pathToODriveCommand(path)
+          
+          // Ensure we have proper names and descriptions
+          const name = property.name || property.label || configKey
+          const description = property.description || property.help || `Parameter: ${configKey}`
+          
+          const paramObj = {
             path,
-            property,
-            configKey: this._pathToConfigKey(path),
-            odriveCommand: this._pathToODriveCommand(path)
-          })
+            configKey,
+            odriveCommand,
+            name,
+            description,
+            property: {
+              ...property,
+              name,
+              description
+            },
+            category,
+            type: property.type,
+            unit: property.unit,
+            min: property.min,
+            max: property.max,
+            step: property.step || (property.type === 'number' ? 0.1 : undefined),
+            decimals: property.decimals || (property.type === 'number' ? 2 : undefined),
+            selectOptions: property.selectOptions
+          }
+          
+          categories[category].push(paramObj)
         }
       }
     })
@@ -284,6 +308,24 @@ class ODriveUnifiedRegistry06 {
         Object.entries(this.configCategories).map(([cat, params]) => [cat, params.length])
       )
     }
+  }
+
+  findParameter(searchPath) {
+    // Search all categories for a parameter matching the path or configKey
+    for (const [, params] of Object.entries(this.configCategories)) {
+      const found = params.find(p => 
+        p.path === searchPath || 
+        p.configKey === searchPath ||
+        p.path.includes(searchPath) ||
+        p.odriveCommand === searchPath
+      )
+      if (found) return found
+    }
+    return null
+  }
+
+  getCategoryParameters(category) {
+    return this.configCategories[category] || []
   }
 }
 

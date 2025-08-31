@@ -39,14 +39,11 @@ const PropertyTree = ({
   const { fw_is_0_6, fw_is_0_5, fw_version_string } = useSelector(state => state.device)
   
   // Use version-aware utilities
-  const { propertyTree: selectedPropertyTree, versionName } = useVersionedUtils()
+  const { propertyTree: selectedPropertyTree} = useVersionedUtils()
 
   // Get version-appropriate hooks
   const usePropertyRefreshVersioned = getPropertyRefreshHook(fw_is_0_6)
   const usePropertyEditorVersioned = getPropertyEditorHook(fw_is_0_6)
-
-  // Select the appropriate property tree based on firmware version
-  console.log(`PropertyTree: Using ${versionName} property tree (fw: ${fw_version_string})`)
 
   // Function to collect all properties recursively from the tree structure
   const collectAllProperties = useCallback((node, basePath = '') => {
