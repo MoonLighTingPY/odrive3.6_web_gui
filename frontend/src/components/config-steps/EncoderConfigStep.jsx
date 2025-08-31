@@ -29,6 +29,7 @@ import {
 } from '../../utils/configParameterGrouping'
 import { useSelector } from 'react-redux'
 import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
+import { useVersionedUtils } from '../../utils/versionSelection'
 import AdvancedSettingsSection from '../config-parameter-fields/AdvancedSettingsSection'
 
 // Encoder parameter groups
@@ -73,9 +74,12 @@ const EncoderConfigStep = ({
 }) => {
   const selectedAxis = useSelector(state => state.ui.selectedAxis)
   
+  // Use version-aware utilities
+  const { registry, grouping } = useVersionedUtils()
+  
   // Get axis-specific encoder config
   const encoderConfig = deviceConfig.encoder?.[`axis${selectedAxis}`] || {}
-  const encoderParams = getCategoryParameters('encoder')
+  const encoderParams = registry.getConfigCategories().encoder || []
 
   const handleConfigChange = (configKey, value) => {
     onUpdateConfig('encoder', configKey, value, selectedAxis)
@@ -89,8 +93,8 @@ const EncoderConfigStep = ({
     return loadingParams.has(`encoder.${configKey}`)
   }
 
-  // Get advanced parameters grouped by category
-  const groupedAdvancedParams = getGroupedAdvancedParameters(encoderParams, ENCODER_PARAM_GROUPS)
+  // Get advanced parameters grouped by category using version-aware grouping
+  const groupedAdvancedParams = grouping.getGroupedAdvancedParameters(encoderParams, ENCODER_PARAM_GROUPS)
 
   // Calculate filtered advanced parameter count
   const filteredAdvancedCount = Object.values(groupedAdvancedParams)

@@ -21,6 +21,7 @@ import ParameterInput from '../config-parameter-fields/ParameterInput'
 import ParameterSelect from '../config-parameter-fields/ParameterSelect'
 import AdvancedSettingsSection from '../config-parameter-fields/AdvancedSettingsSection'
 import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
+import { useVersionedUtils } from '../../utils/versionSelection'
 import {
   getParametersByImportance,
   getGroupedAdvancedParameters,
@@ -84,10 +85,13 @@ const MotorConfigStep = ({
 }) => {
   const selectedAxis = useSelector(state => state.ui.selectedAxis)
   
+  // Use version-aware utilities
+  const { registry, grouping } = useVersionedUtils()
+  
   // Get axis-specific motor config
   const motorConfig = deviceConfig.motor?.[`axis${selectedAxis}`] || {}
   
-  const motorParams = getCategoryParameters('motor')
+  const motorParams = registry.getConfigCategories().motor || []
 
   const handleConfigChange = (configKey, value) => {
     onUpdateConfig('motor', configKey, value, selectedAxis)
@@ -101,11 +105,11 @@ const MotorConfigStep = ({
     return loadingParams.has(`motor.${configKey}`)
   }
 
-  // Get essential parameters only (merged critical + important)
-  const essentialParams = getParametersByImportance(motorParams, MOTOR_PARAM_GROUPS, 'essential')
+  // Get essential parameters only (merged critical + important) using version-aware grouping
+  const essentialParams = grouping.getParametersByImportance(motorParams, MOTOR_PARAM_GROUPS, 'essential')
   
   // Get advanced parameters grouped by category
-  const groupedAdvancedParams = getGroupedAdvancedParameters(motorParams, MOTOR_PARAM_GROUPS)
+  const groupedAdvancedParams = grouping.getGroupedAdvancedParameters(motorParams, MOTOR_PARAM_GROUPS)
   const totalAdvancedCount = Object.values(groupedAdvancedParams)
     .reduce((total, group) => total + Object.values(group).reduce((groupTotal, subgroup) => groupTotal + subgroup.length, 0), 0)
 

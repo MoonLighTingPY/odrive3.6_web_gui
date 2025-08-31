@@ -27,6 +27,7 @@ import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
 import ParameterSelect from '../config-parameter-fields/ParameterSelect'
 import AdvancedSettingsSection from '../config-parameter-fields/AdvancedSettingsSection'
 import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
+import { useVersionedUtils } from '../../utils/versionSelection'
 import {
   getGroupedAdvancedParameters,
 } from '../../utils/configParameterGrouping'
@@ -85,8 +86,11 @@ const InterfaceConfigStep = ({
   onUpdateConfig,
   loadingParams,
 }) => {
+  // Use version-aware utilities
+  const { registry, grouping } = useVersionedUtils()
+  
   const interfaceConfig = deviceConfig.interface || {}
-  const interfaceParams = getCategoryParameters('interface')
+  const interfaceParams = registry.getConfigCategories().interface || []
   const selectedAxis = useSelector(state => state.ui.selectedAxis)
 
   const handleConfigChange = (configKey, value) => {
@@ -101,8 +105,8 @@ const InterfaceConfigStep = ({
     return loadingParams.has(`interface.${configKey}`)
   }
 
-  // Get advanced parameters grouped by category
-  const groupedAdvancedParams = getGroupedAdvancedParameters(interfaceParams, INTERFACE_PARAM_GROUPS)
+  // Get advanced parameters grouped by category using version-aware grouping
+  const groupedAdvancedParams = grouping.getGroupedAdvancedParameters(interfaceParams, INTERFACE_PARAM_GROUPS)
   const totalAdvancedCount = Object.values(groupedAdvancedParams)
     .reduce((total, group) => total + Object.values(group).reduce((groupTotal, subgroup) => groupTotal + subgroup.length, 0), 0)
 
