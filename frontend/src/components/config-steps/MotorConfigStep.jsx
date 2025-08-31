@@ -20,12 +20,7 @@ import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
 import ParameterInput from '../config-parameter-fields/ParameterInput'
 import ParameterSelect from '../config-parameter-fields/ParameterSelect'
 import AdvancedSettingsSection from '../config-parameter-fields/AdvancedSettingsSection'
-import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
 import { useVersionedUtils } from '../../utils/versionSelection'
-import {
-  getParametersByImportance,
-  getGroupedAdvancedParameters,
-} from '../../utils/configParameterGrouping'
 import { useSelector } from 'react-redux'
 
 // Motor parameter groups

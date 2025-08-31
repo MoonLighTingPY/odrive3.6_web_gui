@@ -27,9 +27,9 @@ import {
   loadAllConfigurationBatch
 } from '../../utils/configBatchApi'
 import EraseConfigModal from '../modals/EraseConfigModal'
-import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
-import { useVersionedUtils } from '../../utils/versionSelection'
+import { getCategoryParametersVersioned } from '../../utils/versionSelection'
 import { useAxisStateGuard } from '../../hooks/useAxisStateGuard'
+import { store } from '../../store'
 
 // Configuration steps array
 const CONFIGURATION_STEPS = [
@@ -49,9 +49,6 @@ const ConfigurationTab = memo(() => {
   const { activeConfigStep } = useSelector(state => state.ui)
   const selectedAxis = useSelector(state => state.ui.selectedAxis)
   const { executeWithAxisCheck } = useAxisStateGuard()
-  
-  // Use version-aware utilities
-  const { registry, versionName } = useVersionedUtils()
   
   // Add this at component level instead of inside handleApplyAndSave
   const reduxConfig = useSelector(state => state.config)
@@ -281,15 +278,19 @@ const ConfigurationTab = memo(() => {
     setLoadingParams(prev => new Set([...prev, `${category}.${configKey}`]))
     
     try {
+      // Get firmware version for version-aware parameter lookup
+      const deviceState = store?.getState()?.device || {}
+      const is0_6 = deviceState.fw_is_0_6 || false
+      
       // Build the correct ODrive path based on category and axis
       let odriveCommand
       if (category === 'power' || category === 'interface') {
         // Power and interface are global, not axis-specific
-        const param = getCategoryParameters(category).find(p => p.configKey === configKey)
+        const param = getCategoryParametersVersioned(category, is0_6).find(p => p.configKey === configKey)
         odriveCommand = param?.odriveCommand || `config.${configKey}`
       } else {
         // Motor, encoder, control are axis-specific
-        const param = getCategoryParameters(category).find(p => p.configKey === configKey)
+        const param = getCategoryParametersVersioned(category, is0_6).find(p => p.configKey === configKey)
         if (param?.odriveCommand) {
           odriveCommand = param.odriveCommand.replace(/axis0/g, `axis${axisNumber}`)
         } else {

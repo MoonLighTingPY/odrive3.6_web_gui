@@ -24,13 +24,9 @@ import { InfoIcon } from '@chakra-ui/icons'
 import ParameterInput from '../config-parameter-fields/ParameterInput'
 import ParameterSelect from '../config-parameter-fields/ParameterSelect'
 import { EncoderMode } from '../../utils/odriveEnums'
-import {
-  getGroupedAdvancedParameters,
-} from '../../utils/configParameterGrouping'
-import { useSelector } from 'react-redux'
-import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
-import { useVersionedUtils } from '../../utils/versionSelection'
 import AdvancedSettingsSection from '../config-parameter-fields/AdvancedSettingsSection'
+import { useVersionedUtils } from '../../utils/versionSelection'
+import { useSelector } from 'react-redux'
 
 // Encoder parameter groups
 const ENCODER_PARAM_GROUPS = {

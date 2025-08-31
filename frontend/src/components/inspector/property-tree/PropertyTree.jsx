@@ -24,7 +24,6 @@ import Observer from '@researchgate/react-intersection-observer'
 const PropertyTree = ({ 
   odriveState, 
   searchFilter: initialSearchFilter, 
-  setSearchFilter: setInitialSearchFilter, 
   updateProperty, 
   isConnected,
   selectedProperties = [],
@@ -226,10 +225,12 @@ const PropertyTree = ({
     })
     // Only keep favourites that match the filtered property paths
     return getFavourites().filter(path => filteredPaths.includes(path))
-  }, [filteredTree])
+    // Include favouritesVersion to trigger recalculation when localStorage changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredTree, favouritesVersion])
 
   // Memoize favourite paths to prevent unnecessary recalculations
-  const favouritePaths = useMemo(() => getFilteredFavouritePaths(), [getFilteredFavouritePaths, favouritesVersion])
+  const favouritePaths = useMemo(() => getFilteredFavouritePaths(), [getFilteredFavouritePaths])
 
   // Listen for changes to localStorage favourites and trigger re-render
   useEffect(() => {

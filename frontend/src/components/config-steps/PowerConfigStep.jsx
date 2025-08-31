@@ -15,14 +15,7 @@ import {
 } from '@chakra-ui/react'
 import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
 import AdvancedSettingsSection from '../config-parameter-fields/AdvancedSettingsSection'
-import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
 import { useVersionedUtils } from '../../utils/versionSelection'
-import { 
-  getParameterGroup, 
-  getParameterSubgroup,
-  getParametersByImportance,
-  getGroupedAdvancedParameters,
-} from '../../utils/configParameterGrouping'
 import { useSelector } from 'react-redux'
 // Power parameter groups
 const POWER_PARAM_GROUPS = {

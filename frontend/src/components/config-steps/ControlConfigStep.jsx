@@ -28,14 +28,10 @@ import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
 import AdvancedSettingsSection from '../config-parameter-fields/AdvancedSettingsSection'
 import { ControlMode, InputMode } from '../../utils/odriveEnums'
 import {
-  getGroupedAdvancedParameters,
-} from '../../utils/configParameterGrouping'
-import {
   turnsToRpm,
   rpmToTurns,
 } from '../../utils/unitConversions'
 import { useSelector } from 'react-redux'
-import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
 import { useVersionedUtils } from '../../utils/versionSelection'
 
 // Control parameter groups

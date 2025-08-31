@@ -3,7 +3,6 @@
  * Handles API calls for ODrive configuration operations
  */
 
-import { generateConfigCommands } from './configCommandGenerator'
 import { generateConfigCommandsVersioned } from './versionSelection'
 import { setConnectedDevice } from '../store/slices/deviceSlice'
 import { store } from '../store'

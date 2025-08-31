@@ -26,11 +26,7 @@ import ParameterInput from '../config-parameter-fields/ParameterInput'
 import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
 import ParameterSelect from '../config-parameter-fields/ParameterSelect'
 import AdvancedSettingsSection from '../config-parameter-fields/AdvancedSettingsSection'
-import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
 import { useVersionedUtils } from '../../utils/versionSelection'
-import {
-  getGroupedAdvancedParameters,
-} from '../../utils/configParameterGrouping'
 import { useSelector } from 'react-redux'
 
 // Interface parameter groups
