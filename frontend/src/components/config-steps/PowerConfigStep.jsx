@@ -16,6 +16,7 @@ import {
 import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
 import AdvancedSettingsSection from '../config-parameter-fields/AdvancedSettingsSection'
 import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
+import { useVersionedUtils } from '../../utils/versionSelection'
 import { 
   getParameterGroup, 
   getParameterSubgroup,
@@ -54,8 +55,11 @@ const PowerConfigStep = ({
   loadingParams,
 }) => {
   const powerConfig = deviceConfig.power || {}
-  const powerParams = getCategoryParameters('power')
   const selectedAxis = useSelector(state => state.ui.selectedAxis)
+  
+  // Use version-aware utilities
+  const { registry, grouping } = useVersionedUtils()
+  const powerParams = registry.getConfigCategories().power || []
 
   const handleConfigChange = (configKey, value) => {
     onUpdateConfig('power', configKey, value)
@@ -69,19 +73,21 @@ const PowerConfigStep = ({
     return loadingParams.has(`power.${configKey}`)
   }
 
-  // Get essential parameters
-  const essentialParams = getParametersByImportance(powerParams, POWER_PARAM_GROUPS, 'essential')
+  // Get essential parameters using version-aware grouping
+  const essentialParams = grouping.getParametersByImportance(powerParams, POWER_PARAM_GROUPS, 'essential')
 
   // Group essential parameters by logical UI section
   const groupedEssentialParams = {}
   essentialParams.forEach(param => {
-    const group = getParameterGroup(param, POWER_PARAM_GROUPS)
+    const group = grouping.getParameterGroup(param, POWER_PARAM_GROUPS)
     if (!groupedEssentialParams[group]) groupedEssentialParams[group] = []
     groupedEssentialParams[group].push(param)
   })
 
   // Get advanced parameters grouped by category
-  const groupedAdvancedParams = getGroupedAdvancedParameters(powerParams, POWER_PARAM_GROUPS)
+  const groupedAdvancedParams = grouping.getGroupedAdvancedParameters ? 
+    grouping.getGroupedAdvancedParameters(powerParams, POWER_PARAM_GROUPS) : 
+    {} // Fallback for older versions
   const totalAdvancedCount = Object.values(groupedAdvancedParams)
     .reduce((total, group) => total + Object.values(group).reduce((groupTotal, subgroup) => groupTotal + subgroup.length, 0), 0)
 
@@ -103,7 +109,7 @@ const PowerConfigStep = ({
                 onChange={handleConfigChange}
                 onRefresh={handleRefresh}
                 isLoading={isLoading}
-                subgroup={param => getParameterSubgroup(param, POWER_PARAM_GROUPS)}
+                subgroup={param => grouping.getParameterSubgroup(param, POWER_PARAM_GROUPS)}
               />
             </CardBody>
           </Card>
@@ -120,7 +126,7 @@ const PowerConfigStep = ({
                 onChange={handleConfigChange}
                 onRefresh={handleRefresh}
                 isLoading={isLoading}
-                subgroup={param => getParameterSubgroup(param, POWER_PARAM_GROUPS)}
+                subgroup={param => grouping.getParameterSubgroup(param, POWER_PARAM_GROUPS)}
               />
             </CardBody>
           </Card>

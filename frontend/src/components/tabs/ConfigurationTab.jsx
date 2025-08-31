@@ -28,6 +28,7 @@ import {
 } from '../../utils/configBatchApi'
 import EraseConfigModal from '../modals/EraseConfigModal'
 import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
+import { useVersionedUtils } from '../../utils/versionSelection'
 import { useAxisStateGuard } from '../../hooks/useAxisStateGuard'
 
 // Configuration steps array
@@ -48,6 +49,9 @@ const ConfigurationTab = memo(() => {
   const { activeConfigStep } = useSelector(state => state.ui)
   const selectedAxis = useSelector(state => state.ui.selectedAxis)
   const { executeWithAxisCheck } = useAxisStateGuard()
+  
+  // Use version-aware utilities
+  const { registry, versionName } = useVersionedUtils()
   
   // Add this at component level instead of inside handleApplyAndSave
   const reduxConfig = useSelector(state => state.config)
