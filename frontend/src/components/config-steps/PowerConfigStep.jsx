@@ -15,13 +15,7 @@ import {
 } from '@chakra-ui/react'
 import ParameterFormGrid from '../config-parameter-fields/ParameterFormGrid'
 import AdvancedSettingsSection from '../config-parameter-fields/AdvancedSettingsSection'
-import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
-import { 
-  getParameterGroup, 
-  getParameterSubgroup,
-  getParametersByImportance,
-  getGroupedAdvancedParameters,
-} from '../../utils/configParameterGrouping'
+import { useVersionedUtils } from '../../utils/versionSelection'
 import { useSelector } from 'react-redux'
 // Power parameter groups
 const POWER_PARAM_GROUPS = {
@@ -54,9 +48,18 @@ const PowerConfigStep = ({
   loadingParams,
 }) => {
   const powerConfig = deviceConfig.power || {}
-  const powerParams = getCategoryParameters('power')
   const selectedAxis = useSelector(state => state.ui.selectedAxis)
-
+  
+  // Use version-aware utilities
+  const { registry, grouping } = useVersionedUtils()
+  // Normalize registry parameters so UI components always have label/description for titles/tooltips
+  const rawPowerParams = registry.getConfigCategories().power || []
+  const powerParams = rawPowerParams.map(p => {
+    const name = p.name || p.label || (p.property && (p.property.name || p.property.label)) || p.configKey || ''
+    const description = p.description || (p.property && (p.property.description || p.property.help)) || ''
+    return { ...p, name, description }
+  })
+  
   const handleConfigChange = (configKey, value) => {
     onUpdateConfig('power', configKey, value)
   }
@@ -69,19 +72,21 @@ const PowerConfigStep = ({
     return loadingParams.has(`power.${configKey}`)
   }
 
-  // Get essential parameters
-  const essentialParams = getParametersByImportance(powerParams, POWER_PARAM_GROUPS, 'essential')
+  // Get essential parameters using version-aware grouping
+  const essentialParams = grouping.getParametersByImportance(powerParams, POWER_PARAM_GROUPS, 'essential')
 
   // Group essential parameters by logical UI section
   const groupedEssentialParams = {}
   essentialParams.forEach(param => {
-    const group = getParameterGroup(param, POWER_PARAM_GROUPS)
+    const group = grouping.getParameterGroup(param, POWER_PARAM_GROUPS)
     if (!groupedEssentialParams[group]) groupedEssentialParams[group] = []
     groupedEssentialParams[group].push(param)
   })
 
   // Get advanced parameters grouped by category
-  const groupedAdvancedParams = getGroupedAdvancedParameters(powerParams, POWER_PARAM_GROUPS)
+  const groupedAdvancedParams = grouping.getGroupedAdvancedParameters ? 
+    grouping.getGroupedAdvancedParameters(powerParams, POWER_PARAM_GROUPS) : 
+    {} // Fallback for older versions
   const totalAdvancedCount = Object.values(groupedAdvancedParams)
     .reduce((total, group) => total + Object.values(group).reduce((groupTotal, subgroup) => groupTotal + subgroup.length, 0), 0)
 
@@ -103,7 +108,7 @@ const PowerConfigStep = ({
                 onChange={handleConfigChange}
                 onRefresh={handleRefresh}
                 isLoading={isLoading}
-                subgroup={param => getParameterSubgroup(param, POWER_PARAM_GROUPS)}
+                subgroup={param => grouping.getParameterSubgroup(param, POWER_PARAM_GROUPS)}
               />
             </CardBody>
           </Card>
@@ -120,7 +125,7 @@ const PowerConfigStep = ({
                 onChange={handleConfigChange}
                 onRefresh={handleRefresh}
                 isLoading={isLoading}
-                subgroup={param => getParameterSubgroup(param, POWER_PARAM_GROUPS)}
+                subgroup={param => grouping.getParameterSubgroup(param, POWER_PARAM_GROUPS)}
               />
             </CardBody>
           </Card>

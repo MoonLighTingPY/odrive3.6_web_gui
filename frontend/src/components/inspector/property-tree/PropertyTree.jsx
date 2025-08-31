@@ -14,12 +14,9 @@ import {
   Skeleton
 } from '@chakra-ui/react'
 import { SearchIcon } from '@chakra-ui/icons'
-import { odrivePropertyTree } from '../../../utils/odrivePropertyTree'
-import { odrivePropertyTree06 } from '../../../utils/odrivePropertyTree_0_6'
 import { useSelector } from 'react-redux'
-import { usePropertyRefresh } from '../../../hooks/property-tree/usePropertyRefresh'
-import { usePropertyEditor } from '../../../hooks/property-tree/usePropertyEditor'
 import { usePropertyTreeFilter } from '../../../hooks/property-tree/usePropertyTreeFilter'
+import { useVersionedUtils, getPropertyRefreshHook, getPropertyEditorHook } from '../../../utils/versionSelection'
 import PropertyItem from './PropertyItem'
 import { getFavourites } from '../../../utils/propertyFavourites'
 import Observer from '@researchgate/react-intersection-observer'
@@ -27,7 +24,6 @@ import Observer from '@researchgate/react-intersection-observer'
 const PropertyTree = ({ 
   odriveState, 
   searchFilter: initialSearchFilter, 
-  setSearchFilter: setInitialSearchFilter, 
   updateProperty, 
   isConnected,
   selectedProperties = [],
@@ -41,12 +37,16 @@ const PropertyTree = ({
 
   // Get firmware version info from Redux store
   const { fw_is_0_6, fw_is_0_5, fw_version_string } = useSelector(state => state.device)
+  
+  // Use version-aware utilities
+  const { propertyTree: selectedPropertyTree, versionName } = useVersionedUtils()
+
+  // Get version-appropriate hooks
+  const usePropertyRefreshVersioned = getPropertyRefreshHook(fw_is_0_6)
+  const usePropertyEditorVersioned = getPropertyEditorHook(fw_is_0_6)
 
   // Select the appropriate property tree based on firmware version
-  const selectedPropertyTree = useMemo(() => {
-    console.log(`PropertyTree: Using ${fw_is_0_6 ? '0.6.x' : '0.5.x'} property tree (fw: ${fw_version_string})`)
-    return fw_is_0_6 ? odrivePropertyTree06 : odrivePropertyTree
-  }, [fw_is_0_6, fw_is_0_5, fw_version_string])
+  console.log(`PropertyTree: Using ${versionName} property tree (fw: ${fw_version_string})`)
 
   // Function to collect all properties recursively from the tree structure
   const collectAllProperties = useCallback((node, basePath = '') => {
@@ -71,13 +71,13 @@ const PropertyTree = ({
     return properties
   }, [])
 
-  // Custom hooks - now using the selected property tree
+  // Custom hooks - now using version-aware hooks
   const {
     refreshingProperties,
     propertyValues,
     refreshAllProperties,
     refreshProperty
-  } = usePropertyRefresh(selectedPropertyTree, collectAllProperties, isConnected)
+  } = usePropertyRefreshVersioned(selectedPropertyTree, collectAllProperties, isConnected)
 
   const {
     editingProperty,
@@ -86,7 +86,7 @@ const PropertyTree = ({
     startEditing,
     saveEdit,
     cancelEdit
-  } = usePropertyEditor(updateProperty, refreshProperty)
+  } = usePropertyEditorVersioned(updateProperty, refreshProperty)
 
   const { filteredTree } = usePropertyTreeFilter(selectedPropertyTree, debouncedSearch)
 
@@ -225,10 +225,12 @@ const PropertyTree = ({
     })
     // Only keep favourites that match the filtered property paths
     return getFavourites().filter(path => filteredPaths.includes(path))
-  }, [filteredTree])
+    // Include favouritesVersion to trigger recalculation when localStorage changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredTree, favouritesVersion])
 
   // Memoize favourite paths to prevent unnecessary recalculations
-  const favouritePaths = useMemo(() => getFilteredFavouritePaths(), [getFilteredFavouritePaths, favouritesVersion])
+  const favouritePaths = useMemo(() => getFilteredFavouritePaths(), [getFilteredFavouritePaths])
 
   // Listen for changes to localStorage favourites and trigger re-render
   useEffect(() => {

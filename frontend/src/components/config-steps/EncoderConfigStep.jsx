@@ -24,12 +24,9 @@ import { InfoIcon } from '@chakra-ui/icons'
 import ParameterInput from '../config-parameter-fields/ParameterInput'
 import ParameterSelect from '../config-parameter-fields/ParameterSelect'
 import { EncoderMode } from '../../utils/odriveEnums'
-import {
-  getGroupedAdvancedParameters,
-} from '../../utils/configParameterGrouping'
-import { useSelector } from 'react-redux'
-import { getCategoryParameters } from '../../utils/odriveUnifiedRegistry'
 import AdvancedSettingsSection from '../config-parameter-fields/AdvancedSettingsSection'
+import { useVersionedUtils } from '../../utils/versionSelection'
+import { useSelector } from 'react-redux'
 
 // Encoder parameter groups
 const ENCODER_PARAM_GROUPS = {
@@ -73,9 +70,12 @@ const EncoderConfigStep = ({
 }) => {
   const selectedAxis = useSelector(state => state.ui.selectedAxis)
   
+  // Use version-aware utilities
+  const { registry, grouping } = useVersionedUtils()
+  
   // Get axis-specific encoder config
   const encoderConfig = deviceConfig.encoder?.[`axis${selectedAxis}`] || {}
-  const encoderParams = getCategoryParameters('encoder')
+  const encoderParams = registry.getConfigCategories().encoder || []
 
   const handleConfigChange = (configKey, value) => {
     onUpdateConfig('encoder', configKey, value, selectedAxis)
@@ -89,8 +89,8 @@ const EncoderConfigStep = ({
     return loadingParams.has(`encoder.${configKey}`)
   }
 
-  // Get advanced parameters grouped by category
-  const groupedAdvancedParams = getGroupedAdvancedParameters(encoderParams, ENCODER_PARAM_GROUPS)
+  // Get advanced parameters grouped by category using version-aware grouping
+  const groupedAdvancedParams = grouping.getGroupedAdvancedParameters(encoderParams, ENCODER_PARAM_GROUPS)
 
   // Calculate filtered advanced parameter count
   const filteredAdvancedCount = Object.values(groupedAdvancedParams)
