@@ -1,25 +1,24 @@
 import { configureStore } from '@reduxjs/toolkit'
+import { combineReducers } from 'redux'
 import { persistStore, persistReducer } from 'redux-persist'
-import storage from 'redux-persist/lib/storage'
-import { combineReducers } from '@reduxjs/toolkit'
+import storage from 'redux-persist/lib/storage' // localStorage
+import deviceReducer from './slices/deviceSlice'
+import configReducer from './slices/configSlice'
+import uiReducer from './slices/uiSlice'
+import telemetryReducer from './slices/telemetrySlice'
 
-import configSlice from './slices/configSlice'
-import deviceSlice from './slices/deviceSlice'
-import uiSlice from './slices/uiSlice'
-import telemetrySlice from './slices/telemetrySlice' // Add this
+const rootReducer = combineReducers({
+  device: deviceReducer,
+  config: configReducer,
+  ui: uiReducer,
+  telemetry: telemetryReducer,
+})
 
 const persistConfig = {
   key: 'root',
   storage,
-  whitelist: ['config'] // Only persist config, not device state or telemetry
+  whitelist: ['device', 'config'],
 }
-
-const rootReducer = combineReducers({
-  config: configSlice,
-  device: deviceSlice,
-  ui: uiSlice,
-  telemetry: telemetrySlice, // Add this
-})
 
 const persistedReducer = persistReducer(persistConfig, rootReducer)
 
@@ -27,10 +26,9 @@ export const store = configureStore({
   reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: {
-        ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
-      },
+      serializableCheck: false, // for redux-persist
     }),
 })
 
 export const persistor = persistStore(store)
+export default store

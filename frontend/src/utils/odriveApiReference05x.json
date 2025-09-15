@@ -1,0 +1,2712 @@
+{
+  "version": "0.5.6",
+  "api_metadata": {
+    "root_class": "ODrive",
+    "description": "ODrive motor controller API reference"
+  },
+  "types": {
+    "Float32Property": {
+      "base_type": "float",
+      "size": 32,
+      "description": "32-bit floating point property"
+    },
+    "Uint32Property": {
+      "base_type": "uint",
+      "size": 32,
+      "description": "32-bit unsigned integer property"
+    },
+    "Int32Property": {
+      "base_type": "int",
+      "size": 32,
+      "description": "32-bit signed integer property"
+    },
+    "Uint64Property": {
+      "base_type": "uint",
+      "size": 64,
+      "description": "64-bit unsigned integer property"
+    },
+    "Int64Property": {
+      "base_type": "int",
+      "size": 64,
+      "description": "64-bit signed integer property"
+    },
+    "Uint16Property": {
+      "base_type": "uint",
+      "size": 16,
+      "description": "16-bit unsigned integer property"
+    },
+    "Uint8Property": {
+      "base_type": "uint",
+      "size": 8,
+      "description": "8-bit unsigned integer property"
+    },
+    "BoolProperty": {
+      "base_type": "bool",
+      "description": "Boolean property"
+    },
+    "EndpointRefProperty": {
+      "base_type": "reference",
+      "description": "Reference to an endpoint"
+    }
+  },
+  "enums": {
+    "ODrive.Error": {
+      "name": "ODrive.Error",
+      "values": {
+        "CONTROL_ITERATION_MISSED": {
+          "value": 1,
+          "hex": "0x1",
+          "description": "At least one control iteration was missed"
+        },
+        "DC_BUS_UNDER_VOLTAGE": {
+          "value": 2,
+          "hex": "0x2",
+          "description": "The DC voltage fell below the configured limit"
+        },
+        "DC_BUS_OVER_VOLTAGE": {
+          "value": 4,
+          "hex": "0x4",
+          "description": "The DC voltage exceeded the configured limit"
+        },
+        "DC_BUS_OVER_REGEN_CURRENT": {
+          "value": 8,
+          "hex": "0x8",
+          "description": "Current flowing back into the power supply exceeded limit"
+        },
+        "DC_BUS_OVER_CURRENT": {
+          "value": 16,
+          "hex": "0x10",
+          "description": "Too much current was pulled from the power supply"
+        },
+        "BRAKE_DEADTIME_VIOLATION": {
+          "value": 32,
+          "hex": "0x20"
+        },
+        "BRAKE_DUTY_CYCLE_NAN": {
+          "value": 64,
+          "hex": "0x40"
+        },
+        "INVALID_BRAKE_RESISTANCE": {
+          "value": 128,
+          "hex": "0x80",
+          "description": "brake_resistance is non-positive or NaN"
+        }
+      }
+    },
+    "ODrive.Axis.AxisState": {
+      "name": "ODrive.Axis.AxisState",
+      "values": {
+        "UNDEFINED": {
+          "value": 0,
+          "hex": "0x0",
+          "description": "Will fall through to idle"
+        },
+        "IDLE": {
+          "value": 1,
+          "hex": "0x1",
+          "description": "Disable motor PWM and do nothing"
+        },
+        "STARTUP_SEQUENCE": {
+          "value": 2,
+          "hex": "0x2",
+          "description": "Run the startup procedure"
+        },
+        "FULL_CALIBRATION_SEQUENCE": {
+          "value": 3,
+          "hex": "0x3",
+          "description": "Run motor calibration and then encoder offset calibration"
+        },
+        "MOTOR_CALIBRATION": {
+          "value": 4,
+          "hex": "0x4",
+          "description": "Measure phase resistance and phase inductance of the motor"
+        },
+        "ENCODER_INDEX_SEARCH": {
+          "value": 6,
+          "hex": "0x6",
+          "description": "Turn the motor until the encoder index is traversed"
+        },
+        "ENCODER_OFFSET_CALIBRATION": {
+          "value": 7,
+          "hex": "0x7",
+          "description": "Measure the offset between encoder position and electrical phase"
+        },
+        "CLOSED_LOOP_CONTROL": {
+          "value": 8,
+          "hex": "0x8",
+          "description": "Run closed loop control"
+        },
+        "LOCKIN_SPIN": {
+          "value": 9,
+          "hex": "0x9",
+          "description": "Run lockin spin"
+        },
+        "ENCODER_DIR_FIND": {
+          "value": 10,
+          "hex": "0xA",
+          "description": "Run encoder direction search"
+        },
+        "HOMING": {
+          "value": 11,
+          "hex": "0xB",
+          "description": "Run axis homing function"
+        },
+        "ENCODER_HALL_POLARITY_CALIBRATION": {
+          "value": 12,
+          "hex": "0xC",
+          "description": "Calibrate hall sensor polarity"
+        },
+        "ENCODER_HALL_PHASE_CALIBRATION": {
+          "value": 13,
+          "hex": "0xD",
+          "description": "Calibrate hall sensor edge offsets"
+        }
+      }
+    },
+    "ODrive.Controller.ControlMode": {
+      "name": "ODrive.Controller.ControlMode",
+      "values": {
+        "VOLTAGE_CONTROL": {
+          "value": 0,
+          "hex": "0x0",
+          "description": "Voltage control mode (not used internally)"
+        },
+        "TORQUE_CONTROL": {
+          "value": 1,
+          "hex": "0x1",
+          "description": "Inner torque control loop only"
+        },
+        "VELOCITY_CONTROL": {
+          "value": 2,
+          "hex": "0x2",
+          "description": "Torque and velocity control loops"
+        },
+        "POSITION_CONTROL": {
+          "value": 3,
+          "hex": "0x3",
+          "description": "All control loops: torque, velocity, and position"
+        }
+      }
+    },
+    "ODrive.Controller.InputMode": {
+      "name": "ODrive.Controller.InputMode",
+      "values": {
+        "INACTIVE": {
+          "value": 0,
+          "hex": "0x0",
+          "description": "Disable inputs"
+        },
+        "PASSTHROUGH": {
+          "value": 1,
+          "hex": "0x1",
+          "description": "Pass input directly to setpoint"
+        },
+        "VEL_RAMP": {
+          "value": 2,
+          "hex": "0x2",
+          "description": "Ramp velocity command"
+        },
+        "POS_FILTER": {
+          "value": 3,
+          "hex": "0x3",
+          "description": "2nd order position tracking filter"
+        },
+        "MIX_CHANNELS": {
+          "value": 4,
+          "hex": "0x4",
+          "description": "Not implemented"
+        },
+        "TRAP_TRAJ": {
+          "value": 5,
+          "hex": "0x5",
+          "description": "Trapezoidal trajectory planner"
+        },
+        "TORQUE_RAMP": {
+          "value": 6,
+          "hex": "0x6",
+          "description": "Ramp torque command"
+        },
+        "MIRROR": {
+          "value": 7,
+          "hex": "0x7",
+          "description": "Electronic mirroring"
+        },
+        "TUNING": {
+          "value": 8,
+          "hex": "0x8",
+          "description": "Tuning mode with sine wave generation"
+        }
+      }
+    },
+    "ODrive.GpioMode": {
+      "name": "ODrive.GpioMode",
+      "values": {
+        "DIGITAL": {
+          "value": 0,
+          "hex": "0x0",
+          "description": "Digital I/O mode"
+        },
+        "DIGITAL_PULL_UP": {
+          "value": 1,
+          "hex": "0x1",
+          "description": "Digital with pull-up resistor"
+        },
+        "DIGITAL_PULL_DOWN": {
+          "value": 2,
+          "hex": "0x2",
+          "description": "Digital with pull-down resistor"
+        },
+        "ANALOG_IN": {
+          "value": 3,
+          "hex": "0x3",
+          "description": "Analog input mode"
+        },
+        "UART_A": {
+          "value": 4,
+          "hex": "0x4",
+          "description": "UART A mode"
+        },
+        "UART_B": {
+          "value": 5,
+          "hex": "0x5",
+          "description": "UART B mode (not supported on v3.x)"
+        },
+        "UART_C": {
+          "value": 6,
+          "hex": "0x6",
+          "description": "UART C mode (not supported on v3.x)"
+        },
+        "CAN_A": {
+          "value": 7,
+          "hex": "0x7",
+          "description": "CAN A mode"
+        },
+        "I2C_A": {
+          "value": 8,
+          "hex": "0x8",
+          "description": "I2C A mode"
+        },
+        "SPI_A": {
+          "value": 9,
+          "hex": "0x9",
+          "description": "SPI A mode"
+        },
+        "PWM": {
+          "value": 10,
+          "hex": "0xA",
+          "description": "PWM output mode"
+        },
+        "ENC0": {
+          "value": 11,
+          "hex": "0xB",
+          "description": "Quadrature encoder 0"
+        },
+        "ENC1": {
+          "value": 12,
+          "hex": "0xC",
+          "description": "Quadrature encoder 1"
+        },
+        "ENC2": {
+          "value": 13,
+          "hex": "0xD",
+          "description": "Quadrature encoder 2 (not supported on v3.x)"
+        },
+        "MECH_BRAKE": {
+          "value": 14,
+          "hex": "0xE",
+          "description": "Mechanical brake control"
+        },
+        "STATUS": {
+          "value": 15,
+          "hex": "0xF",
+          "description": "Status output"
+        }
+      }
+    },
+    "ODrive.StreamProtocolType": {
+      "name": "ODrive.StreamProtocolType",
+      "values": {
+        "Fibre": {
+          "value": 0,
+          "hex": "0x0",
+          "description": "Machine-to-machine protocol"
+        },
+        "Ascii": {
+          "value": 1,
+          "hex": "0x1",
+          "description": "Human readable protocol"
+        },
+        "Stdout": {
+          "value": 2,
+          "hex": "0x2",
+          "description": "Printf output"
+        },
+        "AsciiAndStdout": {
+          "value": 3,
+          "hex": "0x3",
+          "description": "Combination of Ascii and Stdout"
+        }
+      }
+    },
+    "ODrive.Encoder.Mode": {
+      "name": "ODrive.Encoder.Mode",
+      "values": {
+        "INCREMENTAL": {
+          "value": 0,
+          "hex": "0x0",
+          "description": "Incremental encoder"
+        },
+        "HALL": {
+          "value": 1,
+          "hex": "0x1",
+          "description": "Hall effect encoder"
+        },
+        "SINCOS": {
+          "value": 2,
+          "hex": "0x2",
+          "description": "Sin/Cos encoder"
+        },
+        "SPI_ABS_CUI": {
+          "value": 256,
+          "hex": "0x100",
+          "description": "Compatible with CUI AMT23xx"
+        },
+        "SPI_ABS_AMS": {
+          "value": 257,
+          "hex": "0x101",
+          "description": "Compatible with AMS AS5047P, AS5048A/B"
+        },
+        "SPI_ABS_AEAT": {
+          "value": 258,
+          "hex": "0x102",
+          "description": "Supports AEAT-8800"
+        },
+        "SPI_ABS_RLS": {
+          "value": 259,
+          "hex": "0x103",
+          "description": "Supports RLS Orbis Encoders"
+        },
+        "SPI_ABS_MA732": {
+          "value": 260,
+          "hex": "0x104",
+          "description": "MagAlpha MA732 magnetic encoder"
+        }
+      }
+    },
+    "ODrive.Motor.MotorType": {
+      "name": "ODrive.Motor.MotorType",
+      "values": {
+        "HIGH_CURRENT": {
+          "value": 0,
+          "hex": "0x0",
+          "description": "Standard hobby-style PMAC/BLDC motors"
+        },
+        "GIMBAL": {
+          "value": 2,
+          "hex": "0x2",
+          "description": "High-phase-resistance gimbal motors"
+        },
+        "ACIM": {
+          "value": 3,
+          "hex": "0x3",
+          "description": "AC Induction Motors"
+        }
+      }
+    },
+    "ODrive.Axis.Error": {
+      "name": "ODrive.Axis.Error",
+      "values": {
+        "INVALID_STATE": {
+          "value": 1,
+          "hex": "0x1",
+          "description": "An invalid state was requested"
+        },
+        "MOTOR_FAILED": {
+          "value": 64,
+          "hex": "0x40"
+        },
+        "SENSORLESS_ESTIMATOR_FAILED": {
+          "value": 128,
+          "hex": "0x80"
+        },
+        "ENCODER_FAILED": {
+          "value": 256,
+          "hex": "0x100"
+        },
+        "CONTROLLER_FAILED": {
+          "value": 512,
+          "hex": "0x200"
+        },
+        "WATCHDOG_TIMER_EXPIRED": {
+          "value": 2048,
+          "hex": "0x800"
+        },
+        "MIN_ENDSTOP_PRESSED": {
+          "value": 4096,
+          "hex": "0x1000"
+        },
+        "MAX_ENDSTOP_PRESSED": {
+          "value": 8192,
+          "hex": "0x2000"
+        },
+        "ESTOP_REQUESTED": {
+          "value": 16384,
+          "hex": "0x4000"
+        },
+        "HOMING_WITHOUT_ENDSTOP": {
+          "value": 131072,
+          "hex": "0x20000"
+        },
+        "OVER_TEMP": {
+          "value": 262144,
+          "hex": "0x40000"
+        },
+        "UNKNOWN_POSITION": {
+          "value": 524288,
+          "hex": "0x80000"
+        }
+      }
+    },
+    "ODrive.Motor.Error": {
+      "name": "ODrive.Motor.Error",
+      "values": {
+        "PHASE_RESISTANCE_OUT_OF_RANGE": {
+          "value": 1,
+          "hex": "0x1"
+        },
+        "PHASE_INDUCTANCE_OUT_OF_RANGE": {
+          "value": 2,
+          "hex": "0x2"
+        },
+        "DRV_FAULT": {
+          "value": 8,
+          "hex": "0x8"
+        },
+        "CONTROL_DEADLINE_MISSED": {
+          "value": 16,
+          "hex": "0x10"
+        },
+        "MODULATION_MAGNITUDE": {
+          "value": 128,
+          "hex": "0x80"
+        },
+        "CURRENT_SENSE_SATURATION": {
+          "value": 1024,
+          "hex": "0x400"
+        },
+        "CURRENT_LIMIT_VIOLATION": {
+          "value": 4096,
+          "hex": "0x1000"
+        },
+        "MODULATION_IS_NAN": {
+          "value": 65536,
+          "hex": "0x10000"
+        },
+        "MOTOR_THERMISTOR_OVER_TEMP": {
+          "value": 131072,
+          "hex": "0x20000"
+        },
+        "FET_THERMISTOR_OVER_TEMP": {
+          "value": 262144,
+          "hex": "0x40000"
+        },
+        "TIMER_UPDATE_MISSED": {
+          "value": 524288,
+          "hex": "0x80000"
+        },
+        "CURRENT_MEASUREMENT_UNAVAILABLE": {
+          "value": 1048576,
+          "hex": "0x100000"
+        },
+        "CONTROLLER_FAILED": {
+          "value": 2097152,
+          "hex": "0x200000"
+        },
+        "I_BUS_OUT_OF_RANGE": {
+          "value": 4194304,
+          "hex": "0x400000"
+        },
+        "BRAKE_RESISTOR_DISARMED": {
+          "value": 8388608,
+          "hex": "0x800000"
+        },
+        "SYSTEM_LEVEL": {
+          "value": 16777216,
+          "hex": "0x1000000"
+        },
+        "BAD_TIMING": {
+          "value": 33554432,
+          "hex": "0x2000000"
+        },
+        "UNKNOWN_PHASE_ESTIMATE": {
+          "value": 67108864,
+          "hex": "0x4000000"
+        },
+        "UNKNOWN_PHASE_VEL": {
+          "value": 134217728,
+          "hex": "0x8000000"
+        },
+        "UNKNOWN_TORQUE": {
+          "value": 268435456,
+          "hex": "0x10000000"
+        },
+        "UNKNOWN_CURRENT_COMMAND": {
+          "value": 536870912,
+          "hex": "0x20000000"
+        },
+        "UNKNOWN_CURRENT_MEASUREMENT": {
+          "value": 1073741824,
+          "hex": "0x40000000"
+        },
+        "UNKNOWN_VBUS_VOLTAGE": {
+          "value": 2147483648,
+          "hex": "0x80000000"
+        },
+        "UNKNOWN_VOLTAGE_COMMAND": {
+          "value": 4294967296,
+          "hex": "0x100000000"
+        },
+        "UNKNOWN_GAINS": {
+          "value": 8589934592,
+          "hex": "0x200000000"
+        },
+        "CONTROLLER_INITIALIZING": {
+          "value": 17179869184,
+          "hex": "0x400000000"
+        },
+        "UNBALANCED_PHASES": {
+          "value": 34359738368,
+          "hex": "0x800000000"
+        }
+      }
+    },
+    "ODrive.Controller.Error": {
+      "name": "ODrive.Controller.Error",
+      "values": {
+        "OVERSPEED": {
+          "value": 1,
+          "hex": "0x1"
+        },
+        "INVALID_INPUT_MODE": {
+          "value": 2,
+          "hex": "0x2"
+        },
+        "UNSTABLE_GAIN": {
+          "value": 4,
+          "hex": "0x4"
+        },
+        "INVALID_MIRROR_AXIS": {
+          "value": 8,
+          "hex": "0x8"
+        },
+        "INVALID_LOAD_ENCODER": {
+          "value": 16,
+          "hex": "0x10"
+        },
+        "INVALID_ESTIMATE": {
+          "value": 32,
+          "hex": "0x20"
+        },
+        "INVALID_CIRCULAR_RANGE": {
+          "value": 64,
+          "hex": "0x40"
+        },
+        "SPINOUT_DETECTED": {
+          "value": 128,
+          "hex": "0x80"
+        }
+      }
+    },
+    "ODrive.Encoder.Error": {
+      "name": "ODrive.Encoder.Error",
+      "values": {
+        "UNSTABLE_GAIN": {
+          "value": 1,
+          "hex": "0x1"
+        },
+        "CPR_POLEPAIRS_MISMATCH": {
+          "value": 2,
+          "hex": "0x2"
+        },
+        "NO_RESPONSE": {
+          "value": 4,
+          "hex": "0x4"
+        },
+        "UNSUPPORTED_ENCODER_MODE": {
+          "value": 8,
+          "hex": "0x8"
+        },
+        "ILLEGAL_HALL_STATE": {
+          "value": 16,
+          "hex": "0x10"
+        },
+        "INDEX_NOT_FOUND_YET": {
+          "value": 32,
+          "hex": "0x20"
+        },
+        "ABS_SPI_TIMEOUT": {
+          "value": 64,
+          "hex": "0x40"
+        },
+        "ABS_SPI_COM_FAIL": {
+          "value": 128,
+          "hex": "0x80"
+        },
+        "ABS_SPI_NOT_READY": {
+          "value": 256,
+          "hex": "0x100"
+        },
+        "HALL_NOT_CALIBRATED_YET": {
+          "value": 512,
+          "hex": "0x200"
+        }
+      }
+    },
+    "ODrive.SensorlessEstimator.Error": {
+      "name": "ODrive.SensorlessEstimator.Error",
+      "values": {
+        "UNSTABLE_GAIN": {
+          "value": 1,
+          "hex": "0x1"
+        },
+        "UNKNOWN_CURRENT_MEASUREMENT": {
+          "value": 2,
+          "hex": "0x2"
+        }
+      }
+    },
+    "ODrive.Can.Error": {
+      "name": "ODrive.Can.Error",
+      "values": {
+        "DUPLICATE_CAN_IDS": {
+          "value": 1,
+          "hex": "0x1"
+        }
+      }
+    },
+    "ODrive.Can.Protocol": {
+      "name": "ODrive.Can.Protocol",
+      "values": {
+        "SIMPLE": {
+          "value": 1,
+          "hex": "0x1",
+          "description": "CANSimple basic protocol"
+        }
+      }
+    }
+  },
+  "commands": {
+    "odrive": {
+      "test_function": {
+        "name": "test_function",
+        "path": "test_function",
+        "category": "system",
+        "parameters": [
+          {
+            "name": "delta",
+            "type": "int",
+            "description": "Delta value for testing"
+          }
+        ],
+        "returns": "int",
+        "description": "Test function for debugging"
+      },
+      "get_adc_voltage": {
+        "name": "get_adc_voltage",
+        "path": "get_adc_voltage",
+        "category": "system",
+        "parameters": [
+          {
+            "name": "gpio",
+            "type": "int",
+            "description": "GPIO pin number"
+          }
+        ],
+        "returns": "float",
+        "description": "Reads the ADC voltage of the specified GPIO"
+      },
+      "save_configuration": {
+        "name": "save_configuration",
+        "path": "save_configuration",
+        "category": "system",
+        "parameters": [],
+        "returns": "bool",
+        "description": "Saves the current configuration to non-volatile memory and reboots"
+      },
+      "erase_configuration": {
+        "name": "erase_configuration",
+        "path": "erase_configuration",
+        "category": "system",
+        "parameters": [],
+        "returns": null,
+        "description": "Resets all config variables to default values and reboots"
+      },
+      "reboot": {
+        "name": "reboot",
+        "path": "reboot",
+        "category": "system",
+        "parameters": [],
+        "returns": null,
+        "description": "Reboots the controller without saving configuration"
+      },
+      "enter_dfu_mode": {
+        "name": "enter_dfu_mode",
+        "path": "enter_dfu_mode",
+        "category": "system",
+        "parameters": [],
+        "returns": null,
+        "description": "Enters Device Firmware Update mode"
+      },
+      "clear_errors": {
+        "name": "clear_errors",
+        "path": "clear_errors",
+        "category": "system",
+        "parameters": [],
+        "returns": null,
+        "description": "Clear all errors of this device including submodules"
+      },
+      "get_interrupt_status": {
+        "name": "get_interrupt_status",
+        "path": "get_interrupt_status",
+        "category": "system",
+        "parameters": [
+          {
+            "name": "irqn",
+            "type": "int",
+            "description": "Interrupt number"
+          }
+        ],
+        "returns": "int",
+        "description": "Returns information about specified interrupt"
+      },
+      "get_dma_status": {
+        "name": "get_dma_status",
+        "path": "get_dma_status",
+        "category": "system",
+        "parameters": [
+          {
+            "name": "stream_num",
+            "type": "int",
+            "description": "DMA stream number"
+          }
+        ],
+        "returns": "int",
+        "description": "Returns information about specified DMA stream"
+      },
+      "get_gpio_states": {
+        "name": "get_gpio_states",
+        "path": "get_gpio_states",
+        "category": "system",
+        "parameters": [],
+        "returns": "int",
+        "description": "Returns logic states of all GPIOs (bitfield)"
+      },
+      "get_drv_fault": {
+        "name": "get_drv_fault",
+        "path": "get_drv_fault",
+        "category": "system",
+        "parameters": [],
+        "returns": "int",
+        "description": "Returns last gate driver fault code"
+      }
+    },
+    "axis": {
+      "watchdog_feed": {
+        "name": "watchdog_feed",
+        "path": "axis{n}.watchdog_feed",
+        "category": "axis",
+        "parameters": [],
+        "returns": null,
+        "description": "Feed the watchdog to prevent timeouts"
+      }
+    },
+    "controller": {
+      "move_incremental": {
+        "name": "move_incremental",
+        "path": "axis{n}.controller.move_incremental",
+        "category": "controller",
+        "parameters": [
+          {
+            "name": "displacement",
+            "type": "float",
+            "description": "The desired position change"
+          },
+          {
+            "name": "from_input_pos",
+            "type": "bool",
+            "description": "If true, increment relative to input_pos"
+          }
+        ],
+        "returns": null,
+        "description": "Moves the axis goal point by a specified increment"
+      },
+      "start_anticogging_calibration": {
+        "name": "start_anticogging_calibration",
+        "path": "axis{n}.controller.start_anticogging_calibration",
+        "category": "controller",
+        "parameters": [],
+        "returns": null,
+        "description": "Start anticogging calibration"
+      },
+      "remove_anticogging_bias": {
+        "name": "remove_anticogging_bias",
+        "path": "axis{n}.controller.remove_anticogging_bias",
+        "category": "controller",
+        "parameters": [],
+        "returns": "float",
+        "description": "Remove anticogging bias returns value"
+      },
+      "get_anticogging_value": {
+        "name": "get_anticogging_value",
+        "path": "axis{n}.controller.get_anticogging_value",
+        "category": "controller",
+        "parameters": [
+          {
+            "name": "index",
+            "type": "int",
+            "description": "Table index"
+          }
+        ],
+        "returns": "float",
+        "description": "Get anticogging table entry"
+      }
+    },
+    "encoder": {
+      "set_linear_count": {
+        "name": "set_linear_count",
+        "path": "axis{n}.encoder.set_linear_count",
+        "category": "encoder",
+        "parameters": [
+          {
+            "name": "count",
+            "type": "int",
+            "description": "Linear position in counts"
+          }
+        ],
+        "returns": null,
+        "description": "Set the current linear position of the axis"
+      }
+    },
+    "mechanical_brake": {
+      "engage": {
+        "name": "engage",
+        "path": "axis{n}.mechanical_brake.engage",
+        "category": "brake",
+        "parameters": [],
+        "returns": null,
+        "description": "Engage the mechanical brake if present and enabled"
+      },
+      "release": {
+        "name": "release",
+        "path": "axis{n}.mechanical_brake.release",
+        "category": "brake",
+        "parameters": [],
+        "returns": null,
+        "description": "Release the mechanical brake if present and enabled"
+      }
+    },
+    "oscilloscope": {
+      "get_val": {
+        "name": "get_val",
+        "path": "oscilloscope.get_val",
+        "category": "system",
+        "parameters": [
+          {
+            "name": "index",
+            "type": "int",
+            "description": "Value index"
+          }
+        ],
+        "returns": "float",
+        "description": "Get oscilloscope buffer value"
+      }
+    }
+  },
+  "properties": {
+    "odrive": {
+      "vbus_voltage": {
+        "name": "vbus_voltage",
+        "path": "vbus_voltage",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "system",
+        "description": "Voltage on the DC bus as measured by the ODrive"
+      },
+      "ibus": {
+        "name": "ibus",
+        "path": "ibus",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "system",
+        "description": "Current on the DC bus (positive=consuming, negative=sourcing)"
+      },
+      "serial_number": {
+        "name": "serial_number",
+        "path": "serial_number",
+        "type": "Uint64Property",
+        "access": "ro",
+        "category": "system",
+        "description": "Unique serial number of the device"
+      },
+      "hw_version_major": {
+        "name": "hw_version_major",
+        "path": "hw_version_major",
+        "type": "Uint8Property",
+        "access": "ro",
+        "category": "system",
+        "description": "Hardware major version"
+      },
+      "hw_version_minor": {
+        "name": "hw_version_minor",
+        "path": "hw_version_minor",
+        "type": "Uint8Property",
+        "access": "ro",
+        "category": "system",
+        "description": "Hardware minor version"
+      },
+      "fw_version_major": {
+        "name": "fw_version_major",
+        "path": "fw_version_major",
+        "type": "Uint8Property",
+        "access": "ro",
+        "category": "system",
+        "description": "Firmware major version"
+      },
+      "fw_version_minor": {
+        "name": "fw_version_minor",
+        "path": "fw_version_minor",
+        "type": "Uint8Property",
+        "access": "ro",
+        "category": "system",
+        "description": "Firmware minor version"
+      },
+      "fw_version_revision": {
+        "name": "fw_version_revision",
+        "path": "fw_version_revision",
+        "type": "Uint8Property",
+        "access": "ro",
+        "category": "system",
+        "description": "Firmware revision"
+      },
+      "brake_resistor_armed": {
+        "name": "brake_resistor_armed",
+        "path": "brake_resistor_armed",
+        "type": "BoolProperty",
+        "access": "ro",
+        "category": "system",
+        "description": "Brake resistor armed state"
+      },
+      "brake_resistor_current": {
+        "name": "brake_resistor_current",
+        "path": "brake_resistor_current",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "system",
+        "description": "Commanded brake resistor current"
+      },
+      "error": {
+        "name": "error",
+        "path": "error",
+        "type": "Property[ODrive.Error]",
+        "access": "ro",
+        "category": "system",
+        "description": "System error flags"
+      },
+      "ibus_report_filter_k": {
+        "name": "ibus_report_filter_k",
+        "path": "ibus_report_filter_k",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "system",
+        "description": "Filter gain for reported ibus (1.0 disables)"
+      },
+      "hw_version_variant": {
+        "name": "hw_version_variant",
+        "path": "hw_version_variant",
+        "type": "Uint8Property",
+        "access": "ro",
+        "category": "system"
+      },
+      "fw_version_unreleased": {
+        "name": "fw_version_unreleased",
+        "path": "fw_version_unreleased",
+        "type": "Uint8Property",
+        "access": "ro",
+        "category": "system",
+        "description": "0=official release,1=unreleased"
+      },
+      "brake_resistor_saturated": {
+        "name": "brake_resistor_saturated",
+        "path": "brake_resistor_saturated",
+        "type": "BoolProperty",
+        "access": "ro",
+        "category": "system"
+      },
+      "n_evt_sampling": {
+        "name": "n_evt_sampling",
+        "path": "n_evt_sampling",
+        "type": "Uint32Property",
+        "access": "ro",
+        "category": "system"
+      },
+      "n_evt_control_loop": {
+        "name": "n_evt_control_loop",
+        "path": "n_evt_control_loop",
+        "type": "Uint32Property",
+        "access": "ro",
+        "category": "system"
+      },
+      "task_timers_armed": {
+        "name": "task_timers_armed",
+        "path": "task_timers_armed",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "system",
+        "description": "Trigger single control loop timing sample"
+      },
+      "user_config_loaded": {
+        "name": "user_config_loaded",
+        "path": "user_config_loaded",
+        "type": "Uint32Property",
+        "access": "ro",
+        "category": "system"
+      },
+      "misconfigured": {
+        "name": "misconfigured",
+        "path": "misconfigured",
+        "type": "BoolProperty",
+        "access": "ro",
+        "category": "system",
+        "description": "Indicates a configuration issue"
+      },
+      "otp_valid": {
+        "name": "otp_valid",
+        "path": "otp_valid",
+        "type": "BoolProperty",
+        "access": "ro",
+        "category": "system"
+      },
+      "test_property": {
+        "name": "test_property",
+        "path": "test_property",
+        "type": "Uint32Property",
+        "access": "rw",
+        "category": "system"
+      },
+      "system_stats": {
+        "name": "system_stats",
+        "path": "system_stats",
+        "type": "ODrive.SystemStats",
+        "access": "ro",
+        "category": "system"
+      },
+      "task_times": {
+        "name": "task_times",
+        "path": "task_times",
+        "type": "ODrive.TaskTimes",
+        "access": "ro",
+        "category": "system"
+      },
+      "can": {
+        "name": "can",
+        "path": "can",
+        "type": "ODrive.Can",
+        "access": "ro",
+        "category": "system"
+      }
+    },
+    "config": {
+      "enable_uart_a": {
+        "name": "enable_uart_a",
+        "path": "config.enable_uart_a",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "system",
+        "description": "Enable/disable UART_A (requires reboot)"
+      },
+      "enable_can_a": {
+        "name": "enable_can_a",
+        "path": "config.enable_can_a",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "can",
+        "description": "Enable CAN interface (requires reboot)"
+      },
+      "brake_resistance": {
+        "name": "brake_resistance",
+        "path": "config.brake_resistance",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "system",
+        "description": "Value of the brake resistor in ohms"
+      },
+      "enable_brake_resistor": {
+        "name": "enable_brake_resistor",
+        "path": "config.enable_brake_resistor",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "system",
+        "description": "Enable/disable brake resistor (requires reboot)"
+      },
+      "dc_bus_undervoltage_trip_level": {
+        "name": "dc_bus_undervoltage_trip_level",
+        "path": "config.dc_bus_undervoltage_trip_level",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "system",
+        "description": "Minimum voltage threshold"
+      },
+      "dc_bus_overvoltage_trip_level": {
+        "name": "dc_bus_overvoltage_trip_level",
+        "path": "config.dc_bus_overvoltage_trip_level",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "system",
+        "description": "Maximum voltage threshold"
+      },
+      "dc_max_positive_current": {
+        "name": "dc_max_positive_current",
+        "path": "config.dc_max_positive_current",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "system",
+        "description": "Max current the power supply can source"
+      },
+      "dc_max_negative_current": {
+        "name": "dc_max_negative_current",
+        "path": "config.dc_max_negative_current",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "system",
+        "description": "Max current the power supply can sink"
+      },
+      "enable_uart_b": {
+        "name": "enable_uart_b",
+        "path": "config.enable_uart_b",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "system",
+        "description": "Enable/disable UART_B (requires reboot)"
+      },
+      "enable_uart_c": {
+        "name": "enable_uart_c",
+        "path": "config.enable_uart_c",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "system",
+        "description": "Enable/disable UART_C (not on v3.x)"
+      },
+      "uart_a_baudrate": {
+        "name": "uart_a_baudrate",
+        "path": "config.uart_a_baudrate",
+        "type": "Uint32Property",
+        "access": "rw",
+        "category": "system"
+      },
+      "uart_b_baudrate": {
+        "name": "uart_b_baudrate",
+        "path": "config.uart_b_baudrate",
+        "type": "Uint32Property",
+        "access": "rw",
+        "category": "system"
+      },
+      "uart_c_baudrate": {
+        "name": "uart_c_baudrate",
+        "path": "config.uart_c_baudrate",
+        "type": "Uint32Property",
+        "access": "rw",
+        "category": "system"
+      },
+      "enable_i2c_a": {
+        "name": "enable_i2c_a",
+        "path": "config.enable_i2c_a",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "system",
+        "description": "Enable I2C A (conflicts with CAN)"
+      },
+      "usb_cdc_protocol": {
+        "name": "usb_cdc_protocol",
+        "path": "config.usb_cdc_protocol",
+        "type": "Property[ODrive.StreamProtocolType]",
+        "access": "rw",
+        "category": "system"
+      },
+      "uart0_protocol": {
+        "name": "uart0_protocol",
+        "path": "config.uart0_protocol",
+        "type": "Property[ODrive.StreamProtocolType]",
+        "access": "rw",
+        "category": "system"
+      },
+      "uart1_protocol": {
+        "name": "uart1_protocol",
+        "path": "config.uart1_protocol",
+        "type": "Property[ODrive.StreamProtocolType]",
+        "access": "rw",
+        "category": "system"
+      },
+      "uart2_protocol": {
+        "name": "uart2_protocol",
+        "path": "config.uart2_protocol",
+        "type": "Property[ODrive.StreamProtocolType]",
+        "access": "rw",
+        "category": "system"
+      },
+      "max_regen_current": {
+        "name": "max_regen_current",
+        "path": "config.max_regen_current",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "system",
+        "description": "Bus current allowed before brake shunts"
+      },
+      "enable_dc_bus_overvoltage_ramp": {
+        "name": "enable_dc_bus_overvoltage_ramp",
+        "path": "config.enable_dc_bus_overvoltage_ramp",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "system"
+      },
+      "dc_bus_overvoltage_ramp_start": {
+        "name": "dc_bus_overvoltage_ramp_start",
+        "path": "config.dc_bus_overvoltage_ramp_start",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "system"
+      },
+      "dc_bus_overvoltage_ramp_end": {
+        "name": "dc_bus_overvoltage_ramp_end",
+        "path": "config.dc_bus_overvoltage_ramp_end",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "system"
+      },
+      "error_gpio_pin": {
+        "name": "error_gpio_pin",
+        "path": "config.error_gpio_pin",
+        "type": "Uint32Property",
+        "access": "rw",
+        "category": "system"
+      },
+      "gpio3_analog_mapping": {
+        "name": "gpio3_analog_mapping",
+        "path": "config.gpio3_analog_mapping",
+        "type": "EndpointRefProperty",
+        "access": "rw",
+        "category": "system"
+      },
+      "gpio4_analog_mapping": {
+        "name": "gpio4_analog_mapping",
+        "path": "config.gpio4_analog_mapping",
+        "type": "EndpointRefProperty",
+        "access": "rw",
+        "category": "system"
+      }
+    },
+    "axis": {
+      "error": {
+        "name": "error",
+        "path": "axis{n}.error",
+        "type": "Property[ODrive.Axis.Error]",
+        "access": "ro",
+        "category": "axis",
+        "description": "Axis error flags"
+      },
+      "current_state": {
+        "name": "current_state",
+        "path": "axis{n}.current_state",
+        "type": "Property[ODrive.Axis.AxisState]",
+        "access": "ro",
+        "category": "axis",
+        "description": "Current state of the axis"
+      },
+      "requested_state": {
+        "name": "requested_state",
+        "path": "axis{n}.requested_state",
+        "type": "Property[ODrive.Axis.AxisState]",
+        "access": "rw",
+        "category": "axis",
+        "description": "User commanded axis state"
+      },
+      "is_homed": {
+        "name": "is_homed",
+        "path": "axis{n}.is_homed",
+        "type": "BoolProperty",
+        "access": "ro",
+        "category": "axis",
+        "description": "Whether the axis has been successfully homed"
+      },
+      "steps": {
+        "name": "steps",
+        "path": "axis{n}.steps",
+        "type": "Int64Property",
+        "access": "ro",
+        "category": "axis",
+        "description": "Current commanded position in steps (step_dir mode)"
+      },
+      "step_dir_active": {
+        "name": "step_dir_active",
+        "path": "axis{n}.step_dir_active",
+        "type": "BoolProperty",
+        "access": "ro",
+        "category": "axis"
+      },
+      "last_drv_fault": {
+        "name": "last_drv_fault",
+        "path": "axis{n}.last_drv_fault",
+        "type": "Uint32Property",
+        "access": "ro",
+        "category": "axis"
+      }
+    },
+    "axis_config": {
+      "startup_motor_calibration": {
+        "name": "startup_motor_calibration",
+        "path": "axis{n}.config.startup_motor_calibration",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "axis",
+        "description": "Run motor calibration at startup"
+      },
+      "startup_encoder_index_search": {
+        "name": "startup_encoder_index_search",
+        "path": "axis{n}.config.startup_encoder_index_search",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "axis",
+        "description": "Run encoder index search after startup"
+      },
+      "startup_encoder_offset_calibration": {
+        "name": "startup_encoder_offset_calibration",
+        "path": "axis{n}.config.startup_encoder_offset_calibration",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "axis",
+        "description": "Run encoder offset calibration after startup"
+      },
+      "startup_closed_loop_control": {
+        "name": "startup_closed_loop_control",
+        "path": "axis{n}.config.startup_closed_loop_control",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "axis",
+        "description": "Enable closed loop control after calibration"
+      },
+      "startup_homing": {
+        "name": "startup_homing",
+        "path": "axis{n}.config.startup_homing",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "axis",
+        "description": "Enable homing after calibration"
+      },
+      "enable_step_dir": {
+        "name": "enable_step_dir",
+        "path": "axis{n}.config.enable_step_dir",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "axis",
+        "description": "Enable step/dir input after calibration"
+      },
+      "watchdog_timeout": {
+        "name": "watchdog_timeout",
+        "path": "axis{n}.config.watchdog_timeout",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "axis",
+        "description": "Watchdog timeout in seconds"
+      },
+      "enable_watchdog": {
+        "name": "enable_watchdog",
+        "path": "axis{n}.config.enable_watchdog",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "axis",
+        "description": "Enable watchdog timer"
+      },
+      "step_dir_always_on": {
+        "name": "step_dir_always_on",
+        "path": "axis{n}.config.step_dir_always_on",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "axis"
+      },
+      "enable_sensorless_mode": {
+        "name": "enable_sensorless_mode",
+        "path": "axis{n}.config.enable_sensorless_mode",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "axis"
+      },
+      "step_gpio_pin": {
+        "name": "step_gpio_pin",
+        "path": "axis{n}.config.step_gpio_pin",
+        "type": "Uint16Property",
+        "access": "rw",
+        "category": "axis"
+      },
+      "dir_gpio_pin": {
+        "name": "dir_gpio_pin",
+        "path": "axis{n}.config.dir_gpio_pin",
+        "type": "Uint16Property",
+        "access": "rw",
+        "category": "axis"
+      },
+      "calibration_lockin": {
+        "name": "calibration_lockin",
+        "path": "axis{n}.config.calibration_lockin",
+        "type": "ODrive.Axis.Config.CalibrationLockin",
+        "access": "rw",
+        "category": "axis"
+      },
+      "sensorless_ramp": {
+        "name": "sensorless_ramp",
+        "path": "axis{n}.config.sensorless_ramp",
+        "type": "ODrive.Axis.LockinConfig",
+        "access": "rw",
+        "category": "axis"
+      },
+      "general_lockin": {
+        "name": "general_lockin",
+        "path": "axis{n}.config.general_lockin",
+        "type": "ODrive.Axis.LockinConfig",
+        "access": "rw",
+        "category": "axis"
+      },
+      "can": {
+        "name": "can",
+        "path": "axis{n}.config.can",
+        "type": "ODrive.Axis.CanConfig",
+        "access": "rw",
+        "category": "axis"
+      }
+    },
+    "oscilloscope": {
+      "size": {
+        "name": "size",
+        "path": "oscilloscope.size",
+        "type": "Uint32Property",
+        "access": "ro",
+        "category": "oscilloscope",
+        "description": "Oscilloscope buffer size"
+      }
+    },
+    "motor": {
+      "error": {
+        "name": "error",
+        "path": "axis{n}.motor.error",
+        "type": "Property[ODrive.Motor.Error]",
+        "access": "ro",
+        "category": "motor",
+        "description": "Motor error flags"
+      },
+      "is_armed": {
+        "name": "is_armed",
+        "path": "axis{n}.motor.is_armed",
+        "type": "BoolProperty",
+        "access": "ro",
+        "category": "motor",
+        "description": "Motor armed state"
+      },
+      "is_calibrated": {
+        "name": "is_calibrated",
+        "path": "axis{n}.motor.is_calibrated",
+        "type": "BoolProperty",
+        "access": "ro",
+        "category": "motor",
+        "description": "Motor calibrated state"
+      },
+      "last_error_time": {
+        "name": "last_error_time",
+        "path": "axis{n}.motor.last_error_time",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "motor"
+      },
+      "current_meas_phA": {
+        "name": "current_meas_phA",
+        "path": "axis{n}.motor.current_meas_phA",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "motor"
+      },
+      "current_meas_phB": {
+        "name": "current_meas_phB",
+        "path": "axis{n}.motor.current_meas_phB",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "motor"
+      },
+      "current_meas_phC": {
+        "name": "current_meas_phC",
+        "path": "axis{n}.motor.current_meas_phC",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "motor"
+      },
+      "DC_calib_phA": {
+        "name": "DC_calib_phA",
+        "path": "axis{n}.motor.DC_calib_phA",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "motor"
+      },
+      "DC_calib_phB": {
+        "name": "DC_calib_phB",
+        "path": "axis{n}.motor.DC_calib_phB",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "motor"
+      },
+      "DC_calib_phC": {
+        "name": "DC_calib_phC",
+        "path": "axis{n}.motor.DC_calib_phC",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "motor"
+      },
+      "I_bus": {
+        "name": "I_bus",
+        "path": "axis{n}.motor.I_bus",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "motor"
+      },
+      "phase_current_rev_gain": {
+        "name": "phase_current_rev_gain",
+        "path": "axis{n}.motor.phase_current_rev_gain",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "motor"
+      },
+      "effective_current_lim": {
+        "name": "effective_current_lim",
+        "path": "axis{n}.motor.effective_current_lim",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "motor"
+      },
+      "max_allowed_current": {
+        "name": "max_allowed_current",
+        "path": "axis{n}.motor.max_allowed_current",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "motor"
+      },
+      "max_dc_calib": {
+        "name": "max_dc_calib",
+        "path": "axis{n}.motor.max_dc_calib",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "motor"
+      },
+      "n_evt_current_measurement": {
+        "name": "n_evt_current_measurement",
+        "path": "axis{n}.motor.n_evt_current_measurement",
+        "type": "Uint32Property",
+        "access": "ro",
+        "category": "motor"
+      },
+      "n_evt_pwm_update": {
+        "name": "n_evt_pwm_update",
+        "path": "axis{n}.motor.n_evt_pwm_update",
+        "type": "Uint32Property",
+        "access": "ro",
+        "category": "motor"
+      },
+      "fet_thermistor": {
+        "name": "fet_thermistor",
+        "path": "axis{n}.motor.fet_thermistor",
+        "type": "ODrive.OnboardThermistorCurrentLimiter",
+        "access": "ro",
+        "category": "motor"
+      },
+      "motor_thermistor": {
+        "name": "motor_thermistor",
+        "path": "axis{n}.motor.motor_thermistor",
+        "type": "ODrive.OffboardThermistorCurrentLimiter",
+        "access": "ro",
+        "category": "motor"
+      },
+      "current_control": {
+        "name": "current_control",
+        "path": "axis{n}.motor.current_control",
+        "type": "ODrive.Motor.CurrentControl",
+        "access": "ro",
+        "category": "motor"
+      }
+    },
+    "motor_config": {
+      "pre_calibrated": {
+        "name": "pre_calibrated",
+        "path": "axis{n}.motor.config.pre_calibrated",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "motor"
+      },
+      "pole_pairs": {
+        "name": "pole_pairs",
+        "path": "axis{n}.motor.config.pole_pairs",
+        "type": "Int32Property",
+        "access": "rw",
+        "category": "motor"
+      },
+      "calibration_current": {
+        "name": "calibration_current",
+        "path": "axis{n}.motor.config.calibration_current",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "motor"
+      },
+      "resistance_calib_max_voltage": {
+        "name": "resistance_calib_max_voltage",
+        "path": "axis{n}.motor.config.resistance_calib_max_voltage",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "motor"
+      },
+      "phase_inductance": {
+        "name": "phase_inductance",
+        "path": "axis{n}.motor.config.phase_inductance",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "motor"
+      },
+      "phase_resistance": {
+        "name": "phase_resistance",
+        "path": "axis{n}.motor.config.phase_resistance",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "motor"
+      },
+      "torque_constant": {
+        "name": "torque_constant",
+        "path": "axis{n}.motor.config.torque_constant",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "motor"
+      },
+      "motor_type": {
+        "name": "motor_type",
+        "path": "axis{n}.motor.config.motor_type",
+        "type": "Property[ODrive.Motor.MotorType]",
+        "access": "rw",
+        "category": "motor"
+      },
+      "current_lim": {
+        "name": "current_lim",
+        "path": "axis{n}.motor.config.current_lim",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "motor"
+      },
+      "current_lim_margin": {
+        "name": "current_lim_margin",
+        "path": "axis{n}.motor.config.current_lim_margin",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "motor"
+      },
+      "torque_lim": {
+        "name": "torque_lim",
+        "path": "axis{n}.motor.config.torque_lim",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "motor"
+      },
+      "inverter_temp_limit_lower": {
+        "name": "inverter_temp_limit_lower",
+        "path": "axis{n}.motor.config.inverter_temp_limit_lower",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "motor"
+      },
+      "inverter_temp_limit_upper": {
+        "name": "inverter_temp_limit_upper",
+        "path": "axis{n}.motor.config.inverter_temp_limit_upper",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "motor"
+      },
+      "requested_current_range": {
+        "name": "requested_current_range",
+        "path": "axis{n}.motor.config.requested_current_range",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "motor"
+      },
+      "current_control_bandwidth": {
+        "name": "current_control_bandwidth",
+        "path": "axis{n}.motor.config.current_control_bandwidth",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "motor"
+      },
+      "acim_gain_min_flux": {
+        "name": "acim_gain_min_flux",
+        "path": "axis{n}.motor.config.acim_gain_min_flux",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "motor"
+      },
+      "acim_autoflux_min_Id": {
+        "name": "acim_autoflux_min_Id",
+        "path": "axis{n}.motor.config.acim_autoflux_min_Id",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "motor"
+      },
+      "acim_autoflux_enable": {
+        "name": "acim_autoflux_enable",
+        "path": "axis{n}.motor.config.acim_autoflux_enable",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "motor"
+      },
+      "acim_autoflux_attack_gain": {
+        "name": "acim_autoflux_attack_gain",
+        "path": "axis{n}.motor.config.acim_autoflux_attack_gain",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "motor"
+      },
+      "acim_autoflux_decay_gain": {
+        "name": "acim_autoflux_decay_gain",
+        "path": "axis{n}.motor.config.acim_autoflux_decay_gain",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "motor"
+      },
+      "R_wL_FF_enable": {
+        "name": "R_wL_FF_enable",
+        "path": "axis{n}.motor.config.R_wL_FF_enable",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "motor"
+      },
+      "bEMF_FF_enable": {
+        "name": "bEMF_FF_enable",
+        "path": "axis{n}.motor.config.bEMF_FF_enable",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "motor"
+      },
+      "I_bus_hard_min": {
+        "name": "I_bus_hard_min",
+        "path": "axis{n}.motor.config.I_bus_hard_min",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "motor"
+      },
+      "I_bus_hard_max": {
+        "name": "I_bus_hard_max",
+        "path": "axis{n}.motor.config.I_bus_hard_max",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "motor"
+      },
+      "I_leak_max": {
+        "name": "I_leak_max",
+        "path": "axis{n}.motor.config.I_leak_max",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "motor"
+      },
+      "dc_calib_tau": {
+        "name": "dc_calib_tau",
+        "path": "axis{n}.motor.config.dc_calib_tau",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "motor"
+      }
+    },
+    "controller": {
+      "error": {
+        "name": "error",
+        "path": "axis{n}.controller.error",
+        "type": "Property[ODrive.Controller.Error]",
+        "access": "ro",
+        "category": "controller",
+        "description": "Controller error flags"
+      },
+      "last_error_time": {
+        "name": "last_error_time",
+        "path": "axis{n}.controller.last_error_time",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "controller"
+      },
+      "input_pos": {
+        "name": "input_pos",
+        "path": "axis{n}.controller.input_pos",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "controller"
+      },
+      "input_vel": {
+        "name": "input_vel",
+        "path": "axis{n}.controller.input_vel",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "controller"
+      },
+      "input_torque": {
+        "name": "input_torque",
+        "path": "axis{n}.controller.input_torque",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "controller"
+      },
+      "pos_setpoint": {
+        "name": "pos_setpoint",
+        "path": "axis{n}.controller.pos_setpoint",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "controller"
+      },
+      "vel_setpoint": {
+        "name": "vel_setpoint",
+        "path": "axis{n}.controller.vel_setpoint",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "controller"
+      },
+      "torque_setpoint": {
+        "name": "torque_setpoint",
+        "path": "axis{n}.controller.torque_setpoint",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "controller"
+      },
+      "trajectory_done": {
+        "name": "trajectory_done",
+        "path": "axis{n}.controller.trajectory_done",
+        "type": "BoolProperty",
+        "access": "ro",
+        "category": "controller"
+      },
+      "vel_integrator_torque": {
+        "name": "vel_integrator_torque",
+        "path": "axis{n}.controller.vel_integrator_torque",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "controller"
+      },
+      "anticogging_valid": {
+        "name": "anticogging_valid",
+        "path": "axis{n}.controller.anticogging_valid",
+        "type": "BoolProperty",
+        "access": "ro",
+        "category": "controller"
+      },
+      "autotuning_phase": {
+        "name": "autotuning_phase",
+        "path": "axis{n}.controller.autotuning_phase",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "controller"
+      },
+      "mechanical_power": {
+        "name": "mechanical_power",
+        "path": "axis{n}.controller.mechanical_power",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "controller"
+      },
+      "electrical_power": {
+        "name": "electrical_power",
+        "path": "axis{n}.controller.electrical_power",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "controller"
+      }
+    },
+    "controller_config": {
+      "gain_scheduling_width": {
+        "name": "gain_scheduling_width",
+        "path": "axis{n}.controller.config.gain_scheduling_width",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "controller"
+      },
+      "enable_vel_limit": {
+        "name": "enable_vel_limit",
+        "path": "axis{n}.controller.config.enable_vel_limit",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "controller"
+      },
+      "enable_torque_mode_vel_limit": {
+        "name": "enable_torque_mode_vel_limit",
+        "path": "axis{n}.controller.config.enable_torque_mode_vel_limit",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "controller"
+      },
+      "enable_gain_scheduling": {
+        "name": "enable_gain_scheduling",
+        "path": "axis{n}.controller.config.enable_gain_scheduling",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "controller"
+      },
+      "enable_overspeed_error": {
+        "name": "enable_overspeed_error",
+        "path": "axis{n}.controller.config.enable_overspeed_error",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "controller"
+      },
+      "control_mode": {
+        "name": "control_mode",
+        "path": "axis{n}.controller.config.control_mode",
+        "type": "Property[ODrive.Controller.ControlMode]",
+        "access": "rw",
+        "category": "controller"
+      },
+      "input_mode": {
+        "name": "input_mode",
+        "path": "axis{n}.controller.config.input_mode",
+        "type": "Property[ODrive.Controller.InputMode]",
+        "access": "rw",
+        "category": "controller"
+      },
+      "pos_gain": {
+        "name": "pos_gain",
+        "path": "axis{n}.controller.config.pos_gain",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "controller"
+      },
+      "vel_gain": {
+        "name": "vel_gain",
+        "path": "axis{n}.controller.config.vel_gain",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "controller"
+      },
+      "vel_integrator_gain": {
+        "name": "vel_integrator_gain",
+        "path": "axis{n}.controller.config.vel_integrator_gain",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "controller"
+      },
+      "vel_integrator_limit": {
+        "name": "vel_integrator_limit",
+        "path": "axis{n}.controller.config.vel_integrator_limit",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "controller"
+      },
+      "vel_limit": {
+        "name": "vel_limit",
+        "path": "axis{n}.controller.config.vel_limit",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "controller"
+      },
+      "vel_limit_tolerance": {
+        "name": "vel_limit_tolerance",
+        "path": "axis{n}.controller.config.vel_limit_tolerance",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "controller"
+      },
+      "vel_ramp_rate": {
+        "name": "vel_ramp_rate",
+        "path": "axis{n}.controller.config.vel_ramp_rate",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "controller"
+      },
+      "torque_ramp_rate": {
+        "name": "torque_ramp_rate",
+        "path": "axis{n}.controller.config.torque_ramp_rate",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "controller"
+      },
+      "circular_setpoints": {
+        "name": "circular_setpoints",
+        "path": "axis{n}.controller.config.circular_setpoints",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "controller"
+      },
+      "circular_setpoint_range": {
+        "name": "circular_setpoint_range",
+        "path": "axis{n}.controller.config.circular_setpoint_range",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "controller"
+      },
+      "steps_per_circular_range": {
+        "name": "steps_per_circular_range",
+        "path": "axis{n}.controller.config.steps_per_circular_range",
+        "type": "Int32Property",
+        "access": "rw",
+        "category": "controller"
+      },
+      "homing_speed": {
+        "name": "homing_speed",
+        "path": "axis{n}.controller.config.homing_speed",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "controller"
+      },
+      "inertia": {
+        "name": "inertia",
+        "path": "axis{n}.controller.config.inertia",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "controller"
+      },
+      "axis_to_mirror": {
+        "name": "axis_to_mirror",
+        "path": "axis{n}.controller.config.axis_to_mirror",
+        "type": "Uint8Property",
+        "access": "rw",
+        "category": "controller"
+      },
+      "mirror_ratio": {
+        "name": "mirror_ratio",
+        "path": "axis{n}.controller.config.mirror_ratio",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "controller"
+      },
+      "torque_mirror_ratio": {
+        "name": "torque_mirror_ratio",
+        "path": "axis{n}.controller.config.torque_mirror_ratio",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "controller"
+      },
+      "load_encoder_axis": {
+        "name": "load_encoder_axis",
+        "path": "axis{n}.controller.config.load_encoder_axis",
+        "type": "Uint8Property",
+        "access": "rw",
+        "category": "controller"
+      },
+      "input_filter_bandwidth": {
+        "name": "input_filter_bandwidth",
+        "path": "axis{n}.controller.config.input_filter_bandwidth",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "controller"
+      },
+      "mechanical_power_bandwidth": {
+        "name": "mechanical_power_bandwidth",
+        "path": "axis{n}.controller.config.mechanical_power_bandwidth",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "controller"
+      },
+      "electrical_power_bandwidth": {
+        "name": "electrical_power_bandwidth",
+        "path": "axis{n}.controller.config.electrical_power_bandwidth",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "controller"
+      },
+      "spinout_mechanical_power_threshold": {
+        "name": "spinout_mechanical_power_threshold",
+        "path": "axis{n}.controller.config.spinout_mechanical_power_threshold",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "controller"
+      },
+      "spinout_electrical_power_threshold": {
+        "name": "spinout_electrical_power_threshold",
+        "path": "axis{n}.controller.config.spinout_electrical_power_threshold",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "controller"
+      }
+    },
+    "controller_anticogging": {
+      "index": {
+        "name": "index",
+        "path": "axis{n}.controller.config.anticogging.index",
+        "type": "Uint32Property",
+        "access": "rw",
+        "category": "controller"
+      },
+      "pre_calibrated": {
+        "name": "pre_calibrated",
+        "path": "axis{n}.controller.config.anticogging.pre_calibrated",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "controller"
+      },
+      "calib_anticogging": {
+        "name": "calib_anticogging",
+        "path": "axis{n}.controller.config.anticogging.calib_anticogging",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "controller"
+      },
+      "calib_pos_threshold": {
+        "name": "calib_pos_threshold",
+        "path": "axis{n}.controller.config.anticogging.calib_pos_threshold",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "controller"
+      },
+      "calib_vel_threshold": {
+        "name": "calib_vel_threshold",
+        "path": "axis{n}.controller.config.anticogging.calib_vel_threshold",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "controller"
+      },
+      "cogging_ratio": {
+        "name": "cogging_ratio",
+        "path": "axis{n}.controller.config.anticogging.cogging_ratio",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "controller"
+      },
+      "anticogging_enabled": {
+        "name": "anticogging_enabled",
+        "path": "axis{n}.controller.config.anticogging.anticogging_enabled",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "controller"
+      }
+    },
+    "encoder": {
+      "error": {
+        "name": "error",
+        "path": "axis{n}.encoder.error",
+        "type": "Property[ODrive.Encoder.Error]",
+        "access": "ro",
+        "category": "encoder",
+        "description": "Encoder error flags"
+      },
+      "is_ready": {
+        "name": "is_ready",
+        "path": "axis{n}.encoder.is_ready",
+        "type": "BoolProperty",
+        "access": "ro",
+        "category": "encoder",
+        "description": "Whether the encoder is ready"
+      },
+      "index_found": {
+        "name": "index_found",
+        "path": "axis{n}.encoder.index_found",
+        "type": "BoolProperty",
+        "access": "ro",
+        "category": "encoder",
+        "description": "Whether the encoder index has been found"
+      },
+      "shadow_count": {
+        "name": "shadow_count",
+        "path": "axis{n}.encoder.shadow_count",
+        "type": "Int32Property",
+        "access": "ro",
+        "category": "encoder",
+        "description": "Shadow count value"
+      },
+      "count_in_cpr": {
+        "name": "count_in_cpr",
+        "path": "axis{n}.encoder.count_in_cpr",
+        "type": "Int32Property",
+        "access": "ro",
+        "category": "encoder",
+        "description": "Count value in counts per revolution"
+      },
+      "interpolation": {
+        "name": "interpolation",
+        "path": "axis{n}.encoder.interpolation",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "encoder",
+        "description": "Interpolation value"
+      },
+      "phase": {
+        "name": "phase",
+        "path": "axis{n}.encoder.phase",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "encoder",
+        "description": "Phase value"
+      },
+      "pos_estimate": {
+        "name": "pos_estimate",
+        "path": "axis{n}.encoder.pos_estimate",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "encoder",
+        "description": "Position estimate"
+      },
+      "pos_estimate_counts": {
+        "name": "pos_estimate_counts",
+        "path": "axis{n}.encoder.pos_estimate_counts",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "encoder",
+        "description": "Position estimate in counts"
+      },
+      "pos_circular": {
+        "name": "pos_circular",
+        "path": "axis{n}.encoder.pos_circular",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "encoder",
+        "description": "Position in circular coordinates"
+      },
+      "pos_cpr_counts": {
+        "name": "pos_cpr_counts",
+        "path": "axis{n}.encoder.pos_cpr_counts",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "encoder",
+        "description": "Position in counts per revolution"
+      },
+      "delta_pos_cpr_counts": {
+        "name": "delta_pos_cpr_counts",
+        "path": "axis{n}.encoder.delta_pos_cpr_counts",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "encoder",
+        "description": "Delta position in counts per revolution"
+      },
+      "hall_state": {
+        "name": "hall_state",
+        "path": "axis{n}.encoder.hall_state",
+        "type": "Uint8Property",
+        "access": "ro",
+        "category": "encoder",
+        "description": "Hall state"
+      },
+      "vel_estimate": {
+        "name": "vel_estimate",
+        "path": "axis{n}.encoder.vel_estimate",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "encoder",
+        "description": "Velocity estimate"
+      },
+      "vel_estimate_counts": {
+        "name": "vel_estimate_counts",
+        "path": "axis{n}.encoder.vel_estimate_counts",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "encoder",
+        "description": "Velocity estimate in counts"
+      },
+      "calib_scan_response": {
+        "name": "calib_scan_response",
+        "path": "axis{n}.encoder.calib_scan_response",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "encoder",
+        "description": "Calibration scan response"
+      },
+      "pos_abs": {
+        "name": "pos_abs",
+        "path": "axis{n}.encoder.pos_abs",
+        "type": "Int32Property",
+        "access": "ro",
+        "category": "encoder",
+        "description": "Absolute position"
+      },
+      "spi_error_rate": {
+        "name": "spi_error_rate",
+        "path": "axis{n}.encoder.spi_error_rate",
+        "type": "Float32Property",
+        "access": "ro",
+        "category": "encoder",
+        "description": "SPI error rate"
+      }
+    },
+    "encoder_config": {
+      "mode": {
+        "name": "mode",
+        "path": "axis{n}.encoder.config.mode",
+        "type": "Property[ODrive.Encoder.Mode]",
+        "access": "rw",
+        "category": "encoder"
+      },
+      "use_index": {
+        "name": "use_index",
+        "path": "axis{n}.encoder.config.use_index",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "encoder"
+      },
+      "index_offset": {
+        "name": "index_offset",
+        "path": "axis{n}.encoder.config.index_offset",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "encoder"
+      },
+      "use_index_offset": {
+        "name": "use_index_offset",
+        "path": "axis{n}.encoder.config.use_index_offset",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "encoder"
+      },
+      "find_idx_on_lockin_only": {
+        "name": "find_idx_on_lockin_only",
+        "path": "axis{n}.encoder.config.find_idx_on_lockin_only",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "encoder"
+      },
+      "abs_spi_cs_gpio_pin": {
+        "name": "abs_spi_cs_gpio_pin",
+        "path": "axis{n}.encoder.config.abs_spi_cs_gpio_pin",
+        "type": "Uint16Property",
+        "access": "rw",
+        "category": "encoder"
+      },
+      "cpr": {
+        "name": "cpr",
+        "path": "axis{n}.encoder.config.cpr",
+        "type": "Int32Property",
+        "access": "rw",
+        "category": "encoder"
+      },
+      "phase_offset": {
+        "name": "phase_offset",
+        "path": "axis{n}.encoder.config.phase_offset",
+        "type": "Int32Property",
+        "access": "rw",
+        "category": "encoder"
+      },
+      "phase_offset_float": {
+        "name": "phase_offset_float",
+        "path": "axis{n}.encoder.config.phase_offset_float",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "encoder"
+      },
+      "direction": {
+        "name": "direction",
+        "path": "axis{n}.encoder.config.direction",
+        "type": "Int32Property",
+        "access": "rw",
+        "category": "encoder"
+      },
+      "pre_calibrated": {
+        "name": "pre_calibrated",
+        "path": "axis{n}.encoder.config.pre_calibrated",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "encoder"
+      },
+      "enable_phase_interpolation": {
+        "name": "enable_phase_interpolation",
+        "path": "axis{n}.encoder.config.enable_phase_interpolation",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "encoder"
+      },
+      "bandwidth": {
+        "name": "bandwidth",
+        "path": "axis{n}.encoder.config.bandwidth",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "encoder"
+      },
+      "calib_range": {
+        "name": "calib_range",
+        "path": "axis{n}.encoder.config.calib_range",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "encoder"
+      },
+      "calib_scan_distance": {
+        "name": "calib_scan_distance",
+        "path": "axis{n}.encoder.config.calib_scan_distance",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "encoder"
+      },
+      "calib_scan_omega": {
+        "name": "calib_scan_omega",
+        "path": "axis{n}.encoder.config.calib_scan_omega",
+        "type": "Float32Property",
+        "access": "rw",
+        "category": "encoder"
+      },
+      "ignore_illegal_hall_state": {
+        "name": "ignore_illegal_hall_state",
+        "path": "axis{n}.encoder.config.ignore_illegal_hall_state",
+        "type": "BoolProperty",
+        "access": "rw",
+        "category": "encoder"
+      },
+      "hall_polarity": {
+        "name": "hall_polarity",
+        "path": "axis{n}.encoder.config.hall_polarity",
+        "type": "Uint8Property",
+        "access": "rw",
+        "category": "encoder"
+      },
+      "hall_polarity_calibrated": {
+        "name": "hall_polarity_calibrated",
+        "path": "axis{n}.encoder.config.hall_polarity_calibrated",
+        "type": "BoolProperty",
+        "access": "ro",
+        "category": "encoder"
+      },
+      "sincos_gpio_pin_sin": {
+        "name": "sincos_gpio_pin_sin",
+        "path": "axis{n}.encoder.config.sincos_gpio_pin_sin",
+        "type": "Uint16Property",
+        "access": "rw",
+        "category": "encoder"
+      },
+      "sincos_gpio_pin_cos": {
+        "name": "sincos_gpio_pin_cos",
+        "path": "axis{n}.encoder.config.sincos_gpio_pin_cos",
+        "type": "Uint16Property",
+        "access": "rw",
+        "category": "encoder"
+      }
+    }
+  },
+  "classes": {
+    "ODrive.TaskTimes": {
+      "sampling": "ODrive.TaskTimer",
+      "control_loop_misc": "ODrive.TaskTimer",
+      "control_loop_checks": "ODrive.TaskTimer",
+      "dc_calib_wait": "ODrive.TaskTimer"
+    },
+    "ODrive.SystemStats": {
+      "uptime": "Uint32Property",
+      "min_heap_space": "Uint32Property",
+      "max_stack_usage_axis": "Uint32Property",
+      "max_stack_usage_usb": "Uint32Property",
+      "max_stack_usage_uart": "Uint32Property",
+      "max_stack_usage_can": "Uint32Property",
+      "max_stack_usage_startup": "Uint32Property",
+      "max_stack_usage_analog": "Uint32Property",
+      "stack_size_axis": "Uint32Property",
+      "stack_size_usb": "Uint32Property",
+      "stack_size_uart": "Uint32Property",
+      "stack_size_startup": "Uint32Property",
+      "stack_size_can": "Uint32Property",
+      "stack_size_analog": "Uint32Property",
+      "prio_axis": "Int32Property",
+      "prio_usb": "Int32Property",
+      "prio_uart": "Int32Property",
+      "prio_startup": "Int32Property",
+      "prio_can": "Int32Property",
+      "prio_analog": "Int32Property",
+      "usb": "ODrive.SystemStats.Usb",
+      "i2c": "ODrive.SystemStats.I2C"
+    },
+    "ODrive.SystemStats.Usb": {
+      "rx_cnt": "Uint32Property",
+      "tx_cnt": "Uint32Property",
+      "tx_overrun_cnt": "Uint32Property"
+    },
+    "ODrive.SystemStats.I2C": {
+      "addr": "Uint8Property",
+      "addr_match_cnt": "Uint32Property",
+      "rx_cnt": "Uint32Property",
+      "error_cnt": "Uint32Property"
+    },
+    "ODrive.Endpoint": {
+      "endpoint": "EndpointRefProperty",
+      "min": "Float32Property",
+      "max": "Float32Property"
+    },
+    "ODrive.Axis": {
+      "watchdog_feed": "function",
+      "error": "Property[ODrive.Axis.Error]",
+      "step_dir_active": "BoolProperty",
+      "last_drv_fault": "Uint32Property",
+      "steps": "Int64Property",
+      "current_state": "Property[ODrive.Axis.AxisState]",
+      "requested_state": "Property[ODrive.Axis.AxisState]",
+      "is_homed": "BoolProperty",
+      "config": "ODrive.Axis.Config",
+      "motor": "ODrive.Motor",
+      "controller": "ODrive.Controller",
+      "encoder": "ODrive.Encoder",
+      "acim_estimator": "ODrive.AcimEstimator",
+      "sensorless_estimator": "ODrive.SensorlessEstimator",
+      "trap_traj": "ODrive.TrapezoidalTrajectory",
+      "min_endstop": "ODrive.Endstop",
+      "max_endstop": "ODrive.Endstop",
+      "mechanical_brake": "ODrive.MechanicalBrake",
+      "task_times": "ODrive.Axis.TaskTimes"
+    },
+    "ODrive.Axis.TaskTimes": {
+      "thermistor_update": "ODrive.TaskTimer",
+      "encoder_update": "ODrive.TaskTimer",
+      "sensorless_estimator_update": "ODrive.TaskTimer",
+      "endstop_update": "ODrive.TaskTimer",
+      "can_heartbeat": "ODrive.TaskTimer",
+      "controller_update": "ODrive.TaskTimer",
+      "open_loop_controller_update": "ODrive.TaskTimer",
+      "acim_estimator_update": "ODrive.TaskTimer",
+      "motor_update": "ODrive.TaskTimer",
+      "current_controller_update": "ODrive.TaskTimer",
+      "dc_calib": "ODrive.TaskTimer",
+      "current_sense": "ODrive.TaskTimer",
+      "pwm_update": "ODrive.TaskTimer"
+    },
+    "ODrive.TaskTimer": {
+      "start_time": "Uint32Property",
+      "end_time": "Uint32Property",
+      "length": "Uint32Property",
+      "max_length": "Uint32Property"
+    },
+    "ODrive.ThermistorCurrentLimiter": {},
+    "ODrive.OnboardThermistorCurrentLimiter": {
+      "temperature": "Float32Property",
+      "config": "ODrive.OnboardThermistorCurrentLimiter.Config"
+    },
+    "ODrive.OnboardThermistorCurrentLimiter.Config": {
+      "temp_limit_lower": "Float32Property",
+      "temp_limit_upper": "Float32Property",
+      "enabled": "BoolProperty"
+    },
+    "ODrive.OffboardThermistorCurrentLimiter": {
+      "temperature": "Float32Property",
+      "config": "ODrive.OffboardThermistorCurrentLimiter.Config"
+    },
+    "ODrive.OffboardThermistorCurrentLimiter.Config": {
+      "gpio_pin": "Uint16Property",
+      "poly_coefficient_0": "Float32Property",
+      "poly_coefficient_1": "Float32Property",
+      "poly_coefficient_2": "Float32Property",
+      "poly_coefficient_3": "Float32Property",
+      "temp_limit_lower": "Float32Property",
+      "temp_limit_upper": "Float32Property",
+      "enabled": "BoolProperty"
+    },
+    "ODrive.AcimEstimator": {
+      "rotor_flux": "Float32Property",
+      "slip_vel": "Float32Property",
+      "phase_offset": "Float32Property",
+      "stator_phase_vel": "Float32Property",
+      "stator_phase": "Float32Property",
+      "config": "ODrive.AcimEstimator.Config"
+    },
+    "ODrive.AcimEstimator.Config": {
+      "slip_velocity": "Float32Property"
+    },
+    "ODrive.SensorlessEstimator": {
+      "error": "Property[ODrive.SensorlessEstimator.Error]",
+      "phase": "Float32Property",
+      "pll_pos": "Float32Property",
+      "phase_vel": "Float32Property",
+      "vel_estimate": "Float32Property",
+      "config": "ODrive.SensorlessEstimator.Config"
+    },
+    "ODrive.SensorlessEstimator.Config": {
+      "observer_gain": "Float32Property",
+      "pll_bandwidth": "Float32Property",
+      "pm_flux_linkage": "Float32Property"
+    },
+    "ODrive.TrapezoidalTrajectory": {
+      "config": "ODrive.TrapezoidalTrajectory.Config"
+    },
+    "ODrive.TrapezoidalTrajectory.Config": {
+      "vel_limit": "Float32Property",
+      "accel_limit": "Float32Property",
+      "decel_limit": "Float32Property"
+    },
+    "ODrive.Endstop": {
+      "endstop_state": "BoolProperty",
+      "config": "ODrive.Endstop.Config"
+    },
+    "ODrive.Endstop.Config": {
+      "gpio_num": "Uint16Property",
+      "enabled": "BoolProperty",
+      "offset": "Float32Property",
+      "is_active_high": "BoolProperty",
+      "debounce_ms": "Uint32Property"
+    },
+    "ODrive.MechanicalBrake": {
+      "engage": "function",
+      "release": "function",
+      "config": "ODrive.MechanicalBrake.Config"
+    },
+    "ODrive.MechanicalBrake.Config": {
+      "gpio_num": "Uint16Property",
+      "is_active_low": "BoolProperty"
+    },
+    "ODrive.Axis.Config.CalibrationLockin": {
+      "current": "Float32Property",
+      "ramp_time": "Float32Property",
+      "ramp_distance": "Float32Property",
+      "accel": "Float32Property",
+      "vel": "Float32Property"
+    },
+    "ODrive.Axis.LockinConfig": {
+      "current": "Float32Property",
+      "ramp_time": "Float32Property",
+      "ramp_distance": "Float32Property",
+      "accel": "Float32Property",
+      "vel": "Float32Property",
+      "finish_distance": "Float32Property",
+      "finish_on_vel": "BoolProperty",
+      "finish_on_distance": "BoolProperty",
+      "finish_on_enc_idx": "BoolProperty"
+    },
+    "ODrive.Axis.CanConfig": {
+      "node_id": "Uint32Property",
+      "is_extended": "BoolProperty",
+      "heartbeat_rate_ms": "Uint32Property",
+      "encoder_rate_ms": "Uint32Property",
+      "motor_error_rate_ms": "Uint32Property",
+      "encoder_error_rate_ms": "Uint32Property",
+      "controller_error_rate_ms": "Uint32Property",
+      "sensorless_error_rate_ms": "Uint32Property",
+      "encoder_count_rate_ms": "Uint32Property",
+      "iq_rate_ms": "Uint32Property",
+      "sensorless_rate_ms": "Uint32Property",
+      "bus_vi_rate_ms": "Uint32Property"
+    },
+    "ODrive.Controller.Autotuning": {
+      "frequency": "Float32Property",
+      "pos_amplitude": "Float32Property",
+      "vel_amplitude": "Float32Property",
+      "torque_amplitude": "Float32Property"
+    },
+    "ODrive.Can": {
+      "error": "Property[ODrive.Can.Error]",
+      "config": "ODrive.Can.Config"
+    },
+    "ODrive.Can.Config": {
+      "baud_rate": "Uint32Property",
+      "protocol": "Property[ODrive.Can.Protocol]"
+    },
+    "ODrive.Oscilloscope": {
+      "size": "Uint32Property",
+      "get_val": "function"
+    },
+    "ODrive.Motor.CurrentControl": {
+      "p_gain": "Float32Property",
+      "i_gain": "Float32Property",
+      "I_measured_report_filter_k": "Float32Property",
+      "Id_setpoint": "Float32Property",
+      "Iq_setpoint": "Float32Property",
+      "Vd_setpoint": "Float32Property",
+      "Vq_setpoint": "Float32Property",
+      "phase": "Float32Property",
+      "phase_vel": "Float32Property",
+      "Ialpha_measured": "Float32Property",
+      "Ibeta_measured": "Float32Property",
+      "Id_measured": "Float32Property",
+      "Iq_measured": "Float32Property",
+      "v_current_control_integral_d": "Float32Property",
+      "v_current_control_integral_q": "Float32Property",
+      "final_v_alpha": "Float32Property",
+      "final_v_beta": "Float32Property"
+    }
+  }
+}
