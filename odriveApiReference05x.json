@@ -1085,6 +1085,34 @@
         "type": "BoolProperty",
         "access": "ro",
         "category": "system"
+      },
+      "test_property": {
+        "name": "test_property",
+        "path": "test_property",
+        "type": "Uint32Property",
+        "access": "rw",
+        "category": "system"
+      },
+      "system_stats": {
+        "name": "system_stats",
+        "path": "system_stats",
+        "type": "ODrive.SystemStats",
+        "access": "ro",
+        "category": "system"
+      },
+      "task_times": {
+        "name": "task_times",
+        "path": "task_times",
+        "type": "ODrive.TaskTimes",
+        "access": "ro",
+        "category": "system"
+      },
+      "can": {
+        "name": "can",
+        "path": "can",
+        "type": "ODrive.Can",
+        "access": "ro",
+        "category": "system"
       }
     },
     "config": {
@@ -1424,6 +1452,34 @@
         "type": "Uint16Property",
         "access": "rw",
         "category": "axis"
+      },
+      "calibration_lockin": {
+        "name": "calibration_lockin",
+        "path": "axis{n}.config.calibration_lockin",
+        "type": "ODrive.Axis.Config.CalibrationLockin",
+        "access": "rw",
+        "category": "axis"
+      },
+      "sensorless_ramp": {
+        "name": "sensorless_ramp",
+        "path": "axis{n}.config.sensorless_ramp",
+        "type": "ODrive.Axis.LockinConfig",
+        "access": "rw",
+        "category": "axis"
+      },
+      "general_lockin": {
+        "name": "general_lockin",
+        "path": "axis{n}.config.general_lockin",
+        "type": "ODrive.Axis.LockinConfig",
+        "access": "rw",
+        "category": "axis"
+      },
+      "can": {
+        "name": "can",
+        "path": "axis{n}.config.can",
+        "type": "ODrive.Axis.CanConfig",
+        "access": "rw",
+        "category": "axis"
       }
     },
     "oscilloscope": {
@@ -1556,6 +1612,27 @@
         "name": "n_evt_pwm_update",
         "path": "axis{n}.motor.n_evt_pwm_update",
         "type": "Uint32Property",
+        "access": "ro",
+        "category": "motor"
+      },
+      "fet_thermistor": {
+        "name": "fet_thermistor",
+        "path": "axis{n}.motor.fet_thermistor",
+        "type": "ODrive.OnboardThermistorCurrentLimiter",
+        "access": "ro",
+        "category": "motor"
+      },
+      "motor_thermistor": {
+        "name": "motor_thermistor",
+        "path": "axis{n}.motor.motor_thermistor",
+        "type": "ODrive.OffboardThermistorCurrentLimiter",
+        "access": "ro",
+        "category": "motor"
+      },
+      "current_control": {
+        "name": "current_control",
+        "path": "axis{n}.motor.current_control",
+        "type": "ODrive.Motor.CurrentControl",
         "access": "ro",
         "category": "motor"
       }
@@ -2599,6 +2676,33 @@
       "pos_amplitude": "Float32Property",
       "vel_amplitude": "Float32Property",
       "torque_amplitude": "Float32Property"
+    },
+    "ODrive.Can": {
+      "error": "Property[ODrive.Can.Error]",
+      "config": "ODrive.Can.Config"
+    },
+    "ODrive.Can.Config": {
+      "baud_rate": "Uint32Property",
+      "protocol": "Property[ODrive.Can.Protocol]"
+    },
+    "ODrive.Oscilloscope": {
+      "size": "Uint32Property",
+      "get_val": "function"
+    },
+    "ODrive.Motor.CurrentControl": {
+      "p_gain": "Float32Property",
+      "i_gain": "Float32Property",
+      "I_measured_report_filter_k": "Float32Property",
+      "Id_setpoint": "Float32Property",
+      "Iq_setpoint": "Float32Property",
+      "Vd_setpoint": "Float32Property",
+      "Vq_setpoint": "Float32Property",
+      "phase": "Float32Property",
+      "phase_vel": "Float32Property",
+      "Ialpha_measured": "Float32Property",
+      "Ibeta_measured": "Float32Property",
+      "Id_measured": "Float32Property",
+      "Iq_measured": "Float32Property"
     }
   }
 }
