@@ -14,15 +14,13 @@ import {
   Text,
 } from '@chakra-ui/react'
 
-import UpdateChecker from './UpdateChecker'
-import { useDashboardTelemetry } from '../hooks/useDashboardTelemetry'
 
 // Lazy-loaded tab components
-const ConfigurationTab = lazy(() => import('./tabs/ConfigurationTab'))
-const InspectorTab = lazy(() => import('./tabs/InspectorTab'))
-const DashboardTab = lazy(() => import('./tabs/DashboardTab'))
-const PresetsTab = lazy(() => import('./tabs/PresetsTab'))
-const CommandConsoleTab = lazy(() => import('./tabs/CommandConsoleTab'))
+const ConfigurationTab = lazy(() => import('./tabs/config wizard/ConfigurationTab'))
+const InspectorTab = lazy(() => import('./tabs/inspector/InspectorTab'))
+const DashboardTab = lazy(() => import('./tabs/dashboard/DashboardTab'))
+const PresetsTab = lazy(() => import('./tabs/presets/PresetsTab'))
+const CommandConsoleTab = lazy(() => import('./tabs/command console/CommandConsoleTab'))
 
 // Lightweight loading component
 const TabLoadingFallback = () => (
@@ -90,8 +88,6 @@ const MainTabs = () => {
   const { isConnected, odriveState } = useSelector(state => state.device)
   const [activeTab, setActiveTab] = useState(0)
 
-  // Hook for dashboard telemetry
-  useDashboardTelemetry()
 
   const renderTabContent = (tabConfig, index) => {
     const Component = tabConfig.component
@@ -158,7 +154,7 @@ const MainTabs = () => {
 
           <Spacer />
           <HStack spacing={4} pr={4}>
-            <UpdateChecker />
+            {/* <UpdateChecker /> */}
           </HStack>
         </TabList>
 

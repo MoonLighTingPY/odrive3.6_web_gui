@@ -1,131 +1,170 @@
-import threading
-import logging
-import os
-import sys
-from typing import Dict, Any
-from flask import Flask, send_from_directory, request
+import json
+import time
+from pathlib import Path
+from typing import Any, Dict, List
+
+from flask import Flask, jsonify, request
 from flask_cors import CORS
-from collections import defaultdict
+from flask_sock import Sock
 
-# Import our modules - using relative imports
-from .odrive_manager import ODriveManager
-from .utils.utils import is_running_as_executable, open_browser
-from .constants import VERSION
+from .constants import VERSION  # backend version tag
+from . import device_manager
+from .telemetry import telemetry_session
 
-# Import route blueprints - using relative imports
-from .routes.device_routes import device_bp, init_routes as init_device_routes
-from .routes.config_routes import config_bp, init_routes as init_config_routes
-from .routes.calibration_routes import calibration_bp, init_routes as init_calibration_routes
-from .routes.telemetry_routes import telemetry_bp, init_routes as init_telemetry_routes
-from .routes.system_routes import system_bp
+# ---- Internal State (in‑memory) ----
+_api_cache: Dict[str, Dict[str, Any]] = {}
 
-current_version = VERSION
+# ---- Helpers ----
+def _repo_root() -> Path:
+    # Derive repo root relative to this file (backend/app/app.py -> repo/)
+    return Path(__file__).resolve().parents[2]
 
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
-# Handle static files for PyInstaller
-if hasattr(sys, '_MEIPASS'):
-    static_folder = os.path.join(sys._MEIPASS, 'static')
-    template_folder = os.path.join(sys._MEIPASS, 'static')
-else:
-    # Fix the path - we're now in backend/app/, so we need to go up two levels to reach frontend
-    static_folder = '../../frontend/dist'
-    template_folder = '../../frontend/dist'
+def _api_json_path(fw_major: int) -> Path:
+    # Map major firmware to JSON filename (no hardcoded absolute path)
+    if fw_major == 0:
+        # 0.5.6
+        return _repo_root() / "odriveApiReference05x.json"
+    if fw_major == 6:
+        return _repo_root() / "odriveApiReference06x.json"
+    raise ValueError(f"Unsupported firmware major version: {fw_major}")
 
-app = Flask(__name__, 
-            static_folder=static_folder,
-            static_url_path='/static',
-            template_folder=template_folder)
 
-CORS(app, origins=["http://localhost:3000"])
-last_api_call = defaultdict(float)
-API_RATE_LIMIT = 0.1
+def _load_api_metadata(fw_major: int) -> Dict[str, Any]:
+    key = str(fw_major)
+    if key not in _api_cache:
+        path = _api_json_path(fw_major)
+        with path.open("r", encoding="utf-8") as f:
+            _api_cache[key] = json.load(f)
+    return _api_cache[key]
 
-# Global variables
-connected_odrives: Dict[str, Any] = {}
-current_odrive = None
-device_state_cache = {}
-last_update_time = 0
 
-# Add the backend directory to the Python path
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-
-@app.route('/')
-def index():
-    """Serve the main frontend application"""
+def _detect_fw_major(odrv) -> int:
+    # ODrive objects expose fw_version_major attribute
     try:
-        if hasattr(sys, '_MEIPASS'):
-            return send_from_directory(app.static_folder, 'index.html')
-        else:
-            # Fix the path for development mode
-            return send_from_directory('../../frontend/dist', 'index.html')
+        return int(getattr(odrv, "fw_version_major"))
     except Exception as e:
-        return f"Error serving index: {e}", 500
+        raise RuntimeError(f"Failed to read firmware major: {e}") from e
 
-@app.route('/<path:path>')
-def catch_all(path):
-    try:
-        if hasattr(sys, '_MEIPASS'):
-            file_path = os.path.join(app.static_folder, path)
-        else:
-            # Fix the path for development mode
-            file_path = os.path.join('../../frontend/dist', path)
-            
-        if os.path.exists(file_path):
-            return send_from_directory(os.path.dirname(file_path), os.path.basename(file_path))
-        else:
-            return index()
-    except Exception as e:
-        return f"Error serving file: {e}", 500
 
-# Initialize ODrive manager
-odrive_manager = ODriveManager()
+# ---- Flask App Factory ----
+def create_app() -> Flask:
+    app = Flask(__name__)
+    CORS(app)
+    sock = Sock(app)
 
-# Register blueprints and initialize routes
-app.register_blueprint(device_bp)
-app.register_blueprint(config_bp)
-app.register_blueprint(calibration_bp)
-app.register_blueprint(telemetry_bp)
-app.register_blueprint(system_bp)
+    @app.route("/api/backend/version", methods=["GET"])
+    def backend_version():
+        return jsonify({
+            "backend_version": VERSION,
+            "api_cache_keys": list(_api_cache.keys())
+        })
 
-# Initialize routes with ODrive manager
-init_device_routes(odrive_manager)
-init_config_routes(odrive_manager)
-init_calibration_routes(odrive_manager)
-init_telemetry_routes(odrive_manager)
+    @app.route("/api/devices", methods=["GET"])
+    def list_devices():
+        found = device_manager.discover_and_index()
+        return jsonify(found)
 
-@app.after_request
-def after_request(response):
-    # Add headers to prevent caching of telemetry data
-    if request.path.startswith('/api/telemetry') or request.path.startswith('/api/odrive/telemetry'):
-        response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
-        response.headers['Pragma'] = 'no-cache'
-        response.headers['Expires'] = '0'
-    return response
+    @app.route("/api/devices/<serial>/api-metadata", methods=["GET"])
+    def device_api_metadata(serial: str):
+        try:
+            odrv = device_manager.attach_or_get(serial)
+            fw_major = _detect_fw_major(odrv)
+            meta = _load_api_metadata(fw_major)
+            section = request.args.get("section")
+            if section:
+                if section not in meta:
+                    return jsonify({"error": f"Section '{section}' not in metadata"}), 400
+                return jsonify({section: meta[section], "version": meta.get("version")})
+            return jsonify(meta)
+        except Exception as e:
+            return jsonify({"error": str(e)}), 400
 
-if __name__ == '__main__':
-    print("🚀 Starting ODrive GUI Backend...")
-    
-    should_open_browser = (is_running_as_executable() and 
-                          os.environ.get('ODRIVE_NO_AUTO_BROWSER') != '1' and
-                          not sys.argv[0].endswith('tray_app.exe'))
-    
-    if should_open_browser:
-        print("📦 Running as executable - browser will open automatically")
-        browser_thread = threading.Thread(target=open_browser, daemon=True)
-        browser_thread.start()
-    else:
-        print("🔧 Running in development mode or browser disabled by tray app")
-        print("   Open: http://localhost:5000")
-    
-    try:
-        logger.info("Starting ODrive GUI Backend v0.5.6")
-        app.run(host='0.0.0.0', port=5000, debug=False)
-    except KeyboardInterrupt:
-        print("\n👋 ODrive GUI Backend stopped")
-    except Exception as e:
-        print(f"\n❌ Error: {e}")
-        if is_running_as_executable():
-            input("Press Enter to close...")
+    @app.route("/api/devices/<serial>/read", methods=["POST"])
+    def read_properties(serial: str):
+        """
+        Body:
+        {
+          "paths": ["axis0.controller.input_pos", "..."]
+        }
+        """
+        data = request.get_json(silent=True) or {}
+        paths: List[str] = data.get("paths") or []
+        if not paths:
+            return jsonify({"error": "paths required"}), 400
+        try:
+            odrv = device_manager.attach_or_get(serial)
+            results = device_manager.batch_read(odrv, paths)
+            return jsonify(results)
+        except Exception as e:
+            return jsonify({"error": str(e)}), 400
+
+    @app.route("/api/devices/<serial>/write", methods=["POST"])
+    def write_properties(serial: str):
+        """
+        Body:
+        {
+          "writes": [
+            {"path": "axis0.controller.input_pos", "value": 1.234},
+            ...
+          ]
+        }
+        """
+        payload = request.get_json(silent=True) or {}
+        writes = payload.get("writes")
+        if not isinstance(writes, list) or not writes:
+            return jsonify({"error": "writes must be non-empty list"}), 400
+        try:
+            odrv = device_manager.attach_or_get(serial)
+            results = []
+            for item in writes:
+                path = item.get("path")
+                value = item.get("value")
+                if not path:
+                    results.append({"path": path, "status": "error", "error": "missing path"})
+                    continue
+                try:
+                    device_manager.set_attr_value(odrv, path, value)
+                    results.append({"path": path, "status": "ok"})
+                except Exception as e:
+                    results.append({"path": path, "status": "error", "error": str(e)})
+            return jsonify(results)
+        except Exception as e:
+            return jsonify({"error": str(e)}), 400
+
+    @app.route("/api/devices/<serial>/command", methods=["POST"])
+    def invoke_command(serial: str):
+        """
+        Body:
+        {
+          "path": "axis0.controller.move_incremental",
+          "args": [displacement, from_input_pos]
+        }
+        """
+        body = request.get_json(silent=True) or {}
+        path = body.get("path")
+        args = body.get("args", [])
+        if not path:
+            return jsonify({"error": "path required"}), 400
+        try:
+            odrv = device_manager.attach_or_get(serial)
+            # reuse device_manager resolver (internal helper)
+            func = device_manager._resolve_attr(odrv, path)
+            if not callable(func):
+                return jsonify({"error": f"Attribute at '{path}' not callable"}), 400
+            result = func(*args)
+            return jsonify({"path": path, "result": result})
+        except Exception as e:
+            return jsonify({"error": str(e), "path": path}), 400
+
+    @sock.route("/api/devices/<serial>/telemetry")
+    def ws_telemetry(ws, serial):
+        try:
+            telemetry_session(ws, serial)
+        except Exception as e:
+            try:
+                ws.send(json.dumps({"error": str(e)}))
+            except Exception:
+                pass
+
+    return app

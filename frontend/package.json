@@ -28,7 +28,7 @@
     "react-redux": "^9.0.4",
     "react-window": "^1.8.11",
     "react-window-infinite-loader": "^1.0.10",
-    "recharts": "^2.15.3",
+    "recharts": "^2.15.4",
     "redux-persist": "^6.0.0",
     "rollup-plugin-visualizer": "^6.0.3"
   },
