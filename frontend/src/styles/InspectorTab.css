@@ -61,3 +61,22 @@
   padding: 2px 4px;
   border-radius: 2px;
 }
+
+
+/* Custom scrollbar for property tree */
+.inspector-tab .property-tree-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.inspector-tab .property-tree-scroll::-webkit-scrollbar-track {
+  background: #2d3748;
+}
+
+.inspector-tab .property-tree-scroll::-webkit-scrollbar-thumb {
+  background: #4a5568;
+  border-radius: 3px;
+}
+
+.inspector-tab .property-tree-scroll::-webkit-scrollbar-thumb:hover {
+  background: #63b3ed;
+}
