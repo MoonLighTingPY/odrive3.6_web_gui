@@ -1,50 +1,29 @@
 import json
-import time
-from pathlib import Path
+import logging
 from typing import Any, Dict, List
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 from flask_sock import Sock
 
 from .constants import VERSION  # backend version tag
 from . import device_manager
+from .api_reference import load_api_reference, reference_line
+from .paths import frontend_dist
 from .telemetry import telemetry_session
+from . import lifecycle
 
-# ---- Internal State (in‑memory) ----
-_api_cache: Dict[str, Dict[str, Any]] = {}
-
-# ---- Helpers ----
-def _repo_root() -> Path:
-    # Derive repo root relative to this file (backend/app/app.py -> repo/)
-    return Path(__file__).resolve().parents[2]
+log = logging.getLogger(__name__)
 
 
-def _api_json_path(fw_major: int) -> Path:
-    # Map major firmware to JSON filename (no hardcoded absolute path)
-    if fw_major == 0:
-        # 0.5.6
-        return _repo_root() / "odriveApiReference05x.json"
-    if fw_major == 6:
-        return _repo_root() / "odriveApiReference06x.json"
-    raise ValueError(f"Unsupported firmware major version: {fw_major}")
-
-
-def _load_api_metadata(fw_major: int) -> Dict[str, Any]:
-    key = str(fw_major)
-    if key not in _api_cache:
-        path = _api_json_path(fw_major)
-        with path.open("r", encoding="utf-8") as f:
-            _api_cache[key] = json.load(f)
-    return _api_cache[key]
-
-
-def _detect_fw_major(odrv) -> int:
-    # ODrive objects expose fw_version_major attribute
+def _detect_fw_line(odrv) -> int:
+    # ODrive 0.5.x and 0.6.x both report major 0; the line comes from the minor.
     try:
-        return int(getattr(odrv, "fw_version_major"))
+        major = int(getattr(odrv, "fw_version_major"))
+        minor = int(getattr(odrv, "fw_version_minor"))
     except Exception as e:
-        raise RuntimeError(f"Failed to read firmware major: {e}") from e
+        raise RuntimeError(f"Failed to read firmware version: {e}") from e
+    return reference_line(major, minor)
 
 
 # ---- Flask App Factory ----
@@ -57,8 +36,20 @@ def create_app() -> Flask:
     def backend_version():
         return jsonify({
             "backend_version": VERSION,
-            "api_cache_keys": list(_api_cache.keys())
         })
+
+    if lifecycle.standalone_enabled():
+        @app.route("/api/heartbeat", methods=["POST"])
+        def heartbeat():
+            lifecycle.beat()
+            return jsonify({"ok": True})
+
+    @app.route("/api/shutdown", methods=["POST"])
+    def shutdown():
+        # Reply first, then exit shortly after so the response is delivered.
+        import threading
+        threading.Timer(0.3, lifecycle.stop_process).start()
+        return jsonify({"ok": True})
 
     @app.route("/api/devices", methods=["GET"])
     def list_devices():
@@ -69,8 +60,8 @@ def create_app() -> Flask:
     def device_api_metadata(serial: str):
         try:
             odrv = device_manager.attach_or_get(serial)
-            fw_major = _detect_fw_major(odrv)
-            meta = _load_api_metadata(fw_major)
+            fw_line = _detect_fw_line(odrv)
+            meta = load_api_reference(fw_line)
             section = request.args.get("section")
             if section:
                 if section not in meta:
@@ -78,6 +69,7 @@ def create_app() -> Flask:
                 return jsonify({section: meta[section], "version": meta.get("version")})
             return jsonify(meta)
         except Exception as e:
+            log.exception("api-metadata failed for %s", serial)
             return jsonify({"error": str(e)}), 400
 
     @app.route("/api/devices/<serial>/read", methods=["POST"])
@@ -94,9 +86,10 @@ def create_app() -> Flask:
             return jsonify({"error": "paths required"}), 400
         try:
             odrv = device_manager.attach_or_get(serial)
-            results = device_manager.batch_read(odrv, paths)
+            results = device_manager.batch_read(odrv, paths, lock=device_manager.io_lock(serial))
             return jsonify(results)
         except Exception as e:
+            log.exception("read failed for %s", serial)
             return jsonify({"error": str(e)}), 400
 
     @app.route("/api/devices/<serial>/write", methods=["POST"])
@@ -117,19 +110,21 @@ def create_app() -> Flask:
         try:
             odrv = device_manager.attach_or_get(serial)
             results = []
-            for item in writes:
-                path = item.get("path")
-                value = item.get("value")
-                if not path:
-                    results.append({"path": path, "status": "error", "error": "missing path"})
-                    continue
-                try:
-                    device_manager.set_attr_value(odrv, path, value)
-                    results.append({"path": path, "status": "ok"})
-                except Exception as e:
-                    results.append({"path": path, "status": "error", "error": str(e)})
+            with device_manager.io_lock(serial):
+                for item in writes:
+                    path = item.get("path")
+                    value = item.get("value")
+                    if not path:
+                        results.append({"path": path, "status": "error", "error": "missing path"})
+                        continue
+                    try:
+                        device_manager.set_attr_value(odrv, path, value)
+                        results.append({"path": path, "status": "ok"})
+                    except Exception as e:
+                        results.append({"path": path, "status": "error", "error": str(e)})
             return jsonify(results)
         except Exception as e:
+            log.exception("write failed for %s", serial)
             return jsonify({"error": str(e)}), 400
 
     @app.route("/api/devices/<serial>/command", methods=["POST"])
@@ -146,15 +141,15 @@ def create_app() -> Flask:
         args = body.get("args", [])
         if not path:
             return jsonify({"error": "path required"}), 400
+        if not isinstance(args, list):
+            return jsonify({"error": "args must be a list"}), 400
         try:
             odrv = device_manager.attach_or_get(serial)
-            # reuse device_manager resolver (internal helper)
-            func = device_manager._resolve_attr(odrv, path)
-            if not callable(func):
-                return jsonify({"error": f"Attribute at '{path}' not callable"}), 400
-            result = func(*args)
+            with device_manager.io_lock(serial):
+                result = device_manager.invoke(odrv, path, args)
             return jsonify({"path": path, "result": result})
         except Exception as e:
+            log.exception("command failed: %s", path)
             return jsonify({"error": str(e), "path": path}), 400
 
     @sock.route("/api/devices/<serial>/telemetry")
@@ -166,5 +161,22 @@ def create_app() -> Flask:
                 ws.send(json.dumps({"error": str(e)}))
             except Exception:
                 pass
+
+    # ---- Static frontend (standalone mode) ----
+    # When a built frontend is available, serve it so the whole app runs from a
+    # single process. In dev this is absent and Vite serves the UI instead.
+    dist = frontend_dist()
+    if dist is not None:
+        @app.route("/", defaults={"path": ""})
+        @app.route("/<path:path>")
+        def serve_frontend(path: str):
+            # Never shadow the API namespace.
+            if path.startswith("api/"):
+                return jsonify({"error": "not found"}), 404
+            target = dist / path
+            if path and target.is_file():
+                return send_from_directory(dist, path)
+            # SPA fallback: unknown routes resolve to index.html.
+            return send_from_directory(dist, "index.html")
 
     return app

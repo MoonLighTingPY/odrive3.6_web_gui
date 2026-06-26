@@ -1,133 +1,110 @@
-# ODrive 3.6 Web GUI Project
+# ODrive Web GUI — Copilot Instructions
 
-## Project Overview
-This is a comprehensive web-based GUI application for controlling ODrive v0.5.6 motor controllers. The project provides real-time telemetry, configuration management, calibration tools, and presets functionality through a modern React frontend and Python Flask backend.
+> Single source of truth for working in this repo. Supersedes all older instruction
+> notes. Keep this file in sync with reality; if something here is wrong, fix it.
 
-## Architecture
-- **Frontend**: React + Vite + Chakra UI (JavaScript)
-- **Backend**: Python Flask with ODrive library integration
-- **Target**: ODrive v0.5.6 firmware specifically, with API reference for v0.6.11 to implement it in the future
-- **Deployment**: Can run as development server or PyInstaller executable with system tray
+## What this project is
+A web-based GUI to configure, monitor, and control ODrive motor controllers.
+React + Vite frontend, Python Flask backend that talks to the ODrive over USB via
+the `odrive` Python library. Runs as a dev server or as a standalone packaged app.
 
-## Key Features
-- Real-time telemetry and charts
-- Complete ODrive configuration management
-- Motor calibration wizards
-- Configuration presets system
-- Property tree inspector
-- Command console
-- System tray application for easy access
+## Firmware support goal
+Support **both 0.5.x and 0.6.x** firmware from one codebase. Version differences are
+data-driven: the per-firmware API surface lives in the API-reference JSON
+(`frontend/src/utils/odriveApiReference05x.json`, `odriveApiReference06x.json`).
+Both 0.5.x and 0.6.x report `fw_version_major == 0`, so the firmware "line" is
+chosen from `fw_version_minor` (5 → 0.5.x, 6 → 0.6.x).
 
----
+## Environment / conventions
+- Developed on **Linux** (zsh). Use Linux/POSIX commands. Use `python3`/`pip3` when
+  ambiguous; a project venv lives at `backend/.venv`. `./install.sh`/`install.bat`
+  create it and install all deps; `./build.sh`/`build.bat` build the standalone app.
+- Must work on **both Linux and Windows** (avoid OS-specific paths; use `pathlib`).
+- Frontend: React 18, Redux Toolkit, Chakra UI, Vite 6, recharts. ESLint flat config.
+- Dev: from `frontend/`, `npm run dev` (real hardware) or `npm run mock_dev` (mock).
+- Keep changes minimal and idiomatic. Don't reintroduce duplicated `_0_5`/`_0_6` files.
 
-## File Structure & Descriptions
+## Architecture (current)
+- **Thin generic backend.** Flask exposes generic, version-agnostic endpoints that
+  read/write/invoke ODrive properties by dotted path. All ODrive domain knowledge
+  (property metadata, command generation, version differences) lives in the frontend.
+- Backend endpoints (see `backend/app/app.py`):
+  - `GET  /api/backend/version`
+  - `GET  /api/devices`
+  - `GET  /api/devices/<serial>/api-metadata[?section=]`
+  - `POST /api/devices/<serial>/read`     body `{ "paths": [...] }` (REST fallback)
+  - `POST /api/devices/<serial>/write`    body `{ "writes": [{path, value}] }`
+  - `POST /api/devices/<serial>/command`  body `{ "path": ..., "args": [...] }`
+  - `WS   /api/devices/<serial>/telemetry` — primary channel: streams telemetry AND
+    handles `read`/`write`/`command` requests (id-keyed) on the same socket.
+  - `POST /api/heartbeat`, `POST /api/shutdown` — standalone lifecycle only.
+- **Per-device lock.** All device I/O (telemetry + read/write/command) is serialized
+  via `device_manager.io_lock(serial)` so config writes never contend with the stream.
+- **One WS per device on the frontend.** `api/deviceSocket.js` multiplexes telemetry
+  and request/response; `api/backend.js` routes read/write/command over it (REST is a
+  fallback). Don't add separate polling loops.
+- **Data-driven frontend registry.** One registry built from the API-reference JSON,
+  keyed by firmware line. This replaces the old duplicated property trees, registries,
+  command generators, and `versionSelection.js` facade.
+- **Mock mode.** `ODRIVE_MOCK=1` makes the backend simulate a device so the app and
+  tests run end-to-end without hardware (`ODRIVE_MOCK_FW=6` for 0.6.x).
 
-### Backend (Python Flask)
-- **`backend/app/app.py`** - Main Flask application entry point, route registration, static file serving
-- **`backend/app/odrive_manager.py`** - Core ODrive communication manager, handles device connection/disconnection, command execution
-- **`backend/app/odrive_telemetry_config.py`** - Telemetry data collection and mapping for ODrive properties
-- **`backend/app/constants.py`** - Application version and constants
-- **`backend/start_backend.py`** - Standalone backend launcher with dependency checking
-- **`backend/tray_app.py`** - System tray application for Windows deployment
+## Repo layout
+### Backend (`backend/`)
+- `app/app.py` — Flask app factory + routes (thin proxy).
+- `app/device_manager.py` — device discovery, attribute resolve, batch read/write,
+  per-device `io_lock`. `_find_any` returns None on timeout (no hardware = empty list).
+- `app/telemetry.py` — WebSocket: telemetry stream + read/write/command requests.
+- `app/lifecycle.py` — standalone single-instance + heartbeat watchdog + shutdown.
+- `app/mock_odrive.py` — in-memory mock device seeded from the API-reference JSON.
+- `app/constants.py` — `VERSION`.
+- `app/routes/`, `app/utils/` — blueprint/util modules.
+- `start_backend.py` — entry point (serves API; in prod also serves built frontend).
+- `requirements.txt`, `servo.ico`.
+- `run_standalone.py` — single-process launcher (serves API + built frontend, opens
+  browser). `odrive_gui.spec` — PyInstaller spec. `requirements-build.txt` — adds
+  PyInstaller. Build via `./build.sh` (Linux/macOS) or `build.bat` (Windows) →
+  `backend/dist/odrive-gui[.exe]`.
+- `app/paths.py` — locates the built frontend (`frontend/dist` or the PyInstaller
+  bundle) so the backend can serve it in standalone mode.
 
-#### Backend Utilities
-- **`backend/app/utils/utils.py`** - General utilities: executable detection, browser opening, JSON sanitization
-- **`backend/app/utils/property_tree_mapper.py`** - Maps frontend property paths to ODrive API paths
-- **`backend/app/utils/calibration_utils.py`** - Calibration prerequisite checking and validation
+### Frontend (`frontend/src/`)
+- `api/backend.js` — typed client (REST + routes read/write/command over the socket).
+- `api/deviceSocket.js` — one shared WebSocket per device (telemetry + RPC).
+- `App.jsx`, `main.jsx`, `components/` — UI (tabs: configuration/config wizard,
+  dashboard, inspector, presets, command console; modals; config-steps).
+- `hooks/` — telemetry + property-tree + config-wizard hooks.
+- `store/` — Redux slices (`device`, `telemetry`, `live`, `ui`). No `config` slice.
+- `utils/` — config command generation, registry, validation (`configValidation.js`),
+  helpers, charts, presets, property-tree, and the API-reference JSON files.
 
-#### Backend Routes (API Endpoints)
-- **`backend/app/routes/device_routes.py`** - Device scanning, connection, disconnection endpoints
-- **`backend/app/routes/config_routes.py`** - Configuration reading/writing, batch operations
-- **`backend/app/routes/calibration_routes.py`** - Calibration process management and status
-- **`backend/app/routes/telemetry_routes.py`** - Real-time telemetry data endpoints
-- **`backend/app/routes/system_routes.py`** - System info and health check endpoints
+### Other
+- `odrive_api_references/` — official API reference text + 0.5.x→0.6.x changelog
+  (`API ODrive Reference 0.5.6.txt`, `API ODrive Reference 0.6.12.txt`,
+  `changelog 0.5.x-0.6.12.txt`).
+- `scripts/generate_api_reference.py` — regenerate an API-reference JSON from the
+  text reference (parses `Expanded Path:` anchors). `scripts/check_api_reference.py`
+  — report coverage gaps of a generated JSON vs its text source.
 
-### Frontend (React)
-- **`frontend/src/App.jsx`** - Root React component with layout and device status
-- **`frontend/src/components/MainTabs.jsx`** - Main tabbed interface with lazy loading
-- **`frontend/src/components/DeviceList.jsx`** - Device discovery and connection interface
-- **`frontend/src/components/MotorControls.jsx`** - Motor control buttons (enable/disable/calibrate)
+## Known issues being addressed (don't reintroduce)
+- Frontend config layer historically called a dead endpoint and **fabricated default
+  values** for failed reads, causing phantom "changed" parameters in the Apply tab.
+  The fix is in place: keep a clean device snapshot of only successfully-read scalars
+  and generate write commands strictly from a real diff. Never auto-write a value that
+  wasn't read.
+- Don't reintroduce duplicated `_0_6` vs non-`_0_6` files or per-component HTTP polling
+  loops; use the data-driven registry and the shared device socket.
 
-#### Frontend Tabs
-- **`frontend/src/components/tabs/ConfigurationTab.jsx`** - ODrive configuration management interface
-- **`frontend/src/components/tabs/DashboardTab.jsx`** - Real-time telemetry dashboard with charts
-- **`frontend/src/components/tabs/InspectorTab.jsx`** - Property tree browser and editor
-- **`frontend/src/components/tabs/PresetsTab.jsx`** - Configuration presets management
-- **`frontend/src/components/tabs/CommandConsoleTab.jsx`** - Direct ODrive command interface
+## Git context
+- Working branch: `add-0.6.11-support` (the 0.6.x rewrite).
+- The fuller, proven 0.5.x backend logic (calibration prerequisites, property-tree
+  mapping, `sanitize_for_json` NaN/inf handling, telemetry config, PyInstaller/tray)
+  lives on the `dev`/`deep-refactor` branches. Harvest from there with
+  `git show dev:<path>` rather than reinventing.
 
-#### Frontend Utilities
-- **`frontend/src/utils/valueHelpers.js`** - Safe value formatting and conversions
-- **`frontend/src/utils/unitConversions.js`** - ODrive v0.5.6 unit conversions (turns/s ↔ RPM)
-- **`frontend/src/utils/odriveErrors.js`** - ODrive error code definitions and descriptions
-- **`frontend/src/utils/odriveEnums.js`** - ODrive enumeration values (motor types, control modes, etc.)
-- **`frontend/src/utils/axisStateChecker.js`** - Axis state monitoring and validation
-- **`frontend/src/utils/propertyFavourites.js`** - Property favorites management in localStorage
-
-#### Configuration Management
-- **`frontend/src/utils/configBatchApi.js`** - Batch configuration loading from unified registry
-- **`frontend/src/utils/configChangesDetector.js`** - Detects configuration changes for command generation
-- **`frontend/src/utils/configCommandGenerator.js`** - Generates ODrive commands from configuration
-- **`frontend/src/utils/configParameterGrouping.js`** - Groups configuration parameters by importance/category
-- **`frontend/src/utils/configurationActions.js`** - Configuration API actions (apply, save, calibrate)
-
-#### Presets System
-- **`frontend/src/utils/presetsManager.js`** - Configuration presets CRUD operations
-- **`frontend/src/utils/presetsActions.js`** - Preset API actions and device integration
-- **`frontend/src/utils/presetsOperations.js`** - Import/export operations for presets
-- **`frontend/src/utils/factoryPresets.js`** - Factory preset definitions and generation
-
-#### ODrive Property System
-- **`frontend/src/utils/odriveUnifiedRegistry.js`** - Unified registry system for all ODrive properties
-- **`frontend/src/utils/odrivePropertyTree.js`** - Complete ODrive v0.5.6 property tree definition
-- **`frontend/src/utils/odriveAxisTree.js`** - Axis-specific property definitions
-
-#### Charts and Telemetry
-- **`frontend/src/utils/chartFilters.js`** - Chart data filtering (moving average, low-pass)
-- **`frontend/src/utils/chartStatistics.js`** - Real-time chart statistics calculation
-
-#### Custom Hooks
-- **`frontend/src/hooks/useDashboardTelemetry.js`** - Real-time telemetry data fetching for dashboard
-- **`frontend/src/hooks/useCalibration.js`** - Calibration process management and status monitoring
-- **`frontend/src/hooks/useChartsTelemetry.js`** - High-frequency telemetry for charts
-- **`frontend/src/hooks/useOdriveButtons.jsx`** - Reusable ODrive control buttons with state management
-
-### Documentation
-- **`odrive_docs_local/`** - Local ODrive v0.5.6 documentation for reference
-- **`odrive_docs_local/api_references/`** - API reference documents for v0.5.6 and v0.6.11
-
-If you see that the description of any file here is not complete or wrong, please tell me, and suggest what to edit/add/remove in this file, for better context in future.
-- **`.github/copilot-instructions.md`** - Instructions for Copilot AI to understand
-
----
-
-
-
-## Development Notes
-- Use PowerShell for terminal operations
-- Project targets ODrive v0.5.6 firmware specifically, but 0.6.11 API reference is available for future compatibility
-- Frontend uses Chakra UI for styling
-- Backend handles all ODrive communication and provides REST API
-- Property tree system provides single source of truth for all ODrive parameters
-- Configuration system supports batch operations for performance
-- Presets system allows saving/loading complete configurations
-- Real-time telemetry optimized for dashboard and charting needs
-
-## Key Concepts
-- **Property Tree**: Hierarchical representation of all ODrive properties
-- **Unified Registry**: Single source of truth for parameter definitions, commands, and mappings
-- **Batch API**: Efficient bulk reading of ODrive properties
-- **Telemetry Slices**: Separate Redux slices for different telemetry update rates
-- **Axis-Aware**: All operations respect the selected axis (0 or 1)
-- **State Management**: Redux for global state, local state for component-specific data
-
-## Copilot Instructions
-
-fyi, i use powershell only in my terminal, so dont use linux commands and syntax, use powershell commands and syntax.
-if the change is code is not big - just show me the relevant part, and what i need to edit in the corresponding files.
-
-There is local docs for odrive 0.5.6 at "odrive_docs_local\odrive_local\docs.odriverobotics.com\v\0.5.6"
-
-also, there is an api reference for 0.5.6 and 0.6.11 at "odrive_docs_local\api_references\API ODrive Reference — ODrive Documentation 0.5.6 documentation.txt" and "odrive_docs_local\api_references\API ODrive Reference — ODrive Documentation 0.6.11 documentation.txt"
-
-Current task - add 0.6.11 support to the project, so it will be able to work with both 0.5.x and 0.6.x odrives. always check the changelog and api reference for the changes in the new version, and how it affects the current code. there is a comparison document at 
-- **`odrive_docs_local\ODrive_API_Comparison_0.5.6_to_0.6.11.md`** that lists all changes between 0.5.6 and 0.6.11.
+## Reference docs
+- API reference (text): `odrive_api_references/API ODrive Reference 0.5.6.txt`,
+  `.../0.6.12.txt`.
+- Changelog 0.5.x→0.6.12: `odrive_api_references/changelog 0.5.x-0.6.12.txt`.
+- 0.6.x JSON is generated from the text reference via `scripts/generate_api_reference.py`;
+  0.5.6 JSON is hand-curated (the 0.5.6 text export lacks the `Expanded Path:` anchors).
