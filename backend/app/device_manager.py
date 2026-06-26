@@ -1,9 +1,35 @@
-import json
 import threading
-from typing import Any, Dict, List, Iterable, Optional
+from typing import Any, Dict, List, Iterable
+
+from .mock_odrive import mock_enabled, get_mock_device
 
 _device_lock = threading.Lock()
 _device_index: Dict[str, Any] = {}  # serial -> odrive handle
+_io_locks: Dict[str, threading.RLock] = {}  # serial -> per-device I/O lock
+
+
+def io_lock(serial: str) -> threading.RLock:
+    """Per-device re-entrant lock serializing all USB access (telemetry + read/
+    write/command) so concurrent operations never contend on the same handle."""
+    with _device_lock:
+        lk = _io_locks.get(serial)
+        if lk is None:
+            lk = threading.RLock()
+            _io_locks[serial] = lk
+        return lk
+
+
+def _find_any() -> Any:
+    """Return a device handle: the mock when ODRIVE_MOCK is set, else real
+    hardware. Returns None when no device is present instead of raising, so
+    discovery just reports "no devices" rather than a 500."""
+    if mock_enabled():
+        return get_mock_device()
+    import odrive  # lazy import; only needed with real hardware
+    try:
+        return odrive.find_any(timeout=1.0)
+    except Exception:
+        return None
 
 
 def list_attached() -> List[Any]:
@@ -38,7 +64,7 @@ def get_attr_value(root: Any, dotted: str) -> Any:
     val = _resolve_attr(root, dotted)
     if isinstance(val, (int, float, bool, str)):
         return val
-    return f"<object:{val.__class__.__name__}>"
+    raise TypeError(f"'{dotted}' is not a scalar (got {val.__class__.__name__})")
 
 
 def set_attr_value(root: Any, dotted: str, value: Any):
@@ -50,13 +76,20 @@ def set_attr_value(root: Any, dotted: str, value: Any):
     setattr(parent, leaf, value)
 
 
+def invoke(root: Any, dotted: str, args: Iterable[Any]) -> Any:
+    """Resolve a dotted method path and call it with the given args."""
+    func = _resolve_attr(root, dotted)
+    if not callable(func):
+        raise TypeError(f"Attribute at '{dotted}' is not callable")
+    return func(*list(args))
+
+
 def attach_or_get(serial: str) -> Any:
     with _device_lock:
         if serial in _device_index:
             return _device_index[serial]
 
-    import odrive  # lazy import
-    od = odrive.find_any(timeout=1.0)
+    od = _find_any()
     if not od:
         raise ValueError(f"Device with serial '{serial}' not found")
     found_serial = str(getattr(od, "serial_number", "")).lower()
@@ -68,8 +101,7 @@ def attach_or_get(serial: str) -> Any:
 
 
 def discover_and_index() -> List[Dict[str, Any]]:
-    import odrive
-    od = odrive.find_any(timeout=1.0)
+    od = _find_any()
     found = []
     with _device_lock:
         _device_index.clear()
@@ -80,11 +112,24 @@ def discover_and_index() -> List[Dict[str, Any]]:
     return found
 
 
-def batch_read(odrv: Any, paths: Iterable[str]) -> Dict[str, Any]:
+def batch_read(odrv: Any, paths: Iterable[str], lock: Any = None) -> Dict[str, Any]:
     out = {}
-    for p in paths:
-        try:
-            out[p] = get_attr_value(odrv, p)
-        except Exception as e:
-            out[p] = {"error": str(e)}
+    ctx = lock if lock is not None else _NULL_CTX
+    with ctx:
+        for p in paths:
+            try:
+                out[p] = get_attr_value(odrv, p)
+            except Exception as e:
+                out[p] = {"error": str(e)}
     return out
+
+
+class _NullCtx:
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+
+_NULL_CTX = _NullCtx()

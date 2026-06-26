@@ -1,162 +1,149 @@
-# 🚀 ODrive Web GUI (0.5.x up to 0.5.6) 
+# ODrive Web GUI
 
-A web-based GUI for configuring, monitoring, and controlling ODrive motor controllers running firmware v0.5.1 - v0.5.6
-  > **No Python or Node.js required for Windows users – just download and run!**
+A web-based GUI for configuring, monitoring, and controlling ODrive motor
+controllers. Supports **both 0.5.x and 0.6.x firmware** from one codebase, and
+runs on **Linux and Windows** as either a development server or a single
+standalone executable.
 
 [![Latest Release](https://img.shields.io/github/release/MoonLighTingPY/odrive3.6_web_gui.svg?logo=github)](https://github.com/MoonLighTingPY/odrive3.6_web_gui/releases)
-[![ODrive Firmware](https://img.shields.io/badge/ODrive_firmware-%20(v0.5.x)-blue.svg)](https://docs.odriverobotics.com/v/0.5.6/)
-[![Python](https://img.shields.io/badge/Python-3.8.6-green.svg)](https://python.org)
-[![React](https://img.shields.io/badge/React-18+-61DAFB.svg)](https://reactjs.org)
+[![ODrive Firmware](https://img.shields.io/badge/ODrive_firmware-0.5.x_%7C_0.6.x-blue.svg)](https://docs.odriverobotics.com/)
+[![Python](https://img.shields.io/badge/Python-3.10+-green.svg)](https://python.org)
+[![React](https://img.shields.io/badge/React-18-61DAFB.svg)](https://reactjs.org)
 
-## 🧭 Quick Navigation
+## Quick Navigation
 
-<div align="center">
+[Why this GUI?](#why-this-gui) ·
+[Features](#features) ·
+[Download & Install](#download--install) ·
+[For Developers](#for-developers) ·
+[Contributing](#contributing)
 
-[**✨ Why This GUI?**](#-why-this-gui) • 
-[**🎯 Key Features**](#-key-features) • 
-[**📥 Quick Start**](#-quick-start) • 
-[**🏗️ Building**](#️-building-from-source) • 
-[**📖 Documentation**](#-documentation) • 
-[**🤝 Contributing**](#-contributing)
+## Why This GUI?
 
-</div>
+The official ODrive GUI dropped support for older firmware. This project gives
+0.5.x users a modern interface and also works with 0.6.x:
 
-## ✨ Why This GUI?
+- One app, both firmware lines — 0.5.x and 0.6.x, selected automatically per device.
+- Cross-platform — Linux and Windows, dev mode or a standalone executable.
+- No hardware required — a built-in mock device runs the whole app and the test suite without an ODrive.
 
-The official ODrive GUI only supports newer firmware versions, leaving v0.5.6 users without a modern interface. This project fills that gap with:
+## Features
 
-- **Full Feature Parity:** All functionality of the official GUI adapted for older firmware + new features!
-- **Standalone Deployment:** Windows executable doesn't require Python/Node.js installation
-- **Cross-Platform:** Works even on Linux, and macOS (only development mode for now)
+| Feature | Notes |
+|---|---|
+| Configuration wizard | Grouped, data-driven editor for every writable parameter, with inline validation and pre-apply safety checks |
+| Apply (change tracking) | Writes only parameters you actually changed — no phantom commands |
+| Presets | Full device snapshots; apply, compare, import/export, guarded by firmware line |
+| Inspector | Browse and edit any property; enum dropdowns; setpoint sliders; live values |
+| Live charts | Real-time plotting of any property over a single telemetry WebSocket |
+| Dashboard | Bus voltage/current, axis state, position/velocity, active errors |
+| Command console | odrivetool-style read / write / call (`odrv0.` prefix optional) |
+| Multi-axis | Switch between axis 0 and 1 |
 
-
-## 🎯 Key Features
-
-| Feature                | Status | Notes                                 |
-|------------------------|--------|---------------------------------------|
-| Configuration Wizard    | ✅     | Power, Motor, Encoder, Control, Interface             |             |
-| Presets Wizard | ✅     |     Import/export configuration presets                          |
-| Inspector            | ✅     | Inspect and tweak any ODrive properties/settings              |
-| Live Charts         | ✅     | Chart any properties/settings in real time                  |
-| Dashboard         | ✅     | Quick control and telemetry manager                   |
-| Command Console            | ✅     | Categorized native protocol commands                |
-| Calibration (motor/encoder)           | ✅     | Full working calibration                |
-| Multi-Axis Support            | ✅     | Configure/calibrate/inspect properties of any axis |
-| Multi-Device Support            | 🛠️     | Not tested enough yet               |
-
-### Configuration
-- **6-Step Setup:** Power → Motor → Encoder → Control → Interfaces → Apply
-- **Live Command Preview:** See exact ODrive commands before execution
-- **Preset Management:** Save/load/share motor configuration presets
-
-### Inspector & Debugging
-- **Property Tree:** Browse and edit all ODrive parameters
-- **Live Charts:** Real-time plotting of any property
-- **Command Console:** Direct ODrive native command interface (odrivetool) with history
-
-### Dashboard
-- **Live Telemetry:** Position, velocity, current, voltage, and more
-- **System Health:** Error monitoring and diagnostics
-- **Calibration Tools:** Step-by-step motor and encoder calibration
-
-### Device Management
-- **Auto-Discovery:** Automatic USB device scanning
-- **Multi-Device Support:** Manage multiple ODrive units
-- **Connection Monitoring:** Connection recovery
+All device communication runs over one WebSocket per device — telemetry plus
+read/write/command — so the UI stays responsive and config edits never contend
+with the live stream. Configuration data (property names, types, enums) is
+generated from the official ODrive API reference, so it stays faithful to each
+firmware line.
 
 ---
 
-## 📥 Quick Start
+## Download & Install
 
-### Windows (Recommended)
+No setup needed — download the standalone app for your OS, run it, and your
+browser opens to the GUI. No Python or Node.js required.
 
-1. **Download** the latest release from [GitHub Releases](https://github.com/MoonLighTingPY/odrive3.6_web_gui/releases)
-2. **Run** `ODrive_GUI_Tray.exe` – your browser will open automatically
-3. **Connect** your ODrive via USB and start configuring!
+1. Go to the [latest release](https://github.com/MoonLighTingPY/odrive3.6_web_gui/releases/latest).
+2. Download the build for your OS:
+   - Windows: `odrive-gui.exe`
+   - Linux: `odrive-gui`
+3. Run it. The app launches, opens your browser, and is ready. Connect your
+   ODrive over USB and start configuring. Use the Quit Application button when done.
 
-> 💡 The Windows build is completely standalone – no Python, Node.js, or other dependencies required.
+---
 
-### Development Setup (Linux/macOS/Advanced)
+## For Developers
 
-#### Prerequisites
-- Python 3.8+ with pip
-- Node.js 16+ with npm
+Everything below is only for building from source or contributing.
 
-#### Backend Setup
+### Prerequisites
+
+- Python 3.10+ with `pip`
+- Node.js 18+ with `npm`
+
+### Install
+
+Run the install script once. It creates the backend virtual environment at
+`backend/.venv` if missing, then installs Python and frontend dependencies:
+
 ```bash
 git clone https://github.com/MoonLighTingPY/odrive3.6_web_gui.git
-cd odrive3.6_web_gui/backend
-pip install -r requirements.txt
+cd odrive3.6_web_gui
+
+# Linux / macOS
+./install.sh
+
+# Windows
+install.bat
 ```
 
-#### Frontend Setup
+### Run in development
+
+From `frontend/`:
+
 ```bash
-cd ../frontend
-npm install
-npm run dev
+npm run dev        # backend + frontend, real hardware
+npm run mock_dev   # backend + frontend, simulated device (no hardware)
 ```
 
-Navigate to `http://localhost:3000` in your browser.
+The UI is served on `http://localhost:3000` and proxies the API and telemetry
+WebSocket to the backend on `http://127.0.0.1:5000`.
+
+### Build the standalone app
+
+The build bundles the backend, the `odrive` library, and the built frontend into
+a single executable. The venv is created automatically if needed.
+
+```bash
+# Linux / macOS
+./build.sh
+
+# Windows
+build.bat
+```
+
+The executable is written to `backend/dist/odrive-gui` (`.exe` on Windows). It is
+single-instance, stops when the page closes, and has a Quit Application button.
+
+### Tests
+
+```bash
+cd frontend && npm test       # vitest unit + integration tests
+cd frontend && npm run lint   # eslint
+```
+
+### Architecture
+
+- Thin backend (Flask): generic, version-agnostic endpoints that read/write/
+  invoke ODrive properties by dotted path, plus a telemetry WebSocket that also
+  carries read/write/command. Device access is serialized per device; the
+  backend stays free of ODrive domain knowledge.
+- Data-driven frontend (React + Vite + Chakra UI): a single registry built from
+  the API-reference JSON drives the property tree, the config form, validation,
+  and command generation for both firmware lines.
+- Regenerating the reference: `scripts/generate_api_reference.py` parses the
+  official text reference into JSON; `scripts/check_api_reference.py` reports
+  coverage gaps.
 
 ---
 
-## 🏗️ Building from Source
+## Contributing
 
-### Windows Executable
-
-```bash
-# 1. Run ./build.bat
-git clone https://github.com/MoonLighTingPY/odrive3.6_web_gui.git
-cd odrive3.6_web_gui/
-./build.bat
-
-# 2. Select Full build
-============================================
-ODrive v0.5.6 Web GUI Build Script
-============================================
-
-Choose build option:
-[1] Full install (build frontend + install dependencies + build executable)
-[2] Build only (skip frontend build and dependency installation)
-
-Enter your choice (1 or 2): 1 <--
-
-# Your executable will appear in backend/dist/ after building
-```
-
-### Development Mode
-
-```bash
-# This will run the frontend and backend concurrently
-cd frontend
-npm run dev
-```
-
----
-
-## 📖 Documentation
-
-- **Online Docs:** [ODrive v0.5.6 Official Docs](https://docs.odriverobotics.com/v/0.5.6/getting-started.html)
-- **API Reference:** [ODrive v0.5.6 API](https://docs.odriverobotics.com/v/0.5.6/fibre_types/com_odriverobotics_ODrive.html)
-
-
-## 🚀 Future Enhancements
-- [ ] **Remote Access:** Network-based device control
-- [ ] **PID Tweaking:** Automated and manual PID tweaker
-
-
-## 🤝 Contributing
-
-Contributions are welcome! Whether it's bug fixes, new features, or general improvements:
+Contributions are welcome — bug fixes, features, or improvements:
 
 1. Fork the repository
 2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+3. Commit your changes
+4. Push the branch and open a Pull Request
 
----
-
-**⚡ Made for ODrive v0.5.6 users who need a modern GUI solution**
-
-*If you find this project helpful, please consider giving it a ⭐ on GitHub!*
+If you find this project helpful, please consider giving it a star on GitHub.

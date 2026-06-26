@@ -13,6 +13,8 @@ import {
   Spinner,
   Text,
 } from '@chakra-ui/react'
+import UpdateChecker from './UpdateChecker'
+import QuitAppButton from './QuitAppButton'
 
 
 // Lazy-loaded tab components
@@ -105,7 +107,8 @@ const MainTabs = () => {
         case 'inspector':
           return {
             ...commonProps,
-            odriveState
+            odriveState,
+            isActive: activeTab === index
           }
         default:
           return commonProps
@@ -130,6 +133,11 @@ const MainTabs = () => {
         display="flex"
         flexDirection="column"
         overflow="hidden" // make sure Tabs itself never scrolls
+        isLazy
+        lazyBehavior="keepMounted" // mount a tab on first visit, then keep it so
+        // local state (e.g. config-wizard progress) survives tab switches. The
+        // high-frequency telemetry subscribers are gated by `isActive` so hidden
+        // tabs cost nothing.
       >
         <TabList bg="gray.800" borderBottom="1px solid" borderColor="gray.600" px={6}>
           {TAB_CONFIG.map((tabConfig) => (
@@ -154,7 +162,8 @@ const MainTabs = () => {
 
           <Spacer />
           <HStack spacing={4} pr={4}>
-            {/* <UpdateChecker /> */}
+            <UpdateChecker />
+            <QuitAppButton />
           </HStack>
         </TabList>
 

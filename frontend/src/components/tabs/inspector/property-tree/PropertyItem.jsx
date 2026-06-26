@@ -1,365 +1,324 @@
+import { memo, useState, useEffect } from 'react'
 import {
   Box,
   HStack,
   VStack,
   Text,
-  IconButton,
-  Switch,
-  NumberInput,
-  NumberInputField,
-  Select,
   Badge,
-  Tooltip,
+  IconButton,
   Input,
+  Select,
+  Switch,
+  Spinner,
+  Checkbox,
+  Tooltip,
+  Slider,
+  SliderTrack,
+  SliderFilledTrack,
+  SliderThumb,
   Button,
-  useToast,
-  useColorModeValue
 } from '@chakra-ui/react'
-import { 
-  StarIcon, 
-  RepeatIcon, 
-  ViewIcon, 
-  ViewOffIcon 
-} from '@chakra-ui/icons'
-import { useState, useEffect } from 'react'
-import { useDispatch, useSelector } from 'react-redux'
-import { addProperty, removeProperty } from '../../../../store/slices/telemetrySlice'
-import { 
-  isFavourite, 
-  addFavourite, 
-  removeFavourite 
-} from '../../../../utils/property-tree/propertyTreeFavourites'
+import { EditIcon, CheckIcon, CloseIcon, RepeatIcon, StarIcon } from '@chakra-ui/icons'
 
-const PropertyItem = ({ 
-  propertyKey, 
-  property, 
-  path, 
-  isConnected, 
-  searchTerm 
-}) => {
-  const dispatch = useDispatch()
-  const toast = useToast()
-  const { selectedProperties, samples } = useSelector(state => state.telemetry)
-  const { connectedDevice } = useSelector(state => state.device)
-  
-  const [isFav, setIsFav] = useState(false)
-  const [currentValue, setCurrentValue] = useState(null)
-  const [isRefreshing, setIsRefreshing] = useState(false)
-  const [localValue, setLocalValue] = useState('')
+// Writable numeric setpoints that benefit from a slider, with sensible ranges.
+const SETPOINT_SLIDERS = {
+  'controller.input_pos': { min: -10, max: 10, step: 0.1 },
+  'controller.input_vel': { min: -50, max: 50, step: 0.5 },
+  'controller.input_torque': { min: -2, max: 2, step: 0.05 },
+}
 
-  const bgColor = useColorModeValue('gray.50', 'gray.750')
-  const hoverBg = useColorModeValue('gray.100', 'gray.700')
-  const borderColor = useColorModeValue('gray.200', 'gray.600')
-
-  const isSelected = selectedProperties.includes(path)
-  const isWritable = property.writable !== false
-  const latestSample = samples[path]?.[samples[path].length - 1]
-
-  useEffect(() => {
-    setIsFav(isFavourite(path))
-  }, [path])
-
-  useEffect(() => {
-    if (latestSample) {
-      setCurrentValue(latestSample.v)
-      setLocalValue(String(latestSample.v))
-    }
-  }, [latestSample])
-
-  const handleToggleFavourite = () => {
-    if (isFav) {
-      removeFavourite(path)
-      setIsFav(false)
-    } else {
-      addFavourite(path)
-      setIsFav(true)
-    }
+function sliderConfig(path) {
+  for (const [suffix, cfg] of Object.entries(SETPOINT_SLIDERS)) {
+    if (path.endsWith(suffix)) return cfg
   }
+  return null
+}
 
-  const handleToggleTelemetry = () => {
-    if (isSelected) {
-      dispatch(removeProperty(path))
-    } else {
-      dispatch(addProperty(path))
-    }
+// Derive a compact display type + base kind from the raw valueType string.
+function getTypeInfo(prop) {
+  const vt = prop?.valueType || ''
+  if (prop?.selectOptions) return { base: 'enum', display: 'Enum' }
+  if (/bool/i.test(vt)) return { base: 'boolean', display: 'Bool' }
+  if (/float/i.test(vt)) return { base: 'number', display: 'Float32', isFloat: true }
+  const intMatch = /(U?int)(\d+)/i.exec(vt)
+  if (intMatch) {
+    const unsigned = /^u/i.test(intMatch[1])
+    return { base: 'number', display: `${unsigned ? 'UInt' : 'Int'}${intMatch[2]}`, isInteger: true }
   }
+  if (prop?.type === 'number') return { base: 'number', display: 'Number' }
+  if (prop?.type === 'boolean') return { base: 'boolean', display: 'Bool' }
+  return { base: 'text', display: vt ? vt.replace('Property', '') : 'Text' }
+}
 
-  const handleRefresh = async () => {
-    if (!isConnected || !connectedDevice) return
-    
-    setIsRefreshing(true)
-    try {
-      const response = await fetch(`/api/devices/${connectedDevice.serial_number}/read`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ paths: [path] })
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        if (data[path] !== undefined) {
-          setCurrentValue(data[path])
-          setLocalValue(String(data[path]))
-        }
-      }
-    } catch (error) {
-      toast({
-        title: 'Refresh failed',
-        description: error.message,
-        status: 'error',
-        duration: 3000,
-      })
-    } finally {
-      setIsRefreshing(false)
-    }
+function formatValue(value, prop, typeInfo) {
+  if (value === undefined || value === null) return 'N/A'
+  if (typeInfo.base === 'boolean') return value ? 'True' : 'False'
+  if (typeInfo.base === 'enum' && prop.selectOptions) {
+    const opt = prop.selectOptions.find((o) => o.value === value)
+    return opt ? opt.label : String(value)
   }
-
-  const handleWrite = async () => {
-    if (!isConnected || !connectedDevice || !isWritable) return
-    
-    try {
-      let value = localValue
-      if (property.type === 'number') {
-        value = parseFloat(localValue)
-        if (isNaN(value)) return
-      } else if (property.type === 'boolean') {
-        value = localValue === 'true'
-      }
-
-      const response = await fetch(`/api/devices/${connectedDevice.serial_number}/write`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          writes: [{ path, value }]
-        })
-      })
-      
-      if (response.ok) {
-        const data = await response.json()
-        const result = data[0]
-        if (result.status === 'ok') {
-          setCurrentValue(value)
-          toast({
-            title: 'Value updated',
-            status: 'success',
-            duration: 2000,
-          })
-        } else {
-          toast({
-            title: 'Write failed',
-            description: result.error,
-            status: 'error',
-            duration: 3000,
-          })
-        }
-      }
-    } catch (error) {
-      toast({
-        title: 'Write failed',
-        description: error.message,
-        status: 'error',
-        duration: 3000,
-      })
-    }
+  if (typeInfo.base === 'number') {
+    const n = typeof value === 'number' ? value : parseFloat(value)
+    if (Number.isNaN(n)) return String(value)
+    if (typeInfo.isInteger) return String(Math.round(n))
+    if (typeInfo.isFloat) return n.toFixed(3)
+    return String(n)
   }
+  return String(value)
+}
 
-  const renderValueInput = () => {
-    if (!isWritable) {
+// Coerce an edit-field string into the value type the backend expects.
+function coerce(str, typeInfo) {
+  if (typeInfo.base === 'boolean') return str === 'true' || str === true
+  if (typeInfo.base === 'number' || typeInfo.base === 'enum') {
+    const n = typeInfo.isInteger || typeInfo.base === 'enum' ? parseInt(str, 10) : parseFloat(str)
+    return Number.isNaN(n) ? null : n
+  }
+  return str
+}
+
+/**
+ * A single property row. Entirely props-driven — it does NOT subscribe to the
+ * Redux store, so it never re-renders from the telemetry stream. The parent
+ * tree passes the current value, chart/favourite flags and stable callbacks,
+ * and `memo` bails out unless one of those actually changes.
+ */
+const PropertyItem = memo(
+  ({
+    prop,
+    displayPath,
+    value,
+    isConnected,
+    isRefreshing,
+    isCharted,
+    isFav,
+    onToggleChart,
+    onRefresh,
+    onWrite,
+    onToggleFav,
+  }) => {
+    const [isEditing, setIsEditing] = useState(false)
+    const [editValue, setEditValue] = useState('')
+    const numericValue = typeof value === 'number' ? value : parseFloat(value)
+    const [sliderValue, setSliderValue] = useState(Number.isFinite(numericValue) ? numericValue : 0)
+
+    // Keep the slider synced to the live value while not dragging.
+    useEffect(() => {
+      if (Number.isFinite(numericValue)) setSliderValue(numericValue)
+    }, [numericValue])
+
+    if (!prop || typeof prop !== 'object') {
       return (
-        <Text 
-          fontSize="xs" 
-          fontFamily="mono" 
-          color="gray.300"
-          minW="4rem"
-          textAlign="right"
-        >
-          {currentValue !== null ? String(currentValue) : '—'}
-        </Text>
+        <Box p={2} bg="red.900" borderRadius="md">
+          <Text color="red.300" fontSize="sm">Invalid property: {displayPath}</Text>
+        </Box>
       )
     }
 
-    switch (property.type) {
-      case 'boolean':
-        return (
-          <Switch
-            size="sm"
-            isChecked={localValue === 'true'}
-            onChange={(e) => {
-              const newValue = e.target.checked ? 'true' : 'false'
-              setLocalValue(newValue)
-              if (isConnected) handleWrite()
-            }}
-            colorScheme="odrive"
-          />
-        )
-      
-      case 'number':
-        return (
-          <NumberInput
-            size="xs"
-            w="5rem"
-            value={localValue}
-            onChange={setLocalValue}
-            onBlur={handleWrite}
-            onKeyPress={(e) => e.key === 'Enter' && handleWrite()}
-          >
-            <NumberInputField 
-              fontSize="xs" 
-              fontFamily="mono"
-              textAlign="right"
-            />
-          </NumberInput>
-        )
-      
-      default:
-        if (property.selectOptions) {
-          return (
-            <Select
-              size="xs"
-              w="6rem"
-              value={localValue}
-              onChange={(e) => {
-                setLocalValue(e.target.value)
-                if (isConnected) handleWrite()
-              }}
-              fontSize="xs"
-            >
-              {property.selectOptions.map(opt => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
-            </Select>
-          )
-        }
-        
-        return (
-          <Input
-            size="xs"
-            w="5rem"
-            value={localValue}
-            onChange={(e) => setLocalValue(e.target.value)}
-            onBlur={handleWrite}
-            onKeyPress={(e) => e.key === 'Enter' && handleWrite()}
-            fontSize="xs"
-            fontFamily="mono"
-            textAlign="right"
-          />
-        )
+    const typeInfo = getTypeInfo(prop)
+    const isWritable = prop.writable !== false
+    const isChartable = typeInfo.base === 'number' || typeInfo.base === 'boolean'
+    const isError = /\.error$/.test(displayPath) && typeof value === 'number' && value !== 0
+    const propName = prop.name || displayPath.split('.').pop()
+    const hasSelect = Array.isArray(prop.selectOptions) && prop.selectOptions.length > 0
+    const slider = isWritable && typeInfo.base === 'number' && !hasSelect ? sliderConfig(displayPath) : null
+
+    const beginEdit = () => {
+      if (typeInfo.base === 'boolean') setEditValue(value ? 'true' : 'false')
+      else if (value === undefined || value === null) setEditValue('')
+      else setEditValue(String(value))
+      setIsEditing(true)
     }
-  }
 
-  const highlightText = (text, search) => {
-    if (!search) return text
-    const regex = new RegExp(`(${search})`, 'gi')
-    const parts = text.split(regex)
-    return parts.map((part, i) => 
-      regex.test(part) ? 
-        <span key={i} className="search-highlight">{part}</span> : 
-        part
-    )
-  }
+    const commit = async () => {
+      const v = coerce(editValue, typeInfo)
+      setIsEditing(false)
+      if (v === null) return
+      await onWrite(displayPath, v)
+    }
 
-  return (
-    <Box
-      p={3}
-      borderBottom="1px solid"
-      borderColor={borderColor}
-      _hover={{ bg: hoverBg }}
-      bg={isSelected ? 'rgba(99, 179, 237, 0.1)' : bgColor}
-    >
-      <HStack spacing={2} align="start">
-        {/* Property Info */}
-        <VStack spacing={1} align="start" flex="1" minW="0">
-          <HStack spacing={2} w="100%">
-            <Text 
-              fontSize="sm" 
-              fontWeight="medium" 
-              color="white"
-              noOfLines={1}
-            >
-              {highlightText(property.name || propertyKey, searchTerm)}
-            </Text>
-            <HStack spacing={1} ml="auto">
-              <Badge 
-                size="xs" 
-                colorScheme={isWritable ? 'green' : 'gray'} 
-                variant="outline"
-              >
-                {isWritable ? 'RW' : 'RO'}
+    const quickWrite = async (raw) => {
+      const v = coerce(raw, typeInfo)
+      if (v === null) return
+      await onWrite(displayPath, v)
+    }
+
+    const commitSlider = async (n) => {
+      const v = slider.step >= 1 ? Math.round(n) : parseFloat(n.toFixed(3))
+      await onWrite(displayPath, v)
+    }
+
+    return (
+      <Box
+        bg={isError ? 'red.900' : 'gray.750'}
+        borderRadius="md"
+        border="1px solid"
+        borderColor={isError ? 'red.600' : 'gray.600'}
+        p={2}
+        _hover={{ bg: isError ? 'red.800' : 'gray.700' }}
+        transition="background 0.15s"
+      >
+        <VStack spacing={2} align="stretch">
+        <HStack justify="space-between" align="center" spacing={2}>
+          <HStack spacing={2} flex="1" align="center" minW="0">
+            {isChartable && (
+              <Checkbox
+                size="md"
+                colorScheme="blue"
+                isChecked={isCharted}
+                onChange={() => onToggleChart(displayPath)}
+              />
+            )}
+            <Badge fontSize="0.6rem" colorScheme={isWritable ? 'green' : 'gray'} variant="subtle">
+              {isWritable ? 'RW' : 'RO'}
+            </Badge>
+            <Tooltip label={prop.valueType || typeInfo.display} placement="top" openDelay={400}>
+              <Badge fontSize="0.6rem" colorScheme="blue" variant="outline">
+                {typeInfo.display}
               </Badge>
-              {property.valueType && (
-                <Badge size="xs" variant="outline">
-                  {property.valueType.replace('Property', '')}
-                </Badge>
-              )}
-            </HStack>
+            </Tooltip>
+            <VStack align="start" spacing={0} flex="1" minW="0">
+              <Text fontSize="sm" fontWeight="semibold" color="white" isTruncated w="100%">
+                {propName}
+              </Text>
+              <Text fontSize="xs" color="gray.500" fontFamily="mono" isTruncated w="100%">
+                {displayPath}
+              </Text>
+            </VStack>
           </HStack>
-          
-          <Text 
-            fontSize="xs" 
-            color="gray.400" 
-            fontFamily="mono"
-            noOfLines={1}
-          >
-            {path}
-          </Text>
-          
-          {property.description && (
-            <Text 
-              fontSize="xs" 
-              color="gray.500"
-              noOfLines={2}
-            >
-              {highlightText(property.description, searchTerm)}
-            </Text>
-          )}
-        </VStack>
 
-        {/* Value Input */}
-        <Box minW="5rem">
-          {renderValueInput()}
-        </Box>
+          <HStack spacing={1} minW="fit-content">
+            {isEditing ? (
+              <>
+                {typeInfo.base === 'boolean' ? (
+                  <Switch
+                    size="sm"
+                    isChecked={editValue === 'true'}
+                    onChange={(e) => setEditValue(e.target.checked ? 'true' : 'false')}
+                    colorScheme="blue"
+                  />
+                ) : hasSelect ? (
+                  <Select
+                    size="xs"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    w="150px"
+                    bg="gray.700"
+                    color="white"
+                  >
+                    {prop.selectOptions.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </Select>
+                ) : (
+                  <Input
+                    size="xs"
+                    value={editValue}
+                    onChange={(e) => setEditValue(e.target.value)}
+                    type={typeInfo.base === 'number' ? 'number' : 'text'}
+                    w="90px"
+                    bg="gray.700"
+                    color="white"
+                    fontFamily="mono"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') commit()
+                      else if (e.key === 'Escape') setIsEditing(false)
+                    }}
+                  />
+                )}
+                <IconButton size="xs" colorScheme="green" aria-label="Save" icon={<CheckIcon />} onClick={commit} isDisabled={!isConnected} />
+                <IconButton size="xs" colorScheme="red" aria-label="Cancel" icon={<CloseIcon />} onClick={() => setIsEditing(false)} />
+              </>
+            ) : (
+              <>
+                <Text
+                  fontSize="sm"
+                  fontFamily="mono"
+                  fontWeight="semibold"
+                  color={value !== undefined && value !== null ? (isError ? 'red.300' : 'white') : 'gray.500'}
+                  minW="56px"
+                  textAlign="right"
+                >
+                  {formatValue(value, prop, typeInfo)}
+                </Text>
 
-        {/* Controls */}
-        <HStack spacing={1}>
-          <Tooltip label="Refresh value">
-            <IconButton
-              size="xs"
-              variant="ghost"
-              icon={<RepeatIcon />}
-              onClick={handleRefresh}
-              isLoading={isRefreshing}
-              isDisabled={!isConnected}
-              aria-label="Refresh"
-            />
-          </Tooltip>
-          
-          <Tooltip label={isSelected ? "Remove from charts" : "Add to charts"}>
-            <IconButton
-              size="xs"
-              variant="ghost"
-              icon={isSelected ? <ViewOffIcon /> : <ViewIcon />}
-              onClick={handleToggleTelemetry}
-              colorScheme={isSelected ? 'red' : 'odrive'}
-              aria-label="Toggle telemetry"
-            />
-          </Tooltip>
-          
-          <Tooltip label={isFav ? "Remove from favourites" : "Add to favourites"}>
-            <IconButton
-              size="xs"
-              variant="ghost"
-              icon={<StarIcon />}
-              onClick={handleToggleFavourite}
-              color={isFav ? 'yellow.400' : 'gray.400'}
-              aria-label="Toggle favourite"
-            />
-          </Tooltip>
+                {/* Quick enum select for writable enums */}
+                {hasSelect && isWritable && isConnected && !isRefreshing && (
+                  <Select
+                    size="xs"
+                    value={value ?? ''}
+                    onChange={(e) => quickWrite(e.target.value)}
+                    w="130px"
+                    bg="gray.700"
+                    color="white"
+                    variant="filled"
+                  >
+                    {prop.selectOptions.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </Select>
+                )}
+
+                <IconButton
+                  size="xs"
+                  variant="ghost"
+                  aria-label="Refresh"
+                  icon={isRefreshing ? <Spinner size="xs" /> : <RepeatIcon />}
+                  onClick={() => onRefresh(displayPath)}
+                  isDisabled={!isConnected || isRefreshing}
+                />
+                {isWritable && isConnected && !hasSelect && (
+                  <IconButton size="xs" variant="ghost" aria-label="Edit" icon={<EditIcon />} onClick={beginEdit} />
+                )}
+                <IconButton
+                  size="xs"
+                  variant={isFav ? 'solid' : 'ghost'}
+                  colorScheme={isFav ? 'yellow' : 'gray'}
+                  aria-label={isFav ? 'Remove favourite' : 'Add favourite'}
+                  icon={<StarIcon />}
+                  onClick={() => onToggleFav(displayPath)}
+                />
+              </>
+            )}
+          </HStack>
         </HStack>
-      </HStack>
-    </Box>
-  )
-}
+
+        {/* Setpoint slider for writable numeric setpoints */}
+        {slider && isConnected && !isEditing && (
+          <HStack spacing={2} w="100%">
+            <Slider
+              value={Number.isFinite(sliderValue) ? sliderValue : 0}
+              min={slider.min}
+              max={slider.max}
+              step={slider.step}
+              onChange={setSliderValue}
+              onChangeEnd={commitSlider}
+              colorScheme="blue"
+              flex="1"
+            >
+              <SliderTrack bg="gray.600"><SliderFilledTrack bg="blue.400" /></SliderTrack>
+              <SliderThumb boxSize={3} bg="blue.500" />
+            </Slider>
+            <Button size="xs" variant="outline" onClick={() => { setSliderValue(0); commitSlider(0) }}>
+              Zero
+            </Button>
+          </HStack>
+        )}
+        </VStack>
+      </Box>
+    )
+  },
+  (prev, next) =>
+    prev.prop === next.prop &&
+    prev.value === next.value &&
+    prev.isConnected === next.isConnected &&
+    prev.isRefreshing === next.isRefreshing &&
+    prev.isCharted === next.isCharted &&
+    prev.isFav === next.isFav &&
+    prev.displayPath === next.displayPath
+)
+
+PropertyItem.displayName = 'PropertyItem'
 
 export default PropertyItem
