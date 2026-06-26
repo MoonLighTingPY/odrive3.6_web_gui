@@ -6,7 +6,9 @@ const initialState = {
   maxSamples: 1000,
   status: 'disconnected', // disconnected | connecting | connected | error
   error: null,
-  intervalMs: 200,
+  // Stream as fast as the backend allows (telemetry.py clamps to a 10 ms floor)
+  // so charts update in near real-time, matching the old dev behaviour.
+  intervalMs: 10,
   lastTimestamp: null,
 }
 
@@ -28,11 +30,22 @@ const telemetrySlice = createSlice({
       state.selectedProperties = state.selectedProperties.filter(x => x !== p)
       delete state.samples[p]
     },
+    toggleProperty(state, action) {
+      const p = action.payload
+      if (state.selectedProperties.includes(p)) {
+        state.selectedProperties = state.selectedProperties.filter(x => x !== p)
+        delete state.samples[p]
+      } else {
+        state.selectedProperties.push(p)
+      }
+    },
     pushBatch(state, action) {
       const { timestamp, data } = action.payload
       state.lastTimestamp = timestamp
       Object.entries(data).forEach(([path, value]) => {
         if (!state.selectedProperties.includes(path)) return
+        // Skip error markers ({ error: ... }) and non-finite values.
+        if (typeof value !== 'number' && typeof value !== 'boolean') return
         if (!state.samples[path]) state.samples[path] = []
         const arr = state.samples[path]
         arr.push({ t: timestamp, v: value })
@@ -63,6 +76,7 @@ export const {
   setSelectedProperties,
   addProperty,
   removeProperty,
+  toggleProperty,
   pushBatch,
   setStatus,
   setError,

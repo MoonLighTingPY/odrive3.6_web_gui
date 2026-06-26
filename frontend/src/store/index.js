@@ -3,21 +3,21 @@ import { combineReducers } from 'redux'
 import { persistStore, persistReducer } from 'redux-persist'
 import storage from 'redux-persist/lib/storage' // localStorage
 import deviceReducer from './slices/deviceSlice'
-import configReducer from './slices/configSlice'
 import uiReducer from './slices/uiSlice'
 import telemetryReducer from './slices/telemetrySlice'
+import liveReducer from './slices/liveSlice'
 
 const rootReducer = combineReducers({
   device: deviceReducer,
-  config: configReducer,
   ui: uiReducer,
   telemetry: telemetryReducer,
+  live: liveReducer,
 })
 
 const persistConfig = {
   key: 'root',
   storage,
-  whitelist: ['device', 'config'],
+  whitelist: ['device'],
 }
 
 const persistedReducer = persistReducer(persistConfig, rootReducer)

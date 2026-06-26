@@ -190,3 +190,86 @@ const sensorlessErrorDescriptions = {
   [SensorlessEstimatorError.UNSTABLE_GAIN]: "Sensorless estimator gain is unstable",
   [SensorlessEstimatorError.UNKNOWN_CURRENT_MEASUREMENT]: "Current measurement unknown in sensorless mode",
 }
+
+// Decode a bit-flag error code into a list of { flag, description } entries.
+const DESCRIPTIONS_BY_KIND = {
+  axis: axisErrorDescriptions,
+  motor: motorErrorDescriptions,
+  encoder: encoderErrorDescriptions,
+  controller: controllerErrorDescriptions,
+  sensorless: sensorlessErrorDescriptions,
+}
+
+const ENUM_BY_KIND = {
+  axis: AxisError,
+  motor: MotorError,
+  encoder: EncoderError,
+  controller: ControllerError,
+  sensorless: SensorlessEstimatorError,
+  system: ODriveError,
+  can: CanError,
+}
+
+/**
+ * Decode a numeric bit-flag error code into active flags with descriptions.
+ * @param {('axis'|'motor'|'encoder'|'controller'|'sensorless'|'system'|'can')} kind
+ * @param {number} code
+ * @returns {Array<{flag:string, description:string}>}
+ */
+export function describeErrors(kind, code) {
+  const value = Number(code) || 0
+  if (value === 0) return []
+  const enumMap = ENUM_BY_KIND[kind] || {}
+  const descriptions = DESCRIPTIONS_BY_KIND[kind] || {}
+  const out = []
+  for (const [flag, bit] of Object.entries(enumMap)) {
+    if (bit !== 0 && (value & bit) === bit) {
+      out.push({ flag, description: descriptions[bit] || flag })
+    }
+  }
+  return out
+}
+
+/** Human-readable description string for a (possibly multi-flag) error code. */
+export function getErrorDescription(code, kind = 'axis') {
+  const value = Number(code) || 0
+  if (value === 0) return 'No error'
+  const parts = describeErrors(kind, value).map((e) => e.description)
+  if (parts.length === 0) {
+    return `Unknown error (0x${value.toString(16).toUpperCase().padStart(8, '0')})`
+  }
+  return parts.join('; ')
+}
+
+// Flags considered critical (immediate attention) per group.
+const CRITICAL = {
+  axis: [
+    AxisError.MOTOR_FAILED,
+    AxisError.ENCODER_FAILED,
+    AxisError.CONTROLLER_FAILED,
+    AxisError.OVER_TEMP,
+    AxisError.ESTOP_REQUESTED,
+  ],
+  motor: [
+    MotorError.DRV_FAULT,
+    MotorError.CURRENT_LIMIT_VIOLATION,
+    MotorError.MOTOR_THERMISTOR_OVER_TEMP,
+    MotorError.FET_THERMISTOR_OVER_TEMP,
+    MotorError.CURRENT_SENSE_SATURATION,
+  ],
+  encoder: [EncoderError.CPR_POLEPAIRS_MISMATCH, EncoderError.NO_RESPONSE],
+}
+
+/** True if any critical flag is set in the code. */
+export function isErrorCritical(code, kind = 'axis') {
+  const value = Number(code) || 0
+  if (value === 0) return false
+  return (CRITICAL[kind] || []).some((bit) => (value & bit) === bit)
+}
+
+/** Chakra color scheme name for an error code: green / orange / red. */
+export function getErrorColor(code, kind = 'axis') {
+  if (!code) return 'green'
+  return isErrorCritical(code, kind) ? 'red' : 'orange'
+}
+

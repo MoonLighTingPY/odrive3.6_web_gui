@@ -27,5 +27,15 @@ dist-ssr
 # Ignore venv for python
 .venv/
 __pycache__/
-backend/build/*
-frontend/package-lock.json
+*.pyc
+
+# Build output
+dist/
+build/
+backend/build/
+backend/dist/
+
+# PyInstaller
+*.manifest
+
+# Note: lockfiles (package-lock.json) are committed for reproducible builds.

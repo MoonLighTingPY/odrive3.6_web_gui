@@ -30,4 +30,11 @@ export default [
       ],
     },
   },
+  {
+    // Test files run under Node (vitest) and may use process / Node globals.
+    files: ['**/*.test.{js,jsx}', '**/__tests__/**'],
+    languageOptions: {
+      globals: { ...globals.node },
+    },
+  },
 ]
