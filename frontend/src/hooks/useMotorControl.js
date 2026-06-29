@@ -72,6 +72,12 @@ export function useMotorControl() {
   const saveAndReboot = useCallback(
     () =>
       run(async () => {
+        // Both axes must be idle before save_configuration; otherwise the call
+        // errors (or hangs) while the motor state machine is active.
+        await backend.writeProperties(serial, [
+          { path: 'axis0.requested_state', value: AXIS_STATE.IDLE },
+          { path: 'axis1.requested_state', value: AXIS_STATE.IDLE },
+        ])
         await backend.invokeCommand(serial, 'save_configuration', [])
         try {
           await backend.invokeCommand(serial, 'reboot', [])
