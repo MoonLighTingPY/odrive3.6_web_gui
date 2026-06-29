@@ -254,13 +254,7 @@ const DashboardTab = ({ isActive = true }) => {
               </Card>
             </SimpleGrid>
 
-            {/* Quick Actions */}
-            <Card bg="gray.800" variant="elevated">
-              <CardHeader><Heading size="md" color="white">Quick Actions</Heading></CardHeader>
-              <CardBody>
-                <MotorControlsCard isActive={isActive} />
-              </CardBody>
-            </Card>
+            <MotorControlsCard isActive={isActive} />
           </VStack>
         </Box>
       </VStack>
