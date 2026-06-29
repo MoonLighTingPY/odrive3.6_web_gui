@@ -61,7 +61,7 @@ const InspectorTab = ({ isConnected, isActive = true }) => {
               />
             </Box>
             <Box flexShrink={0} mt={3}>
-              <MotorControlsCard isActive={isActive} />
+              <MotorControlsCard isActive={isActive} compact />
             </Box>
           </GridItem>
 
