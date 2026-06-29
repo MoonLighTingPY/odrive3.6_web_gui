@@ -1,15 +1,56 @@
 import { useEffect, useState } from 'react'
-import { SimpleGrid, Button, useDisclosure, Tooltip } from '@chakra-ui/react'
+import { SimpleGrid, Button, useDisclosure, Tooltip, VStack, Text } from '@chakra-ui/react'
 import { useMotorControl, AXIS_STATE } from '../hooks/useMotorControl'
 import { useCalibration, CALIBRATION_TYPES } from '../hooks/useCalibration'
 import CalibrationModal from './modals/CalibrationModal'
 
 /**
- * Motor control buttons. `variant="basic"` shows enable/disable/calibrate/clear;
- * `variant="full"` adds the separate motor + encoder calibration steps and
- * save & reboot. `currentState` and `hasErrors` reflect the live axis state.
+ * A uniform control button: fixed height, bold label + smaller caption beneath.
+ * Reserving the caption line on every button keeps all buttons the same height
+ * even when a caption is omitted, so grids stay aligned. In `compact` mode the
+ * caption is dropped and the button shrinks to a single dense line.
  */
-const MotorControls = ({ currentState, hasErrors = false, columns = { base: 2, md: 3 }, variant = 'basic' }) => {
+const ActionButton = ({ label, caption, tip, compact = false, ...props }) => {
+  const btn = (
+    <Button width="100%" h={compact ? '30px' : '48px'} px={2} {...props}>
+      {compact ? (
+        <Text fontSize="xs">{label}</Text>
+      ) : (
+        <VStack spacing={0} lineHeight="1.1">
+          <Text fontSize="sm">{label}</Text>
+          {caption && (
+            <Text fontSize="2xs" fontWeight="normal" opacity={0.75}>
+              {caption}
+            </Text>
+          )}
+        </VStack>
+      )}
+    </Button>
+  )
+  return tip ? <Tooltip label={tip}>{btn}</Tooltip> : btn
+}
+
+/** A small uppercase section heading above a group of buttons. */
+const SectionLabel = ({ children }) => (
+  <Text fontSize="2xs" fontWeight="bold" letterSpacing="wider" textTransform="uppercase" color="gray.500">
+    {children}
+  </Text>
+)
+
+/**
+ * Motor control buttons. `variant="basic"` shows enable/disable/full-calibration/
+ * clear; `variant="full"` adds the individual calibration steps and save & reboot.
+ * `compact` renders a denser layout (smaller buttons, no captions/section labels)
+ * for space-constrained places like the inspector tab. `currentState` and
+ * `hasErrors` reflect the live axis state.
+ *
+ * Color/variant convention:
+ *  - Solid buttons  = primary actions you reach for most (operation + full cal).
+ *  - Outline buttons = secondary / advanced steps and destructive-ish actions.
+ *  - green = go, orange = stop, blue = calibration, purple = advanced cal,
+ *    red = errors, teal = persist to device.
+ */
+const MotorControls = ({ currentState, hasErrors = false, variant = 'basic', compact = false }) => {
   const { enable, disable, clearErrors, saveAndReboot } = useMotorControl()
   const calibration = useCalibration()
   const { isOpen, onOpen, onClose } = useDisclosure()
@@ -33,55 +74,115 @@ const MotorControls = ({ currentState, hasErrors = false, columns = { base: 2, m
 
   return (
     <>
-      <SimpleGrid columns={columns} spacing={2}>
-        <Tooltip label={isClosedLoop ? 'Already in closed loop' : 'Enter closed-loop control'}>
-          <Button size="sm" colorScheme="green" onClick={enable} isDisabled={isClosedLoop || hasErrors}>
-            Enable Motor
-          </Button>
-        </Tooltip>
-        <Tooltip label={isIdle ? 'Already idle' : 'Return to idle'}>
-          <Button size="sm" colorScheme="orange" onClick={disable} isDisabled={isIdle}>
-            Disable Motor
-          </Button>
-        </Tooltip>
-        <Tooltip label={hasErrors ? 'Clear errors first' : 'Full motor + encoder calibration'}>
-          <Button size="sm" colorScheme="blue" onClick={() => startCal('full')} isDisabled={calDisabled}>
-            Full Calibration
-          </Button>
-        </Tooltip>
+      <VStack spacing={compact ? 2 : 4} align="stretch">
+        {/* Operation */}
+        <VStack spacing={1.5} align="stretch">
+          {!compact && <SectionLabel>Operation</SectionLabel>}
+          <SimpleGrid columns={2} spacing={2}>
+            <ActionButton
+              label="Enable Motor"
+              caption="Closed Loop Control"
+              tip={isClosedLoop ? 'Already in closed loop' : 'Enter closed-loop control'}
+              colorScheme="green"
+              compact={compact}
+              onClick={enable}
+              isDisabled={isClosedLoop || hasErrors}
+            />
+            <ActionButton
+              label="Disable Motor"
+              caption="Idle"
+              tip={isIdle ? 'Already idle' : 'Return to idle'}
+              colorScheme="orange"
+              compact={compact}
+              onClick={disable}
+              isDisabled={isIdle}
+            />
+          </SimpleGrid>
+        </VStack>
 
-        {variant === 'full' && (
-          <>
-            <Tooltip label="Measure motor resistance & inductance">
-              <Button size="sm" colorScheme="blue" variant="outline" onClick={() => startCal('motor')} isDisabled={calDisabled}>
-                Motor Calibration
-              </Button>
-            </Tooltip>
-            <Tooltip label="Calibrate Hall sensor polarity">
-              <Button size="sm" colorScheme="purple" variant="outline" onClick={() => startCal('hall_polarity')} isDisabled={calDisabled}>
-                Hall Calibration
-              </Button>
-            </Tooltip>
-            <Tooltip label="Calibrate the encoder offset">
-              <Button size="sm" colorScheme="purple" variant="outline" onClick={() => startCal('encoder_offset')} isDisabled={calDisabled}>
-                Encoder Offset
-              </Button>
-            </Tooltip>
-            <Tooltip label="Search for the encoder index pulse">
-              <Button size="sm" colorScheme="purple" variant="outline" onClick={() => startCal('encoder_index')} isDisabled={calDisabled}>
-                Index Search
-              </Button>
-            </Tooltip>
-          </>
-        )}
+        {/* Calibration */}
+        <VStack spacing={1.5} align="stretch">
+          {!compact && <SectionLabel>Calibration</SectionLabel>}
+          <ActionButton
+            label="Full Calibration"
+            caption="Motor + Encoder"
+            tip={hasErrors ? 'Clear errors first' : 'Full motor + encoder calibration'}
+            colorScheme="blue"
+            compact={compact}
+            onClick={() => startCal('full')}
+            isDisabled={calDisabled}
+          />
+          {variant === 'full' && (
+            <SimpleGrid columns={2} spacing={2}>
+              <ActionButton
+                label="Motor"
+                caption="Resistance & Inductance"
+                tip="Measure motor resistance & inductance"
+                colorScheme="blue"
+                variant="outline"
+                compact={compact}
+                onClick={() => startCal('motor')}
+                isDisabled={calDisabled}
+              />
+              <ActionButton
+                label="Hall Polarity"
+                caption="Hall Sensor"
+                tip="Calibrate Hall sensor polarity"
+                colorScheme="purple"
+                variant="outline"
+                compact={compact}
+                onClick={() => startCal('hall_polarity')}
+                isDisabled={calDisabled}
+              />
+              <ActionButton
+                label="Encoder Offset"
+                caption="Offset Calibration"
+                tip="Calibrate the encoder offset"
+                colorScheme="purple"
+                variant="outline"
+                compact={compact}
+                onClick={() => startCal('encoder_offset')}
+                isDisabled={calDisabled}
+              />
+              <ActionButton
+                label="Index Search"
+                caption="Encoder Index"
+                tip="Search for the encoder index pulse"
+                colorScheme="purple"
+                variant="outline"
+                compact={compact}
+                onClick={() => startCal('encoder_index')}
+                isDisabled={calDisabled}
+              />
+            </SimpleGrid>
+          )}
+        </VStack>
 
-        <Button size="sm" variant="outline" onClick={clearErrors} isDisabled={!hasErrors}>
-          Clear Errors
-        </Button>
-        <Button size="sm" variant="outline" onClick={saveAndReboot}>
-          Save &amp; Reboot
-        </Button>
-      </SimpleGrid>
+        {/* System */}
+        <VStack spacing={1.5} align="stretch">
+          {!compact && <SectionLabel>System</SectionLabel>}
+          <SimpleGrid columns={2} spacing={2}>
+            <ActionButton
+              label="Clear Errors"
+              caption={hasErrors ? 'Active errors' : 'No errors'}
+              tip="Clear axis, motor and encoder errors"
+              colorScheme="red"
+              variant="outline"
+              compact={compact}
+              onClick={clearErrors}
+              isDisabled={!hasErrors}
+            />
+            <ActionButton
+              label="Save & Reboot"
+              caption="Persist to device"
+              tip="Idle both axes, save to NVM, then reboot"
+              colorScheme="teal"
+              compact={compact}
+              onClick={saveAndReboot}
+            />
+          </SimpleGrid>
+        </VStack>
+      </VStack>
 
       <CalibrationModal isOpen={isOpen} onClose={onClose} calibration={calibration} title={calTitle} />
     </>

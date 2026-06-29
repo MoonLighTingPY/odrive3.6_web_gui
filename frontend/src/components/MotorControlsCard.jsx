@@ -14,7 +14,7 @@ import AxisSelector from './AxisSelector'
  * constant instead of the live slice, so the ~6 Hz status updates don't re-render
  * this card while it isn't visible.
  */
-const MotorControlsCard = ({ isActive = true }) => {
+const MotorControlsCard = ({ isActive = true, compact = false }) => {
   const ax = useSelector((s) => s.ui.selectedAxis)
   const live = useSelector((s) => (isActive ? s.live : LIVE_INITIAL_STATE))
 
@@ -28,15 +28,15 @@ const MotorControlsCard = ({ isActive = true }) => {
 
   return (
     <Card bg="gray.800" variant="outline" borderColor="gray.700">
-      <CardBody>
-        <HStack justify="space-between" mb={3}>
+      <CardBody p={compact ? 3 : undefined}>
+        <HStack justify="space-between" mb={compact ? 2 : 3}>
           <HStack spacing={3}>
-            <Heading size="sm" color="odrive.300">Motor Controls · Axis {ax}</Heading>
+            <Heading size="sm" color="odrive.300">Motor Controls · Axis:</Heading>
             <AxisSelector showLabel={false} size="xs" />
           </HStack>
           <Badge colorScheme={stateColor}>{getAxisStateName(state)}</Badge>
         </HStack>
-        <MotorControls currentState={typeof state === 'number' ? state : null} hasErrors={hasErrors} columns={{ base: 2, md: 3 }} variant="full" />
+        <MotorControls currentState={typeof state === 'number' ? state : null} hasErrors={hasErrors} variant="full" compact={compact} />
         {hasErrors && <Text fontSize="xs" color="red.300" mt={2}>Active errors — clear before enabling or calibrating.</Text>}
       </CardBody>
     </Card>
